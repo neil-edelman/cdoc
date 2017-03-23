@@ -1,0 +1,120 @@
+<!doctype html public "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+
+<head>
+<!-- steal these colour values from JavaDocs; meh -->
+<style type = "text/css">
+	a:link,  a:visited { color: #4a6782; }
+	a:hover, a:focus   { color: #bb7a2a; }
+	a:active           { color: #4A6782; }
+	tr:nth-child(even) { background: #dee3e9; }
+	div {
+		margin:  4px 0;
+		padding: 0 4px 4px 4px;
+	}
+	table      { width: 100%; }
+	td         { padding: 4px; }
+	h3, h1 {
+		color: #2c4557;
+		background-color: #dee3e9;
+		padding:          4px;
+	}
+	h3 {
+		margin:           0 -4px;
+		padding:          4px;
+	}
+</style>
+<title>Cdoc</title>
+</head>
+
+
+<body>
+
+<h1>Cdoc</h1>
+
+<ul>
+	<li><a href = "#_declarations">Declarations</a></li>
+	<li><a href = "#_summary">Function Summary</a></li>
+	<li><a href = "#_detail">Function Detail</a></li>
+</ul>
+
+<p>
+2015 Neil Edelman, distributed under the terms of the MIT License;
+ see readme.txt, or <a href = "https://opensource.org/licenses/MIT">https://opensource.org/licenses/MIT</a>.
+</p>
+<p>
+ <em>Cdoc</em> is a light weight, <em>JavaDoc</em>-style, documentation generator for C.
+ Where standard tools (Doxygen) for generating documentation based on source
+ code parse your code, this just searches in your file for "/""** " and decides
+ based on context of the next thing that's after it. It does not support ascii
+ art. It does not support writing html in your source code, and escapes '&lt;&gt;&amp;'
+ in html mode. It's really just a big script, but in C.
+</p>
+<p>
+ There are three things that one could document: the preamble, functions, and
+ declarations (struct or typedef?) <em>Cdoc</em> decides which of these automatically
+ based on a simple, but inexact heuristic based on what is next in the file.
+</p>
+<p>
+ There are special cases that are allowed in <em>Cdoc</em> comments,
+ \url{url}, \cite{word}, \see{reference}, \${math}, and {emphasis}.
+</p>
+<p>
+ There are @-expressions which go first on the line. These depend on context.
+ These are accepted in all places: <em>param</em>, <em>author</em>, <em>since</em>, <em>fixme</em>,
+ <em>deprecated</em>; these are accepted in the preamble: <em>file</em>, <em>std</em>, <em>version</em>;
+ these are accepted before functions: <em>return</em>, <em>throws</em>, <em>implements</em>,
+ <em>include</em>. The title is set by <em>file</em>. Functions that are marked static as the
+ first modifier are not included unless one marks them by <em>include</em>. The
+ <em>param</em> and <em>throws</em> have an optional sub-argument separated by ':' or a new
+ line.
+</p>
+<dl>
+	<dt>author:</dt>
+	<dd>Neil</dd>
+	<dt>version:</dt>
+	<dd>3.0; 2016-08</dd>
+	<dt>since:</dt>
+	<dd>3.0; 2016-08</dd>
+	<dt>fixme:</dt>
+	<dd>Support old-style function definitions.</dd>
+</dl>
+
+
+<a name = "_declarations"><!-- --></a><h2>Declarations</h2>
+
+
+<a name = "_summary"><!-- --></a><h2>Function Summary</h2>
+
+<table>
+<tr><th>Return Type</th><th>Function Name</th><th>Argument List</th></tr>
+<tr>
+	<td>int</td>
+	<td><a href = "#main">main</a></td>
+	<td>int argc, char *argv[]</td>
+</tr>
+</table>
+
+
+<a name = "_detail"><!-- --></a><h2>Function Detail</h2>
+
+<div><a name = "main"><!-- --></a>
+<h3>main</h3>
+<pre>int <b>main</b> (int argc, char *argv[])</pre>
+<p>
+Accepts [ html | text | xml ] as an optional argument. The default is html.
+ Input is by <em>stdin</em> and goes to <em>stdout</em>. Use case example:
+ <pre>cat Foo.c Foo.h | cdocs text &gt; Foo.txt</pre>
+</p>
+<dl>
+	<dt>parameter: argc</dt>
+	<dd>Count.</dd>
+	<dt>parameter: argv</dt>
+	<dd>Vector.</dd>
+</dl>
+</div>
+
+
+</body>
+</html>
