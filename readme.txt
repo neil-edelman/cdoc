@@ -4,7 +4,10 @@ neil dot edelman each mail dot mcgill dot ca
 
 Version 1.0.
 
-JavaDoc-style parser for C. It generates documentation in html, plain text, or xml. We recommend full-featured Doxygen, but for those where this isn't an option, this will do in a pinch. See doc/Cdoc.html for more details.
+JavaDoc-style parser for C. It generates documentation in html,
+plain text, or xml. We recommend full-featured Doxygen, but for
+those where this isn't an option, this will do in a pinch. See
+doc/Cdoc.html for more details.
 
 License:
 
