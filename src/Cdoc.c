@@ -1,33 +1,33 @@
 /** 2015 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- {Cdoc} is a light weight, {JavaDoc}-style, documentation generator for C.
- Where standard tools (Doxygen) for generating documentation based on source
- code parse your code, this just searches in your file for "/""** " and decides
- based on context of the next thing that's after it. It does not support ascii
- art. It does not support writing html in your source code, and escapes '<>&'
- in html mode. It's really just a big script, but in C.
+ {Cdoc} is a light weight, {JavaDoc}-style, documentation generator for C. It
+ is not aware of C, but searches in your file for the double asterisk '** '
+ comment. It does not support ascii art (three or more asterisks are not
+ recognised.) It does not support writing html in your source code, and escapes
+ '<>&' in html mode; placing two new lines is sufficient to start a new
+ paragraph.
 
- There are three things that one could document: the preamble, functions, and
- declarations (struct or typedef?) {Cdoc} decides which of these automatically
- based on a simple, but inexact heuristic based on what is next in the file.
+ The following symbols are recognised: {\url{url}}, {\cite{word}},
+ {\see{reference}}, {\${math}}, and {{emphasis}}. {Cdoc} decides based on
+ context of the following code whether it goes in the preamble, functions, or
+ declarations. It uses simple, but inexact heuristic, which may become
+ confused. It supports macro-generics if you write them like
+ {void A_BI_(Create, Thing)(void)}.
 
- There are special cases that are allowed in {Cdoc} comments,
- \url\{url}, \cite\{word}, \see\{reference}, \$\{math}, and \{emphasis}.
-
- There are @-expressions which go first on the line. These depend on context.
- These are accepted in all places: {param}, {author}, {since}, {fixme},
- {deprecated}; these are accepted in the preamble: {file}, {std}, {version};
- these are accepted before functions: {return}, {throws}, {implements},
- {include}. The title is set by {file}. Functions that are marked static as the
- first modifier are not included unless one marks them by {include}. The
- {param} and {throws} have an optional sub-argument separated by ':' or a new
- line.
+ Each-expressions must come first on the line. {Cdoc} recognises: {@param},
+ {@author}, {@since}, {@fixme}, {@deprecated} are accepted globally; {@file},
+ {@std}, {@version} are accepted in the preamble; {@return}, {@throws},
+ {@implements}, {@include} are accepted before functions. The title is set by
+ {@file}. Functions that are marked static as the first modifier are not
+ included unless one marks them by {@include}. The {@param} and {@throws} have
+ an optional sub-argument separated by ':' or a new line that splits the
+ "expression: description."
 
  @file		Cdoc
  @author	Neil
- @version	3.0; 2016-08
- @since		3.0; 2016-08
+ @version	1.0; 2017-03
+ @since		1.0; 2017-03
  @fixme		Support old-style function definitions. */
 
 #include <stdlib.h>	/* rand, EXIT_* */
@@ -836,7 +836,7 @@ static void new_docs(struct Text *const this) {
 
 /** Accepts [ html | text | xml ] as an optional argument. The default is html.
  Input is by {stdin} and goes to {stdout}. Use case example:
- \${cat Foo.c Foo.h | cdocs text > Foo.txt}
+ \${cat Foo.c Foo.h | cdoc text > Foo.txt}
  @param argc	Count.
  @param argv	Vector. */
 int main(int argc, char *argv[]) {

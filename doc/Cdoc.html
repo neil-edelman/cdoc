@@ -44,39 +44,38 @@
  see readme.txt, or <a href = "https://opensource.org/licenses/MIT">https://opensource.org/licenses/MIT</a>.
 </p>
 <p>
- <em>Cdoc</em> is a light weight, <em>JavaDoc</em>-style, documentation generator for C.
- Where standard tools (Doxygen) for generating documentation based on source
- code parse your code, this just searches in your file for "/""** " and decides
- based on context of the next thing that's after it. It does not support ascii
- art. It does not support writing html in your source code, and escapes '&lt;&gt;&amp;'
- in html mode. It's really just a big script, but in C.
+ <em>Cdoc</em> is a light weight, <em>JavaDoc</em>-style, documentation generator for C. It
+ is not aware of C, but searches in your file for the double asterisk '** '
+ comment. It does not support ascii art (three or more asterisks are not
+ recognised.) It does not support writing html in your source code, and escapes
+ '&lt;&gt;&amp;' in html mode; placing two new lines is sufficient to start a new
+ paragraph.
 </p>
 <p>
- There are three things that one could document: the preamble, functions, and
- declarations (struct or typedef?) <em>Cdoc</em> decides which of these automatically
- based on a simple, but inexact heuristic based on what is next in the file.
+ The following symbols are recognised: <em>\url{url}</em>, <em>\cite{word}</em>,
+ <em>\see{reference}</em>, <em>\${math}</em>, and <em>{emphasis}</em>. <em>Cdoc</em> decides based on
+ context of the following code whether it goes in the preamble, functions, or
+ declarations. It uses simple, but inexact heuristic, which may become
+ confused. It supports macro-generics if you write them like
+ <em>void A_BI_(Create, Thing)(void)</em>.
 </p>
 <p>
- There are special cases that are allowed in <em>Cdoc</em> comments,
- \url{url}, \cite{word}, \see{reference}, \${math}, and {emphasis}.
-</p>
-<p>
- There are @-expressions which go first on the line. These depend on context.
- These are accepted in all places: <em>param</em>, <em>author</em>, <em>since</em>, <em>fixme</em>,
- <em>deprecated</em>; these are accepted in the preamble: <em>file</em>, <em>std</em>, <em>version</em>;
- these are accepted before functions: <em>return</em>, <em>throws</em>, <em>implements</em>,
- <em>include</em>. The title is set by <em>file</em>. Functions that are marked static as the
- first modifier are not included unless one marks them by <em>include</em>. The
- <em>param</em> and <em>throws</em> have an optional sub-argument separated by ':' or a new
- line.
+ Each-expressions must come first on the line. <em>Cdoc</em> recognises: <em>@param</em>,
+ <em>@author</em>, <em>@since</em>, <em>@fixme</em>, <em>@deprecated</em> are accepted globally; <em>@file</em>,
+ <em>@std</em>, <em>@version</em> are accepted in the preamble; <em>@return</em>, <em>@throws</em>,
+ <em>@implements</em>, <em>@include</em> are accepted before functions. The title is set by
+ <em>@file</em>. Functions that are marked static as the first modifier are not
+ included unless one marks them by <em>@include</em>. The <em>@param</em> and <em>@throws</em> have
+ an optional sub-argument separated by ':' or a new line that splits the
+ "expression: description."
 </p>
 <dl>
 	<dt>author:</dt>
 	<dd>Neil</dd>
 	<dt>version:</dt>
-	<dd>3.0; 2016-08</dd>
+	<dd>1.0; 2017-03</dd>
 	<dt>since:</dt>
-	<dd>3.0; 2016-08</dd>
+	<dd>1.0; 2017-03</dd>
 	<dt>fixme:</dt>
 	<dd>Support old-style function definitions.</dd>
 </dl>
@@ -105,7 +104,7 @@
 <p>
 Accepts [ html | text | xml ] as an optional argument. The default is html.
  Input is by <em>stdin</em> and goes to <em>stdout</em>. Use case example:
- <pre>cat Foo.c Foo.h | cdocs text &gt; Foo.txt</pre>
+ <pre>cat Foo.c Foo.h | cdoc text &gt; Foo.txt</pre>
 </p>
 <dl>
 	<dt>parameter: argc</dt>
