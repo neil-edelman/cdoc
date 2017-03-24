@@ -8,11 +8,16 @@
  '<>&' in html mode; placing two new lines is sufficient to start a new
  paragraph.
 
- The following symbols are recognised: {\url{url}}, {\cite{word}},
- {\see{reference}}, {\${math}}, and {{emphasis}}. {Cdoc} decides based on
- context of the following code whether it goes in the preamble, functions, or
- declarations. It uses simple, but inexact heuristic, which may become
- confused. It supports macro-generics if you write them like
+ The following symbols are recognised:
+ * {\url{url}},
+ * {\cite{word}},
+ * {\see{reference}},
+ * {\${math}}, and
+ * {{emphasis}}.
+
+ {Cdoc} decides based on context of the following code whether it goes in the
+ preamble, functions, or declarations. It uses simple, but inexact heuristic,
+ which may become confused. It supports macro-generics if you write them like
  {void A_BI_(Create, Thing)(void)}.
 
  Each-expressions must come first on the line. {Cdoc} recognises: {@param},
@@ -22,12 +27,12 @@
  {@file}. Functions that are marked static as the first modifier are not
  included unless one marks them by {@include}. The {@param} and {@throws} have
  an optional sub-argument separated by ':' or a new line that splits the
- "expression: description."
+ expression: description.
 
  @file		Cdoc
  @author	Neil
- @version	1.0; 2017-03
- @since		1.0; 2017-03
+ @version	1.1; 2017-03 lists
+ @since		1.0; 2017-03 initial version
  @fixme		Support old-style function definitions. */
 
 #include <stdlib.h>	/* rand, EXIT_* */
@@ -184,7 +189,7 @@ static const struct TextPattern html_escape_pat[] = {
 	{ "\n \n",   0,   &html_paragraph }
 }, root_pat[] = {
 	{ "/""** ", "*""/", &new_docs },
-	{ "/""*", "*""/", 0 } /* regular comments; fixme: more robust */
+	{ "/""*", "*""/", 0 } /* regular comments; fixme: more robust, still */
 };
 static const size_t
 	html_para_pat_size   = sizeof html_para_pat / sizeof *html_para_pat,
@@ -275,7 +280,7 @@ static void xml(struct Relate *const this) {
 /** A generic print plain list item.
  @implements	RelateAction */
 static void plain_dl(struct Relate *const this) {
-	const char *const arg = RelateValue(RelateGetChild(this, "_arg"));
+	const char *const desc = RelateValue(RelateGetChild(this, "_desc"));
 	const char *key = RelateKey(this);
 	/* these are probably better expanded */
 	if(!strcmp("param", key)) {
@@ -283,8 +288,8 @@ static void plain_dl(struct Relate *const this) {
 	} if(!strcmp("std", key)) {
 		key = "minimum standard";
 	}
-	printf("%s%s%s -- %s\n\n", key,
-		arg ? ": " : "", arg ? arg : "", RelateValue(this));
+	printf("%s: %s%s%s\n\n", key, RelateValue(this),
+		desc ? " -- " : "", desc ? desc : "");
 }
 /** @implements RelateAction */
 static void plain_declare_list(struct Relate *const this) {
@@ -352,7 +357,7 @@ static void plain(struct Relate *const this) {
 /** A generic print html <dl>.
  @implements	RelateAction */
 static void html_dl(struct Relate *const this) {
-	const char *const arg = RelateValue(RelateGetChild(this, "_arg"));
+	const char *const desc = RelateValue(RelateGetChild(this, "_desc"));
 	const char *key = RelateKey(this);
 	/* these are probably better expanded */
 	if(!strcmp("param", key)) {
@@ -360,8 +365,15 @@ static void html_dl(struct Relate *const this) {
 	} if(!strcmp("std", key)) {
 		key = "minimum standard";
 	}
-	printf("\t<dt>%s:%s%s</dt>\n\t<dd>%s</dd>\n", key,
-		arg ? " " : "", arg ? arg : "", RelateValue(this));
+	if(desc) {
+		printf("\t<dt>%s: %s</dt>\n\t<dd>%s</dd>\n",
+			key, RelateValue(this), desc);
+	} else {
+		printf("\t<dt>%s</dt>\n\t<dd>%s</dd>\n",
+			   key, RelateValue(this));
+	}
+	/*printf("\t<dt>%s%s%s</dt>\n\t<dd>%s</dd>\n", key,
+		desc ? " " : "", desc ? desc : "", RelateValue(this));*/
 }
 /** @implements RelateAction */
 static void html_declare_list(struct Relate *const this) {
@@ -486,18 +498,18 @@ static void new_arg_child(struct Relate *const parent, struct Text *const key,
 	struct Text *const value) {
 	struct Relate *child, *grandc;
 	struct Text *arg;
+	fprintf(stderr, "new_arg_child: value:'%s' sep\n", TextGet(value));
 	arg = TextSep(value, separates_param_value, 0);
 	TextTrim(value), TextTrim(arg);
 	child = RelateNewChild(parent);
 	TextCat(RelateGetKey(child),   TextGet(key));
-	TextCat(RelateGetValue(child), TextGet(value));
-	if(!arg) return;
-	grandc = RelateNewChild(child);
-	TextCat(RelateGetKey(grandc),   "_arg");
-	TextCat(RelateGetValue(grandc), TextGet(arg));
-	if(TextIsError(arg))
-		fprintf(stderr, "new_arg_child arg: %s.\n", TextGetError(arg));
+	TextCat(RelateGetValue(child), TextGet(arg));
 	Text_(&arg);
+	/* only if it has ':' */
+	if(!TextIsContent(value)) return;
+	grandc = RelateNewChild(child);
+	TextCat(RelateGetKey(grandc),   "_desc");
+	TextCat(RelateGetValue(grandc), TextGet(value));
 }
 /** @implements	RelatesField */
 static void top_key(struct Relate *const parent, struct Text *const key,
@@ -514,30 +526,25 @@ static void parse_each(struct Text *const this, struct Relate *const parent,
 	struct Text *key;
 	const char *key_s;
 
-	/*printf("parse_@: '%s'\n", TextGet(this));*/
-	if(!(key = TextSep(this, white_space, 0))) {
-		if(TextIsError(this))
-			{ fprintf(stderr,"Error: %s.\n",TextGetError(this)); return; }
-		/* just a key and no value */
-		key = Text();
-		TextCat(key, TextGet(this));
-		TextClear(this);
-	}
+	printf("parse_@: '%s'\n", TextGet(this));
+	if(!TextIsContent(this)) return;
+	key = TextSep(this, white_space, 0);
 	TextTrim(this);
+	printf("-@: '%s' '%s'\n", TextGet(key), TextGet(this));
 	/* {int e}, {struct EachMatching *ems} (meta info),
 	 {struct EachMatch *em} (one chosen symbol) to be matched with {key_s} */
 	key_s = TextGet(key);
 	key_sl = strlen(key_s);
+	printf("yes\n");
 	for(e = 0; e < ems->size
 		&& ((em = ems->match + e, key_sl != strlen(em->word))
 		|| strncmp(em->word, key_s, key_sl)); e++);
-	if(e >= ems->size) {
+	if(e < ems->size) {
+		em->action(parent, key, this);
+	} else {
 		fprintf(stderr, "Warning: unrecognised @-symbol, '%.*s.'\n",
 			(int)key_sl, key_s);
-		Text_(&key);
-		return;
 	}
-	em->action(parent, key, this);
 	Text_(&key);
 }
 
@@ -691,9 +698,50 @@ static int parse_generics(struct Text *const this) {
 /** Put it into html paragraphs. Called by \see{new_docs}.
  @implements TextAction */
 static void html_paragraphise(struct Text *const this) {
-	/* well, that was easy */
-	TextTransform(this, "<p>\n%s\n</p>\n");
-	TextMatch(this, html_para_pat, html_para_pat_size);
+	struct Text *a = Text(), *line;
+	int is_list = 0, is_para = 0, is_ending = 0;
+	const char *l;
+
+	/* well, that was easy -- hack */
+	/*TextTransform(this, "<p>\n%s\n</p>\n");
+	TextMatch(this, html_para_pat, html_para_pat_size);*/
+
+	/* state machine (fixme: \n some places!) */
+	while((l = TextGet(TextTrim(line = TextSep(this, "\n", 0))))) {
+		if(*l == '\0') {
+			/* blank */
+			is_ending = 0;
+			if(is_para) {
+				TextCat(a, "\n</p>\n"), is_para = 0;
+			} else if(is_list) {
+				TextCat(a, "\n</ul>\n"), is_list = 0;
+			}
+		} else if(!strncmp("* ", l, 2ul) || !strncmp("- ", l, 2ul)) {
+			/* list element */
+			l += 2;
+			if(!is_list) {
+				if(is_para) TextCat(a, "\n</p>\n"), is_para = 0;
+				TextCat(a, "<ul>"), is_list = -1;
+			}
+			TextCat(a, "\n\t<li>\n");
+			is_ending = 0;
+		} else if(!is_list && !is_para) {
+			TextCat(a, "<p>\n"), is_para = -1;
+			is_ending = 0;
+		}
+		if(is_ending) TextCat(a, " ");
+		TextCat(a, l);
+		Text_(&line);
+		is_ending = -1;
+	}
+	if(is_list) {
+		TextCat(a, "\n</ul>\n"), is_list = 0;
+	} else if(is_para) {
+		TextCat(a, "\n</p>\n"), is_para = 0;
+	}
+	/*fprintf(stderr, "text: '%s'\n", TextGet(a));*/
+	TextCopy(this, TextGet(a));
+	Text_(&a);
 }
 /** Called by \see{new_docs}.
  @return Is the character pointed to by {s} in the string {str} the first on
@@ -798,6 +846,21 @@ static void new_docs(struct Text *const this) {
 	/* split the doc into '@'; place the first in 'desc' and all the others in
 	 their respective @<place> */
 	do { /* try */
+		struct Text *each;
+		int is_first = -1;
+
+		while(TextTrim(each = TextSep(this, "@", &is_first_on_line))) {
+			if(is_first) {
+				/* the first one is not an each, it's the description */
+				if(fmt_chosen->para) fmt_chosen->para(each);
+				TextCat(RelateGetValue(docs), TextGet(each)), is_first = 0;
+			} else {
+				parse_each(each, docs, each_matching + where);
+			}
+			Text_(&each);
+		}
+
+#if 0
 		struct Text *each, *desc = 0;
 		int is_first = -1, is_last = 0, is_first_last = 0;
 		do { /* split @ */
@@ -813,10 +876,10 @@ static void new_docs(struct Text *const this) {
 		} while(!is_last /*&& (Text_(&each), -1) <- wtf */);
 		if(es) break;
 		TextTrim(desc);
-		if(fmt_chosen->para) fmt_chosen->para(desc);
 		/* now stick {desc} as {docs} value, node of {root} */
 		TextCat(RelateGetValue(docs), TextGet(desc));
 		if(!is_first_last) Text_(&desc);
+#endif
 	} while(0);
 
 	switch(es) { /* catch */

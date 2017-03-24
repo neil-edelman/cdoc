@@ -52,11 +52,17 @@
  paragraph.
 </p>
 <p>
- The following symbols are recognised: <em>\url{url}</em>, <em>\cite{word}</em>,
- <em>\see{reference}</em>, <em>\${math}</em>, and <em>{emphasis}</em>. <em>Cdoc</em> decides based on
- context of the following code whether it goes in the preamble, functions, or
- declarations. It uses simple, but inexact heuristic, which may become
- confused. It supports macro-generics if you write them like
+ The following symbols are recognised:
+ * <em>\url{url}</em>,
+ * <em>\cite{word}</em>,
+ * <em>\see{reference}</em>,
+ * <em>\${math}</em>, and
+ * <em>{emphasis}</em>.
+</p>
+<p>
+ <em>Cdoc</em> decides based on context of the following code whether it goes in the
+ preamble, functions, or declarations. It uses simple, but inexact heuristic,
+ which may become confused. It supports macro-generics if you write them like
  <em>void A_BI_(Create, Thing)(void)</em>.
 </p>
 <p>
@@ -67,15 +73,15 @@
  <em>@file</em>. Functions that are marked static as the first modifier are not
  included unless one marks them by <em>@include</em>. The <em>@param</em> and <em>@throws</em> have
  an optional sub-argument separated by ':' or a new line that splits the
- "expression: description."
+ expression: description.
 </p>
 <dl>
 	<dt>author:</dt>
 	<dd>Neil</dd>
 	<dt>version:</dt>
-	<dd>1.0; 2017-03</dd>
+	<dd>1.1; 2017-03 lists</dd>
 	<dt>since:</dt>
-	<dd>1.0; 2017-03</dd>
+	<dd>1.0; 2017-03 initial version</dd>
 	<dt>fixme:</dt>
 	<dd>Support old-style function definitions.</dd>
 </dl>

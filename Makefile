@@ -37,7 +37,7 @@ CF   := -Wall -Wextra -Wall -Xlint -Wno-format-y2k -W -Wstrict-prototypes -Wmiss
 -Wshadow -Wcast-align -Wbad-function-cast -Wchar-subscripts -Winline \
 -Wnested-externs -Wredundant-decls -O3 -ffast-math -funroll-loops -pedantic -ansi # or -std=c99 -mwindows
 OF   :=
-CDOCS:= cdoc
+CDOC := cdoc
 
 # props Jakob Borg and Eldar Abusalimov
 # $(ARGS) is all the extra arguments
@@ -80,7 +80,7 @@ $(TOBJS): $(GDIR)/$(TDIR)/%.o: $(TDIR)/%.c $(H)
 $(DOCS): $(DDIR)/%.html: $(SDIR)/%.c $(SDIR)/%.h
 	# docs rule
 	@mkdir -p $(DDIR)
-	cat $^ | $(CDOCS) > $@
+	cat $^ | $(CDOC) > $@
 
 ######
 # phoney targets
