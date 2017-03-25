@@ -19,8 +19,8 @@
 
  {Cdoc} decides based on context of the following code whether it goes in the
  preamble, functions, or declarations. It uses simple, but inexact heuristic,
- which may become confused. It supports macro-generics if you write them like,
- {void A_BI_(Create, Thing)(void)}, it will transform it into,
+ which may become confused. It supports macro-generics if you write them just
+ like, {void A_BI_(Create, Thing)(void)}; it will transform it into,
  {<A>Create<BI>Thing(void)}.
 
  Each-expressions must come first on the line. These are accepted globally:
