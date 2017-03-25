@@ -51,7 +51,7 @@
  @version	1.1; 2017-03 lists
  @since		1.0; 2017-03 initial version
  @fixme		Support old-style function definitions.
- @fixme		'\n', '@', '*' '/' in a comment does nothing because TextSep. */
+ @fixme		'\n', '@', '*', '/' in a comment does nothing because TextSep. */
 
 #include <stdlib.h>	/* rand, EXIT_* */
 #include <stdio.h>  /* fprintf */
