@@ -329,10 +329,7 @@ White-space trims the buffer associated with <em>this</em> using <em>isspace</em
 <pre>struct Text * <b>TextSep</b> (struct Text *const this, const char *const delims,
 	const TextPredicate pred)</pre>
 <p>
-Separates a new token at the first <em>delims</em> that satisfy <em>pred</em>. Since
-<em>Text</em> are necessarily non-null, this tests if it's an empty string;
-therefore, this will differ from <em>strsep</em> slightly. For example, if the string
-ends with a token in <em>delims</em>, the last empty string will not be returned.
+Separates a new token at the first <em>delims</em> that satisfy <em>pred</em>.
 </p>
 <dl>
 	<dt>parameter: pred</dt>
@@ -342,6 +339,11 @@ ends with a token in <em>delims</em>, the last empty string will not be returned
  occurs. You must call <a href = "#Text_">Text_</a> on this pointer if it is not null.</dd>
 	<dt>throws</dt>
 	<dd>E_PARAMETER, E_OVERFLOW, E_ERRNO</dd>
+	<dt>fixme</dt>
+	<dd>Since <em>Text</em> are necessarily non-null, this tests if it's an empty
+ string; therefore, this will differ from <em>strsep</em> slightly (in a Bad way.)
+ Namely, if the string ends with a token in <em>delims</em>, the last empty string
+ will not be returned.</dd>
 </dl>
 </div>
 

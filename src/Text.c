@@ -246,14 +246,15 @@ struct Text *TextTrim(struct Text *const this) {
 	return this;
 }
 
-/** Separates a new token at the first {delims} that satisfy {pred}. Since
- {Text} are necessarily non-null, this tests if it's an empty string;
- therefore, this will differ from {strsep} slightly. For example, if the string
- ends with a token in {delims}, the last empty string will not be returned.
+/** Separates a new token at the first {delims} that satisfy {pred}.
  @return A new {Text} or null if the tokenisation is finished or an error
  occurs. You must call \see{Text_} on this pointer if it is not null.
  @param pred: Can be null, in which case, it behaves like true.
- @throws E_PARAMETER, E_OVERFLOW, E_ERRNO */
+ @throws E_PARAMETER, E_OVERFLOW, E_ERRNO
+ @fixme Since {Text} are necessarily non-null, this tests if it's an empty
+ string; therefore, this will differ from {strsep} slightly (in a Bad way.)
+ Namely, if the string ends with a token in {delims}, the last empty string
+ will not be returned. */
 struct Text *TextSep(struct Text *const this, const char *const delims,
 	const TextPredicate pred) {
 	struct Text *token;
