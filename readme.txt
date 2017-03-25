@@ -2,7 +2,7 @@ Copyright (C) 2017 Neil Edelman.
 
 neil dot edelman each mail dot mcgill dot ca
 
-Version 1.0.
+Version 1.1.
 
 "sudo make install" will make "cdoc" and copy it to /usr/local/bin.
 The delimiter of Cdoc comments is "/** ". An example:

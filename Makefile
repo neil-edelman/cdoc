@@ -2,7 +2,7 @@
 
 PROJ  := cdoc
 VA    := 1
-VB    := 0
+VB    := 1
 
 # dirs
 SDIR  := src
