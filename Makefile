@@ -82,6 +82,10 @@ $(DOCS): $(DDIR)/%.html: $(SDIR)/%.c $(SDIR)/%.h
 	@mkdir -p $(DDIR)
 	cat $^ | $(CDOC) > $@
 
+#$(BDIR)/TestText: $(GDIR)/$(TDIR)/Text.o $(GDIR)/Text.o
+#	@mkdir -p $(BDIR)
+#	$(CC) $(CF) $(OF) $(GDIR)/$(TDIR)/Text.o $(GDIR)/Text.o -o $@
+
 ######
 # phoney targets
 

@@ -21,14 +21,15 @@ The following symbols are recognised: \url{url}, \cite{word},
 context of the following code whether it goes in the preamble,
 functions, or declarations. It uses simple, but inexact heuristic,
 which may become confused. It supports macro-generics if you write
-them like void A_BI_(Create, Thing)(void).
+them just like void A_BI_(Create, Thing)(void); it will transform
+it into, <A>Create<BI>Thing(void).
 
 Each-expressions must come first on the line. Cdoc recognises:
 @param, @author, @since, @fixme, @deprecated are accepted globally;
-@file, @std, @version are accepted in the preamble; @return, @throws,
-@implements, @include are accepted before functions. The title is
+@title, @std, @version are accepted in the preamble; @return, @throws,
+@implements, @allow are accepted before functions. The title is
 set by @file. Functions that are marked static as the first modifier
-are not included unless one marks them by @include. The @param and
+are not included unless one marks them by @allow. The @param and
 @throws have an optional sub-argument separated by ':' or a new
 line that splits the "expression: description."
 
