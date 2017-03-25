@@ -41,11 +41,11 @@
 
 <p>
 2017 Neil Edelman, distributed under the terms of the MIT License;
- see readme.txt, or <a href = "https://opensource.org/licenses/MIT">https://opensource.org/licenses/MIT</a>.
+see readme.txt, or <a href = "https://opensource.org/licenses/MIT">https://opensource.org/licenses/MIT</a>.
 </p>
 <p>
- <em>Relates</em> is a wrapper for the recursive <em>Relate</em>, which stores an association
- between key-value <em>Text</em> fields, and children <em>Relate</em>s in a tree.
+<em>Relates</em> is a wrapper for the recursive <em>Relate</em>, which stores an association
+between key-value <em>Text</em> fields, and children <em>Relate</em>s in a tree.
 </p>
 <dl>
 	<dt>minimum standard</dt>
@@ -181,7 +181,7 @@ Predicate function.
 <pre>struct Relates * <b>Relates</b> (void)</pre>
 <p>
 Constructs a generic, <em>Text</em> with <em>root_name</em> as it's root name, or blank
- if null.
+if null.
 </p>
 <dl>
 	<dt>throws</dt>
@@ -202,10 +202,6 @@ Destructs a <em>Text</em>.
 <div><a name = "RelatesGetRoot"><!-- --></a>
 <h3>RelatesGetRoot</h3>
 <pre>struct Relate * <b>RelatesGetRoot</b> (struct Relates *const this)</pre>
-<p>
-</p>
-<p>
-</p>
 <dl>
 	<dt>return</dt>
 	<dd>The <em>Relate</em> root of the <em>Relates</em>.</dd>
@@ -215,10 +211,6 @@ Destructs a <em>Text</em>.
 <div><a name = "RelatesGetError"><!-- --></a>
 <h3>RelatesGetError</h3>
 <pre>const char * <b>RelatesGetError</b> (struct Relates *const this)</pre>
-<p>
-</p>
-<p>
-</p>
 <dl>
 	<dt>return</dt>
 	<dd>The last error associated with <em>this</em> (can be null.)</dd>
@@ -270,7 +262,7 @@ Get value.
 <pre>const struct RelateParent * <b>RelateGetKeyParent</b> (const struct Relate *const this)</pre>
 <p>
 Get <em>RelateParent</em>, a read-only structure that describes how the key is
- derived from the parent.
+derived from the parent.
 </p>
 <dl>
 </dl>
@@ -282,7 +274,7 @@ Get <em>RelateParent</em>, a read-only structure that describes how the key is
 	this)</pre>
 <p>
 Get <em>RelateParent</em>, a read-only structure that describes how the value is
- derived from the parent.
+derived from the parent.
 </p>
 <dl>
 </dl>
@@ -326,7 +318,7 @@ E <em>r</em> \in <em>this.children</em>, !strcmp(<em>r.key</em>, <em>key</em>) -
 	const char *const key)</pre>
 <p>
 Does a short-circuit linear search of <em>this</em> for a child key that matches
- <em>key</em>.
+<em>key</em>.
 </p>
 <dl>
 	<dt>return</dt>

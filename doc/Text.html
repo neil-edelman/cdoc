@@ -41,20 +41,20 @@
 
 <p>
 2017 Neil Edelman, distributed under the terms of the MIT License;
- see readme.txt, or <a href = "https://opensource.org/licenses/MIT">https://opensource.org/licenses/MIT</a>.
+see readme.txt, or <a href = "https://opensource.org/licenses/MIT">https://opensource.org/licenses/MIT</a>.
 </p>
 <p>
- A dynamic string, intended to be used with Modified UTF-8 encoding,
- <a href = "https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8</a>. That is, this is a
- wrapper that automatically expands memory as needed around a standard C
- null-terminated string.
+A dynamic string, intended to be used with Modified UTF-8 encoding,
+<a href = "https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8</a>. That is, this is a
+wrapper that automatically expands memory as needed around a standard C
+null-terminated string.
 </p>
 <p>
- <a href = "#TextGet">TextGet</a> exposes a read-only, null-terminated <em>char *</em>. If an error
- occurs, (with memory allocation, for example,) these functions shall return a
- null pointer; all functions shall accept a null pointer being passed to them
- and return null immediately: this means you can compose functions safely. See
- <a href = "#TextIsError">TextIsError</a> and <a href = "#TextGetError">TextGetError</a>.
+<a href = "#TextGet">TextGet</a> exposes a read-only, null-terminated <em>char *</em>. If an error
+occurs, (with memory allocation, for example,) these functions shall return a
+null pointer; all functions shall accept a null pointer being passed to them
+and return null immediately: this means you can compose functions safely. See
+<a href = "#TextIsError">TextIsError</a> and <a href = "#TextGetError">TextGetError</a>.
 </p>
 <dl>
 	<dt>minimum standard</dt>
@@ -246,10 +246,6 @@ Used in <a href = "#TextMatch">TextMatch</a> as an array of patterns. Recognises
 <div><a name = "Text"><!-- --></a>
 <h3>Text</h3>
 <pre>struct Text * <b>Text</b> (void)</pre>
-<p>
-</p>
-<p>
-</p>
 <dl>
 	<dt>return</dt>
 	<dd>A new, blank Text, will be constructed.</dd>
@@ -261,10 +257,6 @@ Used in <a href = "#TextMatch">TextMatch</a> as an array of patterns. Recognises
 <div><a name = "Text_"><!-- --></a>
 <h3>Text_</h3>
 <pre>void <b>Text_</b> (struct Text **const this_ptr)</pre>
-<p>
-</p>
-<p>
-</p>
 <dl>
 	<dt>parameter: this_ptr</dt>
 	<dd>A pointer to Text that will be destructed.</dd>
@@ -276,8 +268,8 @@ Used in <a href = "#TextMatch">TextMatch</a> as an array of patterns. Recognises
 <pre>const char * <b>TextGet</b> (const struct Text *const this)</pre>
 <p>
 Volatile, in the sense that it exposes the buffer; specifically, not
- guaranteed to last between <em>Text</em> calls to the same object. If you want a
- copy, do <em>strdup(TextGet(text))</em>.
+guaranteed to last between <em>Text</em> calls to the same object. If you want a
+copy, do <em>strdup(TextGet(text))</em>.
 </p>
 <dl>
 	<dt>return</dt>
@@ -288,10 +280,6 @@ Volatile, in the sense that it exposes the buffer; specifically, not
 <div><a name = "TextGetLength"><!-- --></a>
 <h3>TextGetLength</h3>
 <pre>size_t <b>TextGetLength</b> (const struct Text *const this)</pre>
-<p>
-</p>
-<p>
-</p>
 <dl>
 	<dt>return</dt>
 	<dd>Gets the length in bytes.</dd>
@@ -303,8 +291,8 @@ Volatile, in the sense that it exposes the buffer; specifically, not
 <pre>int <b>TextHasContent</b> (const struct Text *const this)</pre>
 <p>
 Opposite of <em>isEmpty</em>; the justification for it being this way is we want
- to be say <em>TextHasContents(0) = 0</em>. Use to see if <a href = "#TextSep">TextSep</a> has any more
- tokens.
+to be say <em>TextHasContents(0) = 0</em>. Use to see if <a href = "#TextSep">TextSep</a> has any more
+tokens.
 </p>
 <dl>
 	<dt>return</dt>
@@ -342,9 +330,9 @@ White-space trims the buffer associated with <em>this</em> using <em>isspace</em
 	const TextPredicate pred)</pre>
 <p>
 Separates a new token at the first <em>delims</em> that satisfy <em>pred</em>. Since
- <em>Text</em> are necessarily non-null, this tests if it's an empty string;
- therefore, this will differ from <em>strsep</em> slightly. For example, if the string
- ends with a token in <em>delims</em>, the last empty string will not be returned.
+<em>Text</em> are necessarily non-null, this tests if it's an empty string;
+therefore, this will differ from <em>strsep</em> slightly. For example, if the string
+ends with a token in <em>delims</em>, the last empty string will not be returned.
 </p>
 <dl>
 	<dt>parameter: pred</dt>
@@ -420,7 +408,7 @@ Concatenates <em>this</em> with <em>[a, b]</em>. If <em>a</em> &gt; <em>b</em>, 
 <pre>struct Text * <b>TextFileCat</b> (struct Text *const this, FILE *const fp)</pre>
 <p>
 Concatenates the contents of the text file, <em>fp</em>, after the read cursor, to
- the buffer in <em>this</em>. On success, the read cursor will be at the end.
+the buffer in <em>this</em>. On success, the read cursor will be at the end.
 </p>
 <dl>
 	<dt>return</dt>
@@ -435,7 +423,7 @@ Concatenates the contents of the text file, <em>fp</em>, after the read cursor, 
 <pre>struct Text * <b>TextPrintCat</b> (struct Text *const this, const char *const fmt, ...)</pre>
 <p>
 Concatenates the buffer with a <em>printf</em>;
- <a href = "http://pubs.opengroup.org/onlinepubs/007908799/xsh/fprintf.html">http://pubs.opengroup.org/onlinepubs/007908799/xsh/fprintf.html</a>.
+<a href = "http://pubs.opengroup.org/onlinepubs/007908799/xsh/fprintf.html">http://pubs.opengroup.org/onlinepubs/007908799/xsh/fprintf.html</a>.
 </p>
 <dl>
 	<dt>return</dt>
@@ -468,7 +456,7 @@ Transforms the original text according to <em>fmt</em>.
 	const struct TextPattern *const patterns, const size_t patterns_size)</pre>
 <p>
 Transforms {this} according to all specified {patterns} array of
- {patterns_size}.
+{patterns_size}.
 </p>
 <dl>
 	<dt>parameter: patterns</dt>
@@ -488,10 +476,10 @@ Transforms {this} according to all specified {patterns} array of
 	size_t *const start_ptr, size_t *const end_ptr)</pre>
 <p>
 When <em>TextMatch</em> finds a match, it also stores a global data on where the
- match occurred within the parent. This gets that information for the handler.
- Concurrent uses of <a href = "#TextMatch">TextMatch</a> leave this fuction ill-defined. If any
- pointers passed are null, ignores them. If one calls <a href = "#TextMatch">TextMatch</a> from
- within the handler, then <em>TextGetMatchInfo</em> will not work after that point.
+match occurred within the parent. This gets that information for the handler.
+Concurrent uses of <a href = "#TextMatch">TextMatch</a> leave this fuction ill-defined. If any
+pointers passed are null, ignores them. If one calls <a href = "#TextMatch">TextMatch</a> from
+within the handler, then <em>TextGetMatchInfo</em> will not work after that point.
 </p>
 <dl>
 	<dt>return</dt>
@@ -502,10 +490,6 @@ When <em>TextMatch</em> finds a match, it also stores a global data on where the
 <div><a name = "TextIsError"><!-- --></a>
 <h3>TextIsError</h3>
 <pre>int <b>TextIsError</b> (struct Text *const this)</pre>
-<p>
-</p>
-<p>
-</p>
 <dl>
 	<dt>return</dt>
 	<dd>Whether an error has occurred on <em>this</em>; can be null.</dd>

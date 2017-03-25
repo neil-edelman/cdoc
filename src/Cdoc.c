@@ -717,11 +717,6 @@ static int parse_generics(struct Text *const this) {
 /** Put it into html paragraphs. Called by \see{new_docs}.
  @implements TextAction */
 static void html_paragraphise(struct Text *const this) {
-#if 0
-	/* well, that was easy -- hack */
-	TextTransform(this, "<p>\n%s\n</p>\n");
-	TextMatch(this, html_para_pat, html_para_pat_size);
-#else
 	struct Text *a = Text(), *line;
 	int is_list = 0, is_para = 0, is_ending = 0;
 	const char *l;
@@ -751,7 +746,7 @@ static void html_paragraphise(struct Text *const this) {
 			TextCat(a, "<p>\n"), is_para = -1;
 			is_ending = 0;
 		}
-		if(is_ending) TextCat(a, " ");
+		if(is_ending) TextCat(a, /*" "*/"\n"); /* fixme: have real wrapping! */
 		TextCat(a, l);
 		Text_(&line);
 		is_ending = -1;
@@ -763,7 +758,6 @@ static void html_paragraphise(struct Text *const this) {
 	}
 	TextCopy(this, TextGet(a));
 	Text_(&a);
-#endif
 }
 /** Called by \see{new_docs}.
  @return Is the character pointed to by {s} in the string {str} the first on

@@ -41,66 +41,100 @@
 
 <p>
 2015 Neil Edelman, distributed under the terms of the MIT License;
- see readme.txt, or <a href = "https://opensource.org/licenses/MIT">https://opensource.org/licenses/MIT</a>.
+see readme.txt, or <a href = "https://opensource.org/licenses/MIT">https://opensource.org/licenses/MIT</a>.
 </p>
 <p>
- <em>Cdoc</em> is a light weight, <em>JavaDoc</em>-style, documentation generator for C. It
- is not aware of C, but searches in your file for the double asterisk '** '
- comment. It does not support ascii art (three or more asterisks are not
- recognised.) It does not support writing html in your source code, and escapes
- '&lt;&gt;&amp;' in html mode; placing two new lines is sufficient to start a new
- paragraph. Placing '* ' or '- ' as the first non-white space characters starts
- a list.
+<em>Cdoc</em> is a light weight, <em>JavaDoc</em>-style, documentation generator for C. It
+is not aware of C, but searches in your file for the double asterisk '** '
+comment. It does not support ascii art (three or more asterisks are not
+recognised.) It does not support writing html in your source code, and escapes
+'&lt;&gt;&amp;' in html mode; placing two new lines is sufficient to start a new
+paragraph. Placing '* ' or '- ' as the first non-white space characters starts
+a list.
 </p>
 <p>
- The following symbols are recognised:
+The following symbols are recognised:
+</p>
+<ul>
+	<li>
+<em>\url{url}</em>,
+	</li>
+	<li>
+<em>\cite{word}</em>,
+	</li>
+	<li>
+<em>\see{reference}</em>,
+	</li>
+	<li>
+<em>\${math}</em>, and
+	</li>
+	<li>
+<em>{emphasis}</em>.
+	</li>
+</ul>
+<p>
+<em>Cdoc</em> decides based on context of the following code whether it goes in the
+preamble, functions, or declarations. It uses simple, but inexact heuristic,
+which may become confused. It supports macro-generics if you write them like
+<em>void A_BI_(Create, Thing)(void)</em>.
 </p>
 <p>
- * <em>\url{url}</em>,
- * <em>\cite{word}</em>,
- * <em>\see{reference}</em>,
- * <em>\${math}</em>, and
- * <em>{emphasis}</em>.
+Each-expressions must come first on the line. <em>Cdoc</em> recognises:
 </p>
+<ul>
+	<li>
+<em>@param</em>,
+	</li>
+	<li>
+<em>@author</em>,
+	</li>
+	<li>
+<em>@since</em>,
+	</li>
+	<li>
+<em>@fixme</em>,
+	</li>
+	<li>
+<em>@deprecated</em>
+	</li>
+</ul>
 <p>
- <em>Cdoc</em> decides based on context of the following code whether it goes in the
- preamble, functions, or declarations. It uses simple, but inexact heuristic,
- which may become confused. It supports macro-generics if you write them like
- <em>void A_BI_(Create, Thing)(void)</em>.
+are accepted globally;
 </p>
+<ul>
+	<li>
+<em>@file</em>,
+	</li>
+	<li>
+<em>@std</em>,
+	</li>
+	<li>
+<em>@version</em>
+	</li>
+</ul>
 <p>
- Each-expressions must come first on the line. <em>Cdoc</em> recognises:
+are accepted in the preamble;
 </p>
+<ul>
+	<li>
+<em>@return</em>,
+	</li>
+	<li>
+<em>@throws</em>,
+	</li>
+	<li>
+<em>@implements</em>,
+	</li>
+	<li>
+<em>@include</em>
+	</li>
+</ul>
 <p>
- * <em>@param</em>,
- * <em>@author</em>,
- * <em>@since</em>,
- * <em>@fixme</em>,
- * <em>@deprecated</em>
-</p>
-<p>
- are accepted globally;
-</p>
-<p>
- * <em>@file</em>,
- * <em>@std</em>,
- * <em>@version</em>
-</p>
-<p>
- are accepted in the preamble;
-</p>
-<p>
- * <em>@return</em>,
- * <em>@throws</em>,
- * <em>@implements</em>,
- * <em>@include</em>
-</p>
-<p>
- are accepted before functions. The title is set by
- <em>@file</em>. Functions that are marked static as the first modifier are not
- included unless one marks them by <em>@include</em>. The <em>@param</em> and <em>@throws</em> have
- an optional sub-argument separated by ':' or a new line that splits the
- expression: description.
+are accepted before functions. The title is set by
+<em>@file</em>. Functions that are marked static as the first modifier are not
+included unless one marks them by <em>@include</em>. The <em>@param</em> and <em>@throws</em> have
+an optional sub-argument separated by ':' or a new line that splits the
+expression: description.
 </p>
 <dl>
 	<dt>author</dt>
@@ -138,8 +172,8 @@
 <pre>int <b>main</b> (int argc, char *argv[])</pre>
 <p>
 Accepts [ html | text | xml ] as an optional argument. The default is html.
- Input is by <em>stdin</em> and goes to <em>stdout</em>. Use case example:
- <pre>cat Foo.c Foo.h | cdoc text &gt; Foo.txt</pre>
+Input is by <em>stdin</em> and goes to <em>stdout</em>. Use case example:
+<pre>cat Foo.c Foo.h | cdoc text &gt; Foo.txt</pre>
 </p>
 <dl>
 	<dt>parameter: argc</dt>
