@@ -22,32 +22,29 @@
  which may become confused. It supports macro-generics if you write them like
  {void A_BI_(Create, Thing)(void)}.
 
- Each-expressions must come first on the line. {Cdoc} recognises:
+ Each-expressions must come first on the line. These are accepted globally:
 
- * {@param},
+ * {@param}, and an optional sub-argument separated by ':' or a new line that
+   splits the expression: description,
  * {@author},
  * {@since},
  * {@fixme},
- * {@deprecated}
+ * {@deprecated};
 
- are accepted globally;
+ these are accepted in the preamble:
 
- * {@file},
+ * the title, {@file},
  * {@std},
- * {@version}
+ * {@version};
 
- are accepted in the preamble;
+ these are accepted before functions:
 
  * {@return},
- * {@throws},
+ * {@throws}, and an optional sub-argument separated by ':' or a new line that
+   splits the expression: description,
  * {@implements},
- * {@include}
-
- are accepted before functions. The title is set by
- {@file}. Functions that are marked static as the first modifier are not
- included unless one marks them by {@include}. The {@param} and {@throws} have
- an optional sub-argument separated by ':' or a new line that splits the
- expression: description.
+ * functions that are marked static as the first modifier are not included
+   unless one marks them {@allow}.
 
  @file		Cdoc
  @author	Neil
@@ -116,7 +113,7 @@ static const struct EachMatch {
 	{ "author",  &new_child },
 	{ "since",   &new_child },
 	{ "deprecated", &new_child },
-	{ "include", &new_child }
+	{ "allow",   &new_child }
 }, each_struct[] = {
 	{ "param",   &new_arg_child },
 	{ "fixme",   &new_child },
@@ -257,14 +254,14 @@ const size_t fmt_size = sizeof fmt / sizeof *fmt;
 static int select_functions(const struct Relate *const this) {
 	const char *const t = RelateValue(RelateGetChild(this, "_return"));
 	return t && (strncmp("static", t, 6lu) /* good enough */
-		|| RelateGetChild(this, "include")) ? -1 : 0;
+		|| RelateGetChild(this, "allow")) ? -1 : 0;
 }
 /** Selects structs.
  @implements	RelatePredicate */
 static int select_declarations(const struct Relate *const this) {
 	const char *const t = RelateValue(RelateGetChild(this, "_declare"));
 	return t && (strncmp("static", t, 6lu) /* good enough */
-		|| RelateGetChild(this, "include")) ? -1 : 0;
+		|| RelateGetChild(this, "allow")) ? -1 : 0;
 }
 
 /* fmt:XML */

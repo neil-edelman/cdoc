@@ -79,11 +79,12 @@ which may become confused. It supports macro-generics if you write them like
 <em>void A_BI_(Create, Thing)(void)</em>.
 </p>
 <p>
-Each-expressions must come first on the line. <em>Cdoc</em> recognises:
+Each-expressions must come first on the line. These are accepted globally:
 </p>
 <ul>
 	<li>
-<em>@param</em>,
+<em>@param</em>, and an optional sub-argument separated by ':' or a new line that
+splits the expression: description,
 	</li>
 	<li>
 <em>@author</em>,
@@ -95,47 +96,42 @@ Each-expressions must come first on the line. <em>Cdoc</em> recognises:
 <em>@fixme</em>,
 	</li>
 	<li>
-<em>@deprecated</em>
+<em>@deprecated</em>;
 	</li>
 </ul>
 <p>
-are accepted globally;
+these are accepted in the preamble:
 </p>
 <ul>
 	<li>
-<em>@file</em>,
+the title, <em>@file</em>,
 	</li>
 	<li>
 <em>@std</em>,
 	</li>
 	<li>
-<em>@version</em>
+<em>@version</em>;
 	</li>
 </ul>
 <p>
-are accepted in the preamble;
+these are accepted before functions:
 </p>
 <ul>
 	<li>
 <em>@return</em>,
 	</li>
 	<li>
-<em>@throws</em>,
+<em>@throws</em>, and an optional sub-argument separated by ':' or a new line that
+splits the expression: description,
 	</li>
 	<li>
 <em>@implements</em>,
 	</li>
 	<li>
-<em>@include</em>
+functions that are marked static as the first modifier are not included
+unless one marks them <em>@allow</em>.
 	</li>
 </ul>
-<p>
-are accepted before functions. The title is set by
-<em>@file</em>. Functions that are marked static as the first modifier are not
-included unless one marks them by <em>@include</em>. The <em>@param</em> and <em>@throws</em> have
-an optional sub-argument separated by ':' or a new line that splits the
-expression: description.
-</p>
 <dl>
 	<dt>author</dt>
 	<dd>Neil</dd>
