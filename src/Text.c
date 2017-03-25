@@ -12,7 +12,7 @@
  and return null immediately: this means you can compose functions safely. See
  \see{TextIsError} and \see{TextGetError}.
 
- @file		Text
+ @title		Text
  @author	Neil
  @std		C89/90; part of Common
  @version	1.0; 2017-03

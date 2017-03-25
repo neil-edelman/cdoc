@@ -4,7 +4,7 @@
  {Relates} is a wrapper for the recursive {Relate}, which stores an association
  between key-value {Text} fields, and children {Relate}s in a tree.
 
- @file		Relates
+ @title		Relates
  @author	Neil
  @std		C89/90
  @version	1.0; 2017-02

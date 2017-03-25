@@ -33,7 +33,7 @@
 
  these are accepted in the preamble:
 
- * the title, {@file},
+ * the title, {@title},
  * {@std},
  * {@version};
 
@@ -46,7 +46,7 @@
  * functions that are marked static as the first modifier are not included
    unless one marks them {@allow}.
 
- @file		Cdoc
+ @title		Cdoc
  @author	Neil
  @version	1.1; 2017-03 lists
  @since		1.0; 2017-03 initial version
@@ -96,7 +96,7 @@ static const struct EachMatch {
 	const char *word;
 	RelatesField action;
 } each_head[] = {
-	{ "file",    &top_key },
+	{ "title",   &top_key },
 	{ "param",   &new_arg_child },
 	{ "author",  &new_child },
 	{ "std",     &new_child },
