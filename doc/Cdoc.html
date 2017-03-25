@@ -49,10 +49,13 @@
  comment. It does not support ascii art (three or more asterisks are not
  recognised.) It does not support writing html in your source code, and escapes
  '&lt;&gt;&amp;' in html mode; placing two new lines is sufficient to start a new
- paragraph.
+ paragraph. Placing '* ' or '- ' as the first non-white space characters starts
+ a list.
 </p>
 <p>
  The following symbols are recognised:
+</p>
+<p>
  * <em>\url{url}</em>,
  * <em>\cite{word}</em>,
  * <em>\see{reference}</em>,
@@ -66,24 +69,50 @@
  <em>void A_BI_(Create, Thing)(void)</em>.
 </p>
 <p>
- Each-expressions must come first on the line. <em>Cdoc</em> recognises: <em>@param</em>,
- <em>@author</em>, <em>@since</em>, <em>@fixme</em>, <em>@deprecated</em> are accepted globally; <em>@file</em>,
- <em>@std</em>, <em>@version</em> are accepted in the preamble; <em>@return</em>, <em>@throws</em>,
- <em>@implements</em>, <em>@include</em> are accepted before functions. The title is set by
+ Each-expressions must come first on the line. <em>Cdoc</em> recognises:
+</p>
+<p>
+ * <em>@param</em>,
+ * <em>@author</em>,
+ * <em>@since</em>,
+ * <em>@fixme</em>,
+ * <em>@deprecated</em>
+</p>
+<p>
+ are accepted globally;
+</p>
+<p>
+ * <em>@file</em>,
+ * <em>@std</em>,
+ * <em>@version</em>
+</p>
+<p>
+ are accepted in the preamble;
+</p>
+<p>
+ * <em>@return</em>,
+ * <em>@throws</em>,
+ * <em>@implements</em>,
+ * <em>@include</em>
+</p>
+<p>
+ are accepted before functions. The title is set by
  <em>@file</em>. Functions that are marked static as the first modifier are not
  included unless one marks them by <em>@include</em>. The <em>@param</em> and <em>@throws</em> have
  an optional sub-argument separated by ':' or a new line that splits the
  expression: description.
 </p>
 <dl>
-	<dt>author:</dt>
+	<dt>author</dt>
 	<dd>Neil</dd>
-	<dt>version:</dt>
+	<dt>version</dt>
 	<dd>1.1; 2017-03 lists</dd>
-	<dt>since:</dt>
+	<dt>since</dt>
 	<dd>1.0; 2017-03 initial version</dd>
-	<dt>fixme:</dt>
+	<dt>fixme</dt>
 	<dd>Support old-style function definitions.</dd>
+	<dt>fixme</dt>
+	<dd>'\n', '@', '*' '/' in a comment does nothing because TextSep.</dd>
 </dl>
 
 

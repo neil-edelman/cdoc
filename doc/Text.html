@@ -57,21 +57,21 @@
  <a href = "#TextIsError">TextIsError</a> and <a href = "#TextGetError">TextGetError</a>.
 </p>
 <dl>
-	<dt>minimum standard:</dt>
+	<dt>minimum standard</dt>
 	<dd>C89/90; part of Common</dd>
-	<dt>author:</dt>
+	<dt>author</dt>
 	<dd>Neil</dd>
-	<dt>version:</dt>
+	<dt>version</dt>
 	<dd>1.0; 2017-03</dd>
-	<dt>since:</dt>
+	<dt>since</dt>
 	<dd>1.0; 2017-03</dd>
-	<dt>fixme:</dt>
+	<dt>fixme</dt>
 	<dd>TextCodePointCount, TextCharAt, TextDelete, TextInsert,
  TextSetCharAt, TextSubsequence?</dd>
-	<dt>fixme:</dt>
+	<dt>fixme</dt>
 	<dd>All the positions and sizes are in absolute bytes; not really what
  you want for internationalisation?</dd>
-	<dt>fixme:</dt>
+	<dt>fixme</dt>
 	<dd>E_CODE_CHOPPED</dd>
 </dl>
 
@@ -156,6 +156,11 @@ Used in <a href = "#TextMatch">TextMatch</a> as an array of patterns. Recognises
 <tr>
 	<td>size_t</td>
 	<td><a href = "#TextGetLength">TextGetLength</a></td>
+	<td>const struct Text *const this</td>
+</tr>
+<tr>
+	<td>int</td>
+	<td><a href = "#TextHasContent">TextHasContent</a></td>
 	<td>const struct Text *const this</td>
 </tr>
 <tr>
@@ -246,9 +251,9 @@ Used in <a href = "#TextMatch">TextMatch</a> as an array of patterns. Recognises
 <p>
 </p>
 <dl>
-	<dt>return:</dt>
+	<dt>return</dt>
 	<dd>A new, blank Text, will be constructed.</dd>
-	<dt>throws:</dt>
+	<dt>throws</dt>
 	<dd>E_ERRNO</dd>
 </dl>
 </div>
@@ -275,7 +280,7 @@ Volatile, in the sense that it exposes the buffer; specifically, not
  copy, do <em>strdup(TextGet(text))</em>.
 </p>
 <dl>
-	<dt>return:</dt>
+	<dt>return</dt>
 	<dd>The string associated to <em>this</em>.</dd>
 </dl>
 </div>
@@ -288,8 +293,22 @@ Volatile, in the sense that it exposes the buffer; specifically, not
 <p>
 </p>
 <dl>
-	<dt>return:</dt>
+	<dt>return</dt>
 	<dd>Gets the length in bytes.</dd>
+</dl>
+</div>
+
+<div><a name = "TextHasContent"><!-- --></a>
+<h3>TextHasContent</h3>
+<pre>int <b>TextHasContent</b> (const struct Text *const this)</pre>
+<p>
+Opposite of <em>isEmpty</em>; the justification for it being this way is we want
+ to be say <em>TextHasContents(0) = 0</em>. Use to see if <a href = "#TextSep">TextSep</a> has any more
+ tokens.
+</p>
+<dl>
+	<dt>return</dt>
+	<dd>True if the buffer is not empty.</dd>
 </dl>
 </div>
 
@@ -300,7 +319,7 @@ Volatile, in the sense that it exposes the buffer; specifically, not
 Clears the Text.
 </p>
 <dl>
-	<dt>return:</dt>
+	<dt>return</dt>
 	<dd><em>this</em>.</dd>
 </dl>
 </div>
@@ -312,7 +331,7 @@ Clears the Text.
 White-space trims the buffer associated with <em>this</em> using <em>isspace</em>.
 </p>
 <dl>
-	<dt>return:</dt>
+	<dt>return</dt>
 	<dd><em>this</em>.</dd>
 </dl>
 </div>
@@ -330,10 +349,10 @@ Separates a new token at the first <em>delims</em> that satisfy <em>pred</em>. S
 <dl>
 	<dt>parameter: pred</dt>
 	<dd>Can be null, in which case, it behaves like true.</dd>
-	<dt>return:</dt>
+	<dt>return</dt>
 	<dd>A new <em>Text</em> or null if the tokenisation is finished or an error
  occurs. You must call <a href = "#Text_">Text_</a> on this pointer if it is not null.</dd>
-	<dt>throws:</dt>
+	<dt>throws</dt>
 	<dd>E_PARAMETER, E_OVERFLOW, E_ERRNO</dd>
 </dl>
 </div>
@@ -345,9 +364,9 @@ Separates a new token at the first <em>delims</em> that satisfy <em>pred</em>. S
 Replaces the buffer in <em>this</em> with <em>str</em>.
 </p>
 <dl>
-	<dt>return:</dt>
+	<dt>return</dt>
 	<dd><em>this</em>.</dd>
-	<dt>throws:</dt>
+	<dt>throws</dt>
 	<dd>E_PARAMETER, E_OVERFLOW, E_ERRNO</dd>
 </dl>
 </div>
@@ -359,9 +378,9 @@ Replaces the buffer in <em>this</em> with <em>str</em>.
 Concatenates <em>cat</em> onto the buffer in <em>this</em>.
 </p>
 <dl>
-	<dt>return:</dt>
+	<dt>return</dt>
 	<dd><em>this</em>.</dd>
-	<dt>throws:</dt>
+	<dt>throws</dt>
 	<dd>E_PARAMETER, E_OVERFLOW, E_ERRNO</dd>
 </dl>
 </div>
@@ -374,9 +393,9 @@ Concatenates <em>cat</em> onto the buffer in <em>this</em>.
 Concatenates up to <em>cat_len</em> characters of <em>cat</em> onto the buffer in <em>this</em>.
 </p>
 <dl>
-	<dt>return:</dt>
+	<dt>return</dt>
 	<dd><em>this</em>.</dd>
-	<dt>throws:</dt>
+	<dt>throws</dt>
 	<dd>E_PARAMETER, E_OVERFLOW, E_ERRNO</dd>
 </dl>
 </div>
@@ -389,9 +408,9 @@ Concatenates up to <em>cat_len</em> characters of <em>cat</em> onto the buffer i
 Concatenates <em>this</em> with <em>[a, b]</em>. If <em>a</em> &gt; <em>b</em>, then empty.
 </p>
 <dl>
-	<dt>return:</dt>
+	<dt>return</dt>
 	<dd><em>this</em>.</dd>
-	<dt>throws:</dt>
+	<dt>throws</dt>
 	<dd>E_PARAMETER, E_OVERFLOW, E_ERRNO</dd>
 </dl>
 </div>
@@ -404,9 +423,9 @@ Concatenates the contents of the text file, <em>fp</em>, after the read cursor, 
  the buffer in <em>this</em>. On success, the read cursor will be at the end.
 </p>
 <dl>
-	<dt>return:</dt>
+	<dt>return</dt>
 	<dd><em>this</em>.</dd>
-	<dt>throws:</dt>
+	<dt>throws</dt>
 	<dd>E_PARAMETER, E_OVERFLOW, E_ERRNO</dd>
 </dl>
 </div>
@@ -419,9 +438,9 @@ Concatenates the buffer with a <em>printf</em>;
  <a href = "http://pubs.opengroup.org/onlinepubs/007908799/xsh/fprintf.html">http://pubs.opengroup.org/onlinepubs/007908799/xsh/fprintf.html</a>.
 </p>
 <dl>
-	<dt>return:</dt>
+	<dt>return</dt>
 	<dd><em>this</em>.</dd>
-	<dt>fixme:</dt>
+	<dt>fixme</dt>
 	<dd>Have a function that allows replacing in the middle,
  TextPrintCat(this, fmt, ...) -&gt; TextPrint(this, n, fmt, ...)</dd>
 </dl>
@@ -436,9 +455,9 @@ Transforms the original text according to <em>fmt</em>.
 <dl>
 	<dt>parameter: fmt</dt>
 	<dd>Accepts %% as '%' and %s as the original string.</dd>
-	<dt>return:</dt>
+	<dt>return</dt>
 	<dd><em>this</em>.</dd>
-	<dt>throws:</dt>
+	<dt>throws</dt>
 	<dd>E_OVERFLOW, E_ERRNO</dd>
 </dl>
 </div>
@@ -458,7 +477,7 @@ Transforms {this} according to all specified {patterns} array of
  pattern, it should be before in the array. All patterns must have a non-empty
  string, {begin}, and {TextAction}, {transform}; {end} is optional; where
  missing, it will just call {transform} with {begin}.</dd>
-	<dt>return:</dt>
+	<dt>return</dt>
 	<dd>{this}.</dd>
 </dl>
 </div>
@@ -475,7 +494,7 @@ When <em>TextMatch</em> finds a match, it also stores a global data on where the
  within the handler, then <em>TextGetMatchInfo</em> will not work after that point.
 </p>
 <dl>
-	<dt>return:</dt>
+	<dt>return</dt>
 	<dd>Success; otherwise the values are invalid and will not be set.</dd>
 </dl>
 </div>
@@ -488,7 +507,7 @@ When <em>TextMatch</em> finds a match, it also stores a global data on where the
 <p>
 </p>
 <dl>
-	<dt>return:</dt>
+	<dt>return</dt>
 	<dd>Whether an error has occurred on <em>this</em>; can be null.</dd>
 </dl>
 </div>
@@ -500,7 +519,7 @@ When <em>TextMatch</em> finds a match, it also stores a global data on where the
 Resets the error.
 </p>
 <dl>
-	<dt>return:</dt>
+	<dt>return</dt>
 	<dd>A lower-case string, (or in the case of a E_ERRNO, the first letter
  has an extraneous upper case on most systems,) without any punctuation, that
  explains the last error associated with <em>this</em>; can be null.</dd>

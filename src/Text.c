@@ -23,6 +23,8 @@
  you want for internationalisation?
  @fixme		E_CODE_CHOPPED */
 
+/*#define TEXT_DEBUG*/
+
 #include <stdlib.h> /* malloc realloc free */
 #include <stdio.h>  /* FILE fgets ferror vsnprintf fprintf */
 #include <errno.h>	/* errno */
@@ -212,11 +214,11 @@ size_t TextGetLength(const struct Text *const this) {
 	return this->length;
 }
 
-/** Opposite of is empty, but we want to be able to handle null strings with
- one function.
- @return Does the string have content? namely, not the empty string and not
- null. */
-int TextIsContent(const struct Text *const this) {
+/** Opposite of {isEmpty}; the justification for it being this way is we want
+ to be say {TextHasContents(0) = 0}. Use to see if \see{TextSep} has any more
+ tokens.
+ @return True if the buffer is not empty. */
+int TextHasContent(const struct Text *const this) {
 	return !this || *this->text == '\0' ? 0 : -1;
 }
 
@@ -643,16 +645,13 @@ static int capacity_up(struct Text *const this, const size_t *const len_ptr) {
 	c0 = this->capacity[0];
 	c1 = this->capacity[1];
 	while(!len_ptr || c0 <= *len_ptr) {
-		if(c0 == (size_t)-1) { this->error = E_OVERFLOW; return 0; }
-		c0 ^= c1;
-		c1 ^= c0;
-		c0 ^= c1;
-		c1 += c0;
+		if(c0 == (size_t)-1) return this->error = E_OVERFLOW, 0;
+		c0 ^= c1, c1 ^= c0, c0 ^= c1, c1 += c0;
 		if(c1 <= c0) c1 = (size_t)-1;
 		if(!len_ptr) break;
 	}
 	if(this->capacity[0] >= c0) return -1; /* it's already that size */
-	debug(this, "capacity_up", "%lu->%lu.\n", this->capacity[0], c0);
+	debug(this, "capacity_up", "%lu->%lu for %lu+1.\n", this->capacity[0], c0, len_ptr ? *len_ptr : 0);
 	if(!(text = realloc(this->text, c0 * sizeof *this->text)))
 		return this->error = E_ERRNO, this->errno_copy = errno, 0;
 	this->text = text, this->capacity[0] = c0, this->capacity[1] = c1;
@@ -672,6 +671,14 @@ static void swap_texts(struct Text *const a, struct Text *const b) {
 		size_t temp = a->length;
 		a->length = b->length;
 		b->length = temp;
+	} {
+		size_t temp = a->capacity[0];
+		a->capacity[0] = b->capacity[0];
+		b->capacity[0] = temp;
+	} {
+		size_t temp = a->capacity[1];
+		a->capacity[1] = b->capacity[1];
+		b->capacity[1] = temp;
 	}
 }
 
@@ -787,7 +794,7 @@ static void debug(struct Text *const this, const char *const fn,
 	va_list parg;
 
 	va_start(parg, fmt);
-	fprintf(stderr, "Text.%s[%.160s]: ", fn, this->text);
+	fprintf(stderr, "Text.%s[%.60s]: ", fn, this->text);
 	vfprintf(stderr, fmt, parg);
 	va_end(parg);
 	if(length != this->length) fprintf(stderr, "Text.length %lu but strlen %lu."

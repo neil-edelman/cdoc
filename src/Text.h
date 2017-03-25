@@ -26,7 +26,7 @@ struct Text *Text(void);
 void Text_(struct Text **const this_ptr);
 const char *TextGet(const struct Text *const this);
 size_t TextGetLength(const struct Text *const this);
-int TextIsContent(const struct Text *const this);
+int TextHasContent(const struct Text *const this);
 struct Text *TextClear(struct Text *const this);
 struct Text *TextTrim(struct Text *const this);
 struct Text *TextSep(struct Text *const this, const char *const delims,
