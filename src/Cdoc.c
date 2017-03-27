@@ -675,7 +675,8 @@ static int parse_generics(struct Text *const this) {
 				generic->name = s2, generic->nend = s2end;
 			} if(e) break;
 			/* doesn't look like a generic, just cat, continue to the next */
-			if(!types_size || types_size != names_size) {
+			if(!types_size || types_size != names_size ||
+				(names_size == 1 && !strncmp("void", generics[0].name, 4ul))) {
 				TextBetweenCat(temp, s0, s3 - 1);
 				s0 = s3;
 				continue;
