@@ -44,13 +44,15 @@
  * {@throws}, and an optional sub-argument separated by ':' or a new line that
    splits the expression: description,
  * {@implements},
+ * {@order}, for comments on the order,
  * functions that are marked static as the first modifier are not included
    unless one marks them {@allow}.
 
  @title		Cdoc
  @author	Neil
- @version	1.1; 2017-03 lists
- @since		1.0; 2017-03 initial version
+ @version	1.3; added @order, Greek, gave up
+ @since		1.2; 2017-03 lists
+ 			1.0; 2017-03 initial version
  @fixme		Support old-style function definitions.
  @fixme		'\n', '@', '*', '/' in a comment does nothing because TextSep. */
 
@@ -110,6 +112,7 @@ static const struct EachMatch {
 	{ "return",  &new_child },
 	{ "throws",  &new_arg_child },
 	{ "implements", &new_child },
+	{ "order",   &new_child },
 	{ "fixme",   &new_child },
 	{ "author",  &new_child },
 	{ "since",   &new_child },
@@ -180,6 +183,101 @@ static void html_amp(struct Text *const this) { TextCopy(this, "&amp;"); }
 static void html_lt(struct Text *const this) { TextCopy(this, "&lt;"); }
 /** @implements	TextAction */
 static void html_gt(struct Text *const this) { TextCopy(this, "&gt;"); }
+/* Etc. modify as needed? fixme: need a better system
+	&Agrave
+	&Aacute;
+	&Acirc;
+	&Atilde;
+	&Auml;
+	Aring
+	AElig
+	Ccedil
+	Egrave
+	Eacute
+	Ecirc
+	Igrave
+	Iacute
+	Icirc
+	Iuml ... */
+static void html_dot(struct Text *const this) { TextCopy(this, "&sdot;"); }
+static void html_lceil(struct Text *const this) { TextCopy(this, "&lceil;"); }
+static void html_rceil(struct Text *const this) { TextCopy(this, "&rceil;"); }
+static void html_lfloor(struct Text *const this) { TextCopy(this, "&lfloor;"); }
+static void html_rfloor(struct Text *const this) { TextCopy(this, "&rfloor;"); }
+static void html_to(struct Text *const this) { TextCopy(this, "&rarr;"); }
+static void html_ge(struct Text *const this) { TextCopy(this, "&ge;"); }
+static void html_le(struct Text *const this) { TextCopy(this, "&le;"); }
+static void html_ne(struct Text *const this) { TextCopy(this, "&ne;"); }
+static void html_cap(struct Text *const this) { TextCopy(this, "&cap;"); }
+static void html_cup(struct Text *const this) { TextCopy(this, "&cup;"); }
+static void html_vee(struct Text *const this) { TextCopy(this, "&or;"); }
+static void html_wedge(struct Text *const this) { TextCopy(this, "&and;"); }
+static void html_sum(struct Text *const this) { TextCopy(this, "&sum;"); }
+static void html_prod(struct Text *const this) { TextCopy(this, "&prod;"); }
+static void html_in(struct Text *const this) { TextCopy(this, "&isin;"); }
+static void html_exists(struct Text *const this) { TextCopy(this, "&exist;"); }
+static void html_forall(struct Text *const this) { TextCopy(this, "&forall;"); }
+static void html_neg(struct Text *const this) { TextCopy(this, "&not;"); }
+static void html_times(struct Text *const this) { TextCopy(this, "&times;"); }
+static void html_sqrt(struct Text *const this) { TextCopy(this, "&radic;"); }
+static void html_propto(struct Text *const this) { TextCopy(this, "&prop;"); }
+static void html_pm(struct Text *const this) { TextCopy(this, "&plusmn;"); }
+static void html_partial(struct Text *const this) { TextCopy(this, "&part;"); }
+/*	there4
+	nabla
+	empty
+	euro
+	micro
+	sup2
+	sup3
+	deg
+approx
+div
+oe
+OE
+ae
+AE
+o
+OE
+aa
+AA */
+static void html_int(struct Text *const this) { TextCopy(this, "&int;"); }
+static void html_infty(struct Text *const this) { TextCopy(this, "&infin;"); }
+
+static void html_Gamma(struct Text *const this) { TextCopy(this, "&Gamma;"); }
+static void html_Delta(struct Text *const this) { TextCopy(this, "&Delta;"); }
+static void html_Lambda(struct Text *const this) { TextCopy(this, "&Lambda;"); }
+static void html_Phi(struct Text *const this) { TextCopy(this, "&Phi;"); }
+static void html_Pi(struct Text *const this) { TextCopy(this, "&Pi;"); }
+static void html_Psi(struct Text *const this) { TextCopy(this, "&Psi;"); }
+static void html_Sigma(struct Text *const this) { TextCopy(this, "&Sigma;"); }
+static void html_Theta(struct Text *const this) { TextCopy(this, "&Theta;"); }
+static void html_Upsilon(struct Text *const this) {TextCopy(this, "&Upsilon;");}
+static void html_Xi(struct Text *const this) { TextCopy(this, "&Xi;"); }
+static void html_Omega(struct Text *const this) { TextCopy(this, "&Omega;"); }
+static void html_alpha(struct Text *const this) { TextCopy(this, "&alpha;"); }
+static void html_beta(struct Text *const this) { TextCopy(this, "&beta;"); }
+static void html_gamma(struct Text *const this) { TextCopy(this, "&gamma;"); }
+static void html_delta(struct Text *const this) { TextCopy(this, "&delta;"); }
+static void html_epsilon(struct Text *const this) {TextCopy(this, "&epsilon;");}
+static void html_zeta(struct Text *const this) { TextCopy(this, "&zeta;"); }
+static void html_eta(struct Text *const this) { TextCopy(this, "&eta;"); }
+static void html_theta(struct Text *const this) { TextCopy(this, "&theta;"); }
+static void html_iota(struct Text *const this) { TextCopy(this, "&iota;"); }
+static void html_kappa(struct Text *const this) { TextCopy(this, "&kappa;"); }
+static void html_lamda(struct Text *const this) { TextCopy(this, "&lambda;"); }
+static void html_mu(struct Text *const this) { TextCopy(this, "&mu;"); }
+static void html_nu(struct Text *const this) { TextCopy(this, "&nu;"); }
+static void html_xi(struct Text *const this) { TextCopy(this, "&xi;"); }
+static void html_rho(struct Text *const this) { TextCopy(this, "&rho;"); }
+static void html_sigma(struct Text *const this) { TextCopy(this, "&sigma;"); }
+static void html_tau(struct Text *const this) { TextCopy(this, "&tau;"); }
+static void html_upsilon(struct Text *const this) {TextCopy(this, "&upsilon;");}
+static void html_phi(struct Text *const this) { TextCopy(this, "&phi;"); }
+static void html_chi(struct Text *const this) { TextCopy(this, "&chi;"); }
+static void html_psi(struct Text *const this) { TextCopy(this, "&psi;"); }
+static void html_omega(struct Text *const this) { TextCopy(this, "&omega;"); }
+
 /** @implements	TextAction */
 static void html_paragraph(struct Text *const this)
 	{ TextCopy(this, "\n</p>\n<p>\n"); }
@@ -189,7 +287,66 @@ static void new_docs(struct Text *const this);
 static const struct TextPattern html_escape_pat[] = {
 	{ "&",       0,   &html_amp },
 	{ "<",       0,   &html_lt },
-	{ ">",       0,   &html_gt }
+	{ ">",       0,   &html_gt },
+	{ "\\dot",   0,   &html_dot },
+	{ "\\lceil", 0,   &html_lceil },
+	{ "\\rceil", 0,   &html_rceil },
+	{ "\\lfloor",0,   &html_lfloor },
+	{ "\\rfloor",0,   &html_rfloor },
+	{ "\\to",    0,   &html_to },
+	{ "\\ge",    0,   &html_ge },
+	{ "\\le",    0,   &html_le },
+	{ "\\ne",    0,   &html_ne },
+	{ "\\cap",   0,   &html_cap },
+	{ "\\cup",   0,   &html_cup },
+	{ "\\vee",   0,   &html_vee },
+	{ "\\wedge", 0,   &html_wedge },
+	{ "\\sum",   0,   &html_sum },
+	{ "\\prod",  0,   &html_prod },
+	{ "\\in",    0,   &html_in },
+	{ "\\exists",0,   &html_exists },
+	{ "\\forall",0,   &html_forall },
+	{ "\\neg",   0,   &html_neg },
+	{ "\\times", 0,   &html_times },
+	{ "\\sqrt",  0,   &html_sqrt },
+	{ "\\propto",0,   &html_propto },
+	{ "\\pm",    0,   &html_pm },
+	{ "\\partial",0,  &html_partial },
+	{ "\\int",   0,   &html_int },
+	{ "\\infty", 0,   &html_infty },
+	{ "\\Gamma", 0,   &html_Gamma },
+	{ "\\Delta", 0,   &html_Delta },
+	{ "\\Lambda",0,   &html_Lambda },
+	{ "\\Phi",   0,   &html_Phi },
+	{ "\\Pi",    0,   &html_Pi },
+	{ "\\Psi",   0,   &html_Psi },
+	{ "\\Sigma", 0,   &html_Sigma },
+	{ "\\Theta", 0,   &html_Theta },
+	{ "\\Upsilon",0,  &html_Upsilon },
+	{ "\\Xi",    0,   &html_Xi },
+	{ "\\Omega", 0,   &html_Omega },
+	{ "\\alpha", 0,   &html_alpha },
+	{ "\\beta",  0,   &html_beta },
+	{ "\\gamma", 0,   &html_gamma },
+	{ "\\delta", 0,   &html_delta },
+	{ "\\epsilon",0,  &html_epsilon },
+	{ "\\zeta",  0,   &html_zeta },
+	{ "\\eta",   0,   &html_eta },
+	{ "\\theta", 0,   &html_theta },
+	{ "\\iota",  0,   &html_iota },
+	{ "\\kappa", 0,   &html_kappa },
+	{ "\\lambda",0,   &html_lamda },
+	{ "\\mu",    0,   &html_mu },
+	{ "\\nu",    0,   &html_nu },
+	{ "\\xi",    0,   &html_xi },
+	{ "\\rho",   0,   &html_rho },
+	{ "\\sigma", 0,   &html_sigma },
+	{ "\\tau",   0,   &html_tau },
+	{ "\\upsilon",0,  &html_upsilon },
+	{ "\\phi",   0,   &html_phi },
+	{ "\\chi",   0,   &html_chi },
+	{ "\\psi",   0,   &html_psi },
+	{ "\\omega", 0,   &html_omega }
 }, plain_text_pat[] = {
 	{ "\\url{",  "}", &plain_url },
 	{ "\\cite{", "}", &plain_cite },
@@ -342,6 +499,7 @@ static void plain_function_detail(struct Relate *const this) {
 	RelateForEachChildKey(this, "return",     &plain_dl);
 	RelateForEachChildKey(this, "implements", &plain_dl);
 	RelateForEachChildKey(this, "throws",     &plain_dl);
+	RelateForEachChildKey(this, "order",      &plain_dl);
 	RelateForEachChildKey(this, "author",     &plain_dl);
 	RelateForEachChildKey(this, "since",      &plain_dl);
 	RelateForEachChildKey(this, "fixme",      &plain_dl);
@@ -352,13 +510,13 @@ static void plain_function_detail(struct Relate *const this) {
 static void plain(struct Relate *const this) {
 	printf("# %s #\n\n"
 		"%s\n\n", RelateKey(this), RelateValue(this));
-	RelateForEachChildKey(this, "deprecated", &plain_dl);
+	RelateForEachChildKey(this, "param", &plain_dl);
 	RelateForEachChildKey(this, "std", &plain_dl);
 	RelateForEachChildKey(this, "author", &plain_dl);
 	RelateForEachChildKey(this, "version", &plain_dl);
 	RelateForEachChildKey(this, "since", &plain_dl);
 	RelateForEachChildKey(this, "fixme", &plain_dl);
-	RelateForEachChildKey(this, "param", &plain_dl);
+	RelateForEachChildKey(this, "deprecated", &plain_dl);
 	printf("\n\n"
 		"## Declarations ##\n\n");
 	RelateForEachChildIf(this, &select_declarations, &plain_declare_list);
@@ -433,6 +591,7 @@ static void html_function_detail(struct Relate *const this) {
 	RelateForEachChildKey(this, "return", &html_dl);
 	RelateForEachChildKey(this, "implements", &html_dl);
 	RelateForEachChildKey(this, "throws", &html_dl);
+	RelateForEachChildKey(this, "order", &html_dl);
 	RelateForEachChildKey(this, "author", &html_dl);
 	RelateForEachChildKey(this, "since", &html_dl);
 	RelateForEachChildKey(this, "fixme", &html_dl);
@@ -477,13 +636,13 @@ static void html(struct Relate *const this) {
 		"\t<li><a href = \"#_detail\">Function Detail</a></li>\n"
 		"</ul>\n\n"
 		"%s<dl>\n", RelateKey(this), RelateKey(this), RelateValue(this));
-	RelateForEachChildKey(this, "depreciated", &html_dl);
+	RelateForEachChildKey(this, "param", &html_dl);
 	RelateForEachChildKey(this, "std", &html_dl);
 	RelateForEachChildKey(this, "author", &html_dl);
 	RelateForEachChildKey(this, "version", &html_dl);
 	RelateForEachChildKey(this, "since", &html_dl);
 	RelateForEachChildKey(this, "fixme", &html_dl);
-	RelateForEachChildKey(this, "param", &html_dl);
+	RelateForEachChildKey(this, "deprecated", &html_dl);
 	printf("</dl>\n\n\n"
 		"<a name = \"_declarations\"><!-- --></a><h2>Declarations</h2>\n\n");
 	RelateForEachChildIf(this, &select_declarations, &html_declare_list);

@@ -2,7 +2,7 @@ Copyright (C) 2017 Neil Edelman.
 
 neil dot edelman each mail dot mcgill dot ca
 
-Version 1.1.
+Version 1.3.
 
 "sudo make install" will make "cdoc" and copy it to /usr/local/bin.
 The delimiter of Cdoc comments is "/** ". An example:
@@ -26,12 +26,12 @@ it into, <A>Create<BI>Thing(void).
 
 Each-expressions must come first on the line. Cdoc recognises:
 @param, @author, @since, @fixme, @deprecated are accepted globally;
-@title, @std, @version are accepted in the preamble; @return, @throws,
-@implements, @allow are accepted before functions. The title is
-set by @file. Functions that are marked static as the first modifier
-are not included unless one marks them by @allow. The @param and
-@throws have an optional sub-argument separated by ':' or a new
-line that splits the "expression: description."
+@title, @std, @version are accepted in the preamble; @return,
+@throws, @implements, @order, @allow are accepted before functions.
+The title is set by @file. Functions that are marked static as the
+first modifier are not included unless one marks them by @allow.
+The @param and @throws have an optional sub-argument separated by
+':' or a new line that splits the "expression: description."
 
 License:
 
