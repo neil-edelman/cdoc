@@ -24,10 +24,6 @@
 static const unsigned fibonacci6  = 8;
 static const unsigned fibonacci7  = 13;
 
-/* for allocating value */
-static const unsigned fibonacci11 = 89;
-static const unsigned fibonacci12 = 144;
-
 enum Error {
 	E_NO_ERROR,
 	E_ERRNO,

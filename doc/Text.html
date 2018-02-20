@@ -44,17 +44,19 @@
 see readme.txt, or <a href = "https://opensource.org/licenses/MIT">https://opensource.org/licenses/MIT</a>.
 </p>
 <p>
-A dynamic string, intended to be used with Modified UTF-8 encoding,
+A dynamic string, intended to be used with modified UTF-8 encoding,
 <a href = "https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8</a>. That is, this is a
 wrapper that automatically expands memory as needed around a standard C
-null-terminated string.
+null-terminated string in a monolithic array and is compatible with <em>ASCII</em>.
+If you need to edit a potentially large string just one of <em>Text</em> will be
+generally linear-time and is unsuited alone for such a purpose.
 </p>
 <p>
 <a href = "#TextGet">TextGet</a> exposes a read-only, null-terminated <em>char *</em>. If an error
 occurs, (with memory allocation, for example,) these functions shall return a
 null pointer; all functions shall accept a null pointer being passed to them
-and return null immediately: this means you can compose functions safely. See
-<a href = "#TextIsError">TextIsError</a> and <a href = "#TextGetError">TextGetError</a>.
+and return null immediately: this means one can compose functions safely.
+Reset the error with <a href = "#TextGetError">TextGetError</a>; also, <a href = "#TextIsError">TextIsError</a>.
 </p>
 <dl>
 	<dt>minimum standard</dt>
@@ -62,17 +64,12 @@ and return null immediately: this means you can compose functions safely. See
 	<dt>author</dt>
 	<dd>Neil</dd>
 	<dt>version</dt>
-	<dd>1.0; 2017-03</dd>
+	<dd>2018-01</dd>
 	<dt>since</dt>
-	<dd>1.0; 2017-03</dd>
+	<dd>2017-03</dd>
 	<dt>fixme</dt>
-	<dd>TextCodePointCount, TextCharAt, TextDelete, TextInsert,
+	<dd>TextCharAt, TextDelete, TextInsert,
  TextSetCharAt, TextSubsequence?</dd>
-	<dt>fixme</dt>
-	<dd>All the positions and sizes are in absolute bytes; not really what
- you want for internationalisation?</dd>
-	<dt>fixme</dt>
-	<dd>E_CODE_CHOPPED</dd>
 </dl>
 
 
@@ -109,7 +106,7 @@ Predicate function.
 	<dd>The string.</dd>
 	<dt>parameter: sub</dt>
 	<dd>The position in the string which you must make a true/false
- decision. Necessarily, <em>sub \in string</em>.</dd>
+ decision. Necessarily, <em>sub &isin; string</em>.</dd>
 </dl>
 </div>
 
@@ -159,6 +156,11 @@ Used in <a href = "#TextMatch">TextMatch</a> as an array of patterns. Recognises
 	<td>const struct Text *const this</td>
 </tr>
 <tr>
+	<td>size_t</td>
+	<td><a href = "#TextCodePointCount">TextCodePointCount</a></td>
+	<td>const struct Text *const this</td>
+</tr>
+<tr>
 	<td>int</td>
 	<td><a href = "#TextHasContent">TextHasContent</a></td>
 	<td>const struct Text *const this</td>
@@ -176,7 +178,7 @@ Used in <a href = "#TextMatch">TextMatch</a> as an array of patterns. Recognises
 <tr>
 	<td>struct Text *</td>
 	<td><a href = "#TextSep">TextSep</a></td>
-	<td>struct Text *const this, const char *const delims,
+	<td>struct Text *const this, const char *delims,
 	const TextPredicate pred</td>
 </tr>
 <tr>
@@ -282,7 +284,25 @@ copy, do <em>strdup(TextGet(text))</em>.
 <pre>size_t <b>TextGetLength</b> (const struct Text *const this)</pre>
 <dl>
 	<dt>return</dt>
-	<dd>Gets the length in bytes.</dd>
+	<dd>Gets the length in bytes, not code-points.</dd>
+	<dt>order</dt>
+	<dd>O(1)</dd>
+</dl>
+</div>
+
+<div><a name = "TextCodePointCount"><!-- --></a>
+<h3>TextCodePointCount</h3>
+<pre>size_t <b>TextCodePointCount</b> (const struct Text *const this)</pre>
+<dl>
+	<dt>return</dt>
+	<dd>How many code-points in
+ <a href = "https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8</a>. If it is not a
+ valid string in <em>UTF-8</em>, this will return an undefined value between
+ <em>[0, size]</em>.</dd>
+	<dt>order</dt>
+	<dd>O(<em>size</em>)</dd>
+	<dt>fixme</dt>
+	<dd>Untested.</dd>
 </dl>
 </div>
 
@@ -326,19 +346,21 @@ White-space trims the buffer associated with <em>this</em> using <em>isspace</em
 
 <div><a name = "TextSep"><!-- --></a>
 <h3>TextSep</h3>
-<pre>struct Text * <b>TextSep</b> (struct Text *const this, const char *const delims,
+<pre>struct Text * <b>TextSep</b> (struct Text *const this, const char *delims,
 	const TextPredicate pred)</pre>
 <p>
 Separates a new token at the first <em>delims</em> that satisfy <em>pred</em>.
 </p>
 <dl>
+	<dt>parameter: delims</dt>
+	<dd>If null, uses <em>POSIX</em> white-space to separate.</dd>
 	<dt>parameter: pred</dt>
 	<dd>Can be null, in which case, it behaves like true.</dd>
 	<dt>return</dt>
 	<dd>A new <em>Text</em> or null if the tokenisation is finished or an error
  occurs. You must call <a href = "#Text_">Text_</a> on this pointer if it is not null.</dd>
 	<dt>throws</dt>
-	<dd>E_PARAMETER, E_OVERFLOW, E_ERRNO</dd>
+	<dd>E_OVERFLOW, E_ERRNO</dd>
 	<dt>fixme</dt>
 	<dd>Since <em>Text</em> are necessarily non-null, this tests if it's an empty
  string; therefore, this will differ from <em>strsep</em> slightly (in a Bad way.)
@@ -502,7 +524,7 @@ within the handler, then <em>TextGetMatchInfo</em> will not work after that poin
 <h3>TextGetError</h3>
 <pre>const char * <b>TextGetError</b> (struct Text *const this)</pre>
 <p>
-Resets the error.
+Resets the error flag.
 </p>
 <dl>
 	<dt>return</dt>

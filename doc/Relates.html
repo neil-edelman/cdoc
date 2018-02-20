@@ -295,7 +295,7 @@ New child.
 <pre>void <b>RelateForEachChildIf</b> (struct Relate *const this,
 	RelatePredicate p, RelateAction a)</pre>
 <p>
-E <em>r</em> \in <em>this.children</em>, <em>p</em>(<em>r</em>) -&gt; <em>a</em>(<em>r</em>)
+E <em>r</em> &isin; <em>this.children</em>, <em>p</em>(<em>r</em>) -&gt; <em>a</em>(<em>r</em>)
 </p>
 <dl>
 </dl>
@@ -306,7 +306,7 @@ E <em>r</em> \in <em>this.children</em>, <em>p</em>(<em>r</em>) -&gt; <em>a</em>
 <pre>void <b>RelateForEachChildKey</b> (struct Relate *const this,
 	const char *const key, RelateAction a)</pre>
 <p>
-E <em>r</em> \in <em>this.children</em>, !strcmp(<em>r.key</em>, <em>key</em>) -&gt; <em>a</em>(<em>r</em>)
+E <em>r</em> &isin; <em>this.children</em>, !strcmp(<em>r.key</em>, <em>key</em>) -&gt; <em>a</em>(<em>r</em>)
 </p>
 <dl>
 </dl>

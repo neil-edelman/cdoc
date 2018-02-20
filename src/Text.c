@@ -1,51 +1,55 @@
 /** 2017 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- A dynamic string, intended to be used with Modified UTF-8 encoding,
+ A dynamic string, intended to be used with modified UTF-8 encoding,
  \url{ https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8 }. That is, this is a
  wrapper that automatically expands memory as needed around a standard C
- null-terminated string.
+ null-terminated string in a monolithic array and is compatible with {ASCII}.
+ If you need to edit a potentially large string just one of {Text} will be
+ generally linear-time and is unsuited alone for such a purpose.
 
  \see{TextGet} exposes a read-only, null-terminated {char *}. If an error
  occurs, (with memory allocation, for example,) these functions shall return a
  null pointer; all functions shall accept a null pointer being passed to them
- and return null immediately: this means you can compose functions safely. See
- \see{TextIsError} and \see{TextGetError}.
+ and return null immediately: this means one can compose functions safely.
+ Reset the error with \see{TextGetError}; also, \see{TextIsError}.
 
  @title		Text
  @author	Neil
  @std		C89/90; part of Common
- @version	1.0; 2017-03
- @since		1.0; 2017-03
- @fixme		TextCodePointCount, TextCharAt, TextDelete, TextInsert,
- TextSetCharAt, TextSubsequence?
- @fixme		All the positions and sizes are in absolute bytes; not really what
- you want for internationalisation?
- @fixme		E_CODE_CHOPPED */
-
-/*#define TEXT_DEBUG*/
+ @version	2018-01
+ @since		2017-03
+ @fixme		TextCharAt, TextDelete, TextInsert,
+ TextSetCharAt, TextSubsequence? */
 
 #include <stdlib.h> /* malloc realloc free */
 #include <stdio.h>  /* FILE fgets ferror vsnprintf fprintf */
 #include <errno.h>	/* errno */
 #include <string.h>	/* strerror strlen memmove memcpy strpbrk strdup memchr */
 #include <limits.h>	/* INT_MAX */
+#include <assert.h>	/* assert */
 #include <ctype.h>	/* isspace */
 #include <stdarg.h>	/* va_* */
 #include "Text.h"
 
-/* <-- ugly */
-#ifndef _MSC_VER /* <-- not msvc */
-#define TEXT_UNUSED(a) while(0 && (a));
-#else /* not msvc --><-- msvc: not a C89/90 compiler; needs a little help */
-#pragma warning(push)
-/* "Assignment within conditional expression." No. */
-#pragma warning(disable: 4706)
-/* "<ANSI/ISO name>: The POSIX name for this item is deprecated." No. */
-#pragma warning(disable: 4996)
-#define TEXT_UNUSED(a) (void)(sizeof((a), 0))
-#endif /* msvc --> */
-/* ugly --> */
+/*
+ Text a = [ "foo bar\n\n", "baz\n", "qux" ]
+ a.split(0) = [ "foo", "bar", "baz", "qux" ]
+ a.split("a", " ") = [ "foo", "b", "r", "b", "z", "qux" ]
+ a.strip(0) = [ "foo bar", "baz", "qux" ]
+ a.strip("quxf ") =  [ "oo bar", "baz", "" ]
+ a.empty.strip("quxf ") = [ "oo bar", "baz" ]
+ a.join(0) = [ "foo bar\n\n baz\n qux" ]
+ a.join("") = [ "foo bar\n\nbaz\nqux" ]
+ a.sort() = [ "baz\n", "foo bar\n\n", "qux" ]
+ a.replace("a", "oo") = [ "foo boor\n\n", "booz\n", "qux" ]
+ /a.cat("quxx") = [ "foo bar\n\n", "baz\n", "qux", "quxx" ]/not needed
+ a.cat("%d", 42) = [ "foo bar\n\n42", "baz\n42", "qux42" ]
+ a.format("%d foo", 42) = [ "foo bar\n\n", "baz\n", "qux", "42 foo" ]
+ TextMap b = [ "o"->"a", "a"->"o" ]
+ a.substitute(b) = [ "faa bor\n\n", "boz\n", "qux" ]
+
+ */
 
 /* used in \see{Matches} */
 static const size_t fibonacci6  = 8;
@@ -84,7 +88,8 @@ enum Error {
 	E_ERRNO,
 	E_PARAMETER,
 	E_OVERFLOW,
-	E_SYNTAX
+	E_SYNTAX,
+	E_CODE_CHOPPED
 };
 static const char *const error_explination[] = {
 	"no error",
@@ -208,10 +213,38 @@ const char *TextGet(const struct Text *const this) {
 	return this->text;
 }
 
-/** @return Gets the length in bytes. */
+/** @return Gets the length in bytes, not code-points.
+ @order O(1) */
 size_t TextGetLength(const struct Text *const this) {
 	if(!this) return 0;
 	return this->length;
+}
+
+/** @return How many code-points in
+ \url{ https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8 }. If it is not a
+ valid string in {UTF-8}, this will return an undefined value between
+ {[0, size]}.
+ @order O({size})
+ @fixme Untested. */
+size_t TextCodePointCount(const struct Text *const this) {
+	if(!this) return 0;
+	{
+		char *text = this->text, ch;
+		const char *const end_null = this->text + this->length;
+		size_t length = this->length;
+		assert(*end_null == '\0');
+		while(text < end_null) {
+			/* Less and less likely; optimise for the top. */
+			if((ch = *text) > 0)    { text++; continue; }
+			if((ch & 0xE0) == 0xC0) { text += 2; length -= 1; continue; }
+			if((ch & 0xF0) == 0xE0) { text += 3; length -= 2; continue; }
+			if((ch & 0xF8) == 0xF0) { text += 4; length -= 3; continue; }
+			/* RFC 3629: "treat any ill-formed code unit sequence as an error
+			 condition." Skip. */
+			text++, length--;
+		}
+		return length;
+	}
 }
 
 /** Opposite of {isEmpty}; the justification for it being this way is we want
@@ -240,7 +273,6 @@ struct Text *TextTrim(struct Text *const this) {
 	while(z > str && isspace(*z)) z--;
 	z++, *z = '\0';
 	while(isspace(*a)) a++;
-	/*if(a - str) memmove(str, a, (size_t)(z - a + 1));*/
 	this->length = (size_t)(z - a);
 	if(a - str) memmove(str, a, this->length + 1);
 	return this;
@@ -249,20 +281,20 @@ struct Text *TextTrim(struct Text *const this) {
 /** Separates a new token at the first {delims} that satisfy {pred}.
  @return A new {Text} or null if the tokenisation is finished or an error
  occurs. You must call \see{Text_} on this pointer if it is not null.
+ @param delims: If null, uses {POSIX} white-space to separate.
  @param pred: Can be null, in which case, it behaves like true.
- @throws E_PARAMETER, E_OVERFLOW, E_ERRNO
+ @throws E_OVERFLOW, E_ERRNO
  @fixme Since {Text} are necessarily non-null, this tests if it's an empty
  string; therefore, this will differ from {strsep} slightly (in a Bad way.)
  Namely, if the string ends with a token in {delims}, the last empty string
  will not be returned. */
-struct Text *TextSep(struct Text *const this, const char *const delims,
+struct Text *TextSep(struct Text *const this, const char *delims,
 	const TextPredicate pred) {
 	struct Text *token;
 	char *bork;
 
 	if(!this) return 0;
-	if(!delims || !*delims)
-		{ this->error = E_PARAMETER; return 0; }
+	if(!delims || !*delims) delims = " \f\n\r\t\v";
 
 	/* find */
 	if(*(bork = this->text) == '\0') return 0; /* empty string */
@@ -578,7 +610,7 @@ int TextIsError(struct Text *const this) {
 	return this ? (this->error ? -1 : 0) : (global_error ? -1 : 0);
 }
 
-/** Resets the error.
+/** Resets the error flag.
  @return A lower-case string, (or in the case of a E_ERRNO, the first letter
  has an extraneous upper case on most systems,) without any punctuation, that
  explains the last error associated with {this}; can be null. */
@@ -801,6 +833,6 @@ static void debug(struct Text *const this, const char *const fn,
 	if(length != this->length) fprintf(stderr, "Text.length %lu but strlen %lu."
 		"\n", this->length, length), exit(EXIT_FAILURE);
 #else
-	TEXT_UNUSED(this); TEXT_UNUSED(fn); TEXT_UNUSED(fmt);
+	UNUSED(this); UNUSED(fn); UNUSED(fmt);
 #endif
 }

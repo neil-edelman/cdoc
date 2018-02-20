@@ -278,10 +278,6 @@ static void html_chi(struct Text *const this) { TextCopy(this, "&chi;"); }
 static void html_psi(struct Text *const this) { TextCopy(this, "&psi;"); }
 static void html_omega(struct Text *const this) { TextCopy(this, "&omega;"); }
 
-/** @implements	TextAction */
-static void html_paragraph(struct Text *const this)
-	{ TextCopy(this, "\n</p>\n<p>\n"); }
-
 static void new_docs(struct Text *const this);
 
 static const struct TextPattern html_escape_pat[] = {
@@ -361,16 +357,11 @@ static const struct TextPattern html_escape_pat[] = {
 	{ "\\${",    "}", &html_pre },
 	{ "\\{",     0,   &plain_curly },
 	{ "{",       "}", &html_em }
-}, html_para_pat[] = {
-	{ "\n\n",    0,   &html_paragraph },
-	{ "\n \n",   0,   &html_paragraph }
 }, root_pat[] = {
 	{ "/""** ", "*""/", &new_docs },
 	{ "/""*", "*""/", 0 } /* regular comments; fixme: more robust, still */
 };
-static const size_t
-	html_para_pat_size   = sizeof html_para_pat / sizeof *html_para_pat,
-	root_pat_size        = sizeof root_pat / sizeof *root_pat;
+static const size_t root_pat_size = sizeof root_pat / sizeof *root_pat;
 
 /***************************************************
  * Command line options implementing RelateAction. */

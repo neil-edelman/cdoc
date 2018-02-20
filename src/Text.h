@@ -1,6 +1,12 @@
 #ifndef HAVE_TEXT_H /* <-- guards */
 #define HAVE_TEXT_H
 
+/* unused macro */
+#ifdef UNUSED
+#undef UNUSED
+#endif
+#define UNUSED(a) ((void)(a))
+
 /** See \see{Text}. */
 struct Text;
 
@@ -26,10 +32,11 @@ struct Text *Text(void);
 void Text_(struct Text **const this_ptr);
 const char *TextGet(const struct Text *const this);
 size_t TextGetLength(const struct Text *const this);
+size_t TextCodePointCount(const struct Text *const this);
 int TextHasContent(const struct Text *const this);
 struct Text *TextClear(struct Text *const this);
 struct Text *TextTrim(struct Text *const this);
-struct Text *TextSep(struct Text *const this, const char *const delims,
+struct Text *TextSep(struct Text *const this, const char *delims,
 	const TextPredicate pred);
 struct Text *TextCopy(struct Text *const this, const char *const str);
 struct Text *TextCat(struct Text *const this, const char *const str);

@@ -32,7 +32,7 @@ TOBJS := $(patsubst $(TDIR)/%.c, $(GDIR)/$(TDIR)/%.o, $(TEST))
 DOCS  := $(patsubst $(SDIR)/%.c, $(DDIR)/%.html, $(SRCS))
 
 CC   := gcc
-CF   := -Wall -Wextra -Wall -Xlint -Wno-format-y2k -W -Wstrict-prototypes -Wmissing-prototypes \
+CF   := -Wall -Wextra -Wall -Wno-format-y2k -W -Wstrict-prototypes -Wmissing-prototypes \
 -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch \
 -Wshadow -Wcast-align -Wbad-function-cast -Wchar-subscripts -Winline \
 -Wnested-externs -Wredundant-decls -O3 -ffast-math -funroll-loops -pedantic -ansi # or -std=c99 -mwindows
