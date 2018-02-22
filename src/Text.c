@@ -379,7 +379,9 @@ struct Text *TextFileCat(struct Text *const this, FILE *const fp) {
 /** Concatenates one line on the text file, {fp}, after the read cursor, to the
  buffer in {this}. On success, the read cursor will be at the end.
  @param fp: If this is null, this returns 0.
- @return .
+ @return On true, the file had more lines and a line was stored. If false, the
+ file does not have more lines or an error occured; use \see{TextIsError} to
+ differentiate.
  @throws E_OVERFLOW, E_ERRNO */
 int TextFileLineCat(struct Text *const this, FILE *const fp) {
 	size_t to_get;
@@ -398,7 +400,7 @@ int TextFileLineCat(struct Text *const this, FILE *const fp) {
 			return 0;
 	}
 	if((e = ferror(fp)))
-	{ this->error = E_ERRNO, this->errno_copy = e; return 0; }
+		{ this->error = E_ERRNO, this->errno_copy = e; return 0; }
 	debug(this, "TextFileLineCat",
 		"appended a line from file descriptor %d.\n", (long)fp);
 	/* Exactly the same as if we'd had an {length_init != length_final}. */

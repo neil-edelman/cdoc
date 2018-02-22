@@ -462,7 +462,9 @@ buffer in <em>this</em>. On success, the read cursor will be at the end.
 	<dt>parameter: fp</dt>
 	<dd>If this is null, this returns 0.</dd>
 	<dt>return</dt>
-	<dd>.</dd>
+	<dd>On true, the file had more lines and a line was stored. If false, the
+ file does not have more lines or an error occured; use <a href = "#TextIsError">TextIsError</a> to
+ differentiate.</dd>
 	<dt>throws</dt>
 	<dd>E_OVERFLOW, E_ERRNO</dd>
 </dl>
