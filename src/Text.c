@@ -14,6 +14,9 @@
  and return null immediately: this means one can compose functions safely.
  Reset the error with \see{TextGetError}; also, \see{TextIsError}.
 
+ @param TEXT_DEBUG
+ Prints debug information to {stderr}.
+
  @title		Text
  @author	Neil
  @std		C89/90; part of Common
@@ -31,25 +34,6 @@
 #include <ctype.h>	/* isspace */
 #include <stdarg.h>	/* va_* */
 #include "Text.h"
-
-/*
- Text a = [ "foo bar\n\n", "baz\n", "qux" ]
- a.split(0) = [ "foo", "bar", "baz", "qux" ]
- a.split("a", " ") = [ "foo", "b", "r", "b", "z", "qux" ]
- a.strip(0) = [ "foo bar", "baz", "qux" ]
- a.strip("quxf ") =  [ "oo bar", "baz", "" ]
- a.empty.strip("quxf ") = [ "oo bar", "baz" ]
- a.join(0) = [ "foo bar\n\n baz\n qux" ]
- a.join("") = [ "foo bar\n\nbaz\nqux" ]
- a.sort() = [ "baz\n", "foo bar\n\n", "qux" ]
- a.replace("a", "oo") = [ "foo boor\n\n", "booz\n", "qux" ]
- /a.cat("quxx") = [ "foo bar\n\n", "baz\n", "qux", "quxx" ]/not needed
- a.cat("%d", 42) = [ "foo bar\n\n42", "baz\n42", "qux42" ]
- a.format("%d foo", 42) = [ "foo bar\n\n", "baz\n", "qux", "42 foo" ]
- TextMap b = [ "o"->"a", "a"->"o" ]
- a.substitute(b) = [ "faa bor\n\n", "boz\n", "qux" ]
-
- */
 
 /* used in \see{Matches} */
 static const size_t fibonacci6  = 8;
@@ -370,16 +354,15 @@ struct Text *TextBetweenCat(struct Text *const this,
 
 /** Concatenates the contents of the text file, {fp}, after the read cursor, to
  the buffer in {this}. On success, the read cursor will be at the end.
- @return	{this}.
- @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */
+ @return {this}.
+ @throws E_PARAMETER, E_OVERFLOW, E_ERRNO
+ @deprecated Use {StoryFileCat} for more performance and line numbers. */
 struct Text *TextFileCat(struct Text *const this, FILE *const fp) {
 	size_t to_get;
 	int to_get_int;
 	int e;
-
 	if(!this) return 0;
 	if(!fp) { this->error = E_PARAMETER; return 0; }
-
 	while(to_get = this->capacity[0] - this->length,
 		to_get_int = to_get < INT_MAX ? (int)(to_get) : INT_MAX,
 		fgets(this->text + this->length, to_get_int, fp)) {
@@ -389,9 +372,37 @@ struct Text *TextFileCat(struct Text *const this, FILE *const fp) {
 	}
 	if((e = ferror(fp)))
 		{ this->error = E_ERRNO, this->errno_copy = e; return 0; }
-
-	debug(this, "TextFileCat", "appended a file.\n");
+	debug(this, "TextFileCat", "appended file descriptor %d.\n", (long)fp);
 	return this;
+}
+
+/** Concatenates one line on the text file, {fp}, after the read cursor, to the
+ buffer in {this}. On success, the read cursor will be at the end.
+ @param fp: If this is null, this returns 0.
+ @return .
+ @throws E_OVERFLOW, E_ERRNO */
+int TextFileLineCat(struct Text *const this, FILE *const fp) {
+	size_t to_get;
+	int to_get_int;
+	int e;
+	if(!this || !fp) return 0;
+	while(to_get = this->capacity[0] - this->length,
+		to_get_int = to_get < INT_MAX ? (int)(to_get) : INT_MAX,
+		fgets(this->text + this->length, to_get_int, fp)) {
+		this->length += strlen(this->text + this->length);
+		/* "NULL on error or when end of file occurs while no characters have
+		 been read." So this is always true. */
+		assert(this->length >= 1);
+		if(this->text[this->length - 1] == '\n') break;
+		if(this->length >= this->capacity[0] - 1 && !capacity_up(this, 0))
+			return 0;
+	}
+	if((e = ferror(fp)))
+	{ this->error = E_ERRNO, this->errno_copy = e; return 0; }
+	debug(this, "TextFileLineCat",
+		"appended a line from file descriptor %d.\n", (long)fp);
+	/* Exactly the same as if we'd had an {length_init != length_final}. */
+	return !feof(fp);
 }
 
 /** Concatenates the buffer with a {printf};

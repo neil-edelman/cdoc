@@ -59,6 +59,8 @@ and return null immediately: this means one can compose functions safely.
 Reset the error with <a href = "#TextGetError">TextGetError</a>; also, <a href = "#TextIsError">TextIsError</a>.
 </p>
 <dl>
+	<dt>parameter: TEXT_DEBUG</dt>
+	<dd>Prints debug information to <em>stderr</em>.</dd>
 	<dt>minimum standard</dt>
 	<dd>C89/90; part of Common</dd>
 	<dt>author</dt>
@@ -206,6 +208,11 @@ Used in <a href = "#TextMatch">TextMatch</a> as an array of patterns. Recognises
 <tr>
 	<td>struct Text *</td>
 	<td><a href = "#TextFileCat">TextFileCat</a></td>
+	<td>struct Text *const this, FILE *const fp</td>
+</tr>
+<tr>
+	<td>int</td>
+	<td><a href = "#TextFileLineCat">TextFileLineCat</a></td>
 	<td>struct Text *const this, FILE *const fp</td>
 </tr>
 <tr>
@@ -439,6 +446,25 @@ the buffer in <em>this</em>. On success, the read cursor will be at the end.
 	<dd><em>this</em>.</dd>
 	<dt>throws</dt>
 	<dd>E_PARAMETER, E_OVERFLOW, E_ERRNO</dd>
+	<dt>deprecated</dt>
+	<dd>Use <em>StoryFileCat</em> for more performance and line numbers.</dd>
+</dl>
+</div>
+
+<div><a name = "TextFileLineCat"><!-- --></a>
+<h3>TextFileLineCat</h3>
+<pre>int <b>TextFileLineCat</b> (struct Text *const this, FILE *const fp)</pre>
+<p>
+Concatenates one line on the text file, <em>fp</em>, after the read cursor, to the
+buffer in <em>this</em>. On success, the read cursor will be at the end.
+</p>
+<dl>
+	<dt>parameter: fp</dt>
+	<dd>If this is null, this returns 0.</dd>
+	<dt>return</dt>
+	<dd>.</dd>
+	<dt>throws</dt>
+	<dd>E_OVERFLOW, E_ERRNO</dd>
 </dl>
 </div>
 

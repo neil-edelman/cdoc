@@ -45,6 +45,7 @@ struct Text *TextNCat(struct Text *const this, const char *const str,
 struct Text *TextBetweenCat(struct Text *const this,
 	const char *const a, const char *const b);
 struct Text *TextFileCat(struct Text *const this, FILE *const fp);
+int TextFileLineCat(struct Text *const this, FILE *const fp);
 struct Text *TextPrintCat(struct Text *const this, const char *const fmt, ...);
 struct Text *TextTransform(struct Text *const this, const char *fmt);
 struct Text *TextMatch(struct Text *const this,
