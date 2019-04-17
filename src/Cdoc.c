@@ -142,7 +142,7 @@ static const struct EachMatching {
 /***********************************************************
  * These go in a Pattern array for calling in {TextMatch}. */
 
-/** Must be in rfc3986 format; \url{https://www.ietf.org/rfc/rfc3986.txt }.
+/** Must be in rfc3986 format; \url{ https://www.ietf.org/rfc/rfc3986.txt }.
  @implements TextAction */
 static void html_url(struct Text *const this)
 	{ TextTrim(this), TextTransform(this, "<a href = \"%s\">%s</a>"); }
@@ -1100,7 +1100,7 @@ static void new_docs(struct Text *this) {
 		while(TextTrim(each = TextSep(&this, "@", &is_first_on_line))) {
 			if(is_first) {
 				/* the first one is not an each, it's the description */
-				if(fmt_chosen->para) fmt_chosen->para(each); /* <-- here it's garbage */
+				/*if(fmt_chosen->para) fmt_chosen->para(each); /* <-- here it's garbage */
 				TextCat(RelateGetValue(docs), TextGet(each)), is_first = 0;
 			} else {
 				parse_each(each, docs, each_matching + where);
