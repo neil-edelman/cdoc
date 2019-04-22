@@ -80,7 +80,7 @@ struct Scanner {
 };
 
 /** Fill the structure with default values. */
-static void Scanner_zero(struct Scanner *const s) {
+static void ScannerZero(struct Scanner *const s) {
 	assert(s);
 	s->limit = s->cursor = s->marker = s->token = s->line = s->buffer;
 	s->is_eof = s->is_doc = 0;
@@ -98,7 +98,7 @@ static int Scanner_(struct Scanner **const ps) {
 	int ret = 1;
 	if(!ps || !(s = *ps)) return 1;
 	if(s->fp) { if(fclose(s->fp) == EOF) ret = 0; s->fp = 0; }
-	Scanner_zero(s);
+	ScannerZero(s);
 	free(s), s = 0, *ps = 0;
 	return ret;
 }
@@ -112,14 +112,14 @@ static struct Scanner *Scanner(const char *const fn) {
 	struct Scanner *s;
 	assert(s && fn);
 	if(!(s = malloc(sizeof *s))) return 0;
-	Scanner_zero(s);
+	ScannerZero(s);
 	s->fn = fn;
 	if(!(s->fp = fopen(s->fn, "r"))) { Scanner_(&s); return 0; }
 	s->limit = s->cursor = s->marker = s->token = s->line = s->buffer + SIZE;
 	return s;
 }
 
-static int Scanner_fill(struct Scanner *const s, const size_t need) {
+static int ScannerFill(struct Scanner *const s, const size_t need) {
 	const size_t a = s->token - s->buffer;
 	size_t read;
 	assert(s);
@@ -147,7 +147,7 @@ re2c:define:YYCURSOR = s->cursor;
 re2c:define:YYMARKER = s->marker;
 re2c:define:YYLIMIT = s->limit;
 re2c:yyfill:enable = 1;
-re2c:define:YYFILL = "if(!Scanner_fill(s, @@)) return 0;";
+re2c:define:YYFILL = "if(!ScannerFill(s, @@)) return 0;";
 re2c:define:YYFILL:naked = 1;
 */
 
@@ -219,9 +219,8 @@ code:
 	* { printf("Unknown, <%.*s>, just roll with it.\n",
 		(int)(s->cursor - s->token), s->token); goto code; }
 
-	/* @fixme Don't see how this would happen? */
-	/* end = "\x00";
-	end { if(s->limit - s->token == YYMAXFILL) return END; goto code; } */
+	/* http://re2c.org/examples/example_03.html */
+	"\x00" { if(s->limit - s->token <= YYMAXFILL) return END; goto code; }
 
 	macro = ("#" | "%:") ([^\n] | "\\\n")* "\n";
 	macro        { s->line = s->cursor; return PREPROCESSOR; }
@@ -251,6 +250,7 @@ code:
 	"."          { return DOT; }
 	"->"         { return ARROW; }
 	"=="         { return COMPARISON; }
+	/* @fixme More! */
 	"="          { return EQUALS; }
 	"struct"     { return STRUCT; }
 	"typedef"    { return TYPEDEF; }
@@ -287,7 +287,7 @@ static void symbol_to_string(const struct Symbol *s, char (*const a)[12]) {
 #define ARRAY_NAME Symbol
 #define ARRAY_TYPE struct Symbol
 #define ARRAY_TO_STRING &symbol_to_string
-#include "Array.h"
+#include "../src/Array.h"
 
 struct Segment {
 	struct SymbolArray doc, code;
@@ -296,7 +296,7 @@ struct Segment {
 
 #define ARRAY_NAME Segment
 #define ARRAY_TYPE struct Segment
-#include "Array.h"
+#include "../src/Array.h"
 
 int main(void) {
 	const char *const fn = "x.c";
@@ -306,7 +306,7 @@ int main(void) {
 	struct SegmentArray text;
 	struct Segment *segment = 0;
 	struct Symbol *symbol;
-	int is_fn = 0;
+	int is_fn = 0, is_line = 0;
 	SegmentArray(&text);
 	do {
 		if(!(s = Scanner(fn))) break;
@@ -324,10 +324,14 @@ int main(void) {
 					 Check that space before? two : one spaces there is
 					 struct (fails on multi-parameter) */
 					is_fn = 1, assert(t == LBRACE);
+				} else if(t == SEMI) {
+					is_line = 1;
 				}
 			} else {
 				if(!s->indent_level) { /* Exiting a function. */
 					is_fn = 0, assert(t == RBRACE);
+					/* @fixme not all are fns. */
+					is_line = 1;
 				} else if(!s->is_doc) { /* Code in functions; we don't care. */
 					continue;
 				}
@@ -348,7 +352,7 @@ int main(void) {
 			/* @fixme
 			 Different doc comments should definitely be paragraphed. */
 			/* Create another segment next time. */
-			if(!s->is_doc && (t == SEMI || t == RBRACE)) segment = 0;
+			if(is_line) is_line = 0, segment = 0;
 		}
 		if(t) break;
 		is_done = 1;
