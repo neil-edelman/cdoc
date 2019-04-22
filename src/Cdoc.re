@@ -55,7 +55,7 @@
 	X(END, 0), X(THING, 0), X(LBRACE, 0), X(RBRACE, 0), \
 	X(LPAREN, 0), X(RPAREN, 0), X(LBRACK, 0), X(RBRACK, 0), \
 	X(CONSTANT, 0), X(ID, 0), X(COMMA, 0), X(SEMI, 0), X(COLON, 0), X(ELLIPSES, 0), \
-	X(AMPER, 0), X(STAR, 0), X(DOT, 0), X(ARROW, 0), X(EQUALS, 0), X(COMPARISON, 0), X(STRUCT, 0), \
+	X(AMPER, 0), X(STAR, 0), X(DOT, 0), X(ARROW, 0), X(EQUALS, 0), X(COMPARISON, 0), X(STRUCT, 0), X(UNION, 0), \
 	X(TYPEDEF, 0), X(PREPROCESSOR, 0), \
 	X(ESCAPED_BACKSLASH, 0), X(ESCAPED_LBRACE, 0), X(ESCAPED_RBRACE, 0), \
 	X(ESCAPED_EACH, 0), X(WHITESPACE, 0), \
@@ -253,6 +253,7 @@ code:
 	/* @fixme More! */
 	"="          { return EQUALS; }
 	"struct"     { return STRUCT; }
+	"union"      { return UNION; } /* +fn are these all that can be braced? */
 	"typedef"    { return TYPEDEF; }
 	("{" | "<%") { s->indent_level++; return LBRACE; }
 	("}" | "%>") { s->indent_level--; return RBRACE; }
@@ -306,7 +307,7 @@ int main(void) {
 	struct SegmentArray text;
 	struct Segment *segment = 0;
 	struct Symbol *symbol;
-	int is_fn = 0, is_line = 0;
+	int is_indent = 0, is_struct = 0, is_line = 0;
 	SegmentArray(&text);
 	do {
 		if(!(s = Scanner(fn))) break;
@@ -315,25 +316,21 @@ int main(void) {
 			for(i = -2; i < s->indent_level; i++) fputc('\t', stdout);
 			printf("%s \"%.*s\"\n", tokens[t],
 				(int)(s->cursor - s->token), s->token);
-			if(!is_fn) {
-				if(s->indent_level == 1) { /* Entering a function. */
+			if(!is_indent) {
+				if(s->indent_level == 1) { /* Entering a code block. */
 					assert(!s->is_doc);
-					/* @fixme: not all {} are functions.
-					 Check that -2 != struct and -1 == RBRACK.
-					 Both will fail on generics and old-style.
-					 Check that space before? two : one spaces there is
-					 struct (fails on multi-parameter) */
-					is_fn = 1, assert(t == LBRACE);
-				} else if(t == SEMI) {
+					is_indent = 1, assert(t == LBRACE);
+				} else if(t == SEMI) { /* Semicolons on indent level 0. */
 					is_line = 1;
+				} else if(t == STRUCT || t == UNION) { /* These have ';'. */
+					is_struct = 1;
 				}
 			} else {
-				if(!s->indent_level) { /* Exiting a function. */
-					is_fn = 0, assert(t == RBRACE);
-					/* @fixme not all are fns. */
-					is_line = 1;
-				} else if(!s->is_doc) { /* Code in functions; we don't care. */
-					continue;
+				if(!s->indent_level) { /* Exiting to indent level 0. */
+					is_indent = 0, assert(t == RBRACE);
+					if(!is_struct) is_line = 1; /* Functions (fixme: sure?) */
+				} else if(!s->is_doc && !is_struct) { /* Code in functions. */
+					continue; /* Don't care. */
 				}
 			}
 			/* Create new segment if need be. */
@@ -352,7 +349,7 @@ int main(void) {
 			/* @fixme
 			 Different doc comments should definitely be paragraphed. */
 			/* Create another segment next time. */
-			if(is_line) is_line = 0, segment = 0;
+			if(is_line) is_line = 0, is_struct = 0, segment = 0;
 		}
 		if(t) break;
 		is_done = 1;
