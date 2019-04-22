@@ -317,7 +317,12 @@ int main(void) {
 				(int)(s->cursor - s->token), s->token);
 			if(!is_fn) {
 				if(s->indent_level == 1) { /* Entering a function. */
-					/* @fixme: not all {} are functions. */
+					assert(!s->is_doc);
+					/* @fixme: not all {} are functions.
+					 Check that -2 != struct and -1 == RBRACK.
+					 Both will fail on generics and old-style.
+					 Check that space before? two : one spaces there is
+					 struct (fails on multi-parameter) */
 					is_fn = 1, assert(t == LBRACE);
 				}
 			} else {
@@ -343,7 +348,7 @@ int main(void) {
 			/* @fixme
 			 Different doc comments should definitly be paragraphized. */
 			/* Create another segment next time. */
-			if(t == SEMI || t == RBRACE) segment = 0;
+			if(!s->is_doc && (t == SEMI || t == RBRACE)) segment = 0;
 		}
 		if(t) break;
 		is_done = 1;
