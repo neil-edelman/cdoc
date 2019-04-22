@@ -346,7 +346,7 @@ int main(void) {
 			symbol->from = s->token;
 			symbol->to = s->cursor;
 			/* @fixme
-			 Different doc comments should definitly be paragraphized. */
+			 Different doc comments should definitely be paragraphed. */
 			/* Create another segment next time. */
 			if(!s->is_doc && (t == SEMI || t == RBRACE)) segment = 0;
 		}
