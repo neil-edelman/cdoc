@@ -1,11 +1,12 @@
 /** 2019 Neil Edelman, distributed under the terms of the MIT License,
  \url{ https://opensource.org/licenses/MIT }.
 
+ {Doxygen} is great and standard; one should use that if possible. However,
+ maybe one needs a simpler solution, for whatever reason.
+
  Parses and extracts the documentation commands in a {.c} file. A documentation
  command begins with {/\**}. Every documentation command is associated to the
- line it's on
- {Doxygen} is
- great and standard; one should use that if possible.
+ line it's on??? Hmmm, that's not good, UHH, every doc is just above?
 
  If you write {void A_BI_(Create, Thing)(void)} it will transform it to
  {<A>Create<BI>Thing(void)}.
@@ -62,7 +63,7 @@
 	X(STRUCT, 0), X(UNION, 0), \
 	X(TYPEDEF, 0), X(PREPROCESSOR, 0), \
 	X(ESCAPED_BACKSLASH, 0), X(ESCAPED_LBRACE, 0), X(ESCAPED_RBRACE, 0), \
-	X(ESCAPED_EACH, 0), X(WHITESPACE, 0), \
+	X(ESCAPED_EACH, 0), X(WHITESPACE, 0), X(NEWLINE, 0), \
 	X(BS_URL, 0), X(BS_CITE, 0), X(BS_SEE, 0), X(BS_PRE, 0), \
 	X(TAG_TITLE, 0), X(TAG_PARAM, 0), X(TAG_AUTHOR, 0), X(TAG_STD, 0), X(TAG_DEPEND, 0), \
 	X(TAG_VERSION, 0), X(TAG_SINCE, 0), X(TAG_FIXME, 0), X(TAG_DEPRICATED, 0), \
@@ -85,6 +86,7 @@ struct Scanner {
 	int indent_level;
 	const char *fn;
     FILE *fp;
+	size_t line;
 };
 
 /** Fill the structure with default values. */
@@ -96,6 +98,7 @@ static void ScannerZero(struct Scanner *const s) {
 	s->indent_level = 0;
 	s->fn = 0;
 	s->fp = 0;
+	s->line = 1;
 }
 
 /** Uninitialises the address of {ps}.
@@ -123,10 +126,10 @@ static int Scanner(struct Scanner *const s, const char *const fn) {
 	int is_done = 0;
 	assert(s && fn);
 	ScannerZero(s);
-	do {
+	do { /* Try: read all contents at once. */
 		char *a;
 		if(!(fp = fopen(fn, "r"))) break;
-		for( ; ; ) { /* Try: read all contents at once. */
+		for( ; ; ) {
 			if(!(a = CharArrayBuffer(&s->buffer, granularity))) break;
 			if(!fgets(a, (int)granularity, fp)) {
 				if(ferror(fp)) break;
@@ -179,8 +182,10 @@ static enum Token scan_doc(struct Scanner *const s) {
 doc:
 	s->token = s->cursor;
 /*!re2c
-	whitespace = [ \t\n\v\f\r];
+	whitespace = [ \t\v\f\r];
 	whitespace* { return WHITESPACE; }
+	newline = "\n" | "\r\n" | "\r";
+	newline { s->line++; return NEWLINE; }
 	word = [^ \t\n\v\f\r\\,@{}&<>*]*; /* This is kind of sketchy. */
 	word { return THING; }
 
@@ -239,6 +244,7 @@ code:
 	doc = "/""**";
 	doc { s->is_doc = 1; return scan_doc(s); }
 
+	/* @fixme paragraphs? */
 	mcm = "/""*" ([^*] ([^*] | ("*" [^/]))*)? "*""/";
 	scm = "//" [^\n]* "\n";
 	wsp = ([ \t\v\n\r] | scm | mcm)+;
@@ -285,7 +291,7 @@ code:
 */
 }
 
-/** Parser is only valid when Scanner is active. */
+/** Parser is only valid when Scanner is active and in steady-state. */
 struct Symbol {
 	enum Token token;
 	const char *from, *to;
@@ -327,6 +333,7 @@ int main(void) {
 		if(!Scanner(&scan, fn)) break;
 		while((t = ScannerScan(&scan))) {
 			int i;
+			printf("%lu:\t", (unsigned long)scan.line);
 			for(i = -1; i < scan.indent_level; i++) fputc('\t', stdout);
 			printf("%s \"%.*s\"\n", tokens[t],
 				(int)(scan.cursor - scan.token), scan.token);
