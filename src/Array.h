@@ -10,8 +10,9 @@
  elements, it may change the memory location. Pointers to this memory become
  stale and unusable.
 
- {<T>Array} is not synchronised. The parameters are preprocessor macros, and
- are all undefined at the end of the file for convenience.
+ {<T>Array} is not synchronised. Errors are returned with {errno}. The
+ parameters are preprocessor macros, and are all undefined at the end of the
+ file for convenience.
 
  @param ARRAY_NAME, ARRAY_TYPE
  The name that literally becomes {<T>}, and a valid type associated therewith,
@@ -377,6 +378,36 @@ static T *T_(ArrayUpdateNew)(struct T_(Array) *const a,
 	return PT_(new)(a, update_ptr);
 }
 
+/** Ensures that {a} array is {buffer} capacity beyond the elements in the
+ array.
+ @param a: If is null, returns null.
+ @param buffer: If this is zero, returns null.
+ @return One past the end of the array, or null and {errno} may be set.
+ @throws ERANGE
+ @throws realloc
+ @order amortised O({buffer})
+ @fixme Test.
+ @allow */
+static T *T_(ArrayBuffer)(struct T_(Array) *const a, const size_t buffer) {
+	if(!a || !buffer || !PT_(reserve)(a, a->size + buffer, 0)) return 0;
+	return a->data + a->size;
+}
+
+/** Adds {add} to the size in {a}.
+ @return Success.
+ @throws ERANGE: The size added is greater than the capacity. To avoid this,
+ call \see{<T>ArrayBuffer} before.
+ @order O(1)
+ @fixme Test.
+ @allow */
+static int T_(ArrayAddSize)(struct T_(Array) *const a, const size_t add) {
+	if(!a) return 0;
+	if(add > a->capacity[0] || a->size > a->capacity[0] - add)
+		return errno = ERANGE, 0;
+	a->size += add;
+	return 1;
+}
+
 /** Iterates though {a} from the bottom and calls {action} on all the
  elements. The topology of the list can not change while in this function.
  That is, don't call \see{<T>ArrayNew}, \see{<T>ArrayRemove}, {etc} in
@@ -469,7 +500,7 @@ static const char *T_(ArrayToString)(const struct T_(Array) *const a) {
 #endif /* print --> */
 
 #ifdef ARRAY_TEST /* <-- test */
-#include "../test/TestArray.h" /* Need this file if one is going to run tests. */
+#include "../test/TestArray.h" /* Need this file if one is going to run tests.*/
 #endif /* test --> */
 
 /* Prototype. */
@@ -492,6 +523,8 @@ static void PT_(unused_set)(void) {
 	T_(ArrayNext)(0, 0);
 	T_(ArrayNew)(0);
 	T_(ArrayUpdateNew)(0, 0);
+	T_(ArrayBuffer)(0, 0);
+	T_(ArrayAddSize)(0, 0);
 	T_(ArrayForEach)(0, 0);
 #ifdef ARRAY_TO_STRING
 	T_(ArrayToString)(0);
@@ -507,7 +540,7 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #undef ARRAY_NAME
 #undef ARRAY_TYPE
 /* Undocumented; allows nestled inclusion so long as: {CAT_}, {CAT}, {PCAT},
- {PCAT_} conform, and {T}, {S}, and {A}, are not used. */
+ {PCAT_} conform, and {T} is not used. */
 #ifdef ARRAY_SUBTYPE /* <-- sub */
 #undef ARRAY_SUBTYPE
 #else /* sub --><-- !sub */

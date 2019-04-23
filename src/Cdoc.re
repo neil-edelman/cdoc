@@ -2,7 +2,9 @@
  \url{ https://opensource.org/licenses/MIT }.
 
  Parses and extracts the documentation commands in a {.c} file. A documentation
- command begins with {\/\*\*} and is outside of any nested braces. {Doxygen} is
+ command begins with {/\**}. Every documentation command is associated to the
+ line it's on
+ {Doxygen} is
  great and standard; one should use that if possible.
 
  If you write {void A_BI_(Create, Thing)(void)} it will transform it to
@@ -45,6 +47,7 @@
 #include <stdlib.h> /* EXIT malloc free */
 #include <stdio.h>  /* FILE printf fputc perror */
 #include <string.h> /* memmove memset */
+#include <errno.h>  /* EDOM ERANGE */
 #include <assert.h> /* assert */
 
 /* X-Marco. */
@@ -52,10 +55,11 @@
 #define STRINGISE(A, F) #A
 #define FLAGS(A, F) F
 #define TOKEN(X) \
-	X(END, 0), X(THING, 0), X(LBRACE, 0), X(RBRACE, 0), \
-	X(LPAREN, 0), X(RPAREN, 0), X(LBRACK, 0), X(RBRACK, 0), \
-	X(CONSTANT, 0), X(ID, 0), X(COMMA, 0), X(SEMI, 0), X(COLON, 0), X(ELLIPSES, 0), \
-	X(AMPER, 0), X(STAR, 0), X(DOT, 0), X(ARROW, 0), X(EQUALS, 0), X(COMPARISON, 0), X(STRUCT, 0), X(UNION, 0), \
+	X(END, 0), X(THING, 0), X(OPERATOR, 0), X(COMMA, 0), X(SEMI, 0), \
+	X(LBRACE, 0), X(RBRACE, 0), X(LPAREN, 0), X(RPAREN, 0), \
+	X(LBRACK, 0), X(RBRACK, 0), \
+	X(CONSTANT, 0), X(ID, 0), \
+	X(STRUCT, 0), X(UNION, 0), \
 	X(TYPEDEF, 0), X(PREPROCESSOR, 0), \
 	X(ESCAPED_BACKSLASH, 0), X(ESCAPED_LBRACE, 0), X(ESCAPED_RBRACE, 0), \
 	X(ESCAPED_EACH, 0), X(WHITESPACE, 0), \
@@ -68,11 +72,15 @@ enum Token { TOKEN(IDENT) };
 static const char *const tokens[] = { TOKEN(STRINGISE) };
 static const int token_flags[] = { TOKEN(FLAGS) };
 
-/*!max:re2c*/
-#define SIZE (64 * 1024)
+#define ARRAY_NAME Char
+#define ARRAY_TYPE char
+#include "../src/Array.h"
 
+/** Scanner reads a file and puts it in memory, then sequentially lexes. */
 struct Scanner {
-	char buffer[SIZE + YYMAXFILL], *limit, *cursor, *marker, *token, *line;
+	struct CharArray buffer;
+	/* {re2c} variables. These point {buffer}; no modifying once it's lexed. */
+	const char *limit, *cursor, *marker, *token;
 	int is_eof, is_doc;
 	int indent_level;
 	const char *fn;
@@ -82,7 +90,8 @@ struct Scanner {
 /** Fill the structure with default values. */
 static void ScannerZero(struct Scanner *const s) {
 	assert(s);
-	s->limit = s->cursor = s->marker = s->token = s->line = s->buffer;
+	CharArray(&s->buffer);
+	s->limit = s->cursor = s->marker = s->token = 0;
 	s->is_eof = s->is_doc = 0;
 	s->indent_level = 0;
 	s->fn = 0;
@@ -93,70 +102,74 @@ static void ScannerZero(struct Scanner *const s) {
  @return Success; {*ps} is null whatever the return.
  @throws fclose
  @allow */
-static int Scanner_(struct Scanner **const ps) {
-	struct Scanner *s;
-	int ret = 1;
-	if(!ps || !(s = *ps)) return 1;
-	if(s->fp) { if(fclose(s->fp) == EOF) ret = 0; s->fp = 0; }
-	ScannerZero(s);
-	free(s), s = 0, *ps = 0;
-	return ret;
-}
-
-/** Constructs a {struct Scanner}.
- @param{fn} File name that the scanner reads and stores in memory.
- @return The {Scanner} or null.
- @throws fopen malloc free
- @allow */
-static struct Scanner *Scanner(const char *const fn) {
-	struct Scanner *s;
-	assert(s && fn);
-	if(!(s = malloc(sizeof *s))) return 0;
-	ScannerZero(s);
-	s->fn = fn;
-	if(!(s->fp = fopen(s->fn, "r"))) { Scanner_(&s); return 0; }
-	s->limit = s->cursor = s->marker = s->token = s->line = s->buffer + SIZE;
-	return s;
-}
-
-static int ScannerFill(struct Scanner *const s, const size_t need) {
-	const size_t a = s->token - s->buffer;
-	size_t read;
+static void Scanner_(struct Scanner *const s) {
 	assert(s);
-	if(s->is_eof || a < need) return 0;
-	memmove(s->buffer, s->token, s->limit - s->token);
-	s->limit -= a;
-	s->cursor -= a;
-	s->marker -= a;
-	s->token -= a;
-	s->line -= a;
-	read = fread(s->limit, 1, a, s->fp);
-	if(ferror(s->fp)) return 0;
-	s->limit += read;
-	if(s->limit < s->buffer + SIZE) {
-		s->is_eof = 1;
-		memset(s->limit, 0, YYMAXFILL);
-		s->limit += YYMAXFILL;
-	}
-	return 1;
+	CharArray_(&s->buffer);
+	ScannerZero(s);
 }
 
-/*!re2c
-re2c:define:YYCTYPE = char;
-re2c:define:YYCURSOR = s->cursor;
-re2c:define:YYMARKER = s->marker;
-re2c:define:YYLIMIT = s->limit;
-re2c:yyfill:enable = 1;
-re2c:define:YYFILL = "if(!ScannerFill(s, @@)) return 0;";
-re2c:define:YYFILL:naked = 1;
-*/
+/* Have {re2c} generate {YYMAXFILL}.
+ \url{ http://re2c.org/examples/example_02.html }. */
+/*!max:re2c*/
+
+/** Initialises a {struct Scanner} with the file {fn}.
+ @return Success.
+ @throws fopen malloc free
+ @fixme Does not allow embedded zeros.
+ @allow */
+static int Scanner(struct Scanner *const s, const char *const fn) {
+	const size_t granularity = 80;
+	FILE *fp = 0;
+	int is_done = 0;
+	assert(s && fn);
+	ScannerZero(s);
+	do {
+		char *a;
+		if(!(fp = fopen(fn, "r"))) break;
+		for( ; ; ) { /* Try: read all contents at once. */
+			if(!(a = CharArrayBuffer(&s->buffer, granularity))) break;
+			if(!fgets(a, (int)granularity, fp)) {
+				if(ferror(fp)) break;
+				is_done = 1;
+				break;
+			}
+			if(!CharArrayAddSize(&s->buffer, strlen(a))) break;
+		}
+		if(!is_done) break;
+		/* Fill the past the file with '\0' for fast lexing. */
+		is_done = 0;
+		if(!(a = CharArrayBuffer(&s->buffer, YYMAXFILL))) break;
+		memset(a, '\0', YYMAXFILL);
+		if(!CharArrayAddSize(&s->buffer, YYMAXFILL)) break;
+		/* Point these toward the first char; {s->buffer} is necessarily done
+		 growing, or we could not do this. */
+		s->cursor = s->marker = s->token = CharArrayNext(&s->buffer, 0);
+		is_done = 1;
+	} while(0); { /* Finally. */
+		if(fp) { if(fclose(fp) == EOF) is_done = 0; fp = 0; }
+	} if(!is_done) { /* Catch. */
+		Scanner_(s);
+	}
+	return is_done;
+}
 
 static enum Token scan_doc(struct Scanner *const s);
 static enum Token scan_code(struct Scanner *const s);
 
+/*!re2c
+re2c:define:YYCTYPE  = char;
+re2c:define:YYFILL   = "return END;";
+re2c:define:YYFILL:naked = 1;
+re2c:define:YYLIMIT  = s->limit;
+re2c:define:YYCURSOR = s->cursor;
+re2c:define:YYMARKER = s->marker; /* Rules overlap. */
+/* Don't know what this does, but it fails without it. */
+re2c:yyfill:enable = 0;
+*/
+
 /** Lex. There are 2 states: {doc}, {code}.
  @allow */
-static enum Token scan(struct Scanner *const s) {
+static enum Token ScannerScan(struct Scanner *const s) {
 	assert(s);
 	return s->is_doc ? scan_doc(s) : scan_code(s);
 }
@@ -211,8 +224,9 @@ doc:
 */
 }
 
-/** Scans C code. */
+/** Scans C code. See \see{ http://re2c.org/examples/example_07.html }. */
 static enum Token scan_code(struct Scanner *const s) {
+	int num_lines = 0;
 code:
 	s->token = s->cursor;
 /*!re2c
@@ -220,10 +234,7 @@ code:
 		(int)(s->cursor - s->token), s->token); goto code; }
 
 	/* http://re2c.org/examples/example_03.html */
-	"\x00" { if(s->limit - s->token <= YYMAXFILL) return END; goto code; }
-
-	macro = ("#" | "%:") ([^\n] | "\\\n")* "\n";
-	macro        { s->line = s->cursor; return PREPROCESSOR; }
+	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto code; }
 
 	doc = "/""**";
 	doc { s->is_doc = 1; return scan_doc(s); }
@@ -233,25 +244,33 @@ code:
 	wsp = ([ \t\v\n\r] | scm | mcm)+;
 	wsp          { printf("< >\n"); goto code; }
 
-	size_mod = "u"|"l"|"ul"|"lu";
-	oct = "0" [0-7]* size_mod?;
-	dec = "-"? [1-9][0-9]* size_mod?; /* What about: -- -74? */
-	hex = '0x' [0-9a-fA-F]+ size_mod?;
-	frc = "-"? [0-9]* "." [0-9]+ | [0-9]+ ".";
+	macro = ("#" | "%:") ([^\n] | "\\\n" | mcm)* "\n";
+	macro        { /*s->line = s->cursor;*/ return PREPROCESSOR; }
+
+	/* @fixme No trigraph support. */
+	oct = "0" [0-7]*;
+	dec = [1-9][0-9]*;
+	hex = '0x' [0-9a-fA-F]+;
+	frc = [0-9]* "." [0-9]+ | [0-9]+ ".";
 	exp = 'e' [+-]? [0-9]+;
 	flt = (frc exp? | [0-9]+ exp) [fFlL]?;
-	/* @fixme No trigraph support. */
-	string_literal = "L"? "\"" ([^"] | "\\". | "\\\n")* "\"";
-	char_literal = "\'" (. | "\\".) "\'";
-	oct | dec | hex | flt | string_literal | char_literal { return CONSTANT; }
+	number = ("-" wsp)? (oct | dec | hex | flt) ("u"|"l"|"ul"|"lu")?;
+	char_type = "u8"|"u"|"U"|"L";
+	string_literal = char_type? "\"" ([^"] | "\\". | "\\\n")* "\"";
+	char_literal = char_type? "\'" ([^'] | "\\". | "\\\n")* "\'";
+	number | string_literal | char_literal { return CONSTANT; }
 
-	"*"          { return STAR; }
-	"&"          { return AMPER; }
-	"."          { return DOT; }
-	"->"         { return ARROW; }
-	"=="         { return COMPARISON; }
-	/* @fixme More! */
-	"="          { return EQUALS; }
+	id = [a-zA-Z_][a-zA-Z_0-9]*;
+	id           { return ID; }
+
+	operator = ":" | "..." | "::" | "?" | "+" | "-" | "*" | "/" | "%" | "^"
+		| "xor" | "&" | "bitand" | "|" | "bitor" | "~" | "compl" | "!" | "not"
+		| "=" | "<" | ">" | "+=" | "-=" | "%=" | "^=" | "xor_eq"
+		| "&=" | "and_eq" | "|=" | "or_eq" | "<<" | ">>" | ">>=" | "<<="
+		| "!=" | "not_eq" | "<=" | ">=" | "&&" | "and" | "||" | "or" | "++"
+		| "--" | "->";
+	operator     { return OPERATOR; }
+
 	"struct"     { return STRUCT; }
 	"union"      { return UNION; } /* +fn are these all that can be braced? */
 	"typedef"    { return TYPEDEF; }
@@ -262,12 +281,7 @@ code:
 	"("          { return LPAREN; }
 	")"          { return RPAREN; }
 	","          { return COMMA; }
-	";"          { s->line = s->cursor; return SEMI; }
-	":"          { return COLON; }
-	"..."        { return ELLIPSES; }
-
-	id = [a-zA-Z_][a-zA-Z_0-9]*;
-	id           { return ID; }
+	";"          { return SEMI; }
 */
 }
 
@@ -278,7 +292,7 @@ struct Symbol {
 };
 
 static void symbol_to_string(const struct Symbol *s, char (*const a)[12]) {
-	int len = s->to - s->from;
+	int len = (int)(s->to - s->from);
 	if(len > 5) len = 5;
 	sprintf(*a, "%.4s\"%.*s\"", tokens[s->token], len, s->from);
 	/*strncpy(*a, tokens[s->token], sizeof *a - 1);*/
@@ -301,7 +315,7 @@ struct Segment {
 
 int main(void) {
 	const char *const fn = "x.c";
-	struct Scanner *s = 0;
+	struct Scanner scan;
 	enum Token t;
 	int is_done = 0;
 	struct SegmentArray text;
@@ -310,26 +324,30 @@ int main(void) {
 	int is_indent = 0, is_struct = 0, is_line = 0;
 	SegmentArray(&text);
 	do {
-		if(!(s = Scanner(fn))) break;
-		while((t = scan(s))) {
+		if(!Scanner(&scan, fn)) break;
+		while((t = ScannerScan(&scan))) {
 			int i;
-			for(i = -2; i < s->indent_level; i++) fputc('\t', stdout);
+			for(i = -1; i < scan.indent_level; i++) fputc('\t', stdout);
 			printf("%s \"%.*s\"\n", tokens[t],
-				(int)(s->cursor - s->token), s->token);
+				(int)(scan.cursor - scan.token), scan.token);
 			if(!is_indent) {
-				if(s->indent_level == 1) { /* Entering a code block. */
-					assert(!s->is_doc);
+				if(scan.indent_level == 1) { /* Entering a code block. */
+					assert(!scan.is_doc);
 					is_indent = 1, assert(t == LBRACE);
+					/* Determine if this is function. */
+					if((symbol = SymbolArrayPop(&segment->code))
+						&& symbol->token != RPAREN) {
+						if(segment) segment->type = DECLARATION;
+						is_struct = 1;
+					} else if(segment) segment->type = FUNCTION;
 				} else if(t == SEMI) { /* Semicolons on indent level 0. */
 					is_line = 1;
-				} else if(t == STRUCT || t == UNION) { /* These have ';'. */
-					is_struct = 1;
 				}
 			} else {
-				if(!s->indent_level) { /* Exiting to indent level 0. */
+				if(!scan.indent_level) { /* Exiting to indent level 0. */
 					is_indent = 0, assert(t == RBRACE);
 					if(!is_struct) is_line = 1; /* Functions (fixme: sure?) */
-				} else if(!s->is_doc && !is_struct) { /* Code in functions. */
+				} else if(!scan.is_doc && !is_struct) { /* Code in functions. */
 					continue; /* Don't care. */
 				}
 			}
@@ -341,11 +359,11 @@ int main(void) {
 				segment->type = NOT_SET;
 			}
 			/* Create a new symbol. */
-			if(!(symbol = SymbolArrayNew(s->is_doc
+			if(!(symbol = SymbolArrayNew(scan.is_doc
 				? &segment->doc : &segment->code))) break;
 			symbol->token = t;
-			symbol->from = s->token;
-			symbol->to = s->cursor;
+			symbol->from = scan.token;
+			symbol->to = scan.cursor;
 			/* @fixme
 			 Different doc comments should definitely be paragraphed. */
 			/* Create another segment next time. */
@@ -359,7 +377,7 @@ int main(void) {
 		fputs("\n\n*****\n\n", stdout);
 		segment = 0;
 		while((segment = SegmentArrayNext(&text, segment))) {
-			printf("Segment:\n\tdoc: %s.\n\tcode: %s.\n\n",
+			printf("Segment(%d):\n\tdoc: %s.\n\tcode: %s.\n\n", segment->type,
 				SymbolArrayToString(&segment->doc),
 				SymbolArrayToString(&segment->code));
 			/*if(symbols->token == WHITESPACE) {
@@ -373,7 +391,7 @@ int main(void) {
 		while((segment = SegmentArrayPop(&text)))
 			SymbolArray_(&segment->doc), SymbolArray_(&segment->code);
 		SegmentArray_(&text);
-		Scanner_(&s);
+		Scanner_(&scan);
 	}
 	return is_done ? EXIT_SUCCESS : EXIT_FAILURE;
 }
