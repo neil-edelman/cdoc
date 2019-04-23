@@ -52,9 +52,11 @@
 #include <assert.h> /* assert */
 
 /* X-Marco. */
-#define IDENT(A, F) A
-#define STRINGISE(A, F) #A
-#define FLAGS(A, F) F
+#define IDENT(A) A
+#define STRINGISE(A) #A
+#define IDENTF(A, F) A
+#define STRINGISEF(A, F) #A
+#define FLAGSF(A, F) F
 #define TOKEN(X) \
 	X(END, 0), X(THING, 0), X(OPERATOR, 0), X(COMMA, 0), X(SEMI, 0), \
 	X(LBRACE, 0), X(RBRACE, 0), X(LPAREN, 0), X(RPAREN, 0), \
@@ -69,9 +71,9 @@
 	X(TAG_VERSION, 0), X(TAG_SINCE, 0), X(TAG_FIXME, 0), X(TAG_DEPRICATED, 0), \
 	X(TAG_RETURN, 0), X(TAG_THROWS, 0), X(TAG_IMPLEMENTS, 0), X(TAG_ORDER, 0), \
 	X(TAG_ALLOW, 0), X(HTML_AMP, 0), X(HTML_LT, 0), X(HTML_GT, 0)
-enum Token { TOKEN(IDENT) };
-static const char *const tokens[] = { TOKEN(STRINGISE) };
-static const int token_flags[] = { TOKEN(FLAGS) };
+enum Token { TOKEN(IDENTF) };
+static const char *const tokens[] = { TOKEN(STRINGISEF) };
+static const int token_flags[] = { TOKEN(FLAGSF) };
 
 #define ARRAY_NAME Char
 #define ARRAY_TYPE char
@@ -166,6 +168,7 @@ re2c:define:YYFILL:naked = 1;
 re2c:define:YYLIMIT  = s->limit;
 re2c:define:YYCURSOR = s->cursor;
 re2c:define:YYMARKER = s->marker; /* Rules overlap. */
+//re2c:define:YYCTXMARKER = s->context; /*  */
 /* Don't know what this does, but it fails without it. */
 re2c:yyfill:enable = 0;
 */
@@ -179,13 +182,20 @@ static enum Token ScannerScan(struct Scanner *const s) {
 
 /** Scans documentation. */
 static enum Token scan_doc(struct Scanner *const s) {
+	printf("scandoc<%.5s>\n", s->cursor);
 doc:
 	s->token = s->cursor;
 /*!re2c
-	whitespace = [ \t\v\f\r];
-	whitespace* { return WHITESPACE; }
-	newline = "\n" | "\r\n" | "\r";
+	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto doc; }
+	"*/" { s->is_doc = 0; return scan_code(s); }
+	* { goto doc; }
+
+	whitespace = [ \t\v\f];
+	whitespace+ { return WHITESPACE; }
+
+	newline = "\n" | "\r" "\n"?;
 	newline { s->line++; return NEWLINE; }
+
 	word = [^ \t\n\v\f\r\\,@{}&<>*]*; /* This is kind of sketchy. */
 	word { return THING; }
 
@@ -219,9 +229,6 @@ doc:
 	"@order" { return TAG_ORDER; }
 	"@allow" { return TAG_ALLOW; }
 
-	"*/" { s->is_doc = 0; return scan_code(s); }
-	* { goto doc; } /* @fixme: this probably hides stuff? */
-
 	/* Also escape these for {HTML}. */
 	"&" { return HTML_AMP; }
 	"<" { return HTML_LT; }
@@ -231,36 +238,38 @@ doc:
 
 /** Scans C code. See \see{ http://re2c.org/examples/example_07.html }. */
 static enum Token scan_code(struct Scanner *const s) {
-	int num_lines = 0;
 code:
 	s->token = s->cursor;
 /*!re2c
+	/* http://re2c.org/examples/example_03.html */
+	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto code; }
 	* { printf("Unknown, <%.*s>, just roll with it.\n",
 		(int)(s->cursor - s->token), s->token); goto code; }
 
-	/* http://re2c.org/examples/example_03.html */
-	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto code; }
+	newline { s->line++; goto code; }
 
 	doc = "/""**";
-	doc { s->is_doc = 1; return scan_doc(s); }
+	doc / [^/] { s->is_doc = 1; return scan_doc(s); }
 
-	/* @fixme paragraphs? */
-	mcm = "/""*" ([^*] ([^*] | ("*" [^/]))*)? "*""/";
-	scm = "//" [^\n]* "\n";
-	wsp = ([ \t\v\n\r] | scm | mcm)+;
-	wsp          { printf("< >\n"); goto code; }
+	comment = "/""*";
+	comment { goto comment; }
+	cxx_comment = "//" [^\n]*;
+	whitespace+ | cxx_comment { goto code; }
 
-	macro = ("#" | "%:") ([^\n] | "\\\n" | mcm)* "\n";
-	macro        { /*s->line = s->cursor;*/ return PREPROCESSOR; }
+	macro = ("#" | "%:");
+	macro { goto macro; }
 
-	/* @fixme No trigraph support. */
+	/* Define a number and minus separate then numbers can't have whitespace. */
 	oct = "0" [0-7]*;
 	dec = [1-9][0-9]*;
 	hex = '0x' [0-9a-fA-F]+;
 	frc = [0-9]* "." [0-9]+ | [0-9]+ ".";
 	exp = 'e' [+-]? [0-9]+;
 	flt = (frc exp? | [0-9]+ exp) [fFlL]?;
-	number = ("-" wsp)? (oct | dec | hex | flt) ("u"|"l"|"ul"|"lu")?;
+	number = (oct | dec | hex | flt) ("u"|"l"|"ul"|"lu")?;
+	number { return CONSTANT; }
+
+	/* Strings @fixme No trigraph support. @fixme embedded nl, switch to goto */
 	char_type = "u8"|"u"|"U"|"L";
 	string_literal = char_type? "\"" ([^"] | "\\". | "\\\n")* "\"";
 	char_literal = char_type? "\'" ([^'] | "\\". | "\\\n")* "\'";
@@ -274,7 +283,7 @@ code:
 		| "=" | "<" | ">" | "+=" | "-=" | "%=" | "^=" | "xor_eq"
 		| "&=" | "and_eq" | "|=" | "or_eq" | "<<" | ">>" | ">>=" | "<<="
 		| "!=" | "not_eq" | "<=" | ">=" | "&&" | "and" | "||" | "or" | "++"
-		| "--" | "->";
+		| "--" | "." | "->";
 	operator     { return OPERATOR; }
 
 	"struct"     { return STRUCT; }
@@ -288,6 +297,40 @@ code:
 	")"          { return RPAREN; }
 	","          { return COMMA; }
 	";"          { return SEMI; }
+*/
+
+comment: /* C style comments. Actively ignore. */
+	printf("comm %c\n", *s->cursor);
+/*!re2c
+	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto comment; }
+	* { goto comment; }
+	"\\". { goto comment; }
+	newline { s->line++; goto comment; }
+	"*""/" { goto code; }
+*/
+
+comment_macro: /* The same thing, except with goto marco. */
+	printf("comm_mac %c\n", *s->cursor);
+/*!re2c
+	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END;
+		goto comment_macro; }
+	* { goto comment_macro; }
+	"\\". { goto comment_macro; }
+	newline { s->line++; goto comment_macro; }
+	"*""/" { goto macro; }
+*/
+
+macro: /* Actively ignore macros. */
+	printf("mac %c\n", *s->cursor);
+/*!re2c
+	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto macro; }
+	* { goto macro; }
+	"\\" (whitespace)* newline { s->line++; goto macro; } /* Continuation. */
+	/* We should have docs in comment macro, but it's too hard to parse, and
+	 the likelihood of that happening is nil. */
+	"/""*" { goto comment_macro; }
+	"//" [^\n\r]* { goto macro; }
+	newline { s->line++; goto code; }
 */
 }
 
@@ -310,9 +353,14 @@ static void symbol_to_string(const struct Symbol *s, char (*const a)[12]) {
 #define ARRAY_TO_STRING &symbol_to_string
 #include "../src/Array.h"
 
+#define TYPE(X) \
+	X(HEADER), X(DECLARATION), X(FUNCTION)
+enum Type { TYPE(IDENT) };
+static const char *const types[] = { TYPE(STRINGISE) };
+
 struct Segment {
 	struct SymbolArray doc, code;
-	enum { NOT_SET, HEADER, DECLARATION, FUNCTION } type;
+	enum Type type;
 };
 
 #define ARRAY_NAME Segment
@@ -333,7 +381,7 @@ int main(void) {
 		if(!Scanner(&scan, fn)) break;
 		while((t = ScannerScan(&scan))) {
 			int i;
-			printf("%lu:\t", (unsigned long)scan.line);
+			printf("%lu%c\t", (unsigned long)scan.line, scan.is_doc? '~' : ':');
 			for(i = -1; i < scan.indent_level; i++) fputc('\t', stdout);
 			printf("%s \"%.*s\"\n", tokens[t],
 				(int)(scan.cursor - scan.token), scan.token);
@@ -363,9 +411,9 @@ int main(void) {
 				if(!(segment = SegmentArrayNew(&text))) break;
 				SymbolArray(&segment->doc);
 				SymbolArray(&segment->code);
-				segment->type = NOT_SET;
+				segment->type = HEADER; /* Default. */
 			}
-			/* Create a new symbol. */
+			/* Create a new symbol for this segment. */
 			if(!(symbol = SymbolArrayNew(scan.is_doc
 				? &segment->doc : &segment->code))) break;
 			symbol->token = t;
@@ -384,7 +432,8 @@ int main(void) {
 		fputs("\n\n*****\n\n", stdout);
 		segment = 0;
 		while((segment = SegmentArrayNext(&text, segment))) {
-			printf("Segment(%d):\n\tdoc: %s.\n\tcode: %s.\n\n", segment->type,
+			printf("Segment(%s):\n\tdoc: %s.\n\tcode: %s.\n\n",
+				types[segment->type],
 				SymbolArrayToString(&segment->doc),
 				SymbolArrayToString(&segment->code));
 			/*if(symbols->token == WHITESPACE) {
