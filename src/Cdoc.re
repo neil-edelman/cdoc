@@ -2,7 +2,8 @@
  \url{ https://opensource.org/licenses/MIT }.
 
  {Doxygen} is great and standard; one should use that if possible. However,
- maybe one needs a simpler solution, for whatever reason.
+ maybe one is too hip to use it? or it uses libraries that are too new for your
+ computer?
 
  Parses and extracts the documentation commands in a {.c} file. A documentation
  command begins with {/\**}.
@@ -13,11 +14,9 @@
  @since 2017-03 Initial version.
  @std C89
  @depend re2c (\url{http://re2c.org/})
- @fixme Lists.
+ @fixme Lists in comments, etc.
  @fixme Support Kernel-style comments where the " * " starts a line.
- @fixme  If you write {void A_BI_(Create, Thing)(void)} it will transform it to
- {<A>Create<BI>Thing(void)}.
-*/
+ @fixme {void A_BI_(Create, Thing)(void)} -> {<A>Create<BI>Thing(void)}. */
 
 #include <stdlib.h> /* EXIT malloc free */
 #include <stdio.h>  /* FILE printf fputc perror */
@@ -41,8 +40,7 @@
 	X(END, 0), X(OPERATOR, 0), X(COMMA, 0), X(SEMI, 0), \
 	X(LBRACE, 0), X(RBRACE, 0), X(LPAREN, 0), X(RPAREN, 0), \
 	X(LBRACK, 0), X(RBRACK, 0), X(CONSTANT, 0), X(ID, 0), \
-	X(STRUCT, 0), X(UNION, 0), \
-	X(TYPEDEF, 0), X(PREPROCESSOR, 0), \
+	X(STRUCT, 0), X(UNION, 0), X(TYPEDEF, 0), X(PREPROCESSOR, 0), \
 	X(ESCAPED_BACKSLASH, 0), X(ESCAPED_LBRACE, 0), X(ESCAPED_RBRACE, 0), \
 	X(ESCAPED_EACH, 0), X(WHITESPACE, 0), X(NEWLINE, 0), \
 	X(BS_URL, 0), X(BS_CITE, 0), X(BS_SEE, 0), X(BS_PRE, 0), \
@@ -358,7 +356,6 @@ code:
  @allow */
 static enum Token scan_comment(struct Scanner *const s) {
 	assert(s && state_look(s) == COMMENT);
-	printf("comm '%c'\n", *s->cursor);
 comment:
 /*!re2c
 	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto comment; }
@@ -369,12 +366,13 @@ comment:
 */
 }
 
-/** String constant.
+/** String constant. It reports one string constant for every string, even if
+ they are actually concatenated. This is hard because one could have, eg, LINE
+ and FILE pre-processor commands. Keep it simple.
  @implements ScannerFn
  @allow */
 static enum Token scan_string(struct Scanner *const s) {
 	assert(s && state_look(s) == STRING);
-	printf("string\n");
 string:
 /*!re2c
 	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto string; }
@@ -394,7 +392,6 @@ string:
  @allow */
 static enum Token scan_char(struct Scanner *const s) {
 	assert(s && state_look(s) == CHAR);
-	printf("char\n");
 character:
 /*!re2c
 	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto character; }
@@ -414,7 +411,6 @@ character:
  @allow */
 static enum Token scan_macro(struct Scanner *const s) {
 	assert(s && state_look(s) == MACRO);
-	printf("mac %c\n", *s->cursor);
 macro:
 /*!re2c
 	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto macro; }
@@ -429,9 +425,7 @@ macro:
 
 
 
-
-
-
+/* Parser. */
 
 /** Parser is only valid when Scanner is active and in steady-state. */
 struct Symbol {
@@ -520,7 +514,12 @@ int main(void) {
 			/* @fixme
 			 Different doc comments should definitely be paragraphed. */
 			/* Create another segment next time. */
-			if(is_line) is_line = 0, is_struct = 0, segment = 0;
+			if(is_line) {
+				/* General declaration. */
+				if(t == SEMI && segment->type == HEADER)
+					segment->type = DECLARATION;
+				is_line = 0, is_struct = 0, segment = 0;
+			}
 		}
 		if(t) break;
 		is_done = 1;
@@ -534,11 +533,6 @@ int main(void) {
 				types[segment->type],
 				SymbolArrayToString(&segment->doc),
 				SymbolArrayToString(&segment->code));
-			/*if(symbols->token == WHITESPACE) {
-				fputs(" ,", stdout);
-			} else {
-				printf("<%.*s>,", (int)(symbols->to - symbols->from), symbols->from);
-			}*/
 		}
 		fputc('\n', stdout);
 	} {
