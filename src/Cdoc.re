@@ -131,21 +131,20 @@ static void Scanner_(struct Scanner *const s) {
  @return Success.
  @throws fopen malloc free
  @fixme Does not allow embedded zeros. Limitation of {fgets}?
+ @fixme fn is stupid and a hack left over from fread, just read from stdin.
  @allow */
-static int Scanner(struct Scanner *const s, const char *const fn) {
+static int Scanner(struct Scanner *const s) {
 	const size_t granularity = 80;
-	FILE *fp = 0;
 	int is_done = 0;
-	assert(s && fn);
+	assert(s);
 	zero(s);
-	do { /* Try: read all contents at once. */
+	do { /* Try: read all contents from stdin at once. */
 		char *a;
 		enum State *ps;
-		if(!(fp = fopen(fn, "r"))) break;
 		for( ; ; ) {
 			if(!(a = CharArrayBuffer(&s->buffer, granularity))) break;
-			if(!fgets(a, (int)granularity, fp))
-				{ is_done = !ferror(fp); break; }
+			if(!fgets(a, (int)granularity, stdin))
+				{ is_done = !ferror(stdin); break; }
 			if(!CharArrayAddSize(&s->buffer, strlen(a))) break;
 		}
 		if(!is_done) break;
@@ -161,9 +160,7 @@ static int Scanner(struct Scanner *const s, const char *const fn) {
 		if(!(ps = StateArrayNew(&s->states))) break;
 		*ps = CODE;
 		is_done = 1;
-	} while(0); { /* Finally. */
-		if(fp) { if(fclose(fp) == EOF) is_done = 0; fp = 0; }
-	} if(!is_done) { /* Catch. */
+	} while(0); if(!is_done) { /* Catch. */
 		Scanner_(s);
 	}
 	return is_done;
@@ -460,18 +457,16 @@ struct Segment {
 
 
 int main(void) {
-	const char *const fn = "x.c";
 	struct Scanner scan;
 	enum Token t;
-	int is_done = 0;
 	struct SegmentArray text;
 	struct Segment *segment = 0;
 	struct Symbol *symbol;
 	enum State *state;
-	int is_indent = 0, is_struct = 0, is_line = 0;
+	int is_done = 0, is_indent = 0, is_struct = 0, is_line = 0;
 	SegmentArray(&text);
 	do {
-		if(!Scanner(&scan, fn)) break;
+		if(!Scanner(&scan)) break;
 		while((t = ScannerScan(&scan))) {
 			int i;
 			state = StateArrayPeek(&scan.states);
@@ -505,6 +500,9 @@ int main(void) {
 					continue; /* Code in functions: don't care. */
 				}
 			}
+			/*  */
+			if(segment && (symbol = SymbolArrayPeek(&segment->doc))) {
+			}
 			/* Create new segment if need be. */
 			if(!segment) {
 				if(!(segment = SegmentArrayNew(&text))) break;
@@ -524,7 +522,7 @@ int main(void) {
 		if(t) break;
 		is_done = 1;
 	} while(0); if(!is_done) {
-		perror(fn);
+		perror("Cdoc");
 	} else {
 		fputs("\n\n*****\n\n", stdout);
 		segment = 0;
