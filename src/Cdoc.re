@@ -8,41 +8,15 @@
  command begins with {/\**}. Every documentation command is associated to the
  line it's on??? Hmmm, that's not good, UHH, every doc is just above?
 
- If you write {void A_BI_(Create, Thing)(void)} it will transform it to
- {<A>Create<BI>Thing(void)}.
-
- These are recognised in-line in the documentation:
-
- - \\url\{<link>\},
- - \\cite\{<paper>\},
- - \\see\{<function>\},
- - \\$\{<pre>\},
- - \{<emphasis>\}.
-
- These are tags that modify things past it:
-
- - \@title [<title>],
- - \@param[\{<param>[, <param>]*\}] <description>,
- - \@author [<you>],
- - \@std [<standard>],
- - \@depend [<files, libraries>],
- - \@version[\{<version>\}] [description],
- - \@since[\{<version>\}] [description],
- - \@fixme [<error>],
- - \@deprecated [<why>],
- - \@return [<value>],
- - \@throws[\{errno\}] [<exceptional return>],
- - \@implements [<fuction type>],
- - \@order [<O(g(n))>],
- - \@allow (Allows {static} functions.)
-
  @title Cdoc.c
  @author Neil
  @version 2019-05 Re-done in {re2c}.
  @since 2017-03 Initial version.
  @fixme Lists.
- @fixme Support Kernel-style.
+ @fixme Support Kernel-style comments where the " * " starts a line.
  @fixme \@depend
+ @fixme  If you write {void A_BI_(Create, Thing)(void)} it will transform it to
+ {<A>Create<BI>Thing(void)}.
 */
 
 #include <stdlib.h> /* EXIT malloc free */
@@ -51,12 +25,18 @@
 #include <errno.h>  /* EDOM ERANGE */
 #include <assert.h> /* assert */
 
-/* X-Marco. */
-#define IDENT(A) A
+/* X-Marco is great for debug. */
+#define PARAM(A) A
 #define STRINGISE(A) #A
-#define IDENTF(A, F) A
-#define STRINGISEF(A, F) #A
-#define FLAGSF(A, F) F
+#define PARAM_A(A, B) A
+#define PARAM_B(A, B) B
+#define STRINGISE_A(A, B) #A
+
+
+
+/* Definitions. */
+
+/* Define the tokens. */
 #define TOKEN(X) \
 	X(END, 0), X(THING, 0), X(OPERATOR, 0), X(COMMA, 0), X(SEMI, 0), \
 	X(LBRACE, 0), X(RBRACE, 0), X(LPAREN, 0), X(RPAREN, 0), \
@@ -71,73 +51,102 @@
 	X(TAG_VERSION, 0), X(TAG_SINCE, 0), X(TAG_FIXME, 0), X(TAG_DEPRICATED, 0), \
 	X(TAG_RETURN, 0), X(TAG_THROWS, 0), X(TAG_IMPLEMENTS, 0), X(TAG_ORDER, 0), \
 	X(TAG_ALLOW, 0), X(HTML_AMP, 0), X(HTML_LT, 0), X(HTML_GT, 0)
-enum Token { TOKEN(IDENTF) };
-static const char *const tokens[] = { TOKEN(STRINGISEF) };
-static const int token_flags[] = { TOKEN(FLAGSF) };
+enum Token { TOKEN(PARAM_A) };
+static const char *const tokens[] = { TOKEN(STRINGISE_A) };
+static const int token_flags[] = { TOKEN(PARAM_B) };
 
+struct Scanner;
+/** {ScannerFn} functions which {re2c} lex. Forward-declared for {state_fn}. */
+typedef enum Token (*ScannerFn)(struct Scanner *const);
+
+/* Forward-declare all {ScannerFn}. */
+static enum Token scan_eof(struct Scanner *const s);
+static enum Token scan_doc(struct Scanner *const s);
+static enum Token scan_code(struct Scanner *const s);
+static enum Token scan_comment(struct Scanner *const s);
+static enum Token scan_string(struct Scanner *const s);
+static enum Token scan_macro(struct Scanner *const s);
+
+/* Define the states of the input file. */
+#define STATE(X) X(END_OF_FILE, &scan_eof), X(DOC, scan_doc), \
+	X(CODE, scan_code), X(COMMENT, scan_comment), X(STRING, scan_string), \
+	X(MACRO, scan_macro)
+enum State { STATE(PARAM_A) };
+static const char *const states[] = { STATE(STRINGISE_A) };
+static const ScannerFn state_fn[] = { STATE(PARAM_B) };
+
+/* Define the types out output. */
+#define TYPE(X) X(HEADER), X(DECLARATION), X(FUNCTION)
+enum Type { TYPE(PARAM) };
+static const char *const types[] = { TYPE(STRINGISE) };
+
+
+
+/* Define Scanner. */
+
+/* Define {CharArray}, a vector of characters -- dynamic string. */
 #define ARRAY_NAME Char
 #define ARRAY_TYPE char
 #include "../src/Array.h"
 
-/** Scanner reads a file and puts it in memory, then sequentially lexes. */
+/* Define {StateArray}, a stack of states. */
+#define ARRAY_NAME State
+#define ARRAY_TYPE enum State
+#define ARRAY_STACK
+#include "../src/Array.h"
+
+/** Scanner reads a file and puts it in memory. */
 struct Scanner {
 	struct CharArray buffer;
-	/* {re2c} variables. These point {buffer}; no modifying once it's lexed. */
-	const char *limit, *cursor, *marker, *token;
-	int is_eof, is_doc;
+	struct StateArray states;
 	int indent_level;
-	const char *fn;
-    FILE *fp;
 	size_t line;
+	/* {re2c} variables. These point directly into {buffer} so no modifying. */
+	const char *limit, *cursor, *marker, *token;
 };
 
 /** Fill the structure with default values. */
-static void ScannerZero(struct Scanner *const s) {
+static void zero(struct Scanner *const s) {
 	assert(s);
 	CharArray(&s->buffer);
-	s->limit = s->cursor = s->marker = s->token = 0;
-	s->is_eof = s->is_doc = 0;
+	StateArray(&s->states);
 	s->indent_level = 0;
-	s->fn = 0;
-	s->fp = 0;
-	s->line = 1;
+	s->line = 0;
+	s->limit = s->cursor = s->marker = s->token = 0;
 }
 
-/** Uninitialises the address of {ps}.
- @return Success; {*ps} is null whatever the return.
- @throws fclose
+/** Uninitialises {s}.
  @allow */
 static void Scanner_(struct Scanner *const s) {
 	assert(s);
 	CharArray_(&s->buffer);
-	ScannerZero(s);
+	StateArray_(&s->states);
+	zero(s);
 }
 
 /* Have {re2c} generate {YYMAXFILL}.
  \url{ http://re2c.org/examples/example_02.html }. */
 /*!max:re2c*/
 
-/** Initialises a {struct Scanner} with the file {fn}.
+/** Initialises {s} with the file {fn}.
  @return Success.
  @throws fopen malloc free
- @fixme Does not allow embedded zeros.
+ @fixme Does not allow embedded zeros. Limitation of {fgets}?
  @allow */
 static int Scanner(struct Scanner *const s, const char *const fn) {
 	const size_t granularity = 80;
 	FILE *fp = 0;
 	int is_done = 0;
 	assert(s && fn);
-	ScannerZero(s);
+	zero(s);
 	do { /* Try: read all contents at once. */
 		char *a;
+		enum State *state;
 		if(!(fp = fopen(fn, "r"))) break;
 		for( ; ; ) {
 			if(!(a = CharArrayBuffer(&s->buffer, granularity))) break;
-			if(!fgets(a, (int)granularity, fp)) {
-				if(ferror(fp)) break;
-				is_done = 1;
-				break;
-			}
+			if(!fgets(a, (int)granularity, fp))
+				{ is_done = !ferror(fp); break; }
 			if(!CharArrayAddSize(&s->buffer, strlen(a))) break;
 		}
 		if(!is_done) break;
@@ -149,6 +158,9 @@ static int Scanner(struct Scanner *const s, const char *const fn) {
 		/* Point these toward the first char; {s->buffer} is necessarily done
 		 growing, or we could not do this. */
 		s->cursor = s->marker = s->token = CharArrayNext(&s->buffer, 0);
+		s->line = 1;
+		if(!(state = StateArrayNew(&s->states))) break;
+		*state = CODE;
 		is_done = 1;
 	} while(0); { /* Finally. */
 		if(fp) { if(fclose(fp) == EOF) is_done = 0; fp = 0; }
@@ -158,8 +170,9 @@ static int Scanner(struct Scanner *const s, const char *const fn) {
 	return is_done;
 }
 
-static enum Token scan_doc(struct Scanner *const s);
-static enum Token scan_code(struct Scanner *const s);
+
+
+/* {ScannerFn}'s. */
 
 /*!re2c
 re2c:define:YYCTYPE  = char;
@@ -168,26 +181,31 @@ re2c:define:YYFILL:naked = 1;
 re2c:define:YYLIMIT  = s->limit;
 re2c:define:YYCURSOR = s->cursor;
 re2c:define:YYMARKER = s->marker; /* Rules overlap. */
-//re2c:define:YYCTXMARKER = s->context; /*  */
 /* Don't know what this does, but it fails without it. */
 re2c:yyfill:enable = 0;
 */
 
-/** Lex. There are 2 states: {doc}, {code}.
+/** Returns eof.
+ @implements ScannerFn
  @allow */
-static enum Token ScannerScan(struct Scanner *const s) {
-	assert(s);
-	return s->is_doc ? scan_doc(s) : scan_code(s);
-}
+static enum Token scan_eof(struct Scanner *const s) { (void)s; return END; }
 
-/** Scans documentation. */
+/** Scans documentation.
+ @implements ScannerFn
+ @allow */
 static enum Token scan_doc(struct Scanner *const s) {
-	printf("scandoc<%.5s>\n", s->cursor);
+	enum State *state;
+	assert(s && (state = StateArrayPeek(&s->states)) && *state == DOC);
 doc:
 	s->token = s->cursor;
 /*!re2c
 	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto doc; }
-	"*/" { s->is_doc = 0; return scan_code(s); }
+	"*/" {
+		StateArrayPop(&s->states);
+		state = StateArrayPeek(&s->states);
+		assert(state);
+		return state_fn[*state](s);
+	}
 	* { goto doc; }
 
 	whitespace = [ \t\v\f];
@@ -236,8 +254,12 @@ doc:
 */
 }
 
-/** Scans C code. See \see{ http://re2c.org/examples/example_07.html }. */
+/** Scans C code. See \see{ http://re2c.org/examples/example_07.html }.
+ @implements ScannerFn
+ @allow */
 static enum Token scan_code(struct Scanner *const s) {
+	enum State *state;
+	assert(s && (state = StateArrayPeek(&s->states)) && *state == CODE);
 code:
 	s->token = s->cursor;
 /*!re2c
@@ -248,8 +270,13 @@ code:
 
 	newline { s->line++; goto code; }
 
+	/* Documentation is not '/ * * /', but other then that. */
 	doc = "/""**";
-	doc / [^/] { s->is_doc = 1; return scan_doc(s); }
+	doc / [^/] {
+		if(!(state = StateArrayNew(&s->states))) return END;
+		*state = DOC;
+		return scan_doc(s);
+	}
 
 	comment = "/""*";
 	comment { goto comment; }
@@ -334,6 +361,35 @@ macro: /* Actively ignore macros. */
 */
 }
 
+/** Returns eof.
+ @implements ScannerFn
+ @allow */
+static enum Token scan_comment(struct Scanner *const s) { return END; }
+
+/** Returns eof.
+ @implements ScannerFn
+ @allow */
+static enum Token scan_string(struct Scanner *const s) { return END; }
+
+/** Returns eof.
+ @implements ScannerFn
+ @allow */
+static enum Token scan_macro(struct Scanner *const s) { return END; }
+
+/** Lex.
+ @allow */
+static enum Token ScannerScan(struct Scanner *const s) {
+	enum State *state;
+	assert(s && StateArraySize(&s->states));
+	state = StateArrayPeek(&s->states);
+	return state_fn[*state](s);
+}
+
+
+
+
+
+
 /** Parser is only valid when Scanner is active and in steady-state. */
 struct Symbol {
 	enum Token token;
@@ -353,11 +409,6 @@ static void symbol_to_string(const struct Symbol *s, char (*const a)[12]) {
 #define ARRAY_TO_STRING &symbol_to_string
 #include "../src/Array.h"
 
-#define TYPE(X) \
-	X(HEADER), X(DECLARATION), X(FUNCTION)
-enum Type { TYPE(IDENT) };
-static const char *const types[] = { TYPE(STRINGISE) };
-
 struct Segment {
 	struct SymbolArray doc, code;
 	enum Type type;
@@ -375,20 +426,24 @@ int main(void) {
 	struct SegmentArray text;
 	struct Segment *segment = 0;
 	struct Symbol *symbol;
+	enum State *state;
 	int is_indent = 0, is_struct = 0, is_line = 0;
 	SegmentArray(&text);
 	do {
 		if(!Scanner(&scan, fn)) break;
 		while((t = ScannerScan(&scan))) {
 			int i;
-			printf("%lu%c\t", (unsigned long)scan.line, scan.is_doc? '~' : ':');
+			state = StateArrayPeek(&scan.states);
+			assert(state);
+			printf("%lu%c\t", (unsigned long)scan.line,
+				*state == DOC ? '~' : ':');
 			for(i = -1; i < scan.indent_level; i++) fputc('\t', stdout);
 			printf("%s \"%.*s\"\n", tokens[t],
 				(int)(scan.cursor - scan.token), scan.token);
 			if(!is_indent) {
 				if(scan.indent_level == 1) { /* Entering a code block. */
-					assert(!scan.is_doc);
-					is_indent = 1, assert(t == LBRACE);
+					assert(*state == CODE && t == LBRACE);
+					is_indent = 1;
 					/* Determine if this is function. */
 					if((symbol = SymbolArrayPop(&segment->code))
 						&& symbol->token != RPAREN) {
@@ -398,12 +453,12 @@ int main(void) {
 				} else if(t == SEMI) { /* Semicolons on indent level 0. */
 					is_line = 1;
 				}
-			} else {
+			} else { /* {is_indent}. */
 				if(!scan.indent_level) { /* Exiting to indent level 0. */
 					is_indent = 0, assert(t == RBRACE);
 					if(!is_struct) is_line = 1; /* Functions (fixme: sure?) */
-				} else if(!scan.is_doc && !is_struct) { /* Code in functions. */
-					continue; /* Don't care. */
+				} else if(!is_struct && *state == CODE) {
+					continue; /* Code in functions: don't care. */
 				}
 			}
 			/* Create new segment if need be. */
@@ -414,7 +469,7 @@ int main(void) {
 				segment->type = HEADER; /* Default. */
 			}
 			/* Create a new symbol for this segment. */
-			if(!(symbol = SymbolArrayNew(scan.is_doc
+			if(!(symbol = SymbolArrayNew(*state == DOC
 				? &segment->doc : &segment->code))) break;
 			symbol->token = t;
 			symbol->from = scan.token;
