@@ -5,16 +5,16 @@
  maybe one needs a simpler solution, for whatever reason.
 
  Parses and extracts the documentation commands in a {.c} file. A documentation
- command begins with {/\**}. Every documentation command is associated to the
- line it's on??? Hmmm, that's not good, UHH, every doc is just above?
+ command begins with {/\**}.
 
  @title Cdoc.c
  @author Neil
  @version 2019-05 Re-done in {re2c}.
  @since 2017-03 Initial version.
+ @std C89
+ @depend re2c (\url{http://re2c.org/})
  @fixme Lists.
  @fixme Support Kernel-style comments where the " * " starts a line.
- @fixme \@depend
  @fixme  If you write {void A_BI_(Create, Thing)(void)} it will transform it to
  {<A>Create<BI>Thing(void)}.
 */
@@ -64,12 +64,13 @@ static enum Token scan_doc(struct Scanner *const s);
 static enum Token scan_code(struct Scanner *const s);
 static enum Token scan_comment(struct Scanner *const s);
 static enum Token scan_string(struct Scanner *const s);
+static enum Token scan_char(struct Scanner *const s);
 static enum Token scan_macro(struct Scanner *const s);
 
 /* Define the states of the input file. */
-#define STATE(X) X(END_OF_FILE, &scan_eof), X(DOC, scan_doc), \
-	X(CODE, scan_code), X(COMMENT, scan_comment), X(STRING, scan_string), \
-	X(MACRO, scan_macro)
+#define STATE(X) X(END_OF_FILE, &scan_eof), X(DOC, &scan_doc), \
+	X(CODE, &scan_code), X(COMMENT, &scan_comment), X(STRING, &scan_string), \
+	X(CHAR, &scan_char), X(MACRO, &scan_macro)
 enum State { STATE(PARAM_A) };
 static const char *const states[] = { STATE(STRINGISE_A) };
 static const ScannerFn state_fn[] = { STATE(PARAM_B) };
@@ -171,7 +172,7 @@ static int Scanner(struct Scanner *const s, const char *const fn) {
 
 /** Scans the file for the next token.
  @return The next token; {END} when it's finished. */
-static ScannerScan(struct Scanner *const s) {
+static enum Token ScannerScan(struct Scanner *const s) {
 	enum State *ps;
 	if(!s || !(ps = StateArrayPeek(&s->states))) return END;
 	return state_fn[*ps](s);
@@ -309,9 +310,9 @@ code:
 	whitespace+ | cxx_comment { goto code; }
 
 	macro = ("#" | "%:");
-	macro { goto macro; }
+	macro { return push(s, MACRO); }
 
-	/* Define a number and minus separate then numbers can't have whitespace. */
+	/* Number separate from minus then numbers can't have whitespace, simple. */
 	oct = "0" [0-7]*;
 	dec = [1-9][0-9]*;
 	hex = '0x' [0-9a-fA-F]+;
@@ -321,11 +322,11 @@ code:
 	number = (oct | dec | hex | flt) ("u"|"l"|"ul"|"lu")?;
 	number { return CONSTANT; }
 
-	/* Strings @fixme No trigraph support. @fixme embedded nl, switch to goto */
-	char_type = "u8"|"u"|"U"|"L";
-	string_literal = char_type? "\"" ([^"] | "\\". | "\\\n")* "\"";
-	char_literal = char_type? "\'" ([^'] | "\\". | "\\\n")* "\'";
-	number | string_literal | char_literal { return CONSTANT; }
+	/* Strings are more complicated because they can have whitespace.
+	 @fixme No trigraph support. */
+	/* char_type = "u8"|"u"|"U"|"L"; <- These get caught in id; don't care. */
+	"\"" { return push(s, STRING); }
+	"'" { return push(s, CHAR); }
 
 	id = [a-zA-Z_][a-zA-Z_0-9]*;
 	id           { return ID; }
@@ -350,36 +351,13 @@ code:
 	","          { return COMMA; }
 	";"          { return SEMI; }
 */
-
-comment_macro: /* The same thing, except with goto marco. */
-	printf("comm_mac %c\n", *s->cursor);
-/*!re2c
-	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END;
-		goto comment_macro; }
-	* { goto comment_macro; }
-	"\\". { goto comment_macro; }
-	newline { s->line++; goto comment_macro; }
-	"*""/" { goto macro; }
-*/
-
-macro: /* Actively ignore macros. */
-	printf("mac %c\n", *s->cursor);
-/*!re2c
-	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto macro; }
-	* { goto macro; }
-	"\\" (whitespace)* newline { s->line++; goto macro; } /* Continuation. */
-	/* We should have docs in comment macro, but it's too hard to parse, and
-	 the likelihood of that happening is nil. */
-	"/""*" { goto comment_macro; }
-	"//" [^\n\r]* { goto macro; }
-	newline { s->line++; goto code; }
-*/
 }
 
 /** C style comments. Actively ignore.
  @implements ScannerFn
  @allow */
 static enum Token scan_comment(struct Scanner *const s) {
+	assert(s && state_look(s) == COMMENT);
 	printf("comm '%c'\n", *s->cursor);
 comment:
 /*!re2c
@@ -391,15 +369,63 @@ comment:
 */
 }
 
-/** Returns eof.
+/** String constant.
  @implements ScannerFn
  @allow */
-static enum Token scan_string(struct Scanner *const s) { return END; }
+static enum Token scan_string(struct Scanner *const s) {
+	assert(s && state_look(s) == STRING);
+	printf("string\n");
+string:
+/*!re2c
+	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto string; }
+	* { goto string; }
+	"\"" {
+		/* We can't just pop, we have to return {CONSTANT}. */
+		if(!StateArrayPop(&s->states)) return END;
+		return CONSTANT;
+	}
+	"\\" newline { s->line++; goto string; } /* Continuation. */
+	"\\" . { goto string; } /* All additional chars are not escaped. */
+*/
+}
 
-/** Returns eof.
+/** Character constant.
  @implements ScannerFn
  @allow */
-static enum Token scan_macro(struct Scanner *const s) { return END; }
+static enum Token scan_char(struct Scanner *const s) {
+	assert(s && state_look(s) == CHAR);
+	printf("char\n");
+character:
+/*!re2c
+	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto character; }
+	* { goto character; }
+	"'" {
+		/* We can't just pop, we have to return {CONSTANT}. */
+		if(!StateArrayPop(&s->states)) return END;
+		return CONSTANT;
+	}
+	"\\" newline { s->line++; goto character; } /* Continuation. */
+	"\\" . { goto character; } /* All additional chars are not escaped. */
+*/
+}
+
+/** Actively ignore macros.
+ @implements ScannerFn
+ @allow */
+static enum Token scan_macro(struct Scanner *const s) {
+	assert(s && state_look(s) == MACRO);
+	printf("mac %c\n", *s->cursor);
+macro:
+/*!re2c
+	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto macro; }
+	* { goto macro; }
+	doc / [^/] { return push(s, DOC); }
+	comment { return push(s, COMMENT); }
+	whitespace+ | cxx_comment { goto macro; }
+	"\\" newline { s->line++; goto macro; } /* Continuation. */
+	newline { s->line++; return pop(s); }
+*/
+}
 
 
 
