@@ -14,6 +14,7 @@
  @since 2017-03 Initial version.
  @std C89
  @depend re2c (\url{http://re2c.org/})
+ @fixme Different doc comments need new paragraphs.
  @fixme Lists in comments, etc.
  @fixme Support Kernel-style comments where the " * " starts a line.
  @fixme {void A_BI_(Create, Thing)(void)} -> {<A>Create<BI>Thing(void)}. */
@@ -451,9 +452,12 @@ struct Segment {
 	enum Type type;
 };
 
+/* A {SegmentArray} is the top level parser. */
 #define ARRAY_NAME Segment
 #define ARRAY_TYPE struct Segment
 #include "../src/Array.h"
+
+
 
 int main(void) {
 	const char *const fn = "x.c";
@@ -488,6 +492,9 @@ int main(void) {
 						is_struct = 1;
 					} else if(segment) segment->type = FUNCTION;
 				} else if(t == SEMI) { /* Semicolons on indent level 0. */
+					/* General declaration? */
+					if(segment && segment->type == HEADER)
+						segment->type = DECLARATION;
 					is_line = 1;
 				}
 			} else { /* {is_indent}. */
@@ -511,15 +518,8 @@ int main(void) {
 			symbol->token = t;
 			symbol->from = scan.token;
 			symbol->to = scan.cursor;
-			/* @fixme
-			 Different doc comments should definitely be paragraphed. */
 			/* Create another segment next time. */
-			if(is_line) {
-				/* General declaration. */
-				if(t == SEMI && segment->type == HEADER)
-					segment->type = DECLARATION;
-				is_line = 0, is_struct = 0, segment = 0;
-			}
+			if(is_line) is_line = 0, is_struct = 0, segment = 0;
 		}
 		if(t) break;
 		is_done = 1;
