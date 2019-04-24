@@ -38,10 +38,9 @@
 
 /* Define the tokens. */
 #define TOKEN(X) \
-	X(END, 0), X(THING, 0), X(OPERATOR, 0), X(COMMA, 0), X(SEMI, 0), \
+	X(END, 0), X(OPERATOR, 0), X(COMMA, 0), X(SEMI, 0), \
 	X(LBRACE, 0), X(RBRACE, 0), X(LPAREN, 0), X(RPAREN, 0), \
-	X(LBRACK, 0), X(RBRACK, 0), \
-	X(CONSTANT, 0), X(ID, 0), \
+	X(LBRACK, 0), X(RBRACK, 0), X(CONSTANT, 0), X(ID, 0), \
 	X(STRUCT, 0), X(UNION, 0), \
 	X(TYPEDEF, 0), X(PREPROCESSOR, 0), \
 	X(ESCAPED_BACKSLASH, 0), X(ESCAPED_LBRACE, 0), X(ESCAPED_RBRACE, 0), \
@@ -141,7 +140,7 @@ static int Scanner(struct Scanner *const s, const char *const fn) {
 	zero(s);
 	do { /* Try: read all contents at once. */
 		char *a;
-		enum State *state;
+		enum State *ps;
 		if(!(fp = fopen(fn, "r"))) break;
 		for( ; ; ) {
 			if(!(a = CharArrayBuffer(&s->buffer, granularity))) break;
@@ -159,8 +158,8 @@ static int Scanner(struct Scanner *const s, const char *const fn) {
 		 growing, or we could not do this. */
 		s->cursor = s->marker = s->token = CharArrayNext(&s->buffer, 0);
 		s->line = 1;
-		if(!(state = StateArrayNew(&s->states))) break;
-		*state = CODE;
+		if(!(ps = StateArrayNew(&s->states))) break;
+		*ps = CODE;
 		is_done = 1;
 	} while(0); { /* Finally. */
 		if(fp) { if(fclose(fp) == EOF) is_done = 0; fp = 0; }
@@ -168,6 +167,43 @@ static int Scanner(struct Scanner *const s, const char *const fn) {
 		Scanner_(s);
 	}
 	return is_done;
+}
+
+/** Scans the file for the next token.
+ @return The next token; {END} when it's finished. */
+static ScannerScan(struct Scanner *const s) {
+	enum State *ps;
+	if(!s || !(ps = StateArrayPeek(&s->states))) return END;
+	return state_fn[*ps](s);
+}
+
+/** @return The state of {s}. */
+static enum Token state_look(struct Scanner *const s) {
+	enum State *ps;
+	assert(s);
+	if(!(ps = StateArrayPeek(&s->states))) return END;
+	return *ps;
+}
+
+/** Pushes the new state and calls the state function.
+ @return What the state function returns. END if there's an error. */
+static enum Token push(struct Scanner *const s, const enum State state) {
+	enum State *ps;
+	assert(s);
+	if(!(ps = StateArrayNew(&s->states))) return END;
+	*ps = state;
+	return state_fn[state](s);
+}
+
+/** Pops and calls the state on top.
+ @return What the state function returns. END if there's an error or the state
+ is empty. */
+static enum Token pop(struct Scanner *const s) {
+	enum State *ps;
+	assert(s);
+	if(!StateArrayPop(&s->states) || !(ps = StateArrayPeek(&s->states)))
+		return END;
+	return state_fn[*ps](s);
 }
 
 
@@ -194,18 +230,12 @@ static enum Token scan_eof(struct Scanner *const s) { (void)s; return END; }
  @implements ScannerFn
  @allow */
 static enum Token scan_doc(struct Scanner *const s) {
-	enum State *state;
-	assert(s && (state = StateArrayPeek(&s->states)) && *state == DOC);
+	assert(s && state_look(s) == DOC);
 doc:
 	s->token = s->cursor;
 /*!re2c
 	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto doc; }
-	"*/" {
-		StateArrayPop(&s->states);
-		state = StateArrayPeek(&s->states);
-		assert(state);
-		return state_fn[*state](s);
-	}
+	"*/" { return pop(s); }
 	* { goto doc; }
 
 	whitespace = [ \t\v\f];
@@ -215,7 +245,7 @@ doc:
 	newline { s->line++; return NEWLINE; }
 
 	word = [^ \t\n\v\f\r\\,@{}&<>*]*; /* This is kind of sketchy. */
-	word { return THING; }
+	word { return ID; }
 
 	"\\\\" { return ESCAPED_BACKSLASH; }
 	"\\{" { return ESCAPED_LBRACE; }
@@ -258,8 +288,7 @@ doc:
  @implements ScannerFn
  @allow */
 static enum Token scan_code(struct Scanner *const s) {
-	enum State *state;
-	assert(s && (state = StateArrayPeek(&s->states)) && *state == CODE);
+	assert(s && state_look(s) == CODE);
 code:
 	s->token = s->cursor;
 /*!re2c
@@ -272,14 +301,10 @@ code:
 
 	/* Documentation is not '/ * * /', but other then that. */
 	doc = "/""**";
-	doc / [^/] {
-		if(!(state = StateArrayNew(&s->states))) return END;
-		*state = DOC;
-		return scan_doc(s);
-	}
+	doc / [^/] { return push(s, DOC); }
 
 	comment = "/""*";
-	comment { goto comment; }
+	comment { return push(s, COMMENT); }
 	cxx_comment = "//" [^\n]*;
 	whitespace+ | cxx_comment { goto code; }
 
@@ -326,16 +351,6 @@ code:
 	";"          { return SEMI; }
 */
 
-comment: /* C style comments. Actively ignore. */
-	printf("comm %c\n", *s->cursor);
-/*!re2c
-	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto comment; }
-	* { goto comment; }
-	"\\". { goto comment; }
-	newline { s->line++; goto comment; }
-	"*""/" { goto code; }
-*/
-
 comment_macro: /* The same thing, except with goto marco. */
 	printf("comm_mac %c\n", *s->cursor);
 /*!re2c
@@ -361,10 +376,20 @@ macro: /* Actively ignore macros. */
 */
 }
 
-/** Returns eof.
+/** C style comments. Actively ignore.
  @implements ScannerFn
  @allow */
-static enum Token scan_comment(struct Scanner *const s) { return END; }
+static enum Token scan_comment(struct Scanner *const s) {
+	printf("comm '%c'\n", *s->cursor);
+comment:
+/*!re2c
+	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto comment; }
+	* { goto comment; }
+	"\\". { goto comment; }
+	newline { s->line++; goto comment; }
+	"*""/" { return pop(s); }
+*/
+}
 
 /** Returns eof.
  @implements ScannerFn
@@ -376,14 +401,6 @@ static enum Token scan_string(struct Scanner *const s) { return END; }
  @allow */
 static enum Token scan_macro(struct Scanner *const s) { return END; }
 
-/** Lex.
- @allow */
-static enum Token ScannerScan(struct Scanner *const s) {
-	enum State *state;
-	assert(s && StateArraySize(&s->states));
-	state = StateArrayPeek(&s->states);
-	return state_fn[*state](s);
-}
 
 
 
