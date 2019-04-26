@@ -96,12 +96,13 @@ static const char *const types[] = { TYPE(STRINGISE) };
 
 /** Scanner reads a file and puts it in memory. */
 struct Scanner {
+	/* {re2c} variables. These point directly into {buffer} so no modifying. */
+	const char *limit, *cursor, *marker, *token;
+	/* Weird {c2re} stuff: these fields have to come after when >5? */
 	struct CharArray buffer;
 	struct StateArray states;
 	int indent_level;
-	size_t line;
-	/* {re2c} variables. These point directly into {buffer} so no modifying. */
-	const char *limit, *cursor, *marker, *token;
+	size_t line, doc_line;
 };
 
 /** Fill the structure with default values. */
@@ -110,7 +111,7 @@ static void zero(struct Scanner *const s) {
 	CharArray(&s->buffer);
 	StateArray(&s->states);
 	s->indent_level = 0;
-	s->line = 0;
+	s->line = s->doc_line = 0;
 	s->limit = s->cursor = s->marker = s->token = 0;
 }
 
@@ -182,24 +183,38 @@ static enum Token state_look(struct Scanner *const s) {
 	return *ps;
 }
 
-/** Pushes the new state and calls the state function.
- @return What the state function returns. END if there's an error. */
-static enum Token push(struct Scanner *const s, const enum State state) {
+/** Pushes the new state.
+ @return Success. */
+static int push(struct Scanner *const s, const enum State state) {
 	enum State *ps;
 	assert(s);
-	if(!(ps = StateArrayNew(&s->states))) return END;
+	if(!(ps = StateArrayNew(&s->states))) return 0;
 	*ps = state;
+	return 1;
+}
+
+/** Pushes the new state and calls the state function.
+ @return What the state function returns. END if there's an error. */
+static enum Token push_call(struct Scanner *const s, const enum State state) {
+	assert(s);
+	if(!(push(s, state))) return END;
 	return state_fn[state](s);
 }
 
 /** Pops and calls the state on top.
+ @return Success. */
+static int pop(struct Scanner *const s) {
+	assert(s);
+	return !!StateArrayPop(&s->states);
+}
+
+/** Pops and calls the state on top and calls the state underneath.
  @return What the state function returns. END if there's an error or the state
  is empty. */
-static enum Token pop(struct Scanner *const s) {
+static enum Token pop_call(struct Scanner *const s) {
 	enum State *ps;
 	assert(s);
-	if(!StateArrayPop(&s->states) || !(ps = StateArrayPeek(&s->states)))
-		return END;
+	if(!pop(s) || !(ps = StateArrayPeek(&s->states))) return END;
 	return state_fn[*ps](s);
 }
 
@@ -232,7 +247,8 @@ doc:
 	s->token = s->cursor;
 /*!re2c
 	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto doc; }
-	"*/" { return pop(s); }
+	"*/" { /*if(!pop(s)) return END; return END_DOC;*/
+		s->doc_line = s->line; return pop_call(s); }
 	* { goto doc; }
 
 	whitespace = [ \t\v\f];
@@ -298,15 +314,15 @@ code:
 
 	/* Documentation is not '/ * * /', but other then that. */
 	doc = "/""**";
-	doc / [^/] { return push(s, DOC); }
+	doc / [^/] { return push_call(s, DOC); }
 
 	comment = "/""*";
-	comment { return push(s, COMMENT); }
+	comment { return push_call(s, COMMENT); }
 	cxx_comment = "//" [^\n]*;
 	whitespace+ | cxx_comment { goto code; }
 
 	macro = ("#" | "%:");
-	macro { return push(s, MACRO); }
+	macro { return push_call(s, MACRO); }
 
 	/* Number separate from minus then numbers can't have whitespace, simple. */
 	oct = "0" [0-7]*;
@@ -321,8 +337,8 @@ code:
 	/* Strings are more complicated because they can have whitespace.
 	 @fixme No trigraph support. */
 	/* char_type = "u8"|"u"|"U"|"L"; <- These get caught in id; don't care. */
-	"\"" { return push(s, STRING); }
-	"'" { return push(s, CHAR); }
+	"\"" { return push_call(s, STRING); }
+	"'" { return push_call(s, CHAR); }
 
 	id = [a-zA-Z_][a-zA-Z_0-9]*;
 	id           { return ID; }
@@ -360,7 +376,7 @@ comment:
 	* { goto comment; }
 	"\\". { goto comment; }
 	newline { s->line++; goto comment; }
-	"*""/" { return pop(s); }
+	"*""/" { return pop_call(s); }
 */
 }
 
@@ -375,11 +391,7 @@ string:
 /*!re2c
 	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto string; }
 	* { goto string; }
-	"\"" {
-		/* We can't just pop, we have to return {CONSTANT}. */
-		if(!StateArrayPop(&s->states)) return END;
-		return CONSTANT;
-	}
+	"\"" { if(!pop(s)) return END; return CONSTANT; }
 	"\\" newline { s->line++; goto string; } /* Continuation. */
 	"\\" . { goto string; } /* All additional chars are not escaped. */
 */
@@ -394,11 +406,7 @@ character:
 /*!re2c
 	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto character; }
 	* { goto character; }
-	"'" {
-		/* We can't just pop, we have to return {CONSTANT}. */
-		if(!StateArrayPop(&s->states)) return END;
-		return CONSTANT;
-	}
+	"'" { if(!pop(s)) return END; return CONSTANT; }
 	"\\" newline { s->line++; goto character; } /* Continuation. */
 	"\\" . { goto character; } /* All additional chars are not escaped. */
 */
@@ -413,11 +421,11 @@ macro:
 /*!re2c
 	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto macro; }
 	* { goto macro; }
-	doc / [^/] { return push(s, DOC); }
-	comment { return push(s, COMMENT); }
+	doc / [^/] { return push_call(s, DOC); }
+	comment { return push_call(s, COMMENT); }
 	whitespace+ | cxx_comment { goto macro; }
 	"\\" newline { s->line++; goto macro; } /* Continuation. */
-	newline { s->line++; return pop(s); }
+	newline { s->line++; return pop_call(s); }
 */
 }
 
@@ -459,26 +467,27 @@ struct Segment {
 int main(void) {
 	struct Scanner scan;
 	enum Token t;
+	enum State state;
 	struct SegmentArray text;
 	struct Segment *segment = 0;
 	struct Symbol *symbol;
-	enum State *state;
-	int is_done = 0, is_indent = 0, is_struct = 0, is_line = 0;
+	int is_done = 0;
 	SegmentArray(&text);
-	do {
+	do { /* Try. */
+		int is_indent = 0, is_struct = 0, is_line = 0;
 		if(!Scanner(&scan)) break;
 		while((t = ScannerScan(&scan))) {
-			int i;
-			state = StateArrayPeek(&scan.states);
-			assert(state);
+			int indent;
+			state = state_look(&scan);
 			printf("%lu%c\t", (unsigned long)scan.line,
-				*state == DOC ? '~' : ':');
-			for(i = -1; i < scan.indent_level; i++) fputc('\t', stdout);
+				state == DOC ? '~' : ':');
+			for(indent = -1; indent < scan.indent_level; indent++)
+				fputc('\t', stdout);
 			printf("%s \"%.*s\"\n", tokens[t],
 				(int)(scan.cursor - scan.token), scan.token);
 			if(!is_indent) {
 				if(scan.indent_level == 1) { /* Entering a code block. */
-					assert(*state == CODE && t == LBRACE);
+					assert(state == CODE && t == LBRACE);
 					is_indent = 1;
 					/* Determine if this is function. */
 					if((symbol = SymbolArrayPop(&segment->code))
@@ -496,13 +505,13 @@ int main(void) {
 				if(!scan.indent_level) { /* Exiting to indent level 0. */
 					is_indent = 0, assert(t == RBRACE);
 					if(!is_struct) is_line = 1; /* Functions (fixme: sure?) */
-				} else if(!is_struct && *state == CODE) {
+				} else if(!is_struct && state == CODE) {
 					continue; /* Code in functions: don't care. */
 				}
 			}
-			/*  */
-			if(segment && (symbol = SymbolArrayPeek(&segment->doc))) {
-			}
+
+			/* fixme: The doc has to be within a reasonable distance. */
+
 			/* Create new segment if need be. */
 			if(!segment) {
 				if(!(segment = SegmentArrayNew(&text))) break;
@@ -511,7 +520,7 @@ int main(void) {
 				segment->type = HEADER; /* Default. */
 			}
 			/* Create a new symbol for this segment. */
-			if(!(symbol = SymbolArrayNew(*state == DOC
+			if(!(symbol = SymbolArrayNew(state == DOC
 				? &segment->doc : &segment->code))) break;
 			symbol->token = t;
 			symbol->from = scan.token;
