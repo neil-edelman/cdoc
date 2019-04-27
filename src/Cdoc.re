@@ -243,12 +243,12 @@ static enum Token scan_eof(struct Scanner *const s) { (void)s; return END; }
  @allow */
 static enum Token scan_doc(struct Scanner *const s) {
 	assert(s && state_look(s) == DOC);
-doc:
+	s->doc_line = s->line;
 	s->token = s->cursor;
+doc:
 /*!re2c
 	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto doc; }
-	"*/" { /*if(!pop(s)) return END; return END_DOC;*/
-		s->doc_line = s->line; return pop_call(s); }
+	"*/" { return pop_call(s); }
 	* { goto doc; }
 
 	whitespace = [ \t\v\f];
@@ -486,8 +486,9 @@ int main(void) {
 			printf("%s \"%.*s\"\n", tokens[t],
 				(int)(scan.cursor - scan.token), scan.token);
 			if(!is_indent) {
-				if(scan.indent_level == 1) { /* Entering a code block. */
-					assert(state == CODE && t == LBRACE);
+				if(scan.indent_level) { /* Entering a code block. */
+					assert(scan.indent_level == 1 && state == CODE
+						&& t == LBRACE);
 					is_indent = 1;
 					/* Determine if this is function. */
 					if((symbol = SymbolArrayPop(&segment->code))
@@ -510,10 +511,15 @@ int main(void) {
 				}
 			}
 
-			/* fixme: The doc has to be within a reasonable distance. */
+			/* The doc has to be within a reasonable distance. */
+			if(segment && SymbolArraySize(&segment->doc)
+				&& !SymbolArraySize(&segment->code)
+				&& scan.doc_line + 2 < scan.line)
+				printf("<cut>\n"), segment = 0;
 
 			/* Create new segment if need be. */
 			if(!segment) {
+				printf("NEW SEGMENT!\n");
 				if(!(segment = SegmentArrayNew(&text))) break;
 				SymbolArray(&segment->doc);
 				SymbolArray(&segment->code);
