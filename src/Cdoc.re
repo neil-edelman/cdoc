@@ -88,9 +88,15 @@ static const char *const types[] = { TYPE(STRINGISE) };
 #define ARRAY_TYPE char
 #include "../src/Array.h"
 
+static void state_to_string(const enum State *s, char (*const a)[12]) {
+	strncpy(*a, states[*s], sizeof *a - 1);
+	*a[sizeof *a - 1] = '\0';
+}
+
 /* Define {StateArray}, a stack of states. */
 #define ARRAY_NAME State
 #define ARRAY_TYPE enum State
+#define ARRAY_TO_STRING &state_to_string
 #define ARRAY_STACK
 #include "../src/Array.h"
 
@@ -140,19 +146,22 @@ static int Scanner(struct Scanner *const s) {
 	assert(s);
 	zero(s);
 	do { /* Try: read all contents from stdin at once. */
-		char *a;
+		size_t nread;
+		char *buf;
 		enum State *ps;
 		for( ; ; ) {
-			if(!(a = CharArrayBuffer(&s->buffer, granularity))) break;
-			if(!fgets(a, (int)granularity, stdin))
-				{ is_done = !ferror(stdin); break; }
-			if(!CharArrayAddSize(&s->buffer, strlen(a))) break;
+			if(!(buf = CharArrayBuffer(&s->buffer, (int)granularity))) break;
+			nread = fread(buf, 1, granularity, stdin);
+			if(ferror(stdin)) break;
+			assert(nread >= 0 && nread <= granularity);
+			if(!CharArrayAddSize(&s->buffer, nread)) break;
+			if(nread != granularity) { is_done = 1; break; }
 		}
 		if(!is_done) break;
 		/* Fill the past the file with '\0' for fast lexing. */
 		is_done = 0;
-		if(!(a = CharArrayBuffer(&s->buffer, YYMAXFILL))) break;
-		memset(a, '\0', YYMAXFILL);
+		if(!(buf = CharArrayBuffer(&s->buffer, YYMAXFILL))) break;
+		memset(buf, '\0', YYMAXFILL);
 		if(!CharArrayAddSize(&s->buffer, YYMAXFILL)) break;
 		/* Point these toward the first char; {s->buffer} is necessarily done
 		 growing, or we could not do this. */
@@ -248,7 +257,7 @@ static enum Token scan_doc(struct Scanner *const s) {
 doc:
 /*!re2c
 	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto doc; }
-	"*/" { return pop_call(s); }
+	"*""/" { return pop_call(s); }
 	* { goto doc; }
 
 	whitespace = [ \t\v\f];
@@ -257,7 +266,7 @@ doc:
 	newline = "\n" | "\r" "\n"?;
 	newline { s->line++; return NEWLINE; }
 
-	word = [^ \t\n\v\f\r\\,@{}&<>*]*; /* This is kind of sketchy. */
+	word = [^ \t\n\v\f\r\\,@{}&<>*]*; // This is kind of sketchy.
 	word { return ID; }
 
 	"\\\\" { return ESCAPED_BACKSLASH; }
@@ -268,13 +277,13 @@ doc:
 	"}" { return RBRACE; }
 	"," { return COMMA; }
 
-	/* These are recognised in the documentation as stuff. */
+	// These are recognised in the documentation as stuff.
 	"\\url" { return BS_URL; }
 	"\\cite" { return BS_CITE; }
 	"\\see" { return BS_SEE; }
 	"\\$" { return BS_PRE; }
 
-	/* These are tags. */
+	// These are tags.
 	"@title" { return TAG_TITLE; }
 	"@param" { return TAG_PARAM; }
 	"@author" { return TAG_AUTHOR; }
@@ -290,7 +299,7 @@ doc:
 	"@order" { return TAG_ORDER; }
 	"@allow" { return TAG_ALLOW; }
 
-	/* Also escape these for {HTML}. */
+	// Also escape these for {HTML}.
 	"&" { return HTML_AMP; }
 	"<" { return HTML_LT; }
 	">" { return HTML_GT; }
@@ -305,7 +314,7 @@ static enum Token scan_code(struct Scanner *const s) {
 code:
 	s->token = s->cursor;
 /*!re2c
-	/* http://re2c.org/examples/example_03.html */
+	// http://re2c.org/examples/example_03.html
 	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto code; }
 	* { printf("Unknown, <%.*s>, just roll with it.\n",
 		(int)(s->cursor - s->token), s->token); goto code; }
@@ -324,7 +333,7 @@ code:
 	macro = ("#" | "%:");
 	macro { return push_call(s, MACRO); }
 
-	/* Number separate from minus then numbers can't have whitespace, simple. */
+	// Number separate from minus then numbers can't have whitespace, simple.
 	oct = "0" [0-7]*;
 	dec = [1-9][0-9]*;
 	hex = '0x' [0-9a-fA-F]+;
@@ -334,9 +343,9 @@ code:
 	number = (oct | dec | hex | flt) ("u"|"l"|"ul"|"lu")?;
 	number { return CONSTANT; }
 
-	/* Strings are more complicated because they can have whitespace.
-	 @fixme No trigraph support. */
-	/* char_type = "u8"|"u"|"U"|"L"; <- These get caught in id; don't care. */
+	// Strings are more complicated because they can have whitespace.
+	// @fixme No trigraph support.
+	// char_type = "u8"|"u"|"U"|"L"; <- These get caught in id; don't care.
 	"\"" { return push_call(s, STRING); }
 	"'" { return push_call(s, CHAR); }
 
@@ -370,6 +379,7 @@ code:
  @allow */
 static enum Token scan_comment(struct Scanner *const s) {
 	assert(s && state_look(s) == COMMENT);
+	printf("Comment Line%lu.\n", s->line);
 comment:
 /*!re2c
 	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto comment; }
@@ -392,8 +402,9 @@ string:
 	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto string; }
 	* { goto string; }
 	"\"" { if(!pop(s)) return END; return CONSTANT; }
-	"\\" newline { s->line++; goto string; } /* Continuation. */
-	"\\" . { goto string; } /* All additional chars are not escaped. */
+	"\\" newline { s->line++; goto string; } // Continuation.
+	"\\". { goto string; } // All additional chars are not escaped.
+	newline { s->line++; return END; }
 */
 }
 
@@ -409,6 +420,7 @@ character:
 	"'" { if(!pop(s)) return END; return CONSTANT; }
 	"\\" newline { s->line++; goto character; } /* Continuation. */
 	"\\" . { goto character; } /* All additional chars are not escaped. */
+	newline { s->line++; return END; }
 */
 }
 
@@ -464,7 +476,7 @@ struct Segment {
 
 
 
-int main(void) {
+int main(int argc, char **argv) {
 	struct Scanner scan;
 	enum Token t;
 	enum State state;
@@ -472,6 +484,14 @@ int main(void) {
 	struct Segment *segment = 0;
 	struct Symbol *symbol;
 	int is_done = 0;
+
+	/* https://stackoverflow.com/questions/10293387/piping-into-application-run-under-xcode/13658537 */
+	if (argc == 2 && strcmp(argv[1], "debug") == 0 ) {
+		const char *test_file_path = "/Users/neil/Movies/Cdoc/c.txt";
+		printf("== [RUNNING IN DEBUG MODE]==\n\n");
+		freopen(test_file_path, "r", stdin);
+	}
+
 	SegmentArray(&text);
 	do { /* Try. */
 		int is_indent = 0, is_struct = 0, is_line = 0;
@@ -481,10 +501,11 @@ int main(void) {
 			state = state_look(&scan);
 			printf("%lu%c\t", (unsigned long)scan.line,
 				state == DOC ? '~' : ':');
-			for(indent = -1; indent < scan.indent_level; indent++)
+			assert(indent >= 0);
+			for(indent = 0; indent < scan.indent_level; indent++)
 				fputc('\t', stdout);
-			printf("%s \"%.*s\"\n", tokens[t],
-				(int)(scan.cursor - scan.token), scan.token);
+			printf("%s %s \"%.*s\"\n", StateArrayToString(&scan.states),
+				tokens[t], (int)(scan.cursor - scan.token), scan.token);
 			if(!is_indent) {
 				if(scan.indent_level) { /* Entering a code block. */
 					assert(scan.indent_level == 1 && state == CODE
@@ -519,7 +540,7 @@ int main(void) {
 
 			/* Create new segment if need be. */
 			if(!segment) {
-				printf("NEW SEGMENT!\n");
+				printf("<new segment>\n");
 				if(!(segment = SegmentArrayNew(&text))) break;
 				SymbolArray(&segment->doc);
 				SymbolArray(&segment->code);

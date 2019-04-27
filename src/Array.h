@@ -185,7 +185,7 @@ static int PT_(reserve)(struct T_(Array) *const a,
 	}
 	if(!(data = realloc(a->data, c0 * sizeof *a->data))) return 0;
 	if(update_ptr && a->data != data) {
-		/* Migrate data; violates pedantic strict-ANSI? */
+		/* Migrate data; @fixme: violates pedantic strict-ANSI. */
 		const void *begin = a->data,
 			*end = (const char *)a->data + a->size * sizeof *data;
 		ptrdiff_t delta = (const char *)data - (const char *)a->data;
