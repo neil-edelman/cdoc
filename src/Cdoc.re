@@ -17,7 +17,8 @@
  @fixme Different doc comments need new paragraphs.
  @fixme Lists in comments, etc.
  @fixme Support Kernel-style comments where the " * " starts a line.
- @fixme {void A_BI_(Create, Thing)(void)} -> {<A>Create<BI>Thing(void)}. */
+ @fixme {void A_BI_(Create, Thing)(void)} -> {<A>Create<BI>Thing(void)}.
+ @fixme Trigraph support. */
 
 #include <stdlib.h> /* EXIT malloc free */
 #include <stdio.h>  /* FILE printf fputc perror */
@@ -45,10 +46,27 @@
 	X(ESCAPED_BACKSLASH, 0), X(ESCAPED_LBRACE, 0), X(ESCAPED_RBRACE, 0), \
 	X(ESCAPED_EACH, 0), X(WHITESPACE, 0), X(NEWLINE, 0), \
 	X(BS_URL, 0), X(BS_CITE, 0), X(BS_SEE, 0), X(BS_PRE, 0), \
-	X(TAG_TITLE, 0), X(TAG_PARAM, 0), X(TAG_AUTHOR, 0), X(TAG_STD, 0), X(TAG_DEPEND, 0), \
-	X(TAG_VERSION, 0), X(TAG_SINCE, 0), X(TAG_FIXME, 0), X(TAG_DEPRICATED, 0), \
-	X(TAG_RETURN, 0), X(TAG_THROWS, 0), X(TAG_IMPLEMENTS, 0), X(TAG_ORDER, 0), \
-	X(TAG_ALLOW, 0), X(HTML_AMP, 0), X(HTML_LT, 0), X(HTML_GT, 0)
+	X(TAG_TITLE, 0), X(TAG_PARAM, 0), X(TAG_AUTHOR, 0), X(TAG_STD, 0), \
+	X(TAG_DEPEND, 0), X(TAG_VERSION, 0), X(TAG_SINCE, 0), X(TAG_FIXME, 0), \
+	X(TAG_DEPRICATED, 0), X(TAG_RETURN, 0), X(TAG_THROWS, 0), \
+	X(TAG_IMPLEMENTS, 0), X(TAG_ORDER, 0), X(TAG_ALLOW, 0), \
+	X(HTML_AMP, 0), X(HTML_LT, 0), X(HTML_GT, 0), \
+	X(HTML_DOT, 0), X(HTML_LCEIL, 0), X(HTML_RCEIL, 0), X(HTML_LFLOOR, 0), \
+	X(HTML_RFLOOR, 0), X(HTML_TO, 0), X(HTML_GE, 0), X(HTML_LE, 0), \
+	X(HTML_NE, 0), X(HTML_CAP, 0), X(HTML_CUP, 0), X(HTML_VEE, 0), \
+	X(HTML_WEDGE, 0), X(HTML_SUM, 0), X(HTML_PROD, 0), X(HTML_IN, 0), \
+	X(HTML_EXISTS, 0), X(HTML_FORALL, 0), X(HTML_NEG, 0), X(HTML_TIMES, 0), \
+	X(HTML_SQRT, 0), X(HTML_PROPTO, 0), X(HTML_PM, 0), X(HTML_PARTIAL, 0), \
+	X(HTML_INT, 0), X(HTML_INFTY, 0), X(HTML_UGAMMA, 0), X(HTML_UDELTA, 0), \
+	X(HTML_ILAMBDA, 0), X(HTML_UPHI, 0), X(HTML_UPI, 0), X(HTML_UPSY, 0), \
+	X(HTML_USIGMA, 0), X(HTML_UTHETA, 0), X(HTML_UUPSILON, 0), X(HTML_UXI, 0), \
+	X(HTML_UOMEGA, 0), X(HTML_ALPHA, 0), X(HTML_BETA, 0), X(HTML_GAMMA, 0), \
+	X(HTML_DELTA, 0), X(HTML_EPSILON, 0), X(HTML_ZETA, 0), X(HTML_ETA, 0), \
+	X(HTML_THETA, 0), X(HTML_IOTA, 0), X(HTML_KAPPA, 0), X(HTML_LAMBDA, 0), \
+	X(HTML_MU, 0), X(HTML_NU, 0), X(HTML_XI, 0), X(HTML_RHO, 0), \
+	X(HTML_SIGMA, 0), X(HTML_TAU, 0), X(HTML_UPSILON, 0), X(HTML_PHI, 0), \
+	X(HTML_CHI, 0), X(HTML_PSI, 0), X(HTML_OMEGA, 0)
+
 enum Token { TOKEN(PARAM_A) };
 static const char *const tokens[] = { TOKEN(STRINGISE_A) };
 static const int token_flags[] = { TOKEN(PARAM_B) };
@@ -237,8 +255,8 @@ re2c:define:YYFILL   = "return END;";
 re2c:define:YYFILL:naked = 1;
 re2c:define:YYLIMIT  = s->limit;
 re2c:define:YYCURSOR = s->cursor;
-re2c:define:YYMARKER = s->marker; /* Rules overlap. */
-/* Don't know what this does, but it fails without it. */
+re2c:define:YYMARKER = s->marker; // Rules overlap.
+// Don't know what this does, but it fails without it.
 re2c:yyfill:enable = 0;
 */
 
@@ -303,6 +321,67 @@ doc:
 	"&" { return HTML_AMP; }
 	"<" { return HTML_LT; }
 	">" { return HTML_GT; }
+	
+	// Also provide these for convenience: common compsci math and Greek.
+	"\\dot" { return HTML_DOT; }
+	"\\lceil" { return HTML_LCEIL; }
+	"\\rceil" { return HTML_RCEIL; }
+	"\\lfloor" { return HTML_LFLOOR; }
+	"\\rfloor" { return HTML_RFLOOR; }
+	"\\to" { return HTML_TO; }
+	"\\ge" { return HTML_GE; }
+	"\\le" { return HTML_LE; }
+	"\\ne" { return HTML_NE; }
+	"\\cap" { return HTML_CAP; }
+	"\\cup" { return HTML_CUP; }
+	"\\vee" { return HTML_VEE; }
+	"\\wedge" { return HTML_WEDGE; }
+	"\\sum" { return HTML_SUM; }
+	"\\prod" { return HTML_PROD; }
+	"\\in" { return HTML_IN; }
+	"\\exists" { return HTML_EXISTS; }
+	"\\forall" { return HTML_FORALL; }
+	"\\neg" { return HTML_NEG; }
+	"\\times" { return HTML_TIMES; }
+	"\\sqrt" { return HTML_SQRT; }
+	"\\propto" { return HTML_PROPTO; }
+	"\\pm" { return HTML_PM; }
+	"\\partial" { return HTML_PARTIAL; }
+	"\\int" { return HTML_INT; }
+	"\\infty" { return HTML_INFTY; }
+	"\\Gamma" { return HTML_UGAMMA; }
+	"\\Delta" { return HTML_UDELTA; }
+	"\\Lambda" { return HTML_ILAMBDA; }
+	"\\Phi" { return HTML_UPHI; }
+	"\\Pi" { return HTML_UPI; }
+	"\\Psi" { return HTML_UPSY; }
+	"\\Sigma" { return HTML_USIGMA; }
+	"\\Theta" { return HTML_UTHETA; }
+	"\\Upsilon" { return HTML_UUPSILON; }
+	"\\Xi" { return HTML_UXI; }
+	"\\Omega" { return HTML_UOMEGA; }
+	"\\alpha" { return HTML_ALPHA; }
+	"\\beta" { return HTML_BETA; }
+	"\\gamma" { return HTML_GAMMA; }
+	"\\delta" { return HTML_DELTA; }
+	"\\epsilon" { return HTML_EPSILON; }
+	"\\zeta" { return HTML_ZETA; }
+	"\\eta" { return HTML_ETA; }
+	"\\theta" { return HTML_THETA; }
+	"\\iota" { return HTML_IOTA; }
+	"\\kappa" { return HTML_KAPPA; }
+	"\\lambda" { return HTML_LAMBDA; }
+	"\\mu" { return HTML_MU; }
+	"\\nu" { return HTML_NU; }
+	"\\xi" { return HTML_XI; }
+	"\\rho" { return HTML_RHO; }
+	"\\sigma" { return HTML_SIGMA; }
+	"\\tau" { return HTML_TAU; }
+	"\\upsilon" { return HTML_UPSILON; }
+	"\\phi" { return HTML_PHI; }
+	"\\chi" { return HTML_CHI; }
+	"\\psi" { return HTML_PSI; }
+	"\\omega" { return HTML_OMEGA; }
 */
 }
 
@@ -321,7 +400,7 @@ code:
 
 	newline { s->line++; goto code; }
 
-	/* Documentation is not '/ * * /', but other then that. */
+	// Documentation is not / * * /, but other then that.
 	doc = "/""**";
 	doc / [^/] { return push_call(s, DOC); }
 
@@ -340,13 +419,14 @@ code:
 	frc = [0-9]* "." [0-9]+ | [0-9]+ ".";
 	exp = 'e' [+-]? [0-9]+;
 	flt = (frc exp? | [0-9]+ exp) [fFlL]?;
-	number = (oct | dec | hex | flt) ("u"|"l"|"ul"|"lu")?;
+	number = (oct | dec | hex | flt) [uUlL]*;
 	number { return CONSTANT; }
 
-	// Strings are more complicated because they can have whitespace.
+	// Strings are more complicated because they can have whitespace and that
+	// messes up the line count.
 	// @fixme No trigraph support.
 	// char_type = "u8"|"u"|"U"|"L"; <- These get caught in id; don't care.
-	"\"" { return push_call(s, STRING); }
+	"L"? "\"" { return push_call(s, STRING); }
 	"'" { return push_call(s, CHAR); }
 
 	id = [a-zA-Z_][a-zA-Z_0-9]*;
@@ -361,7 +441,7 @@ code:
 	operator     { return OPERATOR; }
 
 	"struct"     { return STRUCT; }
-	"union"      { return UNION; } /* +fn are these all that can be braced? */
+	"union"      { return UNION; } // +fn are these all that can be braced?
 	"typedef"    { return TYPEDEF; }
 	("{" | "<%") { s->indent_level++; return LBRACE; }
 	("}" | "%>") { s->indent_level--; return RBRACE; }
@@ -478,7 +558,7 @@ struct Segment {
 
 int main(int argc, char **argv) {
 	struct Scanner scan;
-	enum Token t;
+	enum Token t = END;
 	enum State state;
 	struct SegmentArray text;
 	struct Segment *segment = 0;
@@ -531,13 +611,11 @@ int main(int argc, char **argv) {
 					continue; /* Code in functions: don't care. */
 				}
 			}
-
 			/* The doc has to be within a reasonable distance. */
 			if(segment && SymbolArraySize(&segment->doc)
 				&& !SymbolArraySize(&segment->code)
 				&& scan.doc_line + 2 < scan.line)
 				printf("<cut>\n"), segment = 0;
-
 			/* Create new segment if need be. */
 			if(!segment) {
 				printf("<new segment>\n");
@@ -556,9 +634,14 @@ int main(int argc, char **argv) {
 			if(is_line) is_line = 0, is_struct = 0, segment = 0;
 		}
 		if(t) break;
+		if(scan.indent_level) { errno = EILSEQ; break; }
 		is_done = 1;
 	} while(0); if(!is_done) {
 		perror("Cdoc");
+		fprintf(stderr, "At %lu%c indent level %d; state stack %s; %s \"%.*s\"."
+			"\n", (unsigned long)scan.line, state == DOC ? '~' : ':',
+			scan.indent_level, StateArrayToString(&scan.states),
+			tokens[t], (int)(scan.cursor - scan.token), scan.token);
 	} else {
 		fputs("\n\n*****\n\n", stdout);
 		segment = 0;
@@ -577,65 +660,3 @@ int main(int argc, char **argv) {
 	}
 	return is_done ? EXIT_SUCCESS : EXIT_FAILURE;
 }
-
-/* Also provide these for convenience: common compsci math and Greek.
-{ "\\dot",   0,   &html_dot },
-{ "\\lceil", 0,   &html_lceil },
-{ "\\rceil", 0,   &html_rceil },
-{ "\\lfloor",0,   &html_lfloor },
-{ "\\rfloor",0,   &html_rfloor },
-{ "\\to",    0,   &html_to },
-{ "\\ge",    0,   &html_ge },
-{ "\\le",    0,   &html_le },
-{ "\\ne",    0,   &html_ne },
-{ "\\cap",   0,   &html_cap },
-{ "\\cup",   0,   &html_cup },
-{ "\\vee",   0,   &html_vee },
-{ "\\wedge", 0,   &html_wedge },
-{ "\\sum",   0,   &html_sum },
-{ "\\prod",  0,   &html_prod },
-{ "\\in",    0,   &html_in },
-{ "\\exists",0,   &html_exists },
-{ "\\forall",0,   &html_forall },
-{ "\\neg",   0,   &html_neg },
-{ "\\times", 0,   &html_times },
-{ "\\sqrt",  0,   &html_sqrt },
-{ "\\propto",0,   &html_propto },
-{ "\\pm",    0,   &html_pm },
-{ "\\partial",0,  &html_partial },
-{ "\\int",   0,   &html_int },
-{ "\\infty", 0,   &html_infty },
-{ "\\Gamma", 0,   &html_Gamma },
-{ "\\Delta", 0,   &html_Delta },
-{ "\\Lambda",0,   &html_Lambda },
-{ "\\Phi",   0,   &html_Phi },
-{ "\\Pi",    0,   &html_Pi },
-{ "\\Psi",   0,   &html_Psi },
-{ "\\Sigma", 0,   &html_Sigma },
-{ "\\Theta", 0,   &html_Theta },
-{ "\\Upsilon",0,  &html_Upsilon },
-{ "\\Xi",    0,   &html_Xi },
-{ "\\Omega", 0,   &html_Omega },
-{ "\\alpha", 0,   &html_alpha },
-{ "\\beta",  0,   &html_beta },
-{ "\\gamma", 0,   &html_gamma },
-{ "\\delta", 0,   &html_delta },
-{ "\\epsilon",0,  &html_epsilon },
-{ "\\zeta",  0,   &html_zeta },
-{ "\\eta",   0,   &html_eta },
-{ "\\theta", 0,   &html_theta },
-{ "\\iota",  0,   &html_iota },
-{ "\\kappa", 0,   &html_kappa },
-{ "\\lambda",0,   &html_lamda },
-{ "\\mu",    0,   &html_mu },
-{ "\\nu",    0,   &html_nu },
-{ "\\xi",    0,   &html_xi },
-{ "\\rho",   0,   &html_rho },
-{ "\\sigma", 0,   &html_sigma },
-{ "\\tau",   0,   &html_tau },
-{ "\\upsilon",0,  &html_upsilon },
-{ "\\phi",   0,   &html_phi },
-{ "\\chi",   0,   &html_chi },
-{ "\\psi",   0,   &html_psi },
-{ "\\omega", 0,   &html_omega }
-*/
