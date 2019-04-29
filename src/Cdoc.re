@@ -16,7 +16,6 @@
  @depend re2c (\url{http://re2c.org/})
  @fixme Different doc comments need new paragraphs.
  @fixme Lists in comments, etc.
- @fixme Support Kernel-style comments where the " * " starts a line.
  @fixme {void A_BI_(Create, Thing)(void)} -> {<A>Create<BI>Thing(void)}.
  @fixme Trigraph support. */
 
@@ -282,7 +281,9 @@ doc:
 	whitespace+ { return WHITESPACE; }
 
 	newline = "\n" | "\r" "\n"?;
+	art = "*"? newline " *";
 	newline { s->line++; return NEWLINE; }
+	art / [^/] { s->line++; return NEWLINE; }
 
 	word = [^ \t\n\v\f\r\\,@{}&<>*]*; // This is kind of sketchy.
 	word { return ID; }
