@@ -2,8 +2,8 @@
  \url{ https://opensource.org/licenses/MIT }.
 
  {Doxygen} is great and standard; one should use that if possible. However,
- maybe one is too hip to use it? or it uses libraries that are too new for your
- computer?
+ maybe one is too hip to use it? (or it uses libraries that are too new for
+ your computer.)
 
  Parses and extracts the documentation commands in a {.c} file. A documentation
  command begins with {/\**}.
@@ -23,6 +23,7 @@
 #include <stdio.h>  /* FILE printf fputc perror */
 #include <string.h> /* memmove memset */
 #include <errno.h>  /* EDOM ERANGE */
+/* #define NDEBUG */
 #include <assert.h> /* assert */
 
 /* X-Marco is great for debug. */
@@ -125,6 +126,7 @@ struct Scanner {
 	struct CharArray buffer;
 	struct StateArray states;
 	int indent_level;
+	int is_cut;
 	size_t line, doc_line;
 };
 
@@ -134,6 +136,7 @@ static void zero(struct Scanner *const s) {
 	CharArray(&s->buffer);
 	StateArray(&s->states);
 	s->indent_level = 0;
+	s->is_cut = 0;
 	s->line = s->doc_line = 0;
 	s->limit = s->cursor = s->marker = s->token = 0;
 }
@@ -557,6 +560,23 @@ struct Segment {
 
 
 
+static void stripn(struct SymbolArray *const syms, const enum Token t,
+	size_t a, size_t b) {
+	struct Symbol *s;
+	assert(syms && a <= b && b <= SymbolArraySize(syms));
+	while(a < b && (s = SymbolArrayGet(syms, b - 1))->token == t)
+		SymbolArrayRemove(syms, s), b--;
+	if(a >= b) return; /* It was all {t}. */
+	while(a < b && (s = SymbolArrayGet(syms, a))->token == t)
+		SymbolArrayRemove(syms, s), b--;
+	assert(a < b); /* Or else it would have already returned. */
+}
+
+static void strip(struct SymbolArray *const syms, const enum Token t) {
+	assert(syms);
+	stripn(syms, t, 0, SymbolArraySize(syms));
+}
+
 int main(int argc, char **argv) {
 	struct Scanner scan;
 	enum Token t = END;
@@ -569,13 +589,17 @@ int main(int argc, char **argv) {
 	/* https://stackoverflow.com/questions/10293387/piping-into-application-run-under-xcode/13658537 */
 	if (argc == 2 && strcmp(argv[1], "debug") == 0 ) {
 		const char *test_file_path = "/Users/neil/Movies/Cdoc/c.txt";
-		printf("== [RUNNING IN DEBUG MODE]==\n\n");
+		printf("== [RUNNING IN DEBUG MODE with %s]==\n\n", test_file_path);
 		freopen(test_file_path, "r", stdin);
 	}
 
 	SegmentArray(&text);
 	do { /* Try. */
 		int is_indent = 0, is_struct = 0, is_line = 0;
+		struct Segment *last_segment;
+
+		/* Lex. */
+
 		if(!Scanner(&scan)) break;
 		while((t = ScannerScan(&scan))) {
 			int indent;
@@ -636,6 +660,36 @@ int main(int argc, char **argv) {
 		}
 		if(t) break;
 		if(scan.indent_level) { errno = EILSEQ; break; }
+
+		/* Cull. */
+
+		last_segment = segment = 0;
+		while((segment = SegmentArrayNext(&text, segment))) {
+			/* Remove any segments that we don't need. */
+			if(segment->type != FUNCTION && !SymbolArraySize(&segment->doc)) {
+#if 0
+				printf("CCCUUUUTTTTTT!!!!! segment %s.\n", SymbolArrayToString(&segment->code));
+#else
+				printf("Segment %s.\n", SymbolArrayToString(&segment->code));
+				SegmentArrayRemove(&text, segment);
+				printf("REMOVED!!\n");
+				segment = last_segment;
+				printf("Now %s.\n", SymbolArrayToString(&segment->code));
+#endif
+				continue;
+			}
+			switch(segment->type) {
+			case HEADER:
+			case DECLARATION:
+			case FUNCTION:
+				break;
+			}
+			/* This happens after so that if the entire comment is a dud, it
+			 still gets included. */
+			strip(&segment->doc, WHITESPACE);
+			/* fixme: Strip recusively along {}. */
+			last_segment = segment;
+		}
 		is_done = 1;
 	} while(0); if(!is_done) {
 		perror("Cdoc");

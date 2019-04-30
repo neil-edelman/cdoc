@@ -12,7 +12,8 @@
 
  {<T>Array} is not synchronised. Errors are returned with {errno}. The
  parameters are preprocessor macros, and are all undefined at the end of the
- file for convenience.
+ file for convenience. {assert.h} is included in this file; to stop the
+ debug assertions, use {#define NDEBUG} before inclusion.
 
  @param ARRAY_NAME, ARRAY_TYPE
  The name that literally becomes {<T>}, and a valid type associated therewith,
@@ -36,8 +37,7 @@
  @param ARRAY_TEST
  Unit testing framework using {<T>ArrayTest}, included in a separate header,
  {../test/ArrayTest.h}. Must be defined equal to a (random) filler function,
- satisfying {<T>Action}. If {NDEBUG} is not defined, turns on {assert} private
- function integrity testing. Requires {ARRAY_TO_STRING}.
+ satisfying {<T>Action}. Requires {ARRAY_TO_STRING} and not {NDEBUG}.
 
  @title		Array.h
  @std		C89
@@ -82,10 +82,6 @@
 #if defined(ARRAY_TEST) && !defined(ARRAY_TO_STRING) /* <-- error */
 #error ARRAY_TEST requires ARRAY_TO_STRING.
 #endif /* error --> */
-#if !defined(ARRAY_TEST) && !defined(NDEBUG) /* <-- ndebug */
-#define ARRAY_NDEBUG
-#define NDEBUG
-#endif /* ndebug --> */
 
 
 
@@ -185,7 +181,7 @@ static int PT_(reserve)(struct T_(Array) *const a,
 	}
 	if(!(data = realloc(a->data, c0 * sizeof *a->data))) return 0;
 	if(update_ptr && a->data != data) {
-		/* Migrate data; @fixme: violates pedantic strict-ANSI. */
+		/* Migrate data; violates pedantic strict-ANSI? */
 		const void *begin = a->data,
 			*end = (const char *)a->data + a->size * sizeof *data;
 		ptrdiff_t delta = (const char *)data - (const char *)a->data;
@@ -563,8 +559,4 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #endif
 #ifdef ARRAY_TEST
 #undef ARRAY_TEST
-#endif
-#ifdef ARRAY_NDEBUG
-#undef ARRAY_NDEBUG
-#undef NDEBUG
 #endif
