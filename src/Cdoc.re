@@ -161,7 +161,7 @@ static void Scanner_(struct Scanner *const s) {
  @fixme fn is stupid and a hack left over from fread, just read from stdin.
  @allow */
 static int Scanner(struct Scanner *const s) {
-	const size_t granularity = 80;
+	const size_t granularity = 1024/*80*/;
 	int is_done = 0;
 	assert(s);
 	zero(s);

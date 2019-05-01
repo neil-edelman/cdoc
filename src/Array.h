@@ -143,16 +143,16 @@ typedef void (*PT_(Action))(T *const data);
 struct T_(Array);
 struct T_(Array) {
 	T *data;
-	/* {nodes} -> {capacity} -> {c[0] < c[1] || c[0] == c[1] == max_size}.
-	 Fibonacci, [0] is the capacity, [1] is next. */
-	size_t capacity[2];
-	/* {nodes} ? {size <= capacity[0]} : {size == 0}. Including removed. */
+	/* Fibonacci; data -> (c0 < c1 || c0 == c1 == max_size). */
+	size_t capacity, next_capacity;
+	/* !data -> !size, data -> size <= capacity */
 	size_t size;
 };
 
 
 
 /** Ensures capacity.
+ @param update_ptr: Must be in the array or null.
  @return Success; otherwise, {errno} may be set.
  @throws ERANGE: Tried allocating more then can fit in {size_t}.
  @throws {realloc} errors: {IEEE Std 1003.1-2001}. */
@@ -161,36 +161,29 @@ static int PT_(reserve)(struct T_(Array) *const a,
 	size_t c0, c1;
 	T *data;
 	const size_t max_size = (size_t)-1 / sizeof *data;
-	assert(a && a->size <= a->capacity[0]
-		&& (a->capacity[0] < a->capacity[1] || !a->data
-		|| (a->capacity[0] == a->capacity[1]) == max_size)
-		&& a->capacity[1] <= max_size);
-	if(a->capacity[0] >= min_capacity) return 1;
-	if(min_capacity > max_size) return errno = ERANGE, 0;
+	assert(a);
 	if(!a->data) {
-		c0 = 8 /* fibonacci 6 */;
-		c1 = 13 /* fibonacci 7 */;
+		if(!min_capacity) return 1;
+		c0 = 8;
+		c1 = 13;
 	} else {
-		c0 = a->capacity[0];
-		c1 = a->capacity[1];
+		if(min_capacity <= a->capacity) return 1;
+		c0 = a->capacity;
+		c1 = a->next_capacity;
 	}
+	if(min_capacity > max_size) return errno = ERANGE, 0;
+	assert(c0 < c1);
+	/* Fibonacci: c0 ^= c1, c1 ^= c0, c0 ^= c1, c1 += c0; */
 	while(c0 < min_capacity) {
-		/* c0 ^= c1, c1 ^= c0, c0 ^= c1, c1 += c0; */
 		size_t temp = c0 + c1; c0 = c1; c1 = temp;
-		if(c1 > max_size || c1 <= c0) c1 = max_size;
+		if(c1 > max_size || c1 < c0) c1 = max_size;
 	}
 	if(!(data = realloc(a->data, c0 * sizeof *a->data))) return 0;
-	if(update_ptr && a->data != data) {
-		/* Migrate data; violates pedantic strict-ANSI? */
-		const void *begin = a->data,
-			*end = (const char *)a->data + a->size * sizeof *data;
-		ptrdiff_t delta = (const char *)data - (const char *)a->data;
-		const void *const u = *update_ptr;
-		if(u >= begin && u < end) *(char **const)update_ptr += delta;
-	}
+	if(update_ptr && a->data != data)
+		*update_ptr = data + (*update_ptr - a->data);
 	a->data = data;
-	a->capacity[0] = c0;
-	a->capacity[1] = c1;
+	a->capacity = c0;
+	a->next_capacity = c1;
 	return 1;
 }
 
@@ -199,10 +192,10 @@ static int PT_(reserve)(struct T_(Array) *const a,
  \see{<PT>_reserve}. */
 static void PT_(array)(struct T_(Array) *const a) {
 	assert(a);
-	a->data        = 0;
-	a->capacity[0] = 0;
-	a->capacity[1] = 0;
-	a->size        = 0;
+	a->data          = 0;
+	a->capacity      = 0;
+	a->next_capacity = 0;
+	a->size          = 0;
 }
 
 /** Destructor for {a}. All the {a} contents should not be accessed
@@ -398,7 +391,7 @@ static T *T_(ArrayBuffer)(struct T_(Array) *const a, const size_t buffer) {
  @allow */
 static int T_(ArrayAddSize)(struct T_(Array) *const a, const size_t add) {
 	if(!a) return 0;
-	if(add > a->capacity[0] || a->size > a->capacity[0] - add)
+	if(add > a->capacity || a->size > a->capacity - add)
 		return errno = ERANGE, 0;
 	a->size += add;
 	return 1;
