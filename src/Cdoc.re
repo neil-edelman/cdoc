@@ -43,6 +43,7 @@
 	X(LBRACE, 0), X(RBRACE, 0), X(LPAREN, 0), X(RPAREN, 0), \
 	X(LBRACK, 0), X(RBRACK, 0), X(CONSTANT, 0), X(ID, 0), \
 	X(STRUCT, 0), X(UNION, 0), X(TYPEDEF, 0), X(PREPROCESSOR, 0), \
+	X(BEGIN_DOC, 0), \
 	X(ESCAPED_BACKSLASH, 0), X(ESCAPED_LBRACE, 0), X(ESCAPED_RBRACE, 0), \
 	X(ESCAPED_EACH, 0), X(WHITESPACE, 0), X(NEWLINE, 0), \
 	X(BS_URL, 0), X(BS_CITE, 0), X(BS_SEE, 0), X(BS_PRE, 0), \
@@ -126,7 +127,6 @@ struct Scanner {
 	struct CharArray buffer;
 	struct StateArray states;
 	int indent_level;
-	int is_cut;
 	size_t line, doc_line;
 };
 
@@ -136,7 +136,6 @@ static void zero(struct Scanner *const s) {
 	CharArray(&s->buffer);
 	StateArray(&s->states);
 	s->indent_level = 0;
-	s->is_cut = 0;
 	s->line = s->doc_line = 0;
 	s->limit = s->cursor = s->marker = s->token = 0;
 }
@@ -161,7 +160,7 @@ static void Scanner_(struct Scanner *const s) {
  @fixme fn is stupid and a hack left over from fread, just read from stdin.
  @allow */
 static int Scanner(struct Scanner *const s) {
-	const size_t granularity = 1024/*80*/;
+	const size_t granularity = 1024;
 	int is_done = 0;
 	assert(s);
 	zero(s);
@@ -406,7 +405,7 @@ code:
 
 	// Documentation is not / * * /, but other then that.
 	doc = "/""**";
-	doc / [^/] { return push_call(s, DOC); }
+	doc / [^/] { return push(s, DOC) ? BEGIN_DOC : END; }
 
 	comment = "/""*";
 	comment { return push_call(s, COMMENT); }
@@ -485,7 +484,7 @@ string:
 /*!re2c
 	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto string; }
 	* { goto string; }
-	"\"" { if(!pop(s)) return END; return CONSTANT; }
+	"\"" { return pop(s) ? CONSTANT : END; }
 	"\\" newline { s->line++; goto string; } // Continuation.
 	"\\". { goto string; } // All additional chars are not escaped.
 	newline { s->line++; return END; }
@@ -501,7 +500,7 @@ character:
 /*!re2c
 	"\x00" { if(s->limit - s->cursor <= YYMAXFILL) return END; goto character; }
 	* { goto character; }
-	"'" { if(!pop(s)) return END; return CONSTANT; }
+	"'" { return pop(s) ? CONSTANT : END; }
 	"\\" newline { s->line++; goto character; } /* Continuation. */
 	"\\" . { goto character; } /* All additional chars are not escaped. */
 	newline { s->line++; return END; }
@@ -627,6 +626,16 @@ int main(int argc, char **argv) {
 					if(segment && segment->type == HEADER)
 						segment->type = DECLARATION;
 					is_line = 1;
+				} else if(segment && SymbolArraySize(&segment->doc)
+					&& !SymbolArraySize(&segment->code)) {
+					/* Hasn't scanned any code and is on the top level. */
+					if(t == BEGIN_DOC) {
+						/* Cut multiple docs. */
+						printf("<multiple, cut>\n"), segment = 0;
+					} else if(state != DOC && scan.doc_line + 2 < scan.line) {
+						/* The doc has to be within a reasonable distance. */
+						printf("<too far, cut>\n"), segment = 0;
+					}
 				}
 			} else { /* {is_indent}. */
 				if(!scan.indent_level) { /* Exiting to indent level 0. */
@@ -636,11 +645,6 @@ int main(int argc, char **argv) {
 					continue; /* Code in functions: don't care. */
 				}
 			}
-			/* The doc has to be within a reasonable distance. */
-			if(segment && SymbolArraySize(&segment->doc)
-				&& !SymbolArraySize(&segment->code)
-				&& scan.doc_line + 2 < scan.line)
-				printf("<cut>\n"), segment = 0;
 			/* Create new segment if need be. */
 			if(!segment) {
 				printf("<new segment>\n");
@@ -663,19 +667,20 @@ int main(int argc, char **argv) {
 
 		/* Cull. */
 
+#if 0
 		last_segment = segment = 0;
 		while((segment = SegmentArrayNext(&text, segment))) {
 			/* Remove any segments that we don't need. */
 			if(segment->type != FUNCTION && !SymbolArraySize(&segment->doc)) {
-#if 0
+/*#if 0*/ /* 0 -- crashes on clang but sometimes not gcc consistently. */
 				printf("CCCUUUUTTTTTT!!!!! segment %s.\n", SymbolArrayToString(&segment->code));
-#else
+/*#else*/
 				printf("Segment %s.\n", SymbolArrayToString(&segment->code));
 				SegmentArrayRemove(&text, segment);
 				printf("REMOVED!!\n");
 				segment = last_segment;
 				printf("Now %s.\n", SymbolArrayToString(&segment->code));
-#endif
+/*#endif*/
 				continue;
 			}
 			switch(segment->type) {
@@ -690,6 +695,7 @@ int main(int argc, char **argv) {
 			/* fixme: Strip recusively along {}. */
 			last_segment = segment;
 		}
+#endif
 		is_done = 1;
 	} while(0); if(!is_done) {
 		perror("Cdoc");
