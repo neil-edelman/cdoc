@@ -627,15 +627,13 @@ int main(int argc, char **argv) {
 						segment->type = DECLARATION;
 					is_line = 1;
 				} else if(segment && SymbolArraySize(&segment->doc)
-					&& !SymbolArraySize(&segment->code)) {
-					/* Hasn't scanned any code and is on the top level. */
-					if(t == BEGIN_DOC) {
-						/* Cut multiple docs. */
-						printf("<multiple, cut>\n"), segment = 0;
-					} else if(state != DOC && scan.doc_line + 2 < scan.line) {
-						/* The doc has to be within a reasonable distance. */
-						printf("<too far, cut>\n"), segment = 0;
-					}
+					&& !SymbolArraySize(&segment->code)
+					&& (t == BEGIN_DOC
+					|| (state != DOC && scan.doc_line + 2 < scan.line))) {
+					/* Hasn't scanned any code and is on the top level, cut
+					 multiple docs and the doc has to be within a reasonable
+					 distance. */
+					printf("<cut>\n"), segment = 0;
 				}
 			} else { /* {is_indent}. */
 				if(!scan.indent_level) { /* Exiting to indent level 0. */
@@ -645,6 +643,7 @@ int main(int argc, char **argv) {
 					continue; /* Code in functions: don't care. */
 				}
 			}
+			if(t == BEGIN_DOC) continue;
 			/* Create new segment if need be. */
 			if(!segment) {
 				printf("<new segment>\n");
@@ -667,20 +666,15 @@ int main(int argc, char **argv) {
 
 		/* Cull. */
 
-#if 0
 		last_segment = segment = 0;
 		while((segment = SegmentArrayNext(&text, segment))) {
 			/* Remove any segments that we don't need. */
 			if(segment->type != FUNCTION && !SymbolArraySize(&segment->doc)) {
-/*#if 0*/ /* 0 -- crashes on clang but sometimes not gcc consistently. */
-				printf("CCCUUUUTTTTTT!!!!! segment %s.\n", SymbolArrayToString(&segment->code));
-/*#else*/
 				printf("Segment %s.\n", SymbolArrayToString(&segment->code));
 				SegmentArrayRemove(&text, segment);
 				printf("REMOVED!!\n");
 				segment = last_segment;
 				printf("Now %s.\n", SymbolArrayToString(&segment->code));
-/*#endif*/
 				continue;
 			}
 			switch(segment->type) {
@@ -695,7 +689,6 @@ int main(int argc, char **argv) {
 			/* fixme: Strip recusively along {}. */
 			last_segment = segment;
 		}
-#endif
 		is_done = 1;
 	} while(0); if(!is_done) {
 		perror("Cdoc");
