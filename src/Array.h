@@ -181,6 +181,9 @@ static int PT_(reserve)(struct T_(Array) *const a,
 	if(!(data = realloc(a->data, c0 * sizeof *a->data))) return 0;
 	if(update_ptr && a->data != data)
 		*update_ptr = data + (*update_ptr - a->data);
+	if(a->data != data) fprintf(stderr, QUOTE(ARRAY_NAME)
+		"Array with %lu moving data to #%p.\n", (unsigned long)a->size,
+		(void *)a->data);
 	a->data = data;
 	a->capacity = c0;
 	a->next_capacity = c1;
