@@ -568,11 +568,24 @@ static void DeleteAllSegments(struct SegmentArray *const sa) {
 
 static struct Segment *NewSegment(struct SegmentArray *const sa) {
 	struct Segment *s;
-	if(!sa || !(s = SegmentArrayNew(sa))) return 0;
+	assert(sa);
+	if(!(s = SegmentArrayNew(sa))) return 0;
 	SymbolArray(&s->doc);
 	SymbolArray(&s->code);
 	s->type = HEADER; /* Default. */
 	return s;
+}
+
+/* Create a new symbol for this segment. */
+static int PushSymbol(struct Segment *const s, const enum State state,
+	const enum Token token, const struct Scanner *const scan) {
+	struct Symbol *symbol;
+	assert(s && (state == CODE || state == DOC) && scan);
+	if(!(symbol = SymbolArrayNew(state == DOC ? &s->doc : &s->code))) return 0;
+	symbol->token = token;
+	symbol->from = scan->token;
+	symbol->to = scan->cursor;
+	return 1;
 }
 
 
@@ -666,12 +679,7 @@ int main(int argc, char **argv) {
 				printf("<new segment>\n");
 				if(!(segment = NewSegment(&text))) break;
 			}
-			/* Create a new symbol for this segment. */
-			if(!(symbol = SymbolArrayNew(state == DOC
-				? &segment->doc : &segment->code))) break;
-			symbol->token = t;
-			symbol->from = scan.token;
-			symbol->to = scan.cursor;
+			if(!PushSymbol(segment, state, t, &scan)) break;
 			/* Create another segment next time. */
 			if(is_line) is_line = 0, is_struct = 0, segment = 0;
 		}
