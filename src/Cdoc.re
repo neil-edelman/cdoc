@@ -675,7 +675,8 @@ int main(int argc, char **argv) {
 				SegmentArrayRemove(&text, segment);
 				printf("REMOVED!!\n");
 				segment = last_segment;
-				printf("Now %s.\n", SymbolArrayToString(&segment->code));
+				printf("Now %s.\n",
+					segment ? SymbolArrayToString(&segment->code) : "head");
 				continue;
 			}
 			last_segment = segment;

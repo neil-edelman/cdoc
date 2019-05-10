@@ -182,7 +182,8 @@ static int PT_(reserve)(struct T_(Array) *const a,
 	if(update_ptr && a->data != data)
 		*update_ptr = data + (*update_ptr - a->data);
 	if(a->data != data) fprintf(stderr, QUOTE(ARRAY_NAME)
-		"Array with %lu, wants %lu, moving data from #%p to #%p.\n",
+		"Array#%p with %lu, wants %lu, moving data from #%p to #%p.\n",
+		(void *)a,
 		(unsigned long)a->size, (unsigned long)min_capacity,
 		(void *)a->data, (void *)data);
 	a->data = data;
