@@ -122,7 +122,7 @@ static void state_to_string(const enum State *s, char (*const a)[12]) {
 /** Scanner reads a file and puts it in memory. */
 struct Scanner {
 	/* {re2c} variables. These point directly into {buffer} so no modifying. */
-	const char *limit, *cursor, *marker, *token;
+	const char *limit, *cursor, *marker, *ctx_marker, *token;
 	/* Weird {c2re} stuff: these fields have to come after when >5? */
 	struct CharArray buffer;
 	struct StateArray states;
@@ -137,7 +137,7 @@ static void zero(struct Scanner *const s) {
 	StateArray(&s->states);
 	s->indent_level = 0;
 	s->line = s->doc_line = 0;
-	s->limit = s->cursor = s->marker = s->token = 0;
+	s->limit = s->cursor = s->marker = s->ctx_marker = s->token = 0;
 }
 
 /** Uninitialises {s}.
@@ -207,7 +207,7 @@ static enum Token ScannerScan(struct Scanner *const s) {
 static enum State state_look(struct Scanner *const s) {
 	enum State *ps;
 	assert(s);
-	if(!(ps = StateArrayPeek(&s->states))) return END;
+	if(!(ps = StateArrayPeek(&s->states))) return END_OF_FILE;
 	return *ps;
 }
 
