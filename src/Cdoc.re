@@ -603,11 +603,10 @@ int main(int argc, char **argv) {
 
 		if(!Scanner(&scan)) break;
 		while((t = ScannerScan(&scan))) {
-			int indent;
+			int indent; /* Debug. */
 			state = state_look(&scan);
 			printf("%lu%c\t", (unsigned long)scan.line,
 				state == DOC ? '~' : ':');
-			assert(indent >= 0);
 			for(indent = 0; indent < scan.indent_level; indent++)
 				fputc('\t', stdout);
 			printf("%s %s \"%.*s\"\n", StateArrayToString(&scan.states),
