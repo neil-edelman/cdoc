@@ -204,7 +204,7 @@ static enum Token ScannerScan(struct Scanner *const s) {
 }
 
 /** @return The state of {s}. */
-static enum Token state_look(struct Scanner *const s) {
+static enum State state_look(struct Scanner *const s) {
 	enum State *ps;
 	assert(s);
 	if(!(ps = StateArrayPeek(&s->states))) return END;
@@ -257,6 +257,8 @@ re2c:define:YYFILL:naked = 1;
 re2c:define:YYLIMIT  = s->limit;
 re2c:define:YYCURSOR = s->cursor;
 re2c:define:YYMARKER = s->marker; // Rules overlap.
+// Might or might not require this (depending on the version?)
+re2c:define:YYCTXMARKER = s->ctx_marker;
 // Don't know what this does, but it fails without it.
 re2c:yyfill:enable = 0;
 */
