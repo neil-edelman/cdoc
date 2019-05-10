@@ -559,6 +559,22 @@ struct Segment {
 #define ARRAY_TYPE struct Segment
 #include "../src/Array.h"
 
+static void DeleteAllSegments(struct SegmentArray *const sa) {
+	struct Segment *s;
+	if(!sa) return;
+	while((s = SegmentArrayPop(sa)))
+		SymbolArray_(&s->doc), SymbolArray_(&s->code);
+}
+
+static struct Segment *NewSegment(struct SegmentArray *const sa) {
+	struct Segment *s;
+	if(!sa || !(s = SegmentArrayNew(sa))) return 0;
+	SymbolArray(&s->doc);
+	SymbolArray(&s->code);
+	s->type = HEADER; /* Default. */
+	return s;
+}
+
 
 
 static void stripn(struct SymbolArray *const syms, const enum Token t,
@@ -601,7 +617,7 @@ int main(int argc, char **argv) {
 
 		/* Lex. */
 
-		if(!Scanner(&scan)) break;
+		if(!Scanner(&scan)) break; /* First. */
 		while((t = ScannerScan(&scan))) {
 			int indent; /* Debug. */
 			state = state_look(&scan);
@@ -648,10 +664,7 @@ int main(int argc, char **argv) {
 			/* Create new segment if need be. */
 			if(!segment) {
 				printf("<new segment>\n");
-				if(!(segment = SegmentArrayNew(&text))) break;
-				SymbolArray(&segment->doc);
-				SymbolArray(&segment->code);
-				segment->type = HEADER; /* Default. */
+				if(!(segment = NewSegment(&text))) break;
 			}
 			/* Create a new symbol for this segment. */
 			if(!(symbol = SymbolArrayNew(state == DOC
@@ -709,9 +722,7 @@ int main(int argc, char **argv) {
 		}
 		fputc('\n', stdout);
 	} {
-		while((segment = SegmentArrayPop(&text)))
-			SymbolArray_(&segment->doc), SymbolArray_(&segment->code);
-		SegmentArray_(&text);
+		DeleteAllSegments(&text), SegmentArray_(&text);
 		Scanner_(&scan);
 	}
 	return is_done ? EXIT_SUCCESS : EXIT_FAILURE;
