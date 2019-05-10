@@ -1,9 +1,9 @@
 /** 2019 Neil Edelman, distributed under the terms of the MIT License,
  \url{ https://opensource.org/licenses/MIT }.
 
- {Doxygen} is great and standard; one should use that if possible. However,
- maybe one is too hip to use it? (or it uses libraries that are too new for
- your computer.)
+ {Doxygen} should be used if possible. However, maybe one is too hip to use it?
+ (or it uses libraries that are too new for one's computer.) The documentation
+ is a perversion and simplification of {Doxygen}.
 
  Parses and extracts the documentation commands in a {.c} file. A documentation
  command begins with {/\**}.
@@ -677,6 +677,7 @@ int main(int argc, char **argv) {
 				printf("Now %s.\n", SymbolArrayToString(&segment->code));
 				continue;
 			}
+			last_segment = segment;
 			switch(segment->type) {
 			case HEADER:
 			case DECLARATION:
@@ -687,7 +688,6 @@ int main(int argc, char **argv) {
 			 still gets included. */
 			strip(&segment->doc, WHITESPACE);
 			/* fixme: Strip recusively along {}. */
-			last_segment = segment;
 		}
 		is_done = 1;
 	} while(0); if(!is_done) {
