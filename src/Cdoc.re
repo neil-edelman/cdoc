@@ -43,7 +43,7 @@
 	X(LBRACE, 0), X(RBRACE, 0), X(LPAREN, 0), X(RPAREN, 0), \
 	X(LBRACK, 0), X(RBRACK, 0), X(CONSTANT, 0), X(ID, 0), \
 	X(STRUCT, 0), X(UNION, 0), X(TYPEDEF, 0), X(PREPROCESSOR, 0), \
-	X(BEGIN_DOC, 0), \
+	X(BEGIN_DOC, 0), X(PARAGRAPH, 0), \
 	X(ESCAPED_BACKSLASH, 0), X(ESCAPED_LBRACE, 0), X(ESCAPED_RBRACE, 0), \
 	X(ESCAPED_EACH, 0), X(WHITESPACE, 0), X(NEWLINE, 0), \
 	X(BS_URL, 0), X(BS_CITE, 0), X(BS_SEE, 0), X(BS_PRE, 0), \
@@ -607,6 +607,20 @@ static void strip(struct SymbolArray *const syms, const enum Token t) {
 	stripn(syms, t, 0, SymbolArraySize(syms));
 }
 
+static int is_begin_doc(const struct Symbol *const sym) {
+	return sym->token == BEGIN_DOC;
+}
+
+static int is_whitespace(const struct Symbol *const sym) {
+	return sym->token == WHITESPACE || sym->token == NEWLINE;
+}
+
+/** @implements Predicate<Segment> */
+static int keep_segment(const struct Segment *const s) {
+	if(s->type == FUNCTION || SymbolArraySize(&s->doc)) return 1;
+	return 0;
+}
+
 int main(int argc, char **argv) {
 	struct Scanner scan;
 	enum Token t = END;
@@ -687,7 +701,9 @@ int main(int argc, char **argv) {
 		if(scan.indent_level) { errno = EILSEQ; break; }
 
 		/* Cull. */
-
+#if 0
+		SegmentArrayKeepIf(&text, &keep_segment);
+#else
 		last_segment = segment = 0;
 		while((segment = SegmentArrayNext(&text, segment))) {
 			/* Remove any segments that we don't need. */
@@ -712,6 +728,7 @@ int main(int argc, char **argv) {
 			strip(&segment->doc, WHITESPACE);
 			/* fixme: Strip recusively along {}. */
 		}
+#endif
 		is_done = 1;
 	} while(0); if(!is_done) {
 		perror("Cdoc");
