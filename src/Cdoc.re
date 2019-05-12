@@ -640,7 +640,6 @@ int main(int argc, char **argv) {
 	SegmentArray(&text);
 	do { /* Try. */
 		int is_indent = 0, is_struct = 0, is_line = 0;
-		struct Segment *last_segment;
 
 		/* Lex. */
 
@@ -687,6 +686,8 @@ int main(int argc, char **argv) {
 					continue; /* Code in functions: don't care. */
 				}
 			}
+			/* This is a dummy token that is for splitting up multiple doc
+			 comments on a single line -- ignore in practice. */
 			if(t == BEGIN_DOC) continue;
 			/* Create new segment if need be. */
 			if(!segment) {
@@ -701,22 +702,8 @@ int main(int argc, char **argv) {
 		if(scan.indent_level) { errno = EILSEQ; break; }
 
 		/* Cull. */
-#if 0
 		SegmentArrayKeepIf(&text, &keep_segment);
-#else
-		last_segment = segment = 0;
 		while((segment = SegmentArrayNext(&text, segment))) {
-			/* Remove any segments that we don't need. */
-			if(segment->type != FUNCTION && !SymbolArraySize(&segment->doc)) {
-				printf("Segment %s.\n", SymbolArrayToString(&segment->code));
-				SegmentArrayRemove(&text, segment);
-				printf("REMOVED!!\n");
-				segment = last_segment;
-				printf("Now %s.\n",
-					segment ? SymbolArrayToString(&segment->code) : "head");
-				continue;
-			}
-			last_segment = segment;
 			switch(segment->type) {
 			case HEADER:
 			case DECLARATION:
@@ -728,7 +715,6 @@ int main(int argc, char **argv) {
 			strip(&segment->doc, WHITESPACE);
 			/* fixme: Strip recusively along {}. */
 		}
-#endif
 		is_done = 1;
 	} while(0); if(!is_done) {
 		perror("Cdoc");
