@@ -570,8 +570,8 @@ static struct Segment *NewSegment(struct SegmentArray *const sa) {
 	struct Segment *s;
 	assert(sa);
 	if(!(s = SegmentArrayNew(sa))) return 0;
-	SymbolArray_(&s->doc);
-	SymbolArray_(&s->code);
+	SymbolArray(&s->doc);
+	SymbolArray(&s->code);
 	s->type = HEADER; /* Default. */
 	return s;
 }
