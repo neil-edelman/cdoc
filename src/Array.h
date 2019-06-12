@@ -310,24 +310,42 @@ static T *T_(ArrayPop)(struct T_(Array) *const a) {
 	return a->data + --a->size;
 }
 
-/** Provides a way to iterate through the {a}. It is safe to add using
- \see{<T>ArrayUpdateNew} with the return value as {update}. Removing an element
- causes the pointer to go to the next element, if it exists.
- @param a: If null, returns null. If {prev} is not from this {a} and not
- null, returns null.
- @param prev: Set it to null to start the iteration.
+/** Iterate through {a} backwards.
+ @param a: The array; if null, returns null.
+ @param here: Set it to null to get the last element, if it exists.
+ @return A pointer to the previous element or null if it does not exist.
+ @order \Theta(1)
+ @allow */
+static T *T_(ArrayBack)(const struct T_(Array) *const a, T *const here) {
+	size_t idx;
+	if(!a) return 0;
+	if(!here) {
+		if(!a->size) return 0;
+		idx = a->size;
+	} else {
+		idx = (size_t)(here - a->data);
+		if(!idx) return 0;
+	}
+	return a->data + idx - 1;
+}
+
+/** Iterate through {a}. It is safe to add using \see{<T>ArrayUpdateNew} with
+ the return value as {update}. Removing an element causes the pointer to go to
+ the next element, if it exists.
+ @param a: The array; if null, returns null.
+ @param here: Set it to null to get the first element, if it exists.
  @return A pointer to the next element or null if there are no more.
  @order \Theta(1)
  @allow */
-static T *T_(ArrayNext)(const struct T_(Array) *const a, T *const prev) {
+static T *T_(ArrayNext)(const struct T_(Array) *const a, T *const here) {
 	T *data;
 	size_t idx;
 	if(!a) return 0;
-	if(!prev) {
+	if(!here) {
 		data = a->data;
 		idx = 0;
 	} else {
-		data = prev + 1;
+		data = here + 1;
 		idx = (size_t)(data - a->data);
 	}
 	return idx < a->size ? data : 0;
@@ -471,6 +489,40 @@ static void T_(ArrayTrim)(struct T_(Array) *const a,
 	memmove(a->data, a->data + i, sizeof *a->data * i), a->size -= i;
 }
 
+/** In {a}, replaces the elements from indices {i0} to {i1} with a copy of {b}.
+ @param a: If null, returns null.
+ @param i0, i1: The replacement indices, {[i0, i1)}, such that
+ {0 <= i0 <= i1 <= a.size}.
+ @param b: The replacement array. If null, deletes without replacing.
+ @return Success.
+ @throws EDOM: {a} and {b} are not null and the same.
+ @throws EDOM: {i0} or {i1} are out-of-bounds or {i0 > i1}.
+ @throws ERANGE: {b} would cause the array to overflow.
+ @throws {realloc}.
+ @order \Theta({b.size}) if the elements have the same size, otherwise,
+ amortised O({a.size} + {b.size}).
+ @allow */
+static int T_(ArrayReplace)(struct T_(Array) *const a, const size_t i0,
+	const size_t i1, const struct T_(Array) *const b) {
+	size_t a_range, b_range;
+	if(!a) return 0;
+	if(a == b || i0 > i1 || i1 > a->size) return errno = EDOM, 0;
+	a_range = i1 - i0;
+	b_range = b ? b->size : 0;
+	if(a_range < b_range) { /* The output is bigger. */
+		const size_t diff = b_range - a_range;
+		if(a->size > (size_t)-1 - diff) return errno = ERANGE, 0;
+		if(!PT_(reserve)(a, a->size + diff, 0)) return 0;
+		memmove(a->data + i1 + diff, a->data + i1,(a->size-i1)*sizeof *a->data);
+		a->size += diff;
+	} else if(b_range < a_range) { /* The output is smaller. */
+		memmove(a->data + i0 + b_range, a->data+i1,(a->size-i1)*sizeof*a->data);
+		a->size -= a_range - b_range;
+	}
+	if(b) memcpy(a->data + i0, b->data, b->size * sizeof *a->data);
+	return 1;
+}
+
 #ifdef ARRAY_TO_STRING /* <-- print */
 
 #ifndef ARRAY_PRINT_THINGS /* <-- once inside translation unit */
@@ -567,6 +619,7 @@ static void PT_(unused_set)(void) {
 	T_(ArrayIndex)(0, 0);
 	T_(ArrayPeek)(0);
 	T_(ArrayPop)(0);
+	T_(ArrayBack)(0, 0);
 	T_(ArrayNext)(0, 0);
 	T_(ArrayNew)(0);
 	T_(ArrayUpdateNew)(0, 0);
@@ -575,6 +628,7 @@ static void PT_(unused_set)(void) {
 	T_(ArrayForEach)(0, 0);
 	T_(ArrayKeepIf)(0, 0);
 	T_(ArrayTrim)(0, 0);
+	T_(ArrayReplace)(0, 0, 0, 0);
 #ifdef ARRAY_TO_STRING
 	T_(ArrayToString)(0);
 #endif
