@@ -42,12 +42,12 @@ static const char *const sections[] = { SECTION(STRINGISE) };
 /** Parser is only valid when Scanner is active and in steady-state. */
 struct Symbol {
 	enum Token token;
-	const char *from, *to;
+	const char *from;
+	int length;
 };
 
 static void symbol_to_string(const struct Symbol *s, char (*const a)[12]) {
-	int len = (int)(s->to - s->from);
-	if(len > 5) len = 5;
+	int len = s->length >= 5 ? 5 : s->length;
 	sprintf(*a, "%.4s<%.*s>", tokens[s->token], len, s->from);
 	/*strncpy(*a, tokens[s->token], sizeof *a - 1);*/
 	*a[sizeof *a - 1] = '\0';
@@ -93,42 +93,23 @@ static int PushSymbol(struct Segment *const s, const int is_doc,
 	/* @fixme: This line is not initialised? */
 	if(!(symbol = SymbolArrayNew(is_doc ? &s->doc : &s->code))) return 0;
 	symbol->token = token;
-	symbol->from = ScannerGetToken();
-	symbol->to = ScannerGetCursor();
+	symbol->from = ScannerGetFrom();
+	symbol->length = ScannerGetLength();
 	return 1;
 }
 
 
-
-#if 0
-static void stripn(struct SymbolArray *const syms, const enum Token t,
-	size_t a, size_t b) {
-	struct Symbol *s;
-	assert(syms && a <= b && b <= SymbolArraySize(syms));
-	while(a < b && (s = SymbolArrayGet(syms, b - 1))->token == t)
-		SymbolArrayRemove(syms, s), b--;
-	if(a >= b) return; /* It was all {t}. */
-	while(a < b && (s = SymbolArrayGet(syms, a))->token == t)
-		SymbolArrayRemove(syms, s), b--;
-	assert(a < b); /* Or else it would have already returned. */
-}
-
-static void strip(struct SymbolArray *const syms, const enum Token t) {
-	assert(syms);
-	stripn(syms, t, 0, SymbolArraySize(syms));
-}
-#endif
 
 /** Cleans the whitespace so it's just in between words and adds paragraphs
  where needed. */
 static void clean_whitespace(struct SymbolArray *const sa,
 	const struct SymbolArray *const white,
 	const struct SymbolArray *const paragraph) {
+	const struct SymbolArray *replace;
 	struct Symbol *x = 0, *x_start = 0;
 	size_t count_nl = 0;
 	int is_content = 0;
 	assert(sa);
-	printf("Parser:Clean: %s.\n", SymbolArrayToString(sa));
 	while((x = SymbolArrayNext(sa, x))) {
 		switch(x->token) {
 		case NEWLINE: count_nl++; /* Fall-through. */
@@ -136,42 +117,18 @@ static void clean_whitespace(struct SymbolArray *const sa,
 		default: /* Non white-space, viz,
 			[ 0, ... x_start (whitespace), ..., x (first non-white), ... ] */
 			if(x_start) {
-				/* This cannot go in function scope or it will corrupt the
-				 value of the pointer as soon as you use it. Gcc bug, perhaps?*/
-				const struct SymbolArray *replace;
-				char a[12], a_start[12];
-				symbol_to_string(x, &a);
-				symbol_to_string(x_start, &a_start);
-				printf("Parser:White-space from [%s, %s) in %s.\n", a_start, a,
-					SymbolArrayToString(sa));
 				replace = is_content ? count_nl > 1 ? paragraph : white : 0;
 				count_nl = 0;
-				printf("Parser:replace(%s, %s, %d, %s)\n", SymbolArrayToString(sa), a_start, (int)(x - x_start), SymbolArrayToString(replace));
 				SymbolArrayReplace(sa, x_start, (long)(x - x_start), replace);
 				x = x_start + SymbolArraySize(replace);
-				if(x_start + SymbolArraySize(replace) < SymbolArrayEnd(sa)) symbol_to_string(x, &a); else strcpy(a, "null");
-				printf("Parser:Now %s in %s.\n", a, SymbolArrayToString(sa));
 				x_start = 0;
 			}
 			is_content = 1;
 		}
 	}
 	/* Whitespace at end of section. */
-	if(x_start) SymbolArrayReplace(sa, x_start, -1, 0), printf("Stipped trialing ws %s.\n", SymbolArrayToString(sa));
-#if 0
-		while((segment = SegmentArrayNext(&text, segment))) {
-			switch(segment->section) {
-			case HEADER:
-			case DECLARATION:
-			case FUNCTION:
-				break;
-			}
-			/* This happens after so that if the entire comment is a dud, it
-			 still gets included. */
-			strip(&segment->doc, WHITESPACE);
-			/* fixme: Strip recusively along {}. */
-		}
-#endif
+	if(x_start) SymbolArrayReplace(sa, x_start, -1, 0);
+	printf("Parser:Clean: %s.\n", SymbolArrayToString(sa));
 }
 
 /** @implements Predicate<Segment> */
@@ -208,10 +165,12 @@ int main(int argc, char **argv) {
 			struct Symbol *s;
 			if(!(s = SymbolArrayNew(&white))) break;
 			s->token = WHITESPACE;
-			s->from = s->to = 0;
+			s->from = 0;
+			s->length = 0;
 			if(!(s = SymbolArrayNew(&paragraph))) break;
 			s->token = NEWLINE;
-			s->from = s->to = 0;
+			s->from = 0;
+			s->length = 0;
 		}
 
 		/* Lex. */
@@ -226,7 +185,7 @@ int main(int argc, char **argv) {
 			for(indent = 0; indent < indent_level; indent++)
 				fputc('\t', stdout);
 			printf("%s %s \"%.*s\"\n", ScannerGetStates(),
-				tokens[t], (int)(ScannerGetCursor() - ScannerGetToken()), ScannerGetToken()); /* fixme */
+				tokens[t], ScannerGetLength(), ScannerGetFrom());
 			if(!is_indent) {
 				if(indent_level) { /* Entering a code block. */
 					struct Symbol *symbol;
@@ -277,9 +236,11 @@ int main(int argc, char **argv) {
 
 		/* Cull. Rid uncommented blocks. Whitespace clean-up, (after!) */
 		SegmentArrayKeepIf(&text, &keep_segment);
-		segment = 0; while((segment = SegmentArrayNext(&text, segment)))
-			clean_whitespace(&segment->doc, &white, &paragraph),
-			clean_whitespace(&segment->code, &white, &paragraph);
+		segment = 0;
+		/*while((segment = SegmentArrayNext(&text, segment)))
+			split_sections(&segment->doc);*/
+		while((segment = SegmentArrayNext(&text, segment)))
+			clean_whitespace(&segment->doc, &white, &paragraph);
 
 		is_done = 1;
 	} while(0); if(!is_done) {
@@ -287,7 +248,7 @@ int main(int argc, char **argv) {
 		fprintf(stderr, "At %lu%c indent level %d; state stack %s; %s \"%.*s\"."
 			"\n", (unsigned long)ScannerGetLine(), is_doc ? '~' : ':',
 			indent_level, ScannerGetStates(),
-			tokens[t], (int)(ScannerGetCursor() - ScannerGetToken()), ScannerGetToken());
+			tokens[t], ScannerGetLength(), ScannerGetFrom());
 	} else {
 		struct Segment *segment = 0;
 		fputs("\n\n*****\n\n", stdout);

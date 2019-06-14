@@ -15,9 +15,9 @@
 	X(ESCAPED_BACKSLASH, 0), X(ESCAPED_LBRACE, 0), X(ESCAPED_RBRACE, 0), \
 	X(ESCAPED_EACH, 0), X(WHITESPACE, 0), X(NEWLINE, 0), \
 	X(BS_URL, 0), X(BS_CITE, 0), X(BS_SEE, 0), X(BS_PRE, 0), \
-	X(TAG_TITLE, 0), X(TAG_PARAM, 0), X(TAG_AUTHOR, 0), X(TAG_STD, 0), \
-	X(TAG_DEPEND, 0), X(TAG_VERSION, 0), X(TAG_SINCE, 0), X(TAG_FIXME, 0), \
-	X(TAG_DEPRICATED, 0), X(TAG_RETURN, 0), X(TAG_THROWS, 0), \
+	X(TAG_TITLE, 0), X(TAG_PARAM, 0), X(TAG_AUTHOR, 0), \
+	X(TAG_STD, 0), X(TAG_DEPEND, 0), X(TAG_VERSION, 0), X(TAG_SINCE, 0), \
+	X(TAG_FIXME, 0), X(TAG_DEPRICATED, 0), X(TAG_RETURN, 0), X(TAG_THROWS, 0), \
 	X(TAG_IMPLEMENTS, 0), X(TAG_ORDER, 0), X(TAG_ALLOW, 0), \
 	X(HTML_AMP, 0), X(HTML_LT, 0), X(HTML_GT, 0), \
 	X(HTML_DOT, 0), X(HTML_LCEIL, 0), X(HTML_RCEIL, 0), X(HTML_LFLOOR, 0), \
@@ -50,8 +50,8 @@ struct Scanner;
 void Scanner_(void);
 int Scanner(void);
 enum Token ScannerScan(void);
-const char *ScannerGetToken(void);
-const char *ScannerGetCursor(void);
+const char *ScannerGetFrom(void);
+int ScannerGetLength(void);
 size_t ScannerGetLine(void);
 int ScannerGetIndentLevel(void);
 const char *ScannerGetStates(void);

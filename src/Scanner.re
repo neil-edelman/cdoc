@@ -17,6 +17,7 @@
 #include <string.h> /* memset */
 /* #define NDEBUG */
 #include <assert.h> /* assert */
+#include <limits.h> /* INT_MAX */
 
 #include "../src/Scanner.h"
 
@@ -125,9 +126,27 @@ enum Token ScannerScan(void) {
 	return state_fn[*ps]();
 }
 
-const char *ScannerGetToken(void) { return scanner.token; }
+const char *ScannerGetFrom(void) { return scanner.token; }
 
-const char *ScannerGetCursor(void) { return scanner.cursor; }
+/* Define QUOTE. */
+#ifdef QUOTE
+#undef QUOTE
+#endif
+#ifdef QUOTE_
+#undef QUOTE_
+#endif
+#define QUOTE_(name) #name
+#define QUOTE(name) QUOTE_(name)
+
+
+int ScannerGetLength(void) {
+	assert(scanner.token <= scanner.cursor);
+	if(scanner.token + INT_MAX < scanner.cursor) {
+		fprintf(stderr, "Length of string chopped to " QUOTE(INT_MAX) ".\n");
+		return INT_MAX;
+	}
+	return (int)(scanner.cursor - scanner.token);
+}
 
 size_t ScannerGetLine(void) { return scanner.line; }
 
