@@ -120,9 +120,15 @@ static void segment_init(struct Segment *const segment) {
 	TagArray(&segment->tags);
 }
 
+static void segment_to_string(const struct Segment *seg, char (*const a)[12]) {
+	strncpy(*a, sections[seg->section], sizeof *a - 1),
+		*a[sizeof *a - 1] = '\0';
+}
+
 /* A {SegmentArray} is the top level parser. */
 #define ARRAY_NAME Segment
 #define ARRAY_TYPE struct Segment
+#define ARRAY_TO_STRING &segment_to_string
 #include "../src/Array.h"
 
 static void segment_array_remove(struct SegmentArray *const sa) {
@@ -227,12 +233,16 @@ int main(int argc, char **argv) {
 				if(indent_level) { /* Entering a code block. */
 					assert(indent_level == 1 && !is_doc && token == LBRACE);
 					is_indent = 1;
+					/******* Maybe it segfaults depending on what compiler and what version you compile it on. vvvv ********/
+					printf("HERE segment %s is crashing segment = %s.\n", SegmentArrayToString(&text), sections[segment->section]);
+#if 0
 					/* Determine if this is function. */
 					if((symbol = SymbolArrayPop(&segment->code))
 						&& symbol->token != RPAREN) {
 						if(segment) segment->section = DECLARATION;
 						is_struct = 1;
 					} else if(segment) segment->section = FUNCTION;
+#endif
 				} else if(token == SEMI) { /* Semicolons on indent level 0. */
 					/* General declaration? */
 					if(segment && segment->section == HEADER)
