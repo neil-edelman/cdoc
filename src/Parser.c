@@ -37,9 +37,8 @@ static const int token_flags[] = { TOKEN(PARAM_B) };
 enum Section { SECTION(PARAM) };
 static const char *const sections[] = { SECTION(STRINGISE) };
 
-/* Parser. */
-
-/** Parser is only valid when Scanner is active and in steady-state. */
+/** Parser is only valid when Scanner is active and in steady-state. Symbols
+ are all elements of the text once they are tagged by the lexer. */
 struct Symbol {
 	enum Token token;
 	const char *from;
@@ -50,7 +49,14 @@ static void symbol_to_string(const struct Symbol *s, char (*const a)[12]) {
 	int len = s->length >= 5 ? 5 : s->length;
 	sprintf(*a, "%.4s<%.*s>", tokens[s->token], len, s->from);
 	/*strncpy(*a, tokens[s->token], sizeof *a - 1);*/
-	*a[sizeof *a - 1] = '\0';
+	*a[sizeof *a - 1] = '\0';/*???*/
+}
+
+static void symbol_init(struct Symbol *const symbol, const enum Token token) {
+	assert(symbol && token);
+	symbol->token = token;
+	symbol->from = ScannerGetFrom();
+	symbol->length = ScannerGetLength();
 }
 
 #define ARRAY_NAME Symbol
@@ -58,44 +64,74 @@ static void symbol_to_string(const struct Symbol *s, char (*const a)[12]) {
 #define ARRAY_TO_STRING &symbol_to_string
 #include "../src/Array.h"
 
-struct Segment {
-	struct SymbolArray doc, code;
-	enum Section section;
+
+
+/** Tags are documentation TAGS_* symbols and everything that comes after.
+ Ie, tag = TAG_TITLE, header = {}, contents = { all, , your, , base } or
+ tag = TAG_PARAM, header = { ID"x" }, contents = { the, , dependant, ,
+ varible }. */
+struct Tag {
+	struct Symbol tag;
+	struct SymbolArray header;
+	struct SymbolArray contents;
 };
+
+static void tag_to_string(const struct Tag *t, char (*const a)[12]) {
+	strncpy(*a, tokens[t->tag.token], sizeof *a - 1), *a[sizeof *a - 1] = '\0';
+}
+
+static void tag_init(struct Tag *const tag, const enum Token token) {
+	assert(tag);
+	SymbolArray(&tag->header);
+	SymbolArray(&tag->contents);
+	symbol_init(&tag->tag, token);
+}
+
+#define ARRAY_NAME Tag
+#define ARRAY_TYPE struct Tag
+#define ARRAY_TO_STRING &tag_to_string
+#include "Array.h"
+
+static void tag_array_remove(struct TagArray *const ta) {
+	struct Tag *t;
+	if(!ta) return;
+	while((t = TagArrayPop(ta)))
+		SymbolArray_(&t->header), SymbolArray_(&t->contents);
+	TagArray_(ta);
+}
+
+
+
+/** Segment is classified to a section of the document and can have
+ documentation including tags and code. Ie, section = FUNCTION, doc = { I, ,
+ don't, , know, , what, , this, , fn, , does }, code = { int foo(int foo) {} },
+ tags = { { TAG_PARAM, { does, , nothing } }, { TAG_ALLOW, { } } } */
+struct Segment {
+	enum Section section;
+	struct SymbolArray doc, code;
+	struct TagArray tags;
+};
+
+static void segment_init(struct Segment *const segment) {
+	assert(segment);
+	segment->section = HEADER; /* Default. */
+	SymbolArray(&segment->doc);
+	SymbolArray(&segment->code);
+	TagArray(&segment->tags);
+}
 
 /* A {SegmentArray} is the top level parser. */
 #define ARRAY_NAME Segment
 #define ARRAY_TYPE struct Segment
 #include "../src/Array.h"
 
-static void DeleteAllSegments(struct SegmentArray *const sa) {
+static void segment_array_remove(struct SegmentArray *const sa) {
 	struct Segment *s;
 	if(!sa) return;
 	while((s = SegmentArrayPop(sa)))
-		SymbolArray_(&s->doc), SymbolArray_(&s->code);
-}
-
-static struct Segment *NewSegment(struct SegmentArray *const sa) {
-	struct Segment *s;
-	assert(sa);
-	if(!(s = SegmentArrayNew(sa))) return 0;
-	SymbolArray(&s->doc);
-	SymbolArray(&s->code);
-	s->section = HEADER; /* Default. */
-	return s;
-}
-
-/* Create a new symbol for this segment. */
-static int PushSymbol(struct Segment *const s, const int is_doc,
-	const enum Token token) {
-	struct Symbol *symbol;
-	assert(s);
-	/* @fixme: This line is not initialised? */
-	if(!(symbol = SymbolArrayNew(is_doc ? &s->doc : &s->code))) return 0;
-	symbol->token = token;
-	symbol->from = ScannerGetFrom();
-	symbol->length = ScannerGetLength();
-	return 1;
+		SymbolArray_(&s->doc), SymbolArray_(&s->code),
+		tag_array_remove(&s->tags);
+	SegmentArray_(sa);
 }
 
 
@@ -138,7 +174,7 @@ static int keep_segment(const struct Segment *const s) {
 }
 
 int main(int argc, char **argv) {
-	enum Token t = END;
+	enum Token token = END;
 	struct SegmentArray text;
 	int is_done = 0, is_doc = 0;
 	int indent_level = 0;
@@ -176,7 +212,8 @@ int main(int argc, char **argv) {
 		/* Lex. */
 
 		if(!Scanner()) break; /* First. */
-		while((t = ScannerScan())) {
+		while((token = ScannerScan())) {
+			struct Symbol *symbol;
 			int indent; /* Debug. */
 			is_doc = ScannerIsDoc();
 			indent_level = ScannerGetIndentLevel();
@@ -185,11 +222,10 @@ int main(int argc, char **argv) {
 			for(indent = 0; indent < indent_level; indent++)
 				fputc('\t', stdout);
 			printf("%s %s \"%.*s\"\n", ScannerGetStates(),
-				tokens[t], ScannerGetLength(), ScannerGetFrom());
+				tokens[token], ScannerGetLength(), ScannerGetFrom());
 			if(!is_indent) {
 				if(indent_level) { /* Entering a code block. */
-					struct Symbol *symbol;
-					assert(indent_level == 1 && !is_doc && t == LBRACE);
+					assert(indent_level == 1 && !is_doc && token == LBRACE);
 					is_indent = 1;
 					/* Determine if this is function. */
 					if((symbol = SymbolArrayPop(&segment->code))
@@ -197,14 +233,14 @@ int main(int argc, char **argv) {
 						if(segment) segment->section = DECLARATION;
 						is_struct = 1;
 					} else if(segment) segment->section = FUNCTION;
-				} else if(t == SEMI) { /* Semicolons on indent level 0. */
+				} else if(token == SEMI) { /* Semicolons on indent level 0. */
 					/* General declaration? */
 					if(segment && segment->section == HEADER)
 						segment->section = DECLARATION;
 					is_line = 1;
 				} else if(segment && SymbolArraySize(&segment->doc)
 					&& !SymbolArraySize(&segment->code)
-					&& (t == BEGIN_DOC
+					&& (token == BEGIN_DOC
 					|| (!is_doc && ScannerIsDocFar()))) {
 					/* Hasn't scanned any code and is on the top level, cut
 					 multiple docs and the doc has to be within a reasonable
@@ -213,7 +249,7 @@ int main(int argc, char **argv) {
 				}
 			} else { /* {is_indent}. */
 				if(!indent_level) { /* Exiting to indent level 0. */
-					is_indent = 0, assert(t == RBRACE);
+					is_indent = 0, assert(token == RBRACE);
 					if(!is_struct) is_line = 1; /* Functions (fixme: sure?) */
 				} else if(!is_struct && !is_doc) {
 					continue; /* Code in functions: don't care. */
@@ -221,17 +257,20 @@ int main(int argc, char **argv) {
 			}
 			/* This is a dummy token that is for splitting up multiple doc
 			 comments on a single line -- ignore in practice. */
-			if(t == BEGIN_DOC) continue;
+			if(token == BEGIN_DOC) continue;
 			/* Create new segment if need be. */
 			if(!segment) {
 				printf("<new segment>\n");
-				if(!(segment = NewSegment(&text))) break;
+				if(!(segment = SegmentArrayNew(&text))) break;
+				segment_init(segment);
 			}
-			if(!PushSymbol(segment, is_doc, t)) break;
+			/* Push symbol. */
+			if(!(symbol = SymbolArrayNew(is_doc ? &segment->doc : &segment->code))) break;
+			symbol_init(symbol, token);
 			/* Create another segment next time. */
 			if(is_line) is_line = 0, is_struct = 0, segment = 0;
 		}
-		if(t) break;
+		if(token) break;
 		if(indent_level) { errno = EILSEQ; break; }
 
 		/* Cull. Rid uncommented blocks. Whitespace clean-up, (after!) */
@@ -248,7 +287,7 @@ int main(int argc, char **argv) {
 		fprintf(stderr, "At %lu%c indent level %d; state stack %s; %s \"%.*s\"."
 			"\n", (unsigned long)ScannerGetLine(), is_doc ? '~' : ':',
 			indent_level, ScannerGetStates(),
-			tokens[t], ScannerGetLength(), ScannerGetFrom());
+			tokens[token], ScannerGetLength(), ScannerGetFrom());
 	} else {
 		struct Segment *segment = 0;
 		fputs("\n\n*****\n\n", stdout);
@@ -260,7 +299,7 @@ int main(int argc, char **argv) {
 		}
 		fputc('\n', stdout);
 	} {
-		DeleteAllSegments(&text), SegmentArray_(&text);
+		segment_array_remove(&text);
 		Scanner_();
 	}
 	return is_done ? EXIT_SUCCESS : EXIT_FAILURE;
