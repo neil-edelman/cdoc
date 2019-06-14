@@ -48,7 +48,7 @@ struct Symbol {
 static void symbol_to_string(const struct Symbol *s, char (*const a)[12]) {
 	int len = (int)(s->to - s->from);
 	if(len > 5) len = 5;
-	sprintf(*a, "%.4s\"%.*s\"", tokens[s->token], len, s->from);
+	sprintf(*a, "%.4s<%.*s>", tokens[s->token], len, s->from);
 	/*strncpy(*a, tokens[s->token], sizeof *a - 1);*/
 	*a[sizeof *a - 1] = '\0';
 }
@@ -90,6 +90,7 @@ static int PushSymbol(struct Segment *const s, const int is_doc,
 	const enum Token token) {
 	struct Symbol *symbol;
 	assert(s);
+	/* @fixme: This line is not initialised? */
 	if(!(symbol = SymbolArrayNew(is_doc ? &s->doc : &s->code))) return 0;
 	symbol->token = token;
 	symbol->from = ScannerGetToken();
@@ -99,6 +100,7 @@ static int PushSymbol(struct Segment *const s, const int is_doc,
 
 
 
+#if 0
 static void stripn(struct SymbolArray *const syms, const enum Token t,
 	size_t a, size_t b) {
 	struct Symbol *s;
@@ -115,42 +117,47 @@ static void strip(struct SymbolArray *const syms, const enum Token t) {
 	assert(syms);
 	stripn(syms, t, 0, SymbolArraySize(syms));
 }
+#endif
 
 /** Cleans the whitespace so it's just in between words and adds paragraphs
  where needed. */
 static void clean_whitespace(struct SymbolArray *const sa,
 	const struct SymbolArray *const white,
 	const struct SymbolArray *const paragraph) {
-	struct Symbol *s = 0, *white_start = 0;
-	const size_t white_size = SymbolArraySize(white),
-		paragraph_size = SymbolArraySize(paragraph);
-	size_t nl = 0;
+	struct Symbol *x = 0, *x_start = 0;
+	size_t count_nl = 0;
+	int is_content = 0;
 	assert(sa);
-	while((s = SymbolArrayNext(sa, s))) {
-		switch(s->token) {
-		case NEWLINE: nl++; /* Fall-through. */
-		case WHITESPACE: if(!white_start) white_start = s; break;
-		default: /* Non white-space. */
-			if(white_start) {
-				char a[12];
-				const size_t w_start = SymbolArrayIndex(sa, white_start),
-					w_end = SymbolArrayIndex(sa, s);
-				symbol_to_string(s, &a);
-				printf("White-space before %s in %s.\n", a,
+	printf("Parser:Clean: %s.\n", SymbolArrayToString(sa));
+	while((x = SymbolArrayNext(sa, x))) {
+		switch(x->token) {
+		case NEWLINE: count_nl++; /* Fall-through. */
+		case WHITESPACE: if(!x_start) x_start = x; break;
+		default: /* Non white-space, viz,
+			[ 0, ... x_start (whitespace), ..., x (first non-white), ... ] */
+			if(x_start) {
+				/* This cannot go in function scope or it will corrupt the
+				 value of the pointer as soon as you use it. Gcc bug, perhaps?*/
+				const struct SymbolArray *replace;
+				char a[12], a_start[12];
+				symbol_to_string(x, &a);
+				symbol_to_string(x_start, &a_start);
+				printf("Parser:White-space from [%s, %s) in %s.\n", a_start, a,
 					SymbolArrayToString(sa));
-				assert(w_start < w_end && w_end < SymbolArraySize(sa));
-				SymbolArrayReplace(sa, w_start, w_end, white);
-				/* Adjust the iterator. */
-				s = (w_start + white_size)
-					? SymbolArrayGet(sa, w_start + white_size) : 0;
-				symbol_to_string(s, &a);
-				printf("Now %s in %s.\n", a, SymbolArrayToString(sa));
-				white_start = 0;
-				nl = 0;
+				replace = is_content ? count_nl > 1 ? paragraph : white : 0;
+				count_nl = 0;
+				printf("Parser:replace(%s, %s, %d, %s)\n", SymbolArrayToString(sa), a_start, (int)(x - x_start), SymbolArrayToString(replace));
+				SymbolArrayReplace(sa, x_start, (long)(x - x_start), replace);
+				x = x_start + SymbolArraySize(replace);
+				if(x_start + SymbolArraySize(replace) < SymbolArrayEnd(sa)) symbol_to_string(x, &a); else strcpy(a, "null");
+				printf("Parser:Now %s in %s.\n", a, SymbolArrayToString(sa));
+				x_start = 0;
 			}
+			is_content = 1;
 		}
 	}
-	
+	/* Whitespace at end of section. */
+	if(x_start) SymbolArrayReplace(sa, x_start, -1, 0), printf("Stipped trialing ws %s.\n", SymbolArrayToString(sa));
 #if 0
 		while((segment = SegmentArrayNext(&text, segment))) {
 			switch(segment->section) {
