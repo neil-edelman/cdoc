@@ -5,8 +5,8 @@
 #define PARAM_B(A, B) B
 #define STRINGISE_A(A, B) #A
 
-/* Define the tokens. */
-#define TOKEN(X) \
+/* Define the symbols. */
+#define SYMBOL(X) \
 	X(END, 0), X(OPERATOR, 0), X(COMMA, 0), X(SEMI, 0), \
 	X(LBRACE, 0), X(RBRACE, 0), X(LPAREN, 0), X(RPAREN, 0), \
 	X(LBRACK, 0), X(RBRACK, 0), X(CONSTANT, 0), X(ID, 0), \
@@ -36,12 +36,24 @@
 	X(HTML_SIGMA, 0), X(HTML_TAU, 0), X(HTML_UPSILON, 0), X(HTML_PHI, 0), \
 	X(HTML_CHI, 0), X(HTML_PSI, 0), X(HTML_OMEGA, 0)
 
-enum Token { TOKEN(PARAM_A) };
+enum Symbol { SYMBOL(PARAM_A) };
+static const char *const symbols[] = { SYMBOL(STRINGISE_A) };
 
 /* Define the states of the input file. */
 #define STATE(X) X(END_OF_FILE, &scan_eof), X(DOC, &scan_doc), \
 	X(CODE, &scan_code), X(COMMENT, &scan_comment), X(STRING, &scan_string), \
 	X(CHAR, &scan_char), X(MACRO, &scan_macro)
+
+/** Token has a Symbol and is associated with an area of the text. Tokenisation
+ can only to done when the Scanner is active and in steady-state, and is done
+ by the lexer calling `ScannerFillToken`. */
+struct Token {
+	enum Symbol symbol;
+	const char *from;
+	int length, indent_level;
+	int is_doc, is_doc_far;
+	size_t line;
+};
 
 enum State { STATE(PARAM_A) };
 
@@ -49,11 +61,7 @@ struct Scanner;
 
 void Scanner_(void);
 int Scanner(void);
-enum Token ScannerScan(void);
-const char *ScannerGetFrom(void);
-int ScannerGetLength(void);
-size_t ScannerGetLine(void);
-int ScannerGetIndentLevel(void);
-const char *ScannerGetStates(void);
-int ScannerIsDocFar(void);
+enum Symbol ScannerNext(void);
 int ScannerIsDoc(void);
+void ScannerFillToken(struct Token *const token);
+const char *ScannerStates(void);

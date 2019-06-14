@@ -1,7 +1,7 @@
 /** 2019 Neil Edelman, distributed under the terms of the MIT License,
  \url{ https://opensource.org/licenses/MIT }.
 
- Lexes C documents. (Imperfectly, but good enough?)
+ Lexes C documents on-line. (Imperfectly, but good enough?)
 
  @title Scanner.re
  @author Neil
@@ -23,14 +23,14 @@
 
 /** Private state information. Forward-declared for {state_fn}. From
  `Scanner.h`. */
-typedef enum Token (*ScannerFn)(void);
-static enum Token scan_eof(void);
-static enum Token scan_doc(void);
-static enum Token scan_code(void);
-static enum Token scan_comment(void);
-static enum Token scan_string(void);
-static enum Token scan_char(void);
-static enum Token scan_macro(void);
+typedef enum Symbol (*ScannerFn)(void);
+static enum Symbol scan_eof(void);
+static enum Symbol scan_doc(void);
+static enum Symbol scan_code(void);
+static enum Symbol scan_comment(void);
+static enum Symbol scan_string(void);
+static enum Symbol scan_char(void);
+static enum Symbol scan_macro(void);
 static const char *const states[] = { STATE(STRINGISE_A) };
 static const ScannerFn state_fn[] = { STATE(PARAM_B) };
 
@@ -53,13 +53,24 @@ static void state_to_string(const enum State *s, char (*const a)[12]) {
 
 
 
+/* Define QUOTE. */
+#ifdef QUOTE
+#undef QUOTE
+#endif
+#ifdef QUOTE_
+#undef QUOTE_
+#endif
+#define QUOTE_(name) #name
+#define QUOTE(name) QUOTE_(name)
+
 /** Scanner reads a file and extracts semantic information. */
 struct Scanner {
 	/* {re2c} variables. These point directly into {buffer} so no modifying. */
-	const char *limit, *cursor, *marker, *ctx_marker, *token;
+	const char *limit, *cursor, *marker, *ctx_marker, *from;
 	/* Weird {c2re} stuff: these fields have to come after when >5? */
 	struct CharArray buffer;
 	struct StateArray states;
+	enum Symbol symbol;
 	int indent_level;
 	size_t line, doc_line;
 } scanner;
@@ -68,10 +79,11 @@ struct Scanner {
 void Scanner_(void) {
 	CharArray_(&scanner.buffer);
 	StateArray_(&scanner.states);
+	scanner.symbol = END;
 	scanner.indent_level = 0;
 	scanner.line = scanner.doc_line = 0;
 	scanner.limit = scanner.cursor = scanner.marker = scanner.ctx_marker
-		= scanner.token = 0;
+		= scanner.from = 0;
 }
 
 /* Have {re2c} generate {YYMAXFILL}.
@@ -105,7 +117,7 @@ int Scanner(void) {
 		if(!CharArrayAddSize(&scanner.buffer, YYMAXFILL)) break;
 		/* Point these toward the first char; `buffer` is necessarily done
 		 growing, or we could not do this. */
-		scanner.cursor = scanner.marker = scanner.token
+		scanner.cursor = scanner.marker = scanner.from
 			= CharArrayNext(&scanner.buffer, 0);
 		scanner.line = 1;
 		if(!(ps = StateArrayNew(&scanner.states))) break;
@@ -118,45 +130,38 @@ int Scanner(void) {
 	return 1;
 }
 
-/** Scans the file for the next token.
- @return The next token; {END} when it's finished. */
-enum Token ScannerScan(void) {
+/** Scans the file for the next symbol.
+ @return The next symbol; {END} when it's finished. */
+enum Symbol ScannerNext(void) {
 	enum State *ps;
 	if(!(ps = StateArrayPeek(&scanner.states))) return END;
-	return state_fn[*ps]();
+	return scanner.symbol = state_fn[*ps]();
 }
 
-const char *ScannerGetFrom(void) { return scanner.token; }
+static enum State state_look(void);
 
-/* Define QUOTE. */
-#ifdef QUOTE
-#undef QUOTE
-#endif
-#ifdef QUOTE_
-#undef QUOTE_
-#endif
-#define QUOTE_(name) #name
-#define QUOTE(name) QUOTE_(name)
-
-
-int ScannerGetLength(void) {
-	assert(scanner.token <= scanner.cursor);
-	if(scanner.token + INT_MAX < scanner.cursor) {
+/** Fills the `token` with the last token.
+ @param{token} If null, does nothing. */
+void ScannerFillToken(struct Token *const token) {
+	if(!token) return;
+	assert(scanner.symbol && scanner.from && scanner.from <= scanner.cursor);
+	token->symbol = scanner.symbol;
+	token->from = scanner.from;
+	if(scanner.from + INT_MAX < scanner.cursor) {
 		fprintf(stderr, "Length of string chopped to " QUOTE(INT_MAX) ".\n");
-		return INT_MAX;
+		token->length = INT_MAX;
+	} else {
+		token->length = (int)(scanner.cursor - scanner.from);
 	}
-	return (int)(scanner.cursor - scanner.token);
+	token->indent_level = scanner.indent_level;
+	token->is_doc = state_look() == DOC;
+	token->is_doc_far = scanner.doc_line + 2 < scanner.line;
+	token->line = scanner.line;
 }
 
-size_t ScannerGetLine(void) { return scanner.line; }
-
-int ScannerGetIndentLevel(void) { return scanner.indent_level; }
-
-const char *ScannerGetStates(void) {
+const char *ScannerStates(void) {
 	return StateArrayToString(&scanner.states);
 }
-
-int ScannerIsDocFar(void) { return scanner.doc_line + 2 < scanner.line; }
 
 
 
@@ -171,8 +176,6 @@ static enum State state_look(void) {
 	return *ps;
 }
 
-int ScannerIsDoc(void) { return state_look() == DOC; }
-
 /** Pushes the new state.
  @return Success. */
 static int push(const enum State state) {
@@ -184,7 +187,7 @@ static int push(const enum State state) {
 
 /** Pushes the new state and calls the state function.
  @return What the state function returns. END if there's an error. */
-static enum Token push_call(const enum State state) {
+static enum Symbol push_call(const enum State state) {
 	if(!(push(state))) return END;
 	return state_fn[state]();
 }
@@ -198,7 +201,7 @@ static int pop(void) {
 /** Pops and calls the state on top and calls the state underneath.
  @return What the state function returns. END if there's an error or the state
  is empty. */
-static enum Token pop_call(void) {
+static enum Symbol pop_call(void) {
 	enum State *ps;
 	if(!pop() || !(ps = StateArrayPeek(&scanner.states))) return END;
 	return state_fn[*ps]();
@@ -225,14 +228,14 @@ re2c:yyfill:enable = 0;
 
 /** Returns eof.
  @implements ScannerFn */
-static enum Token scan_eof(void) { return END; }
+static enum Symbol scan_eof(void) { return END; }
 
 /** Scans documentation.
  @implements ScannerFn */
-static enum Token scan_doc(void) {
+static enum Symbol scan_doc(void) {
 	assert(state_look() == DOC);
 	scanner.doc_line = scanner.line;
-	scanner.token = scanner.cursor;
+	scanner.from = scanner.cursor;
 doc:
 /*!re2c
 	"\x00" { if(scanner.limit - scanner.cursor <= YYMAXFILL) return END;
@@ -351,16 +354,16 @@ doc:
 
 /** Scans C code. See \see{ http://re2c.org/examples/example_07.html }.
  @implements ScannerFn */
-static enum Token scan_code(void) {
+static enum Symbol scan_code(void) {
 	assert(state_look() == CODE);
 code:
-	scanner.token = scanner.cursor;
+	scanner.from = scanner.cursor;
 /*!re2c
 	// http://re2c.org/examples/example_03.html
 	"\x00" { if(scanner.limit - scanner.cursor <= YYMAXFILL) return END;
 		goto code; }
 	* { printf("Unknown, <%.*s>, just roll with it.\n",
-		(int)(scanner.cursor - scanner.token), scanner.token); goto code; }
+		(int)(scanner.cursor - scanner.from), scanner.from); goto code; }
 
 	newline { scanner.line++; goto code; }
 
@@ -421,7 +424,7 @@ code:
 /** C style comments. Actively ignore.
  @implements ScannerFn
  @allow */
-static enum Token scan_comment(void) {
+static enum Symbol scan_comment(void) {
 	assert(state_look() == COMMENT);
 	printf("Comment Line%lu.\n", scanner.line);
 comment:
@@ -440,7 +443,7 @@ comment:
  and FILE pre-processor commands. Keep it simple.
  @implements ScannerFn
  @allow */
-static enum Token scan_string(void) {
+static enum Symbol scan_string(void) {
 	assert(state_look() == STRING);
 string:
 /*!re2c
@@ -457,7 +460,7 @@ string:
 /** Character constant.
  @implements ScannerFn
  @allow */
-static enum Token scan_char(void) {
+static enum Symbol scan_char(void) {
 	assert(state_look() == CHAR);
 character:
 /*!re2c
@@ -474,7 +477,7 @@ character:
 /** Actively ignore macros.
  @implements ScannerFn
  @allow */
-static enum Token scan_macro(void) {
+static enum Symbol scan_macro(void) {
 	assert(state_look() == MACRO);
 macro:
 /*!re2c
