@@ -32,10 +32,9 @@
 static const int symbol_flags[] = { SYMBOL(PARAM_B) };
 
 /* Define the sections of output. */
-#define SECTION(X) X(HEADER), X(DECLARATION), X(FUNCTION)
+#define SECTION(X) X(UNDECIDED), X(HEADER), X(DECLARATION), X(FUNCTION)
 enum Section { SECTION(PARAM) };
 static const char *const sections[] = { SECTION(STRINGISE) };
-
 
 /*
 static struct Token global_token;
@@ -73,6 +72,10 @@ static void token_to_string(const struct Token *s, char (*const a)[12]) {
 #define ARRAY_TYPE struct Token
 #define ARRAY_TO_STRING &token_to_string
 #include "../src/Array.h"
+
+/* `static` constants that require memory so are initialised on start and
+ deleted on end. */
+static struct TokenArray whitespace, paragraph;
 
 
 
@@ -155,9 +158,7 @@ static void segment_array_remove(struct SegmentArray *const sa) {
 
 /** Cleans the whitespace so it's just in between words and adds paragraphs
  where needed. */
-static void clean_whitespace(struct TokenArray *const sa,
-	const struct TokenArray *const white,
-	const struct TokenArray *const paragraph) {
+static void clean_whitespace(struct TokenArray *const sa) {
 	const struct TokenArray *replace;
 	struct Token *x = 0, *x_start = 0;
 	size_t count_nl = 0;
@@ -170,7 +171,7 @@ static void clean_whitespace(struct TokenArray *const sa,
 		default: /* Non white-space, viz,
 			[ 0, ... x_start (whitespace), ..., x (first non-white), ... ] */
 			if(x_start) {
-				replace = is_content ? count_nl > 1 ? paragraph : white : 0;
+				replace = is_content ? count_nl > 1 ? &paragraph : &whitespace : 0;
 				count_nl = 0;
 				TokenArrayReplace(sa, x_start, (long)(x - x_start), replace);
 				x = x_start + TokenArraySize(replace);
@@ -193,7 +194,6 @@ static int keep_segment(const struct Segment *const s) {
 int main(int argc, char **argv) {
 	struct SegmentArray text;
 	int is_done = 0, is_matching = 1;
-	struct TokenArray white, paragraph;
 
 	/* https://stackoverflow.com/questions/10293387/piping-into-application-run-under-xcode/13658537 */
 	if (argc == 2 && strcmp(argv[1], "debug") == 0 ) {
@@ -204,24 +204,18 @@ int main(int argc, char **argv) {
 
 	/* Initialise. */
 	SegmentArray(&text);
-	TokenArray(&white);
-	TokenArray(&paragraph);
-
 	do { /* Try. */
 		int is_indent = 0, is_struct = 0, is_line = 0;
 		struct Segment *segment = 0;
 
-		/* Constant things. */
-		{
+		{ /* Constant things. */
 			struct Token *s;
-			if(!(s = TokenArrayNew(&white))) break;
+			if(!(s = TokenArrayNew(&whitespace))) break;
 			s->symbol = WHITESPACE;
-			s->from = 0;
-			s->length = 0;
+			s->from = 0, s->length = 0, s->line = 0;
 			if(!(s = TokenArrayNew(&paragraph))) break;
 			s->symbol = NEWLINE;
-			s->from = 0;
-			s->length = 0;
+			s->from = 0, s->length = 0, s->line = 0;
 		}
 
 		/* Lex. */
@@ -308,7 +302,7 @@ int main(int argc, char **argv) {
 		/*while((segment = SegmentArrayNext(&text, segment)))
 			split_sections(&segment->doc);*/
 		while((segment = SegmentArrayNext(&text, segment)))
-			clean_whitespace(&segment->doc, &white, &paragraph);
+			clean_whitespace(&segment->doc);
 
 		is_done = 1;
 	} while(0); if(!is_done) {
@@ -316,7 +310,7 @@ int main(int argc, char **argv) {
 		/*fprintf(stderr, "At %lu%c indent level %d; state stack %s; %s \"%.*s\"."
 			"\n", (unsigned long)ScannerGetLine(), is_doc ? '~' : ':',
 			indent_level, ScannerGetStates(),
-			symbols[symbol], ScannerGetLength(), ScannerGetFrom());*/
+			symbols[symbol], ScannerGetLength(), ScannerGetFrom()); fixme*/
 	} else {
 		struct Segment *segment = 0;
 		fputs("\n\n*****\n\n", stdout);
@@ -331,7 +325,7 @@ int main(int argc, char **argv) {
 		segment_array_remove(&text);
 		Scanner_();
 		TokenArray_(&paragraph);
-		TokenArray_(&white);
+		TokenArray_(&whitespace);
 	}
 	return is_done ? EXIT_SUCCESS : EXIT_FAILURE;
 }
