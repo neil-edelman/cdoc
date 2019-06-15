@@ -44,15 +44,20 @@ static const char *const symbols[] = { SYMBOL(STRINGISE_A) };
 	X(CODE, &scan_code), X(COMMENT, &scan_comment), X(STRING, &scan_string), \
 	X(CHAR, &scan_char), X(MACRO, &scan_macro)
 
-/** Token has a Symbol and is associated with an area of the text. Tokenisation
- can only to done when the Scanner is active and in steady-state, and is done
- by the lexer calling `ScannerFillToken`. */
+/** `Token` has a `Symbol` and is associated with an area of the text.
+ Tokenisation can only to done when the `Scanner` is active and in
+ steady-state, and is done by the lexer calling `ScannerFillToken`. */
 struct Token {
 	enum Symbol symbol;
 	const char *from;
-	int length, indent_level;
-	int is_doc, is_doc_far;
+	int length;
 	size_t line;
+};
+
+/** `TokenInfo` is associated to the `Token`, but not stored. */
+struct TokenInfo {
+	int indent_level;
+	int is_doc, is_doc_far;
 };
 
 enum State { STATE(PARAM_A) };
@@ -61,7 +66,7 @@ struct Scanner;
 
 void Scanner_(void);
 int Scanner(void);
-enum Symbol ScannerNext(void);
-int ScannerIsDoc(void);
-void ScannerFillToken(struct Token *const token);
+int ScannerNext(void);
+void ScannerToken(struct Token *const token);
+void ScannerTokenInfo(struct TokenInfo *const info);
 const char *ScannerStates(void);

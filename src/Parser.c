@@ -37,18 +37,30 @@ enum Section { SECTION(PARAM) };
 static const char *const sections[] = { SECTION(STRINGISE) };
 
 
+/*
+static struct Token global_token;
+
+static int accept(const enum Symbol symbol) {
+	static Token *token;
+	if(symbol != global_token.symbol) return 0;
+	
+	getsym();
+	return 1;
+}
+
+static int expect(const enum Symbol symbol) {
+	if(accept(symbol)) return 1;
+	errno = EILSEQ;
+	return 0;
+}
+*/
 
 
 
-/*static int accept(const struct Symbol *)*/
 
 
 
-
-
-
-
-/* `Token` is in `Scanner.h` to be used by `ScannerFillToken`. */
+/* `Token` is in `Scanner.h` to be used by `ScannerToken`. */
 
 static void token_to_string(const struct Token *s, char (*const a)[12]) {
 	int len = s->length >= 5 ? 5 : s->length;
@@ -83,7 +95,7 @@ static void tag_init(struct Tag *const tag) {
 	assert(tag);
 	TokenArray(&tag->header);
 	TokenArray(&tag->contents);
-	ScannerFillToken(&tag->token);
+	ScannerToken(&tag->token);
 }
 
 #define ARRAY_NAME Tag
@@ -180,7 +192,7 @@ static int keep_segment(const struct Segment *const s) {
 
 int main(int argc, char **argv) {
 	struct SegmentArray text;
-	int is_done = 0;
+	int is_done = 0, is_matching = 1;
 	struct TokenArray white, paragraph;
 
 	/* https://stackoverflow.com/questions/10293387/piping-into-application-run-under-xcode/13658537 */
@@ -217,31 +229,35 @@ int main(int argc, char **argv) {
 		if(!Scanner()) break; /* First. */
 		while((ScannerNext())) {
 			struct Token token, *pushed_token;
-
-			ScannerFillToken(&token);
-			{
+			struct TokenInfo info;
+			ScannerToken(&token);
+			ScannerTokenInfo(&info);
+			is_matching = !info.indent_level;
+			{ /* Print debug. */
 				int indent;
 				printf("%lu%c\t", (unsigned long)token.line,
-					   token.is_doc ? '~' : ':');
-				for(indent = 0; indent < token.indent_level; indent++)
+					info.is_doc ? '~' : ':');
+				for(indent = 0; indent < info.indent_level; indent++)
 					fputc('\t', stdout);
 				printf("%s %s \"%.*s\"\n", ScannerStates(),
 				   symbols[token.symbol], token.length,
 				   token.from);
 			}
-			
-			/*ScannerInfoToken();*/ /* @fixme causes it to crash on using `is_indent` */
 			if(!is_indent) {
-				if(token.indent_level) { /* Entering a code block. */
-					assert(token.indent_level == 1 && !token.is_doc
+				if(info.indent_level) { /* Entering a code block. */
+					struct Token *fn;
+					assert(info.indent_level == 1 && !info.is_doc
 						&& token.symbol == LBRACE);
 					is_indent = 1;
 					/******* Maybe it segfaults depending on what compiler and what version you compile it on. vvvv ********/
 					printf("HERE segment %s is crashing segment = %s.\n", SegmentArrayToString(&text), sections[segment->section]);
-#if 0
+#if 1
 					/* Determine if this is function. */
-					if((symbol = TokenArrayPop(&segment->code))
-						&& symbol->symbol != RPAREN) {
+					if(segment) {
+						/* ???? what??? it hasn't been read yet? */
+					}
+					if((fn = TokenArrayPop(&segment->code))
+						&& fn->symbol != RPAREN) {
 						if(segment) segment->section = DECLARATION;
 						is_struct = 1;
 					} else if(segment) segment->section = FUNCTION;
@@ -254,17 +270,17 @@ int main(int argc, char **argv) {
 				} else if(segment && TokenArraySize(&segment->doc)
 					&& !TokenArraySize(&segment->code)
 					&& (token.symbol == BEGIN_DOC
-					|| (!token.is_doc && token.is_doc_far))) {
+					|| (!info.is_doc && info.is_doc_far))) {
 					/* Hasn't scanned any code and is on the top level, cut
 					 multiple docs and the doc has to be within a reasonable
 					 distance. */
 					printf("<cut>\n"), segment = 0;
 				}
 			} else { /* {is_indent}. */
-				if(!token.indent_level) { /* Exiting to indent level 0. */
+				if(!info.indent_level) { /* Exiting to indent level 0. */
 					is_indent = 0, assert(token.symbol == RBRACE);
 					if(!is_struct) is_line = 1; /* Functions (fixme: sure?) */
-				} else if(!is_struct && !token.is_doc) {
+				} else if(!is_struct && !info.is_doc) {
 					continue; /* Code in functions: don't care. */
 				}
 			}
@@ -278,13 +294,13 @@ int main(int argc, char **argv) {
 				segment_init(segment);
 			}
 			/* Push symbol. */
-			if(!(pushed_token = TokenArrayNew(token.is_doc
+			if(!(pushed_token = TokenArrayNew(info.is_doc
 				? &segment->doc : &segment->code))) break;
-			ScannerFillToken(pushed_token);
+			ScannerToken(pushed_token);
 			/* Create another segment next time. */
 			if(is_line) is_line = 0, is_struct = 0, segment = 0;
 		}
-		/* fixme: if(indent_level) { errno = EILSEQ; break; }*/
+		if(!is_matching) { errno = EILSEQ; break; }
 
 		/* Cull. Rid uncommented blocks. Whitespace clean-up, (after!) */
 		SegmentArrayKeepIf(&text, &keep_segment);

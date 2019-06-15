@@ -11,7 +11,8 @@
  @fixme Different doc comments need new paragraphs.
  @fixme Lists in comments, etc.
  @fixme {void A_BI_(Create, Thing)(void)} -> {<A>Create<BI>Thing(void)}.
- @fixme Trigraph support, (haha.) */
+ @fixme Trigraph support, (haha.)
+ @fixme Old-style function support. */
 
 #include <stdio.h>  /* printf */
 #include <string.h> /* memset */
@@ -130,9 +131,10 @@ int Scanner(void) {
 	return 1;
 }
 
-/** Scans the file for the next symbol.
- @return The next symbol; {END} when it's finished. */
-enum Symbol ScannerNext(void) {
+/** Lexes the next token. This will update `ScannerToken` and
+ `ScannerTokenInfo`.
+ @return If the scanner had more tokens. */
+int ScannerNext(void) {
 	enum State *ps;
 	if(!(ps = StateArrayPeek(&scanner.states))) return END;
 	return scanner.symbol = state_fn[*ps]();
@@ -140,9 +142,9 @@ enum Symbol ScannerNext(void) {
 
 static enum State state_look(void);
 
-/** Fills the `token` with the last token.
+/** Fills `token` with the last token.
  @param{token} If null, does nothing. */
-void ScannerFillToken(struct Token *const token) {
+void ScannerToken(struct Token *const token) {
 	if(!token) return;
 	assert(scanner.symbol && scanner.from && scanner.from <= scanner.cursor);
 	token->symbol = scanner.symbol;
@@ -153,10 +155,15 @@ void ScannerFillToken(struct Token *const token) {
 	} else {
 		token->length = (int)(scanner.cursor - scanner.from);
 	}
-	token->indent_level = scanner.indent_level;
-	token->is_doc = state_look() == DOC;
-	token->is_doc_far = scanner.doc_line + 2 < scanner.line;
 	token->line = scanner.line;
+}
+
+/** Fills `info` with the last token information not stored in the token. */
+void ScannerTokenInfo(struct TokenInfo *const info) {
+	if(!info) return;
+	info->indent_level = scanner.indent_level;
+	info->is_doc = state_look() == DOC;
+	info->is_doc_far = scanner.doc_line + 2 < scanner.line;
 }
 
 const char *ScannerStates(void) {
