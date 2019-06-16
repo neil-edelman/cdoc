@@ -1,11 +1,9 @@
 /** 2019 Neil Edelman, distributed under the terms of the MIT License,
  \url{ https://opensource.org/licenses/MIT }.
 
- Lexes C documents on-line. (Imperfectly, but good enough?) Lexing a C file has
- some states assocated with it because like lexing several documents at the
- same time, comments, code, strings, character literals, documentation
- (comments.) I guess that's already parsing, but it helps to separate them, I
- think.
+ This is a context-sensitive parser. Lexes C documents on-line and (partially)
+ parses them to give the state, (comments, code, strings, character literals,
+ documentation,) the indent level, etc. (Imperfectly, but good enough?)
 
  @title Scanner.re
  @author Neil

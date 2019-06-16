@@ -22,13 +22,7 @@
  present before including.
 
  @param ARRAY_STACK
- Doesn't define \see{<T>ArrayRemove}, making it a stack. Not compatible with
- {ARRAY_TAIL_DELETE}.
-
- @param ARRAY_TAIL_DELETE
- Instead of preserving order on removal, {O(n)}, this copies the tail element
- to the removed. One gives up order, but preserves contiguity in {O(1)}. Not
- compatible with {ARRAY_STACK}.
+ Doesn't define removal functions except \see{<T>ArrayPop}, making it a stack.
 
  @param ARRAY_TO_STRING
  Optional print function implementing {<T>ToString}; makes available
@@ -78,9 +72,6 @@
 #ifndef ARRAY_TYPE /* <-- error */
 #error Generic ARRAY_TYPE undefined.
 #endif /* --> */
-#if defined(ARRAY_STACK) && defined(ARRAY_TAIL_DELETE) /* <-- error */
-#error ARRAY_STACK and ARRAY_TAIL_DELETE are mutually exclusive.
-#endif /* error --> */
 #if defined(ARRAY_TEST) && !defined(ARRAY_TO_STRING) /* <-- error */
 #error ARRAY_TEST requires ARRAY_TO_STRING.
 #endif /* error --> */
@@ -114,11 +105,8 @@
 #define CAT(x, y) CAT_(x, y)
 #define PCAT_(x, y) x ## _ ## y
 #define PCAT(x, y) PCAT_(x, y)
-#define QUOTE_(name) #name
-#define QUOTE(name) QUOTE_(name)
 #define T_(thing) CAT(ARRAY_NAME, thing)
 #define PT_(thing) PCAT(array, PCAT(ARRAY_NAME, thing))
-#define T_NAME QUOTE(ARRAY_NAME)
 
 /* Troubles with this line? check to ensure that {ARRAY_TYPE} is a valid type,
  whose definition is placed above {#include "Array.h"}. */
@@ -131,8 +119,8 @@ typedef ARRAY_TYPE PT_(Type);
 /** Responsible for turning {<T>} (the first argument) into a 12 {char}
  null-terminated output string (the second.) Used for {ARRAY_TO_STRING}. */
 typedef void (*PT_(ToString))(const T *, char (*const)[12]);
-/* Check that {ARRAY_TO_STRING} is a function implementing {<PT>ToString}, whose
- definition is placed above {#include "Array.h"}. */
+/* Check that {ARRAY_TO_STRING} is a function implementing {<PT>ToString},
+ whose definition is placed above {#include "Array.h"}. */
 static const PT_(ToString) PT_(to_string) = (ARRAY_TO_STRING);
 #endif /* string --> */
 
@@ -144,7 +132,8 @@ typedef int (*PT_(Predicate))(const T *const data);
 
 
 
-/** The array. To instantiate, see \see{<T>Array}. */
+/** The array. Zerod data is a valid state. To instantiate explicity, see
+ \see{<T>Array} or initalise it with `ARRAY_INIT` or `{0}` (C99.) */
 struct T_(Array);
 struct T_(Array) {
 	T *data;
@@ -153,6 +142,11 @@ struct T_(Array) {
 	/* !data -> !size, data -> size <= capacity */
 	size_t size;
 };
+
+/* `{0}` is `C99`. */
+#ifndef ARRAY_ZERO /* <-- !zero */
+#define ARRAY_ZERO { 0, 0, 0, 0 }
+#endif /* !zero --> */
 
 
 
@@ -277,6 +271,7 @@ static size_t T_(ArraySize)(const struct T_(Array) *const a) {
 }
 
 #ifndef ARRAY_STACK /* <-- !stack */
+
 /** Removes {data} from {a}. Only if not {ARRAY_STACK}.
  @param a, data: If null, returns false.
  @param data: Will be removed; data will remain the same but be updated to the
@@ -284,21 +279,36 @@ static size_t T_(ArraySize)(const struct T_(Array) *const a) {
  if this was the last element, the pointer will be past the end.
  @return Success, otherwise {errno} will be set for valid input.
  @throws EDOM: {data} is not part of {a}.
- @order Amortised O(1) if {ARRAY_FREE_LIST} is defined, otherwise, O(n).
- @fixme Test on stack.
+ @order O(n).
  @allow */
 static int T_(ArrayRemove)(struct T_(Array) *const a, T *const data) {
 	size_t n;
 	if(!a || !data) return 0;
 	if(data < a->data
 		|| (n = data - a->data) >= a->size) return errno = EDOM, 0;
-#ifdef ARRAY_TAIL_DELETE /* <-- tail */
-	if(--a->size != n) memcpy(data, a->data + a->size, sizeof *data);
-#else /* tail -->< !tail */
 	memmove(data, data + 1, sizeof *data * (--a->size - n));
-#endif /* !tail --> */
 	return 1;
 }
+
+/** Removes {data} from {a} and replaces the spot it was in with the tail. Only
+ if not {ARRAY_STACK}.
+ @param a, data: If null, returns false.
+ @param data: Will be removed; data will remain the same but be updated to the
+ last element, or if this was the last element, the pointer will be past the
+ end.
+ @return Success.
+ @throws EDOM: {data} is not part of {a}.
+ @order O(1).
+ @allow */
+static int T_(ArrayTailRemove)(struct T_(Array) *const a, T *const data) {
+	size_t n;
+	if(!a || !data) return 0;
+	if(data < a->data
+	   || (n = data - a->data) >= a->size) return errno = EDOM, 0;
+	if(--a->size != n) memcpy(data, a->data + a->size, sizeof *data);
+	return 1;
+}
+
 #endif /* !stack --> */
 
 /** Removes all from {a}, but leaves the {a} memory alone; if one wants
@@ -324,7 +334,8 @@ static T *T_(ArrayGet)(const struct T_(Array) *const a) {
 /** Causing something to be added to the {<T>Array} may invalidate this
  pointer, see \see{<T>ArrayUpdateNew}.
  @param a: If null, returns null.
- @return One past the end of the array.
+ @return One past the end of the array; take care when dereferincing as it is
+ not part of the array.
  @order \Theta(1)
  @allow */
 static T *T_(ArrayEnd)(const struct T_(Array) *const a) {
@@ -332,6 +343,7 @@ static T *T_(ArrayEnd)(const struct T_(Array) *const a) {
 }
 
 /** Gets an index given {data}.
+ @param a: Must be a valid object.
  @param data: If the element is not part of the {Array}, behaviour is undefined.
  @return An index.
  @order \Theta(1)
@@ -683,6 +695,7 @@ static void PT_(unused_set)(void) {
 	T_(ArraySize)(0);
 #ifndef ARRAY_STACK /* <-- !stack */
 	T_(ArrayRemove)(0, 0);
+	T_(ArrayTailRemove)(0, 0);
 #endif /* !stack --> */
 	T_(ArrayClear)(0);
 	T_(ArrayGet)(0);
@@ -729,9 +742,6 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #undef PT_
 #ifdef ARRAY_STACK
 #undef ARRAY_STACK
-#endif
-#ifdef ARRAY_TAIL_DELETE
-#undef ARRAY_TAIL_DELETE
 #endif
 #ifdef ARRAY_TO_STRING
 #undef ARRAY_TO_STRING
