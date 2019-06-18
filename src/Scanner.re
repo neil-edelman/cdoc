@@ -244,8 +244,8 @@ static enum Symbol scan_eof(void) { return END; }
 static enum Symbol scan_doc(void) {
 	assert(state_look() == DOC);
 	scanner.doc_line = scanner.line;
-	scanner.from = scanner.cursor;
 doc:
+	scanner.from = scanner.cursor;
 /*!re2c
 	"\x00" { if(scanner.limit - scanner.cursor <= YYMAXFILL) return END;
 		goto doc; }
@@ -253,7 +253,7 @@ doc:
 	* { goto doc; }
 
 	whitespace = [ \t\v\f];
-	whitespace+ { return WHITESPACE; }
+	whitespace+ { goto doc; }
 
 	newline = "\n" | "\r" "\n"?;
 	art = "*"? newline " *";
@@ -261,15 +261,14 @@ doc:
 	art / [^/] { scanner.line++; return NEWLINE; }
 
 	word = [^ \t\n\v\f\r\\,@{}&<>*]*; // This is kind of sketchy.
-	word { return ID; }
+	word { return WORD; }
 
 	"\\\\" { return ESCAPED_BACKSLASH; }
-	"\\{" { return ESCAPED_LBRACE; }
-	"\\}" { return ESCAPED_RBRACE; }
+	"\`" { return ESCAPED_BACKQUOTE; }
 	"\\@" { return ESCAPED_EACH; }
-	"{" { return LBRACE; }
-	"}" { return RBRACE; }
-	"," { return COMMA; }
+	// "{" { return LBRACE; }
+	// "}" { return RBRACE; }
+	// "," { return COMMA; }
 
 	// These are recognised in the documentation as stuff.
 	"\\url" { return BS_URL; }
@@ -418,6 +417,7 @@ code:
 
 	"struct"     { return STRUCT; }
 	"union"      { return UNION; } // +fn are these all that can be braced?
+	"enum"       { return ENUM; } // forgot one
 	"typedef"    { return TYPEDEF; }
 	("{" | "<%") { scanner.indent_level++; return LBRACE; }
 	("}" | "%>") { scanner.indent_level--; return RBRACE; }
@@ -493,6 +493,8 @@ macro:
 	"\x00" { if(scanner.limit - scanner.cursor <= YYMAXFILL) return END;
 		goto macro; }
 	* { goto macro; }
+	generic = [A-Z_]+"_";
+	generic { return GENERIC_DEF; }
 	doc / [^/] { return push_call(DOC); }
 	comment { return push_call(COMMENT); }
 	whitespace+ | cxx_comment { goto macro; }
