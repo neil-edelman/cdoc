@@ -404,8 +404,17 @@ code:
 	"L"? "\"" { return push_call(STRING); }
 	"'" { return push_call(CHAR); }
 
+	// Extension (hack) for generic macros; if one names them this way, it will
+	// be documented nicely; the down side is, these are legal names for
+	// identifiers; will be confused if you name anything this way that IS an
+	// identifier.
+	generic = [A-Z]+ "_";
+	generic { return ID_GENERIC; }
+	generic generic { return ID_GENERIC_TWO; }
+	generic generic generic { return ID_GENERIC_THREE; }
+
 	id = [a-zA-Z_][a-zA-Z_0-9]*;
-	id           { return ID; }
+	id { return ID; }
 
 	operator = ":" | "..." | "::" | "?" | "+" | "-" | "*" | "/" | "%" | "^"
 		| "xor" | "&" | "bitand" | "|" | "bitor" | "~" | "compl" | "!" | "not"
@@ -413,7 +422,7 @@ code:
 		| "&=" | "and_eq" | "|=" | "or_eq" | "<<" | ">>" | ">>=" | "<<="
 		| "!=" | "not_eq" | "<=" | ">=" | "&&" | "and" | "||" | "or" | "++"
 		| "--" | "." | "->";
-	operator     { return OPERATOR; }
+	operator { return OPERATOR; }
 
 	"struct"     { return STRUCT; }
 	"union"      { return UNION; } // +fn are these all that can be braced?
@@ -487,19 +496,12 @@ character:
  @implements ScannerFn
  @allow */
 static enum Symbol scan_macro(void) {
-	int is_define = 0, is_word = 0;
 	assert(state_look() == MACRO);
-/*!re2c
-	"define" / [ \t\v\f\\] { is_define = 1; }
-*/
 macro:
-	scanner.from = scanner.cursor;
 /*!re2c
 	"\x00" { if(scanner.limit - scanner.cursor <= YYMAXFILL) return END;
 		goto macro; }
-	* { is_word = 1; goto macro; }
-	[A-Z_]+ "_" / [ \t\v\f\\]
-		{ if(is_define && !is_word) return POSSIBLE_GENERIC_DEF; }
+	* { goto macro; }
 	doc / [^/] { return push_call(DOC); }
 	comment { return push_call(COMMENT); }
 	whitespace+ | cxx_comment { goto macro; }
