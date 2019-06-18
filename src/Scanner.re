@@ -487,14 +487,19 @@ character:
  @implements ScannerFn
  @allow */
 static enum Symbol scan_macro(void) {
+	int is_define = 0, is_word = 0;
 	assert(state_look() == MACRO);
+/*!re2c
+	"define" / [ \t\v\f\\] { is_define = 1; }
+*/
 macro:
+	scanner.from = scanner.cursor;
 /*!re2c
 	"\x00" { if(scanner.limit - scanner.cursor <= YYMAXFILL) return END;
 		goto macro; }
-	* { goto macro; }
-	generic = [A-Z_]+"_";
-	generic { return GENERIC_DEF; }
+	* { is_word = 1; goto macro; }
+	[A-Z_]+ "_" / [ \t\v\f\\]
+		{ if(is_define && !is_word) return POSSIBLE_GENERIC_DEF; }
 	doc / [^/] { return push_call(DOC); }
 	comment { return push_call(COMMENT); }
 	whitespace+ | cxx_comment { goto macro; }
