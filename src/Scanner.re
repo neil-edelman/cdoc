@@ -34,8 +34,8 @@ static enum Symbol scan_comment(void);
 static enum Symbol scan_string(void);
 static enum Symbol scan_char(void);
 static enum Symbol scan_macro(void);
-static const char *const states[] = { STATE(STRINGISE_A) };
-static const ScannerFn state_fn[] = { STATE(PARAM_B) };
+static const char *const states[] = { STATE(STRINGISE2_A) };
+static const ScannerFn state_fn[] = { STATE(PARAM2_B) };
 
 static void state_to_string(const enum State *s, char (*const a)[12]) {
 	strncpy(*a, states[*s], sizeof *a - 1);
@@ -68,10 +68,13 @@ static void state_to_string(const enum State *s, char (*const a)[12]) {
 
 /** Scanner reads a file and extracts semantic information. */
 struct Scanner {
-	/* {re2c} variables. These point directly into {buffer} so no modifying. */
+	/* `buffer` {re2c} variables. These point directly into {buffer} so no
+	 modifying. */
 	const char *limit, *cursor, *marker, *ctx_marker, *from;
+	/* `marks` {re2c} variables. */
+	const char *limit2, *cursor2, *marker2, *ctx_marker2, *from2;
 	/* Weird {c2re} stuff: these fields have to come after when >5? */
-	struct CharArray buffer;
+	struct CharArray buffer, marks;
 	struct StateArray states;
 	enum Symbol symbol;
 	int indent_level;
@@ -81,12 +84,15 @@ struct Scanner {
 /** Unloads Scanner from memory. */
 void Scanner_(void) {
 	CharArray_(&scanner.buffer);
+	CharArray_(&scanner.marks);
 	StateArray_(&scanner.states);
 	scanner.symbol = END;
 	scanner.indent_level = 0;
 	scanner.line = scanner.doc_line = 0;
 	scanner.limit = scanner.cursor = scanner.marker = scanner.ctx_marker
 		= scanner.from = 0;
+	scanner.limit2 = scanner.cursor2 = scanner.marker2 = scanner.ctx_marker2
+		= scanner.from2 = 0;
 }
 
 /* Have {re2c} generate {YYMAXFILL}.
@@ -104,6 +110,7 @@ int Scanner(void) {
 		size_t nread;
 		char *buf;
 		enum State *ps;
+		/* This assumes that the `scanner` is zeroed, thus in a valid state. */
 		for( ; ; ) { /* Read in `granularity` sized chunks. */
 			if(!(buf = CharArrayBuffer(&scanner.buffer, granularity))) break;
 			nread = fread(buf, 1, granularity, stdin);
