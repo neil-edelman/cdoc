@@ -236,6 +236,20 @@ int main(int argc, char **argv) {
 	while((ScannerNext())) {
 		ScannerToken(&sorter.token);
 		ScannerTokenInfo(&sorter.info);
+#if 1
+		/* if(code && !already_code && lines_since_doc) cut; */
+		switch(sorter.token.symbol) {
+			case BEGIN_DOC: if(sorter.info.is_doc_far) sorter_end_segment(); continue; /*???*/
+			case RBRACE: if(sorter.info.indent_level) break;
+			case SEMI: sorter.is_differed_cut = 1; break;
+				/* LBRACE/SEMI determine what type. */
+			default: break;
+		}
+		sorter.is_matching = !sorter.info.indent_level;
+#else
+		/* This is a symbol that is for splitting up multiple doc
+		 comments on a single line -- ignore. */
+		if(sorter.token.symbol == BEGIN_DOC) continue;
 		sorter.is_matching = !sorter.info.indent_level;
 		if(!sorter.is_indent) { /* Global scope. */
 			if(sorter.info.indent_level) { /* Entering a block. */
@@ -246,8 +260,7 @@ int main(int argc, char **argv) {
 				sorter.is_differed_cut = 1;
 			} else if(segment && !TokenArraySize(&segment->code)
 				&& (sorter.token.symbol == BEGIN_DOC
-				|| (!sorter.info.is_doc && sorter.info.is_doc_far))) {
-				/* fixme: wtf did I write there? */
+				|| (!sorter.info.is_doc && sorter.info.is_doc_far) /*code*/)) {
 				/* Hasn't scanned any code and is on the top level, cut
 				 multiple docs and the doc has to be within a reasonable
 				 distance. */
@@ -262,10 +275,7 @@ int main(int argc, char **argv) {
 				continue; /* Code in functions: don't care. */
 			}
 		}
-		/* This is a symbol that is for splitting up multiple doc
-		 comments on a single line -- ignore. */
-		if(sorter.token.symbol == BEGIN_DOC) continue;
-		
+#endif
 		
 		
 		/* Create new segment if need be. */

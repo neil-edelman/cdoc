@@ -154,7 +154,9 @@ static void debug(void) {
 
 /** Lexes the next token. This will update `ScannerToken` and
  `ScannerTokenInfo`.
- @return If the scanner had more tokens. */
+ @return If the scanner had more tokens.
+ @fixme Is it really neccesary to have docs inside of functions? This would be
+ so much easier logic without. */
 int ScannerNext(void) {
 	enum State *state;
 	/* Ignore a block of code if `scanner.ignore_block` is on. */
