@@ -237,6 +237,14 @@ int main(int argc, char **argv) {
 		ScannerToken(&sorter.token);
 		ScannerTokenInfo(&sorter.info);
 #if 1
+		/* 
+		 Any documentation comments up to two lines before the statement
+		 begins, but not before the the previous statement ended, and before
+		 the statement comes to a close, belong to that statement.
+		 
+		 Any documentation begin greater then 2 lines above the next thing to
+		 comment on is in the header.
+		 */
 		/* if(code && !already_code && lines_since_doc) cut; */
 		switch(sorter.token.symbol) {
 			case BEGIN_DOC: if(sorter.info.is_doc_far) sorter_end_segment(); continue; /*???*/
