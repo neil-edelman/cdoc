@@ -244,12 +244,15 @@ int main(int argc, char **argv) {
 	while((ScannerNext())) {
 		ScannerToken(&sorter.token);
 		ScannerTokenInfo(&sorter.info);
-#if 1
+
 		switch(sorter.token.symbol) {
-			case BEGIN_DOC: if(sorter.info.is_doc_far) sorter_end_segment(); continue;
+			case BEGIN_DOC: if(sorter.info.is_doc_far) sorter_end_segment();
+				continue;
 			case RBRACE: if(sorter.info.indent_level) break;
-			case SEMI: sorter.is_differed_cut = 1; break;
+			case SEMI: sorter.is_differed_cut = 1;
 				/* LBRACE/SEMI determine what type. */
+				if(segment) Marker(&segment->code);
+				break;
 			default: break;
 		}
 		/* If it's the first line of code that is greater than some reasonable
@@ -258,38 +261,7 @@ int main(int argc, char **argv) {
 		if(segment && !sorter.info.is_doc && !TokenArraySize(&segment->code)
 			&& sorter.info.is_doc_far) printf("<cut>\n"), sorter_end_segment();
 		sorter.is_matching = !sorter.info.indent_level;
-#else
-		/* This is a symbol that is for splitting up multiple doc
-		 comments on a single line -- ignore. */
-		if(sorter.token.symbol == BEGIN_DOC) continue;
-		sorter.is_matching = !sorter.info.indent_level;
-		if(!sorter.is_indent) { /* Global scope. */
-			if(sorter.info.indent_level) { /* Entering a block. */
-				assert(sorter.info.indent_level == 1 && !sorter.info.is_doc
-					&& sorter.token.symbol == LBRACE);
-				sorter.is_indent = 1;
-			} else if(sorter.token.symbol == SEMI) { /* Global semicolons cut after. */
-				sorter.is_differed_cut = 1;
-			} else if(segment && !TokenArraySize(&segment->code)
-				&& (sorter.token.symbol == BEGIN_DOC
-				|| (!sorter.info.is_doc && sorter.info.is_doc_far) /*code*/)) {
-				/* Hasn't scanned any code and is on the top level, cut
-				 multiple docs and the doc has to be within a reasonable
-				 distance. */
-				printf("<cut>\n"), sorter_end_segment();
-			}
-		} else { /* In code block. */
-			if(!sorter.info.indent_level) { /* Exiting to global scope. */
-				assert(!sorter.info.is_doc && sorter.token.symbol == RBRACE);
-				sorter.is_indent = 0;
-				if(!sorter.is_struct) sorter.is_differed_cut = 1; /* Functions. */
-			} else if(!sorter.is_struct && !sorter.info.is_doc) {
-				continue; /* Code in functions: don't care. */
-			}
-		}
-#endif
-		
-		
+
 		/* Create new segment if need be. */
 		if(!segment) {
 			printf("<new segment>\n");
@@ -328,9 +300,9 @@ int main(int argc, char **argv) {
 
 	/* Cull. Rid uncommented blocks. Whitespace clean-up, (after!) */
 	SegmentArrayKeepIf(&segments, &keep_segment);
-	/*segment = 0;
+	segment = 0;
 	while((segment = SegmentArrayNext(&segments, segment)))
-		clean_whitespace(&segment->doc); <-- Segfaults here in XCode, not in
+		clean_whitespace(&segment->doc); /* <-- Segfaults here in XCode, not in
 		 Clang */
 
 	segment = 0;

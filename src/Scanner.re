@@ -147,9 +147,10 @@ static void debug(void) {
 		state_look() == DOC ? '~' : ':');
 	for(indent = 0; indent < scanner.indent_level; indent++)
 		fputc('\t', stdout);
-	printf("%s %s \"%.*s\"\n", StateArrayToString(&scanner.states),
+	printf("%s %s \"%.*s\", ignore %d, indent %d\n",
+		StateArrayToString(&scanner.states),
 		symbols[scanner.symbol], (int)(scanner.cursor - scanner.from),
-		scanner.from);
+		scanner.from, scanner.ignore_block, scanner.indent_level);
 }
 
 /** Lexes the next token. This will update `ScannerToken` and
@@ -268,6 +269,7 @@ static enum Symbol scan_eof(void) { return END; }
  @implements ScannerFn */
 static enum Symbol scan_doc(void) {
 	assert(state_look() == DOC);
+	printf("state: doc\n");
 	scanner.doc_line = scanner.line;
 doc:
 	scanner.from = scanner.cursor;
@@ -389,6 +391,7 @@ doc:
  @implements ScannerFn */
 static enum Symbol scan_code(void) {
 	assert(state_look() == CODE);
+	printf("state: code\n");
 code:
 	scanner.from = scanner.cursor;
 /*!re2c
@@ -469,6 +472,7 @@ code:
  @allow */
 static enum Symbol scan_comment(void) {
 	assert(state_look() == COMMENT);
+	printf("state: comment\n");
 	printf("Comment Line%lu.\n", scanner.line);
 comment:
 /*!re2c
@@ -488,6 +492,7 @@ comment:
  @allow */
 static enum Symbol scan_string(void) {
 	assert(state_look() == STRING);
+	printf("state: string\n");
 string:
 /*!re2c
 	"\x00" { if(scanner.limit - scanner.cursor <= YYMAXFILL) return END;
@@ -505,6 +510,7 @@ string:
  @allow */
 static enum Symbol scan_char(void) {
 	assert(state_look() == CHAR);
+	printf("state: char\n");
 character:
 /*!re2c
 	"\x00" { if(scanner.limit - scanner.cursor <= YYMAXFILL) return END;
@@ -522,6 +528,7 @@ character:
  @allow */
 static enum Symbol scan_macro(void) {
 	assert(state_look() == MACRO);
+	printf("state: macro\n");
 macro:
 /*!re2c
 	"\x00" { if(scanner.limit - scanner.cursor <= YYMAXFILL) return END;
