@@ -5,10 +5,17 @@
  (or it uses libraries that are too new for one's computer.) The documentation
  is a perversion and simplification of {Doxygen}.
 
+ Sorts and stores the parsed file into sections.
+ 
  Parses and extracts the documentation commands in a {.c} file. A documentation
  command begins with {/\**}.
 
- Sorts and stores the parsed file into sections.
+ Any documentation comments up to two lines before the statement
+ begins, but not before the the previous statement ended, and before
+ the statement comes to a close, belong to that statement.
+
+ Any documentation begin greater then 2 lines above the next thing to
+ comment on is in the header.
 
  @title Cdoc.c
  @author Neil
@@ -197,12 +204,13 @@ static struct Sorter {
 	struct Token token;
 	struct TokenInfo info;
 	struct Tag *tag;
-	struct TokenArray *chosen;
+	struct TokenArray *tokens;
 } sorter;
 
 static void sorter_end_segment(void) {
 	sorter.is_differed_cut = 0, sorter.is_struct = 0, sorter.tag = 0;
-	sorter.chosen = 0;
+	sorter.tag = 0;
+	sorter.tokens = 0;
 }
 
 static void sorter_err(void) {
@@ -237,22 +245,18 @@ int main(int argc, char **argv) {
 		ScannerToken(&sorter.token);
 		ScannerTokenInfo(&sorter.info);
 #if 1
-		/* 
-		 Any documentation comments up to two lines before the statement
-		 begins, but not before the the previous statement ended, and before
-		 the statement comes to a close, belong to that statement.
-		 
-		 Any documentation begin greater then 2 lines above the next thing to
-		 comment on is in the header.
-		 */
-		/* if(code && !already_code && lines_since_doc) cut; */
 		switch(sorter.token.symbol) {
-			case BEGIN_DOC: if(sorter.info.is_doc_far) sorter_end_segment(); continue; /*???*/
+			case BEGIN_DOC: if(sorter.info.is_doc_far) sorter_end_segment(); continue;
 			case RBRACE: if(sorter.info.indent_level) break;
 			case SEMI: sorter.is_differed_cut = 1; break;
 				/* LBRACE/SEMI determine what type. */
 			default: break;
 		}
+		/* If it's the first line of code that is greater than some reasonable
+		 distance to the documentation, split it up. */
+		/* if(code && !already_code && lines_since_doc) cut; */
+		if(segment && !sorter.info.is_doc && !TokenArraySize(&segment->code)
+			&& sorter.info.is_doc_far) printf("<cut>\n"), sorter_end_segment();
 		sorter.is_matching = !sorter.info.indent_level;
 #else
 		/* This is a symbol that is for splitting up multiple doc
@@ -296,23 +300,22 @@ int main(int argc, char **argv) {
 		/* Choose the token array. */
 		if(sorter.info.is_doc) {
 			if(symbol_output[sorter.token.symbol] == OUT_TAG) {
-				struct Tag *tag;
 				printf("@tag %s\n", symbols[sorter.token.symbol]);
-				if(!(tag = TagArrayNew(&segment->tags)))
+				if(!(sorter.tag = TagArrayNew(&segment->tags)))
 					{ sorter_err(); goto catch; }
-				tag_init(tag);
-				sorter.chosen = &tag->contents;
+				tag_init(sorter.tag);
+				sorter.tokens = &sorter.tag->contents;
 				continue;
-			} else if(!sorter.chosen) {
-				sorter.chosen = &segment->doc;
+			} else if(!sorter.tokens) {
+				sorter.tokens = &segment->doc;
 			}
 		} else {
-			sorter.chosen = &segment->code;
+			sorter.tokens = &segment->code;
 		}
 		{
 			struct Token *token;
 			/* Push symbol. */
-			if(!(token = TokenArrayNew(sorter.chosen)))
+			if(!(token = TokenArrayNew(sorter.tokens)))
 				{ sorter_err(); goto catch; }
 			ScannerToken(token);
 		}
@@ -339,7 +342,9 @@ int main(int argc, char **argv) {
 			TokenArrayToString(&segment->code));
 		tag = 0;
 		while((tag = TagArrayNext(&segment->tags, tag))) {
-			printf("\t%s.\n", symbols[tag->token.symbol]);
+			printf("\t%s{%s} %s.\n", symbols[tag->token.symbol],
+				TokenArrayToString(&tag->header),
+				TokenArrayToString(&tag->contents));
 		}
 	}
 	fputc('\n', stdout);
