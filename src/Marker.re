@@ -47,7 +47,7 @@ struct Marker {
 /** @param{ta} Set to null to destroy. */
 int Marker(const struct TokenArray *const ta) {
 	char *a, *end;
-	size_t size;
+	size_t size, big_size;
 	struct Token *token;
 	if(!ta) {
 		CharArray_(&marker.buffer);
@@ -55,12 +55,14 @@ int Marker(const struct TokenArray *const ta) {
 		return 1;
 	}
 	CharArrayClear(&marker.buffer);
-	size = TokensSize(ta) + YYMAXFILL;
-	if(!(a = CharArrayBuffer(&marker.buffer, size))) return 0;
-	end = a + size;
+	size = TokensSize(ta);
+	big_size = size + YYMAXFILL;
+	if(!(a = CharArrayBuffer(&marker.buffer, big_size))) return 0;
 	while((token = TokensNext(ta, token)))
 		*a++ = symbol_mark[TokenSymbol(token)];
-	memset(a, '\0', end - a);
+	CharArrayAddSize(&marker.buffer, size);
+	assert(a + big_size - size == CharArrayEnd(&marker.buffer));
+	memset(a, '\0', big_size - size);
 	printf("%s\n", CharArrayGet(&marker.buffer));
 	return 1;
 }

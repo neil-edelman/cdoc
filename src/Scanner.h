@@ -17,8 +17,8 @@
 	X(END, OUT_DISCARD, '~'), X(OPERATOR, OUT_C, 'o'), X(COMMA, OUT_C, ','), \
 	X(SEMI, OUT_C, ';'), X(LBRACE, OUT_C, '{'), X(RBRACE, OUT_C, '}'), X(LPAREN, OUT_C, '('), \
 	X(RPAREN, OUT_C, ')'), X(LBRACK, OUT_C, '['), X(RBRACK, OUT_C, ']'), \
-	X(CONSTANT, OUT_C, 'c'), X(ID, OUT_C, 'i'), X(ID_GENERIC, OUT_C, 'g'), \
-	X(ID_GENERIC_TWO, OUT_C, 'h'), X(ID_GENERIC_THREE, OUT_C, 'i'), X(STRUCT, OUT_C, 's'), \
+	X(CONSTANT, OUT_C, 'c'), X(ID, OUT_C, 'i'), X(ID_ONE_GENERIC, OUT_C, 'g'), \
+	X(ID_TWO_GENERICS, OUT_C, 'h'), X(ID_THREE_GENERICS, OUT_C, 'i'), X(STRUCT, OUT_C, 's'), \
 	X(UNION, OUT_C, 'u'), X(ENUM, OUT_C, 'e'), X(TYPEDEF, OUT_C, 't'), \
 	X(BEGIN_DOC, OUT_DISCARD, '~'), \
 	X(TAG_TITLE, OUT_TAG, '@'), X(TAG_PARAM, OUT_TAG, '@'), X(TAG_AUTHOR, OUT_TAG, '@'), \
@@ -86,6 +86,7 @@ struct Scanner;
 void Scanner_(void);
 int Scanner(void);
 int ScannerNext(void);
+void ScannerIgnoreBlock(void);
 void ScannerToken(struct Token *const token);
 void ScannerTokenInfo(struct TokenInfo *const info);
 const char *ScannerStates(void);

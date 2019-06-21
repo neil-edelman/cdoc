@@ -71,13 +71,12 @@ struct Scanner {
 	/* `buffer` {re2c} variables. These point directly into {buffer} so no
 	 modifying. */
 	const char *limit, *cursor, *marker, *ctx_marker, *from;
-	/* `marks` {re2c} variables. */
-	const char *limit2, *cursor2, *marker2, *ctx_marker2, *from2;
 	/* Weird {c2re} stuff: these fields have to come after when >5? */
 	struct CharArray buffer, marks;
 	struct StateArray states;
 	enum Symbol symbol;
 	int indent_level;
+	int ignore_block;
 	size_t line, doc_line;
 } scanner;
 
@@ -88,11 +87,10 @@ void Scanner_(void) {
 	StateArray_(&scanner.states);
 	scanner.symbol = END;
 	scanner.indent_level = 0;
+	scanner.ignore_block = 0;
 	scanner.line = scanner.doc_line = 0;
 	scanner.limit = scanner.cursor = scanner.marker = scanner.ctx_marker
 		= scanner.from = 0;
-	scanner.limit2 = scanner.cursor2 = scanner.marker2 = scanner.ctx_marker2
-		= scanner.from2 = 0;
 }
 
 /* Have {re2c} generate {YYMAXFILL}.
@@ -126,10 +124,10 @@ int Scanner(void) {
 		memset(buf, '\0', YYMAXFILL);
 		if(!CharArrayAddSize(&scanner.buffer, YYMAXFILL)) break;
 		/* Point these toward the first char; `buffer` is necessarily done
-		 growing, or we could not do this. */
+		 growing, or we could not do this. `limit` and `ctx_marker` are set? */
 		scanner.cursor = scanner.marker = scanner.from
-			= CharArrayNext(&scanner.buffer, 0);
-		scanner.line = 1;
+			= CharArrayGet(&scanner.buffer);
+		scanner.line = scanner.doc_line = 1;
 		if(!(ps = StateArrayNew(&scanner.states))) break;
 		*ps = CODE;
 		is_done = 1;
@@ -140,16 +138,38 @@ int Scanner(void) {
 	return 1;
 }
 
+/* Needed in `debug`. */
+static enum State state_look(void);
+
+static void debug(void) {
+	int indent;
+	printf("%lu%c\t", (unsigned long)scanner.line,
+		state_look() == DOC ? '~' : ':');
+	for(indent = 0; indent < scanner.indent_level; indent++)
+		fputc('\t', stdout);
+	printf("%s %s \"%.*s\"\n", StateArrayToString(&scanner.states),
+		symbols[scanner.symbol], (int)(scanner.cursor - scanner.from),
+		scanner.from);
+}
+
 /** Lexes the next token. This will update `ScannerToken` and
  `ScannerTokenInfo`.
  @return If the scanner had more tokens. */
 int ScannerNext(void) {
-	enum State *ps;
-	if(!(ps = StateArrayPeek(&scanner.states))) return END;
-	return scanner.symbol = state_fn[*ps]();
+	enum State *state;
+	/* Ignore a block of code if `scanner.ignore_block` is on. */
+	do {
+		if(!(state = StateArrayPeek(&scanner.states))
+			|| !(scanner.symbol = state_fn[*state]())) return 0;
+		debug();
+		if(*state != CODE) return 1; /* Return not-code in `ignore_block`. */
+	} while(scanner.ignore_block && scanner.indent_level);
+	scanner.ignore_block = 0;
+	return 1;
 }
 
-static enum State state_look(void);
+/** We don't care what's in the function, just that it's a function. */
+void ScannerIgnoreBlock(void) { scanner.ignore_block = 1; }
 
 /** Fills `token` with the last token.
  @param{token} If null, does nothing. */
@@ -173,10 +193,6 @@ void ScannerTokenInfo(struct TokenInfo *const info) {
 	info->indent_level = scanner.indent_level;
 	info->is_doc = state_look() == DOC;
 	info->is_doc_far = scanner.doc_line + 2 < scanner.line;
-}
-
-const char *ScannerStates(void) {
-	return StateArrayToString(&scanner.states);
 }
 
 
@@ -394,6 +410,13 @@ code:
 	macro = ("#" | "%:");
 	macro { return push_call(MACRO); }
 
+	// Strings are more complicated because they can have whitespace and that
+	// messes up the line count.
+	// @fixme No trigraph support.
+	// char_type = "u8"|"u"|"U"|"L"; <- These get caught in id; don't care.
+	"L"? "\"" { return push_call(STRING); }
+	"'" { return push_call(CHAR); }
+
 	// Number separate from minus then numbers can't have whitespace, simple.
 	oct = "0" [0-7]*;
 	dec = [1-9][0-9]*;
@@ -404,21 +427,14 @@ code:
 	number = (oct | dec | hex | flt) [uUlL]*;
 	number { return CONSTANT; }
 
-	// Strings are more complicated because they can have whitespace and that
-	// messes up the line count.
-	// @fixme No trigraph support.
-	// char_type = "u8"|"u"|"U"|"L"; <- These get caught in id; don't care.
-	"L"? "\"" { return push_call(STRING); }
-	"'" { return push_call(CHAR); }
-
 	// Extension (hack) for generic macros; if one names them this way, it will
 	// be documented nicely; the down side is, these are legal names for
 	// identifiers; will be confused if you name anything this way that IS an
 	// identifier.
 	generic = [A-Z]+ "_";
-	generic { return ID_GENERIC; }
-	generic generic { return ID_GENERIC_TWO; }
-	generic generic generic { return ID_GENERIC_THREE; }
+	generic { return ID_ONE_GENERIC; }
+	generic generic { return ID_TWO_GENERICS; }
+	generic generic generic { return ID_THREE_GENERICS; }
 
 	id = [a-zA-Z_][a-zA-Z_0-9]*;
 	id { return ID; }

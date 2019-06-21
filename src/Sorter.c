@@ -202,12 +202,13 @@ static struct Sorter {
 
 static void sorter_end_segment(void) {
 	sorter.is_differed_cut = 0, sorter.is_struct = 0, sorter.tag = 0;
+	sorter.chosen = 0;
 }
 
 static void sorter_err(void) {
-	fprintf(stderr, "At %lu%c indent level %d; state stack %s; %s \"%.*s\".\n",
+	fprintf(stderr, "At %lu%c indent level %d; %s \"%.*s\".\n",
 		(unsigned long)sorter.token.line, sorter.info.is_doc ? '~' : ':',
-		sorter.info.indent_level, ScannerStates(),
+		sorter.info.indent_level,
 		symbols[sorter.token.symbol], sorter.token.length, sorter.token.from);
 }
 
@@ -236,18 +237,7 @@ int main(int argc, char **argv) {
 		ScannerToken(&sorter.token);
 		ScannerTokenInfo(&sorter.info);
 		sorter.is_matching = !sorter.info.indent_level;
-		{ /* Print debug. */
-			int indent;
-			printf("%lu%c\t", (unsigned long)sorter.token.line,
-				sorter.info.is_doc ? '~' : ':');
-			for(indent = 0; indent < sorter.info.indent_level; indent++)
-				fputc('\t', stdout);
-			printf("%s %s \"%.*s\"\n", ScannerStates(),
-				symbols[sorter.token.symbol], sorter.token.length,
-				sorter.token.from);
-		}
 		if(!sorter.is_indent) { /* Global scope. */
-#if 1
 			if(sorter.info.indent_level) { /* Entering a block. */
 				assert(sorter.info.indent_level == 1 && !sorter.info.is_doc
 					&& sorter.token.symbol == LBRACE);
@@ -263,14 +253,11 @@ int main(int argc, char **argv) {
 				 distance. */
 				printf("<cut>\n"), sorter_end_segment();
 			}
-#endif
 		} else { /* In code block. */
 			if(!sorter.info.indent_level) { /* Exiting to global scope. */
-#if 1
 				assert(!sorter.info.is_doc && sorter.token.symbol == RBRACE);
 				sorter.is_indent = 0;
 				if(!sorter.is_struct) sorter.is_differed_cut = 1; /* Functions. */
-#endif
 			} else if(!sorter.is_struct && !sorter.info.is_doc) {
 				continue; /* Code in functions: don't care. */
 			}
@@ -278,6 +265,9 @@ int main(int argc, char **argv) {
 		/* This is a symbol that is for splitting up multiple doc
 		 comments on a single line -- ignore. */
 		if(sorter.token.symbol == BEGIN_DOC) continue;
+		
+		
+		
 		/* Create new segment if need be. */
 		if(!segment) {
 			printf("<new segment>\n");
@@ -287,17 +277,17 @@ int main(int argc, char **argv) {
 		}
 		/* Choose the token array. */
 		if(sorter.info.is_doc) {
-			/*if(symbol_type[token.symbol] == TYPE_TAG) {
-				printf("---> should been new %s\n", symbols[token.symbol]);
+			if(symbol_output[sorter.token.symbol] == OUT_TAG) {
+				struct Tag *tag;
+				printf("@tag %s\n", symbols[sorter.token.symbol]);
 				if(!(tag = TagArrayNew(&segment->tags)))
-					{ err_info(&token, &info); goto catch; }
+					{ sorter_err(); goto catch; }
 				tag_init(tag);
-				tokens = &tag->contents;
+				sorter.chosen = &tag->contents;
 				continue;
-			} else {
-				tokens = &segment->doc;
-			}*/
-			sorter.chosen = &segment->doc;
+			} else if(!sorter.chosen) {
+				sorter.chosen = &segment->doc;
+			}
 		} else {
 			sorter.chosen = &segment->code;
 		}
@@ -317,9 +307,10 @@ int main(int argc, char **argv) {
 
 	/* Cull. Rid uncommented blocks. Whitespace clean-up, (after!) */
 	SegmentArrayKeepIf(&segments, &keep_segment);
-	segment = 0;
+	/*segment = 0;
 	while((segment = SegmentArrayNext(&segments, segment)))
-		clean_whitespace(&segment->doc);
+		clean_whitespace(&segment->doc); <-- Segfaults here in XCode, not in
+		 Clang */
 
 	segment = 0;
 	fputs("\n\n*****\n\n", stdout);
