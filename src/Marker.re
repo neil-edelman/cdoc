@@ -57,7 +57,7 @@ int Marker(const struct TokenArray *const ta) {
 	CharArrayClear(&marker.buffer);
 	size = TokensSize(ta);
 	big_size = size + YYMAXFILL;
-	printf("marker: \"%.*s\" size = %lu/%lu\n", (int)CharArraySize(&marker.buffer), CharArrayGet(&marker.buffer), size, big_size);
+	/*printf("marker: \"%.*s\" size = %lu/%lu\n", (int)CharArraySize(&marker.buffer), CharArrayGet(&marker.buffer), size, big_size);*/
 	if(!(a = CharArrayBuffer(&marker.buffer, big_size))) return 0;
 	while((token = TokensNext(ta, token)))
 		*a++ = symbol_mark[TokenSymbol(token)];

@@ -14,12 +14,13 @@
 
 /* Define the symbols. */
 #define SYMBOL(X) \
-	X(END, OUT_DISCARD, '~'), X(OPERATOR, OUT_C, '+'), X(COMMA, OUT_C, ','), \
+	X(END, OUT_DISCARD, '~'), X(OPERATOR, OUT_C, '*'), X(COMMA, OUT_C, ','), \
 	X(SEMI, OUT_C, ';'), X(LBRACE, OUT_C, '{'), X(RBRACE, OUT_C, '}'), X(LPAREN, OUT_C, '('), \
 	X(RPAREN, OUT_C, ')'), X(LBRACK, OUT_C, '['), X(RBRACK, OUT_C, ']'), \
 	X(CONSTANT, OUT_C, '#'), X(ID, OUT_C, 'x'), X(ID_ONE_GENERIC, OUT_C, 'g'), \
 	X(ID_TWO_GENERICS, OUT_C, 'h'), X(ID_THREE_GENERICS, OUT_C, 'i'), X(STRUCT, OUT_C, 's'), \
 	X(UNION, OUT_C, 'u'), X(ENUM, OUT_C, 'e'), X(TYPEDEF, OUT_C, 't'), \
+	X(STATIC, OUT_C, 'z'), \
 	X(BEGIN_DOC, OUT_DISCARD, '~'), \
 	X(TAG_TITLE, OUT_TAG, '@'), X(TAG_PARAM, OUT_TAG, '@'), X(TAG_AUTHOR, OUT_TAG, '@'), \
 	X(TAG_STD, OUT_TAG, '@'), X(TAG_DEPEND, OUT_TAG, '@'), X(TAG_VERSION, OUT_TAG, '@'), \
@@ -28,7 +29,8 @@
 	X(TAG_THROWS, OUT_TAG, '@'), X(TAG_IMPLEMENTS, OUT_TAG, '@'), \
 	X(TAG_ORDER, OUT_TAG, '@'), X(TAG_ALLOW, OUT_TAG, '@'), \
 	X(ESCAPED_BACKSLASH, OUT_DOC, '@'), X(ESCAPED_BACKQUOTE, OUT_DOC, '@'), \
-	X(ESCAPED_EACH, OUT_DOC, '@'), \
+	X(ESCAPED_EACH, OUT_DOC, '@'), X(BACKQUOTE, OUT_DOC, '`'), \
+	X(DOC_LBRACE, OUT_DOC, '<'), X(DOC_RBRACE, OUT_DOC, '>'), X(DOC_COMMA, OUT_DOC, '.'), \
 	X(NEWLINE,	OUT_DOC, 'n'), X(WORD, OUT_DOC, 'w'), \
 	X(BS_URL, OUT_DOC, '\\'), X(BS_CITE, OUT_DOC, '\\'), X(BS_SEE, OUT_DOC, '\\'), \
 	X(BS_PRE, OUT_DOC, '\\'), \

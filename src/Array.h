@@ -505,13 +505,11 @@ static void T_(ArrayForEach)(struct T_(Array) *const a,
  value is false, lazy deletes that item.
  @param a, keep: If null, does nothing.
  @order O({size})
- @fixme Test.
  @allow */
 static void T_(ArrayKeepIf)(struct T_(Array) *const a,
 	const PT_(Predicate) keep) {
 	T *erase = 0, *t;
 	const T *retain = 0, *end;
-	size_t removed = 0;
 	int keep0 = 1, keep1 = 0;
 	if(!a || !keep) return;
 	for(t = a->data, end = a->data + a->size; t < end; keep0 = keep1, t++) {
@@ -522,23 +520,24 @@ static void T_(ArrayKeepIf)(struct T_(Array) *const a,
 			retain = t;
 		} else if(erase) { /* Falling edge. */
 			size_t n = t - retain;
-			assert(retain && erase < retain && retain < t);
+			assert(erase < retain && retain < t);
 			memmove(erase, retain, n * sizeof *t);
-			removed += retain - erase;
 			erase += n;
 			retain = 0;
 		} else { /* Falling edge, (first time only.) */
 			erase = t;
 		}
 	}
-	if(erase && keep1) { /* Delayed move when the iteration ended; repeat. */
+	if(!erase) return; /* All elements were kept. */
+	if(keep1) { /* Delayed move when the iteration ended; repeat. */
 		size_t n = t - retain;
 		assert(retain && erase < retain && retain < t);
 		memmove(erase, retain, n * sizeof *t);
-		removed += retain - erase;
+		erase += n;
 	}
-	assert(removed <= a->size);
-	a->size -= removed;
+	/* Adjust the size. */
+	assert((size_t)(erase - a->data) <= a->size);
+	a->size = erase - a->data;
 }
 
 /** Removes at either end of {a} of things that {predicate} returns true.

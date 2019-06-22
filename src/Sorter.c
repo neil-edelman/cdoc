@@ -45,7 +45,7 @@ static const int symbol_output[] = { SYMBOL(PARAM3_B) };
 static const char *const symbol_outputs[] = { SYMBOL_OUTPUT(STRINGISE) };
 
 /* Define the sections of output. */
-#define SECTION(X) X(UNDECIDED), X(HEADER), X(DECLARATION), X(FUNCTION)
+#define SECTION(X) X(HEADER), X(DECLARATION), X(FUNCTION)
 enum Section { SECTION(PARAM) };
 static const char *const sections[] = { SECTION(STRINGISE) };
 
@@ -138,7 +138,7 @@ struct Segment {
 
 static void segment_init(struct Segment *const segment) {
 	assert(segment);
-	segment->section = UNDECIDED; /* Default. */
+	segment->section = HEADER; /* Default. */
 	TokenArray(&segment->doc);
 	TokenArray(&segment->code);
 	TagArray(&segment->tags);
@@ -203,12 +203,14 @@ static struct Sorter {
 	int is_matching, is_indent, is_struct, is_differed_cut;
 	struct Token token;
 	struct TokenInfo info;
+	struct Segment *segment;
 	struct Tag *tag;
 	struct TokenArray *tokens;
 } sorter;
 
 static void sorter_end_segment(void) {
 	sorter.is_differed_cut = 0, sorter.is_struct = 0, sorter.tag = 0;
+	sorter.segment = 0;
 	sorter.tag = 0;
 	sorter.tokens = 0;
 }
@@ -222,7 +224,6 @@ static void sorter_err(void) {
 
 int main(int argc, char **argv) {
 	struct SegmentArray segments = ARRAY_ZERO;
-	struct Segment *segment = 0;
 	int is_done = 0;
 
 	/* https://stackoverflow.com/questions/10293387/piping-into-application-run-under-xcode/13658537 */
@@ -246,43 +247,54 @@ int main(int argc, char **argv) {
 		ScannerTokenInfo(&sorter.info);
 
 		switch(sorter.token.symbol) {
-			case BEGIN_DOC: if(sorter.info.is_doc_far) sorter_end_segment();
-				continue;
-			case RBRACE: if(sorter.info.indent_level) break;
-			case SEMI: sorter.is_differed_cut = 1;
-				/* LBRACE/SEMI determine what type. */
-				if(segment) Marker(&segment->code);
-				break;
-			default: break;
+		case BEGIN_DOC:
+			if(sorter.segment && !TokenArraySize(&sorter.segment->code)) sorter_end_segment();
+			continue;
+		case LBRACE:
+			if(sorter.info.indent_level != 1) break;
+			Marker(&sorter.segment->code);
+			printf("###DECIDE###(okay, it is function)\n");
+			{
+				ScannerIgnoreBlock();
+			}
+			break;
+		case SEMI: sorter.is_differed_cut = 1;
+			if(!sorter.segment) break;
+			/* LBRACE/SEMI determine what type. */
+			Marker(&sorter.segment->code);
+			break;
+		default: break;
 		}
 		/* If it's the first line of code that is greater than some reasonable
 		 distance to the documentation, split it up. */
 		/* if(code && !already_code && lines_since_doc) cut; */
-		if(segment && !sorter.info.is_doc && !TokenArraySize(&segment->code)
+		if(sorter.segment && !sorter.info.is_doc
+			&& !TokenArraySize(&sorter.segment->code)
 			&& sorter.info.is_doc_far) printf("<cut>\n"), sorter_end_segment();
+		/* fixme */
 		sorter.is_matching = !sorter.info.indent_level;
 
 		/* Create new segment if need be. */
-		if(!segment) {
+		if(!sorter.segment) {
 			printf("<new segment>\n");
-			if(!(segment = SegmentArrayNew(&segments)))
+			if(!(sorter.segment = SegmentArrayNew(&segments)))
 				{ sorter_err(); goto catch; }
-			segment_init(segment);
+			segment_init(sorter.segment);
 		}
 		/* Choose the token array. */
 		if(sorter.info.is_doc) {
 			if(symbol_output[sorter.token.symbol] == OUT_TAG) {
 				printf("@tag %s\n", symbols[sorter.token.symbol]);
-				if(!(sorter.tag = TagArrayNew(&segment->tags)))
+				if(!(sorter.tag = TagArrayNew(&sorter.segment->tags)))
 					{ sorter_err(); goto catch; }
 				tag_init(sorter.tag);
 				sorter.tokens = &sorter.tag->contents;
 				continue;
 			} else if(!sorter.tokens) {
-				sorter.tokens = &segment->doc;
+				sorter.tokens = &sorter.segment->doc;
 			}
 		} else {
-			sorter.tokens = &segment->code;
+			sorter.tokens = &sorter.segment->code;
 		}
 		{
 			struct Token *token;
@@ -292,34 +304,37 @@ int main(int argc, char **argv) {
 			ScannerToken(token);
 		}
 		/* Create another segment next time. */
-		sorter_end_segment();
+		if(sorter.is_differed_cut) sorter_end_segment();
 	}
 
 	if(!sorter.is_matching) { fprintf(stderr, "Braces do not match at EOF.\n");
 		errno = EILSEQ; goto catch; }
 
 	/* Cull. Rid uncommented blocks. Whitespace clean-up, (after!) */
-	SegmentArrayKeepIf(&segments, &keep_segment);
-	segment = 0;
-	while((segment = SegmentArrayNext(&segments, segment)))
-		clean_whitespace(&segment->doc); /* <-- Segfaults here in XCode, not in
-		 Clang */
+	{
+		struct Segment *segment;
+		SegmentArrayKeepIf(&segments, &keep_segment);
+		segment = 0;
+		while((segment = SegmentArrayNext(&segments, segment)))
+			clean_whitespace(&segment->doc); /* <-- Segfaults here in XCode, not in
+			 Clang */
 
-	segment = 0;
-	fputs("\n\n*****\n\n", stdout);
-	while((segment = SegmentArrayNext(&segments, segment))) {
-		struct Tag *tag;
-		printf("Segment(%s):\n\tdoc: %s.\n\tcode: %s.\n",
-			sections[segment->section], TokenArrayToString(&segment->doc),
-			TokenArrayToString(&segment->code));
-		tag = 0;
-		while((tag = TagArrayNext(&segment->tags, tag))) {
-			printf("\t%s{%s} %s.\n", symbols[tag->token.symbol],
-				TokenArrayToString(&tag->header),
-				TokenArrayToString(&tag->contents));
+		segment = 0;
+		fputs("\n\n*****\n\n", stdout);
+		while((segment = SegmentArrayNext(&segments, segment))) {
+			struct Tag *tag;
+			printf("Segment(%s):\n\tdoc: %s.\n\tcode: %s.\n",
+				sections[segment->section], TokenArrayToString(&segment->doc),
+				TokenArrayToString(&segment->code));
+			tag = 0;
+			while((tag = TagArrayNext(&segment->tags, tag))) {
+				printf("\t%s{%s} %s.\n", symbols[tag->token.symbol],
+					TokenArrayToString(&tag->header),
+					TokenArrayToString(&tag->contents));
+			}
 		}
+		fputc('\n', stdout);
 	}
-	fputc('\n', stdout);
 
 	is_done = 1;
 	goto finally;
