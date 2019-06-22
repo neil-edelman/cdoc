@@ -256,6 +256,8 @@ int main(int argc, char **argv) {
 			printf("###DECIDE###(okay, it is function)\n");
 			{
 				ScannerIgnoreBlock();
+				if(sorter.segment) sorter.segment->section = FUNCTION;
+				sorter_end_segment();
 			}
 			break;
 		case SEMI: sorter.is_differed_cut = 1;

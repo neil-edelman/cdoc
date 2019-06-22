@@ -440,9 +440,6 @@ code:
 	generic generic { return ID_TWO_GENERICS; }
 	generic generic generic { return ID_THREE_GENERICS; }
 
-	id = [a-zA-Z_][a-zA-Z_0-9]*;
-	id { return ID; }
-
 	operator = ":" | "..." | "::" | "?" | "+" | "-" | "*" | "/" | "%" | "^"
 		| "xor" | "&" | "bitand" | "|" | "bitor" | "~" | "compl" | "!" | "not"
 		| "=" | "<" | ">" | "+=" | "-=" | "%=" | "^=" | "xor_eq"
@@ -464,6 +461,9 @@ code:
 	")"          { return RPAREN; }
 	","          { return COMMA; }
 	";"          { return SEMI; }
+
+	id = [a-zA-Z_][a-zA-Z_0-9]*;
+	id { return ID; }
 */
 }
 
