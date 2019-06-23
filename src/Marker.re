@@ -24,9 +24,6 @@
 #include "../src/Sorter.h" /* Token */
 #include "../src/Marker.h" /* Marker */
 
-/* In `Scanner.h`. */
-static const char symbol_mark[] = { SYMBOL(PARAM3_C) };
-
 /* Define {CharArray}, a vector of characters -- dynamic string; (again.) */
 #define ARRAY_NAME Char
 #define ARRAY_TYPE char

@@ -39,11 +39,6 @@
 #include "Sorter.h"
 #include "Marker.h"
 
-/* Private symbol infomation. From `Scanner.h`. */
-enum SymbolOutput { SYMBOL_OUTPUT(PARAM) };
-static const int symbol_output[] = { SYMBOL(PARAM3_B) };
-static const char *const symbol_outputs[] = { SYMBOL_OUTPUT(STRINGISE) };
-
 /* Define the sections of output. */
 #define SECTION(X) X(HEADER), X(DECLARATION), X(FUNCTION)
 enum Section { SECTION(PARAM) };
@@ -257,6 +252,12 @@ int main(int argc, char **argv) {
 			{
 				ScannerIgnoreBlock();
 				if(sorter.segment) sorter.segment->section = FUNCTION;
+				/*sorter_end_segment();*/
+			}
+			break;
+		case RBRACE: /* Come to think of it, it's weird that function calls
+			don't need a brace. */
+			if(sorter.segment && sorter.segment->section == FUNCTION) {
 				sorter_end_segment();
 			}
 			break;
@@ -285,7 +286,7 @@ int main(int argc, char **argv) {
 		}
 		/* Choose the token array. */
 		if(sorter.info.is_doc) {
-			if(symbol_output[sorter.token.symbol] == OUT_TAG) {
+			if(symbol_mark[sorter.token.symbol] == '@') {
 				printf("@tag %s\n", symbols[sorter.token.symbol]);
 				if(!(sorter.tag = TagArrayNew(&sorter.segment->tags)))
 					{ sorter_err(); goto catch; }

@@ -4,61 +4,54 @@
 #define PARAM2_A(A, B) A
 #define PARAM2_B(A, B) B
 #define STRINGISE2_A(A, B) #A
-#define PARAM3_A(A, B, C) A
-#define PARAM3_B(A, B, C) B
-#define PARAM3_C(A, B, C) C
-#define STRINGISE3_A(A, B, C) #A
-
-#define SYMBOL_OUTPUT(X) \
-	X(OUT_DISCARD), X(OUT_C), X(OUT_DOC), X(OUT_TAG)
 
 /* Define the symbols. */
 #define SYMBOL(X) \
-	X(END, OUT_DISCARD, '~'), X(OPERATOR, OUT_C, '*'), X(COMMA, OUT_C, ','), \
-	X(SEMI, OUT_C, ';'), X(LBRACE, OUT_C, '{'), X(RBRACE, OUT_C, '}'), X(LPAREN, OUT_C, '('), \
-	X(RPAREN, OUT_C, ')'), X(LBRACK, OUT_C, '['), X(RBRACK, OUT_C, ']'), \
-	X(CONSTANT, OUT_C, '#'), X(ID, OUT_C, 'x'), X(ID_ONE_GENERIC, OUT_C, 'g'), \
-	X(ID_TWO_GENERICS, OUT_C, 'h'), X(ID_THREE_GENERICS, OUT_C, 'i'), X(STRUCT, OUT_C, 's'), \
-	X(UNION, OUT_C, 'u'), X(ENUM, OUT_C, 'e'), X(TYPEDEF, OUT_C, 't'), \
-	X(STATIC, OUT_C, 'z'), \
-	X(BEGIN_DOC, OUT_DISCARD, '~'), \
-	X(TAG_TITLE, OUT_TAG, '@'), X(TAG_PARAM, OUT_TAG, '@'), X(TAG_AUTHOR, OUT_TAG, '@'), \
-	X(TAG_STD, OUT_TAG, '@'), X(TAG_DEPEND, OUT_TAG, '@'), X(TAG_VERSION, OUT_TAG, '@'), \
-	X(TAG_SINCE, OUT_TAG, '@'), X(TAG_FIXME, OUT_TAG, '@'), \
-	X(TAG_DEPRICATED, OUT_TAG, '@'), X(TAG_RETURN, OUT_TAG, '@'), \
-	X(TAG_THROWS, OUT_TAG, '@'), X(TAG_IMPLEMENTS, OUT_TAG, '@'), \
-	X(TAG_ORDER, OUT_TAG, '@'), X(TAG_ALLOW, OUT_TAG, '@'), \
-	X(ESCAPED_BACKSLASH, OUT_DOC, '@'), X(ESCAPED_BACKQUOTE, OUT_DOC, '@'), \
-	X(ESCAPED_EACH, OUT_DOC, '@'), X(BACKQUOTE, OUT_DOC, '`'), \
-	X(DOC_LBRACE, OUT_DOC, '<'), X(DOC_RBRACE, OUT_DOC, '>'), X(DOC_COMMA, OUT_DOC, '.'), \
-	X(NEWLINE,	OUT_DOC, 'n'), X(WORD, OUT_DOC, 'w'), \
-	X(BS_URL, OUT_DOC, '\\'), X(BS_CITE, OUT_DOC, '\\'), X(BS_SEE, OUT_DOC, '\\'), \
-	X(BS_PRE, OUT_DOC, '\\'), \
-	X(HTML_AMP, OUT_DOC, '&'), X(HTML_LT, OUT_DOC, '&'), X(HTML_GT, OUT_DOC, '&'), \
-	X(HTML_DOT, OUT_DOC, '&'), X(HTML_LCEIL, OUT_DOC, '&'), X(HTML_RCEIL, OUT_DOC, '&'), \
-	X(HTML_LFLOOR, OUT_DOC, '&'), X(HTML_RFLOOR, OUT_DOC, '&'), X(HTML_TO, OUT_DOC, '&'), \
-	X(HTML_GE, OUT_DOC, '&'), X(HTML_LE, OUT_DOC, '&'), X(HTML_NE, OUT_DOC, '&'), \
-	X(HTML_CAP, OUT_DOC, '&'), X(HTML_CUP, OUT_DOC, '&'), X(HTML_VEE, OUT_DOC, '&'), \
-	X(HTML_WEDGE, OUT_DOC, '&'), X(HTML_SUM, OUT_DOC, '&'), X(HTML_PROD, OUT_DOC, '&'), \
-	X(HTML_IN, OUT_DOC, '&'), X(HTML_EXISTS, OUT_DOC, '&'), X(HTML_FORALL, OUT_DOC, '&'), \
-	X(HTML_NEG, OUT_DOC, '&'), X(HTML_TIMES, OUT_DOC, '&'), X(HTML_SQRT, OUT_DOC, '&'), \
-	X(HTML_PROPTO, OUT_DOC, '&'), X(HTML_PM, OUT_DOC, '&'), X(HTML_PARTIAL, OUT_DOC, '&'), \
-	X(HTML_INT, OUT_DOC, '&'), X(HTML_INFTY, OUT_DOC, '&'), X(HTML_UGAMMA, OUT_DOC, '&'), \
-	X(HTML_UDELTA, OUT_DOC, '&'), X(HTML_ILAMBDA, OUT_DOC, '&'), \
-	X(HTML_UPHI, OUT_DOC, '&'), X(HTML_UPI, OUT_DOC, '&'), X(HTML_UPSY, OUT_DOC, '&'), \
-	X(HTML_USIGMA, OUT_DOC, '&'), X(HTML_UTHETA, OUT_DOC, '&'), \
-	X(HTML_UUPSILON, OUT_DOC, '&'), X(HTML_UXI, OUT_DOC, '&'), \
-	X(HTML_UOMEGA, OUT_DOC, '&'), X(HTML_ALPHA, OUT_DOC, '&'), X(HTML_BETA, OUT_DOC, '&'), \
-	X(HTML_GAMMA, OUT_DOC, '&'), X(HTML_DELTA, OUT_DOC, '&'), \
-	X(HTML_EPSILON, OUT_DOC, '&'), X(HTML_ZETA, OUT_DOC, '&'), X(HTML_ETA, OUT_DOC, '&'), \
-	X(HTML_THETA, OUT_DOC, '&'), X(HTML_IOTA, OUT_DOC, '&'), X(HTML_KAPPA, OUT_DOC, '&'), \
-	X(HTML_LAMBDA, OUT_DOC, '&'), X(HTML_MU, OUT_DOC, '&'), X(HTML_NU, OUT_DOC, '&'), \
-	X(HTML_XI, OUT_DOC, '&'), X(HTML_RHO, OUT_DOC, '&'), X(HTML_SIGMA, OUT_DOC, '&'), \
-	X(HTML_TAU, OUT_DOC, '&'), X(HTML_UPSILON, OUT_DOC, '&'), X(HTML_PHI, OUT_DOC, '&'), \
-	X(HTML_CHI, OUT_DOC, '&'), X(HTML_PSI, OUT_DOC, '&'), X(HTML_OMEGA, OUT_DOC, '&')
+	X(END, '~'), X(BEGIN_DOC, '~'), \
+	/* `C` syntax. */ \
+	X(OPERATOR, '*'), X(COMMA, ','), X(SEMI, ';'), \
+	X(LBRACE, '{'), X(RBRACE, '}'), X(LPAREN, '('), X(RPAREN, ')'), \
+	X(LBRACK, '['), X(RBRACK, ']'), X(CONSTANT, '#'), X(ID, 'x'), \
+	X(ID_ONE_GENERIC, 'g'), X(ID_TWO_GENERICS, 'h'), \
+	X(ID_THREE_GENERICS, 'i'), X(STRUCT, 's'), X(UNION, 'u'), X(ENUM, 'e'), \
+	X(TYPEDEF, 't'), X(STATIC, 'z'), \
+	/* Document syntax. */ \
+	X(TAG_TITLE, '@'), X(TAG_PARAM, '@'), X(TAG_AUTHOR, '@'), X(TAG_STD, '@'), \
+	X(TAG_DEPEND, '@'), X(TAG_VERSION, '@'), X(TAG_SINCE, '@'), \
+	X(TAG_FIXME, '@'), X(TAG_DEPRICATED, '@'), X(TAG_RETURN, '@'), \
+	X(TAG_THROWS, '@'), X(TAG_IMPLEMENTS, '@'), \
+	X(TAG_ORDER, '@'), X(TAG_ALLOW, '@'), \
+	/* Meaning/escapes document syntax. */ \
+	X(ESCAPED_BACKSLASH, '\\'), X(ESCAPED_BACKQUOTE, '\\'), \
+	X(ESCAPED_EACH, '\\'), X(BS_URL, '\\'), X(BS_CITE, '\\'), X(BS_SEE, '\\'), \
+	X(BS_PRE, '\\'), X(BACKQUOTE, '`'), X(DOC_LBRACE, '<'), \
+	X(DOC_RBRACE, '>'), X(DOC_COMMA, '.'), X(NEWLINE, 'n'), X(WORD, 'w'), \
+	/* Also do these from LaTeX to HTML. */ \
+	X(HTML_AMP, '&'), X(HTML_LT, '&'), X(HTML_GT, '&'), X(HTML_DOT, '&'), \
+	X(HTML_LCEIL, '&'), X(HTML_RCEIL, '&'), X(HTML_LFLOOR, '&'), \
+	X(HTML_RFLOOR, '&'), X(HTML_TO, '&'), X(HTML_GE, '&'), X(HTML_LE, '&'), \
+	X(HTML_NE, '&'), X(HTML_CAP, '&'), X(HTML_CUP, '&'), X(HTML_VEE, '&'), \
+	X(HTML_WEDGE, '&'), X(HTML_SUM, '&'), X(HTML_PROD, '&'), \
+	X(HTML_IN, '&'), X(HTML_EXISTS, '&'), X(HTML_FORALL, '&'), \
+	X(HTML_NEG, '&'), X(HTML_TIMES, '&'), X(HTML_SQRT, '&'), \
+	X(HTML_PROPTO, '&'), X(HTML_PM, '&'), X(HTML_PARTIAL, '&'), \
+	X(HTML_INT, '&'), X(HTML_INFTY, '&'), \
+	X(HTML_UGAMMA, '&'), X(HTML_UDELTA, '&'), X(HTML_ILAMBDA, '&'), \
+	X(HTML_UPHI, '&'), X(HTML_UPI, '&'), X(HTML_UPSY, '&'), \
+	X(HTML_USIGMA, '&'), X(HTML_UTHETA, '&'), \
+	X(HTML_UUPSILON, '&'), X(HTML_UXI, '&'), \
+	X(HTML_UOMEGA, '&'), X(HTML_ALPHA, '&'), X(HTML_BETA, '&'), \
+	X(HTML_GAMMA, '&'), X(HTML_DELTA, '&'), \
+	X(HTML_EPSILON, '&'), X(HTML_ZETA, '&'), X(HTML_ETA, '&'), \
+	X(HTML_THETA, '&'), X(HTML_IOTA, '&'), X(HTML_KAPPA, '&'), \
+	X(HTML_LAMBDA, '&'), X(HTML_MU, '&'), X(HTML_NU, '&'), \
+	X(HTML_XI, '&'), X(HTML_RHO, '&'), X(HTML_SIGMA, '&'), \
+	X(HTML_TAU, '&'), X(HTML_UPSILON, '&'), X(HTML_PHI, '&'), \
+	X(HTML_CHI, '&'), X(HTML_PSI, '&'), X(HTML_OMEGA, '&')
 
-enum Symbol { SYMBOL(PARAM3_A) };
-static const char *const symbols[] = { SYMBOL(STRINGISE3_A) };
+enum Symbol { SYMBOL(PARAM2_A) };
+static const char *const symbols[] = { SYMBOL(STRINGISE2_A) };
+static const char symbol_mark[] = { SYMBOL(PARAM2_B) };
 
 /* Define the states of the input file. */
 #define STATE(X) X(END_OF_FILE, &scan_eof), X(DOC, &scan_doc), \
@@ -75,13 +68,14 @@ struct Token {
 	size_t line;
 };
 
+enum State { STATE(PARAM2_A) };
+
 /** `TokenInfo` is associated to the `Token`, but not stored. */
 struct TokenInfo {
 	int indent_level;
 	int is_doc, is_doc_far;
+	enum State state;
 };
-
-enum State { STATE(PARAM2_A) };
 
 struct Scanner;
 

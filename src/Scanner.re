@@ -192,10 +192,13 @@ void ScannerToken(struct Token *const token) {
 
 /** Fills `info` with the last token information not stored in the token. */
 void ScannerTokenInfo(struct TokenInfo *const info) {
+	enum State *state;
 	if(!info) return;
 	info->indent_level = scanner.indent_level;
 	info->is_doc = state_look() == DOC;
 	info->is_doc_far = scanner.doc_line + 2 < scanner.line;
+	state = StateArrayPeek(&scanner.states);
+	info->state = state ? *state : END_OF_FILE;
 }
 
 
