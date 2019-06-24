@@ -159,15 +159,23 @@ static void debug(void) {
  @fixme Is it really neccesary to have docs inside of functions? This would be
  so much easier logic without. */
 int ScannerNext(void) {
-	enum State *state;
+	enum State state;
+start:
 	/* Ignore a block of code if `scanner.ignore_block` is on. */
 	do {
-		if(!(state = StateArrayPeek(&scanner.states))
-			|| !(scanner.symbol = state_fn[*state]())) return 0;
+		if(!(state = state_look())
+			|| !(scanner.symbol = state_fn[state]())) return 0;
 		debug();
-		if(*state != CODE) return 1; /* Return not-code in `ignore_block`. */
+		/* Return everything that's not-code (_ie_ docs) in ignore-block. */
+		if((state = state_look()) && state != CODE) return 1;
 	} while(scanner.ignore_block && scanner.indent_level);
-	scanner.ignore_block = 0;
+	/* Coming out of an ignore-block. */
+	if(scanner.ignore_block) {
+		assert(scanner.symbol == RBRACE);
+		printf("Ignore-block ended.\n");
+		scanner.ignore_block = 0;
+		goto start;
+	}
 	return 1;
 }
 
@@ -295,6 +303,9 @@ doc:
 	"\\\\" { return ESCAPED_BACKSLASH; }
 	"\`" { return ESCAPED_BACKQUOTE; }
 	"\\@" { return ESCAPED_EACH; }
+	"\\_" { return ESCAPED_UNDERSCORE; }
+	"\\*" { return ESCAPED_ASTERISK; }
+	"*" | "_" { return ITALICS; }
 	"`" { return BACKQUOTE; }
 	"{" { return DOC_LBRACE; }
 	"}" { return DOC_RBRACE; }

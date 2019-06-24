@@ -23,8 +23,10 @@
 	X(TAG_ORDER, '@'), X(TAG_ALLOW, '@'), \
 	/* Meaning/escapes document syntax. */ \
 	X(ESCAPED_BACKSLASH, '\\'), X(ESCAPED_BACKQUOTE, '\\'), \
-	X(ESCAPED_EACH, '\\'), X(BS_URL, '\\'), X(BS_CITE, '\\'), X(BS_SEE, '\\'), \
-	X(BS_PRE, '\\'), X(BACKQUOTE, '`'), X(DOC_LBRACE, '<'), \
+	X(ESCAPED_EACH, '\\'), X(ESCAPED_UNDERSCORE, '\\'), \
+	X(ESCAPED_ASTERISK, '\\'), \
+	X(BS_URL, '\\'), X(BS_CITE, '\\'), X(BS_SEE, '\\'), \
+	X(BS_PRE, '\\'), X(BACKQUOTE, '`'), X(ITALICS, '_'), X(DOC_LBRACE, '<'), \
 	X(DOC_RBRACE, '>'), X(DOC_COMMA, '.'), X(NEWLINE, 'n'), X(WORD, 'w'), \
 	/* Also do these from LaTeX to HTML. */ \
 	X(HTML_AMP, '&'), X(HTML_LT, '&'), X(HTML_GT, '&'), X(HTML_DOT, '&'), \

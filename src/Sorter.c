@@ -195,7 +195,7 @@ static int keep_segment(const struct Segment *const s) {
 }
 
 static struct Sorter {
-	int is_matching, is_indent, is_struct, is_differed_cut;
+	int is_indent, is_struct, is_differed_cut;
 	struct Token token;
 	struct TokenInfo info;
 	struct Segment *segment;
@@ -216,6 +216,16 @@ static void sorter_err(void) {
 		sorter.info.indent_level,
 		symbols[sorter.token.symbol], sorter.token.length, sorter.token.from);
 }
+
+
+
+
+
+
+
+
+
+
 
 int main(int argc, char **argv) {
 	struct SegmentArray segments = ARRAY_ZERO;
@@ -242,30 +252,40 @@ int main(int argc, char **argv) {
 		ScannerTokenInfo(&sorter.info);
 
 		switch(sorter.token.symbol) {
+
 		case BEGIN_DOC:
+			/* If there's no `code`, end the segment.
+			 eg, `/ ** Header * / / ** Function * / int main(void)`. */
 			if(sorter.segment && !TokenArraySize(&sorter.segment->code)) sorter_end_segment();
 			continue;
+
+		case SEMI:
+			/* A semicolon always ends the section; we should see what section
+			 it's supposed to be in. */
+			sorter.is_differed_cut = 1;
+			printf("Marker brought on by semicolon.\n"),
+				Marker(&sorter.segment->code); /* fixme: and then classify. */
+			break;
+
 		case LBRACE:
+			/* Starting a code block. If it's global, then it could be a
+			 function, in which case we ignore all code in it. But also
+			 definition of `struct`, `union`, or `enum`. */
 			if(sorter.info.indent_level != 1) break;
 			Marker(&sorter.segment->code);
-			printf("###DECIDE###(okay, it is function)\n");
-			{
-				ScannerIgnoreBlock();
-				if(sorter.segment) sorter.segment->section = FUNCTION;
-				/*sorter_end_segment();*/
-			}
-			break;
-		case RBRACE: /* Come to think of it, it's weird that function calls
-			don't need a brace. */
-			if(sorter.segment && sorter.segment->section == FUNCTION) {
-				sorter_end_segment();
-			}
-			break;
-		case SEMI: sorter.is_differed_cut = 1;
-			if(!sorter.segment) break;
-			/* LBRACE/SEMI determine what type. */
+			/* fixme: assumes function. */
+			ScannerIgnoreBlock();
+			if(!sorter.segment) continue;
+			sorter.segment->section = FUNCTION;
+			sorter_end_segment();
+			continue;
+
+		case RBRACE:
+			/* We are not reconising `struct`, _etc_.  */
+			printf("###SHOULD NOT HAPPEN (yet)###\n");
 			Marker(&sorter.segment->code);
 			break;
+
 		default: break;
 		}
 		/* If it's the first line of code that is greater than some reasonable
@@ -274,8 +294,6 @@ int main(int argc, char **argv) {
 		if(sorter.segment && !sorter.info.is_doc
 			&& !TokenArraySize(&sorter.segment->code)
 			&& sorter.info.is_doc_far) printf("<cut>\n"), sorter_end_segment();
-		/* fixme */
-		sorter.is_matching = !sorter.info.indent_level;
 
 		/* Create new segment if need be. */
 		if(!sorter.segment) {
@@ -308,10 +326,15 @@ int main(int argc, char **argv) {
 		}
 		/* Create another segment next time. */
 		if(sorter.is_differed_cut) sorter_end_segment();
+		printf("->%d\n", sorter.info.indent_level);
 	}
 
-	if(!sorter.is_matching) { fprintf(stderr, "Braces do not match at EOF.\n");
-		errno = EILSEQ; goto catch; }
+	/* Finished the compilation unit, the indent level should be zero. */
+	if(ScannerTokenInfo(&sorter.info), sorter.info.indent_level) {
+		fprintf(stderr, "EOF indent level %d.\n", sorter.info.indent_level);
+		errno = EILSEQ;
+		goto catch;
+	}
 
 	/* Cull. Rid uncommented blocks. Whitespace clean-up, (after!) */
 	{
