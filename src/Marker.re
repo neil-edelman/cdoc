@@ -65,8 +65,8 @@ int Marker(const struct TokenArray *const ta) {
 	memset(a, '\0', big_size - size);
 	marker.cursor = marker.marker = marker.from = CharArrayGet(&marker.buffer);
 	marker.limit = marker.cursor + size;
-	printf("\"%s\" is_fn: %d\n", CharArrayGet(&marker.buffer),
-		MarkerIsFunction());
+	printf("\"%s\" Is:%s%s.\n", CharArrayGet(&marker.buffer),
+		MarkerIsFunction() ? " fn" : "", MarkerIsDefinition() ? " dn" : "");
 	return 1;
 }
 
@@ -84,20 +84,33 @@ int MarkerIsFunction(void) {
 	marker.cursor = CharArrayGet(&marker.buffer);
 /*!re2c
 	"\x00" { return 0; }
+	unknown = "x";
 	// generic types are "A_(Foo)" which we assume is "<A>Foo"
 	generic = "x" | "1(x)" | "2(x,x)" | "3(x,x,x)"; // fixme: kind of
 	void = "v";
 	struct = "s";
 	static = "z";
-	typename = struct? (generic | void) "x"* "*"* "x"*;
+	typename = ((struct? generic) | void) unknown* "*"* unknown*;
 	array = "[" "x"? "]";
 	declaration = "x"* typename array* "x" array*;
 	param = "x"* declaration;
 	paramlist = param ("," param)*;
 	// fixme: This does not take into account function pointers.
 	// fixme: Old-style function definitions.
-	newfn = static? "x"* (typename | void) "x(" (void | paramlist) ")";
+	newfn = unknown* static? unknown* typename "x(" (void | paramlist) ")";
 	newfn "\x00" { return 1; }
+*/
+	return 0;
+}
+
+int MarkerIsDefinition(void) {
+	marker.cursor = CharArrayGet(&marker.buffer);
+/*!re2c
+	"\x00" { return 0; }
+	definition = unknown* static? unknown* typename "x";
+	equals = "=";
+	typedef = "t";
+	definition "\x00" | definition equals | typedef { return 1; }
 */
 	return 0;
 }

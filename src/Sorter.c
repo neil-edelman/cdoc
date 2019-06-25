@@ -211,17 +211,16 @@ int main(int argc, char **argv) {
 			/* If there's no `code`, end the segment.
 			 eg, `/ ** Header * / / ** Function * / int main(void)`. */
 			if(sorter.segment && !TokenArraySize(&sorter.segment->code))
-				printf("No code within distance, assigning %s.\n",
-				sections[sorter.segment->section]), sorter_end_segment();
+				sorter_end_segment();
 			break;
 
 		case SEMI:
 			/* A semicolon always ends the section; we should see what section
 			 it's supposed to be in. */
-			if(!sorter.segment) { printf("Stray semicolon on line %lu?\n",
+			if(!sorter.segment) { fprintf(stderr,
+				"Stray semicolon on line %lu?\n",
 				(unsigned long)sorter.token.line); continue; }
 			sorter.is_differed_cut = 1;
-			printf("Marker brought on by semicolon.\n");
 			Marker(&sorter.segment->code); /* fixme: and then classify. */
 			sorter.segment->section = DECLARATION;
 			break;
@@ -229,7 +228,7 @@ int main(int argc, char **argv) {
 		case END_BLOCK:
 			/* It's a function; behaves like a semicolon; already classified. */
 			if(!sorter.segment)
-				{ printf("Stray code-block ending on line %lu?\n",
+				{ fprintf(stderr, "Stray code-block ending on line %lu?\n",
 				(unsigned long)sorter.token.line); continue; }
 			sorter.is_differed_cut = 1;
 			break;
@@ -240,7 +239,7 @@ int main(int argc, char **argv) {
 			 definition of `struct`, `union`, or `enum`. */
 			if(sorter.info.indent_level != 1) break;
 			if(!sorter.segment) {
-				printf("Stray code-block beginning on line %lu?\n",
+				fprintf(stderr, "Stray code-block beginning on line %lu?\n",
 					(unsigned long)sorter.token.line);
 				ScannerIgnoreBlock();
 				continue;
@@ -250,14 +249,8 @@ int main(int argc, char **argv) {
 				? FUNCTION : DECLARATION;
 			printf("Determined this to be %s.\n",
 				sections[sorter.segment->section]);
-			ScannerIgnoreBlock();
+			if(sorter.segment->section == FUNCTION) ScannerIgnoreBlock();
 			continue;
-
-		case RBRACE:
-			/* We are not reconising `struct`, _etc_.  */
-			printf("###SHOULD NOT HAPPEN (yet)###\n");
-			Marker(&sorter.segment->code);
-			break;
 
 		default: break;
 		}
@@ -300,11 +293,11 @@ int main(int argc, char **argv) {
 				{ sorter_err(); goto catch; }
 			ScannerToken(token);
 			token_to_string(token, &a);
-			printf("Pushed symbol %s onto %s.\n", a,
+			/*printf("Pushed symbol %s onto %s.\n", a,
 				sorter.tokens == &sorter.tag->contents ? "tag"
 				: sorter.tokens == &sorter.segment->doc ? "doc"
 				: sorter.tokens == &sorter.segment->code ? "code"
-				: "don't really know");
+				: "don't really know");*/
 		}
 		/* Create another segment next time. */
 		if(sorter.is_differed_cut) sorter_end_segment();
@@ -324,27 +317,15 @@ int main(int argc, char **argv) {
 		printf("segments size %lu.\n", SegmentArraySize(&segments));
 		segment = 0;
 		while((segment = SegmentArrayNext(&segments, segment)))
-			printf("segment: %p %s\n", (void *)segment,
-			sections[segment->section]);
+			printf("segment: %s\n", sections[segment->section]);
 
+		/* Removes the stuff that we don't care about. */
 		SegmentArrayKeepIf(&segments, &keep_segment);
-		printf("after keepif:\n");
-		printf("segments size %lu.\n", SegmentArraySize(&segments));
-		segment = 0;
-		while((segment = SegmentArrayNext(&segments, segment)))
-			printf("segment: %p %s\n", (void *)segment,
-			sections[segment->section]);
 
-#if 0
+		/* Cleans out the whitespace. */
 		segment = 0;
 		while((segment = SegmentArrayNext(&segments, segment)))
-			printf("segment: %p %s\n", (void *)segment,
-			sections[segment->section]),
-			/* <-- Segfaults here in XCode, not in Clang, bullshit error,
-			 "warning: Unable to restore previously selected frame. warning:
-			 Unable to restore ..." We have better things to do. */
 			clean_whitespace(&segment->doc);
-#endif
 
 		fputs("\n -- Print out: --\n", stdout);
 		printf("segments size %lu.\n", SegmentArraySize(&segments));
@@ -354,17 +335,16 @@ int main(int argc, char **argv) {
 			sections[segment->section]);
 		segment = 0;
 		while((segment = SegmentArrayNext(&segments, segment))) {
-			/*struct Tag *tag;*/
-			TokenArrayToString(&segment->doc);
-			/*printf("Segment(%s):\n\tdoc: %s.\n\tcode: %s.\n",
+			struct Tag *tag;
+			printf("Segment(%s):\n\tdoc: %s.\n\tcode: %s.\n",
 				sections[segment->section], TokenArrayToString(&segment->doc),
-				TokenArrayToString(&segment->code));*/
-			/*tag = 0;
+				TokenArrayToString(&segment->code));
+			tag = 0;
 			while((tag = TagArrayNext(&segment->tags, tag))) {
 				printf("\t%s{%s} %s.\n", symbols[tag->token.symbol],
 					TokenArrayToString(&tag->header),
 					TokenArrayToString(&tag->contents));
-			}*/
+			}
 		}
 		fputc('\n', stdout);
 	}
