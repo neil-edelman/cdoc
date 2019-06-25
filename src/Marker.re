@@ -56,127 +56,48 @@ int Marker(const struct TokenArray *const ta) {
 	big_size = size + YYMAXFILL;
 	/*printf("marker: \"%.*s\" size = %lu/%lu\n", (int)CharArraySize(&marker.buffer), CharArrayGet(&marker.buffer), size, big_size);*/
 	if(!(a = CharArrayBuffer(&marker.buffer, big_size))) return 0;
+	printf("--> Marker: ");
 	while((token = TokensNext(ta, token)))
-		*a++ = symbol_mark[TokenSymbol(token)];
+		*a++ = symbol_mark[token->symbol],
+		printf("%.*s ", token->length, token->from);
+	assert((size_t)(a - CharArrayGet(&marker.buffer)) == size);
 	CharArrayAddSize(&marker.buffer, size);
 	memset(a, '\0', big_size - size);
-	printf("Marker: %s\n", CharArrayGet(&marker.buffer));
+	marker.cursor = marker.marker = marker.from = CharArrayGet(&marker.buffer);
+	marker.limit = marker.cursor + size;
+	printf("\"%s\" is_fn: %d\n", CharArrayGet(&marker.buffer),
+		MarkerIsFunction());
 	return 1;
-}
-
-#if 0
-
-/** Lexes the next token. This will update `ScannerToken` and
- `ScannerTokenInfo`.
- @return If the scanner had more tokens. */
-int ScannerNext(void) {
-	enum State *ps;
-	if(!(ps = StateArrayPeek(&scanner.states))) return END;
-	return scanner.symbol = state_fn[*ps]();
-}
-
-static enum State state_look(void);
-
-/** Fills `token` with the last token.
- @param{token} If null, does nothing. */
-void ScannerToken(struct Token *const token) {
-	if(!token) return;
-	assert(scanner.symbol && scanner.from && scanner.from <= scanner.cursor);
-	token->symbol = scanner.symbol;
-	token->from = scanner.from;
-	if(scanner.from + INT_MAX < scanner.cursor) {
-		fprintf(stderr, "Length of string chopped to " QUOTE(INT_MAX) ".\n");
-		token->length = INT_MAX;
-	} else {
-		token->length = (int)(scanner.cursor - scanner.from);
-	}
-	token->line = scanner.line;
 }
 
 /*!re2c
 re2c:define:YYCTYPE  = char;
-re2c:define:YYFILL   = "return END;";
+re2c:define:YYFILL   = "return 0;";
 re2c:define:YYFILL:naked = 1;
-re2c:define:YYLIMIT  = scanner.limit;
-re2c:define:YYCURSOR = scanner.cursor;
-re2c:define:YYMARKER = scanner.marker;
+re2c:define:YYLIMIT  = marker.limit;
+re2c:define:YYCURSOR = marker.cursor;
+re2c:define:YYMARKER = marker.marker;
 re2c:yyfill:enable = 0;
 */
 
-/** Scans C code. See \see{ http://re2c.org/examples/example_07.html }.
- @implements ScannerFn */
-static enum Symbol scan_code(void) {
-	assert(state_look() == CODE);
-code:
-	scanner.from = scanner.cursor;
+int MarkerIsFunction(void) {
+	marker.cursor = CharArrayGet(&marker.buffer);
 /*!re2c
-	// http://re2c.org/examples/example_03.html
-	"\x00" { if(scanner.limit - scanner.cursor <= YYMAXFILL) return END;
-		goto code; }
-	* { printf("Unknown, <%.*s>, just roll with it.\n",
-		(int)(scanner.cursor - scanner.from), scanner.from); goto code; }
-
-	// Documentation is not / * * /, but other then that.
-	doc = "/""**";
-	doc / [^/] { return push(DOC) ? BEGIN_DOC : END; }
-
-	comment = "/""*";
-	comment { return push_call(COMMENT); }
-	cxx_comment = "//" [^\n]*;
-
-	macro = ("#" | "%:");
-	macro { return push_call(MACRO); }
-
-	// Number separate from minus then numbers can't have whitespace, simple.
-	oct = "0" [0-7]*;
-	dec = [1-9][0-9]*;
-	hex = '0x' [0-9a-fA-F]+;
-	frc = [0-9]* "." [0-9]+ | [0-9]+ ".";
-	exp = 'e' [+-]? [0-9]+;
-	flt = (frc exp? | [0-9]+ exp) [fFlL]?;
-	number = (oct | dec | hex | flt) [uUlL]*;
-	number { return CONSTANT; }
-
-	// Strings are more complicated because they can have whitespace and that
-	// messes up the line count.
-	// @fixme No trigraph support.
-	// char_type = "u8"|"u"|"U"|"L"; <- These get caught in id; don't care.
-	"L"? "\"" { return push_call(STRING); }
-	"'" { return push_call(CHAR); }
-
-	// Extension (hack) for generic macros; if one names them this way, it will
-	// be documented nicely; the down side is, these are legal names for
-	// identifiers; will be confused if you name anything this way that IS an
-	// identifier.
-	generic = [A-Z]+ "_";
-	generic { return ID_GENERIC; }
-	generic generic { return ID_GENERIC_TWO; }
-	generic generic generic { return ID_GENERIC_THREE; }
-
-	id = [a-zA-Z_][a-zA-Z_0-9]*;
-	id { return ID; }
-
-	operator = ":" | "..." | "::" | "?" | "+" | "-" | "*" | "/" | "%" | "^"
-		| "xor" | "&" | "bitand" | "|" | "bitor" | "~" | "compl" | "!" | "not"
-		| "=" | "<" | ">" | "+=" | "-=" | "%=" | "^=" | "xor_eq"
-		| "&=" | "and_eq" | "|=" | "or_eq" | "<<" | ">>" | ">>=" | "<<="
-		| "!=" | "not_eq" | "<=" | ">=" | "&&" | "and" | "||" | "or" | "++"
-		| "--" | "." | "->";
-	operator { return OPERATOR; }
-
-	"struct"     { return STRUCT; }
-	"union"      { return UNION; } // +fn are these all that can be braced?
-	"enum"       { return ENUM; } // forgot one
-	"typedef"    { return TYPEDEF; }
-	("{" | "<%") { scanner.indent_level++; return LBRACE; }
-	("}" | "%>") { scanner.indent_level--; return RBRACE; }
-	("[" | "<:") { return LBRACK; }
-	("]" | ":>") { return RBRACK; }
-	"("          { return LPAREN; }
-	")"          { return RPAREN; }
-	","          { return COMMA; }
-	";"          { return SEMI; }
+	"\x00" { return 0; }
+	// generic types are "A_(Foo)" which we assume is "<A>Foo"
+	generic = "x" | "1(x)" | "2(x,x)" | "3(x,x,x)"; // fixme: kind of
+	void = "v";
+	struct = "s";
+	static = "z";
+	typename = struct? (generic | void) "x"* "*"* "x"*;
+	array = "[" "x"? "]";
+	declaration = "x"* typename array* "x" array*;
+	param = "x"* declaration;
+	paramlist = param ("," param)*;
+	// fixme: This does not take into account function pointers.
+	// fixme: Old-style function definitions.
+	newfn = static? "x"* (typename | void) "x(" (void | paramlist) ")";
+	newfn "\x00" { return 1; }
 */
+	return 0;
 }
-
-#endif

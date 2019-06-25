@@ -466,6 +466,7 @@ code:
 	"enum"       { return ENUM; } // forgot one
 	"typedef"    { return TYPEDEF; }
 	"static"     { return STATIC; }
+	"void"       { return VOID; }
 	("{" | "<%") { scanner.indent_level++; return LBRACE; }
 	("}" | "%>") { scanner.indent_level--; return RBRACE; }
 	("[" | "<:") { return LBRACK; }

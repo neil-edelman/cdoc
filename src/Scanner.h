@@ -12,9 +12,9 @@
 	X(OPERATOR, '*'), X(COMMA, ','), X(SEMI, ';'), \
 	X(LBRACE, '{'), X(RBRACE, '}'), X(LPAREN, '('), X(RPAREN, ')'), \
 	X(LBRACK, '['), X(RBRACK, ']'), X(CONSTANT, '#'), X(ID, 'x'), \
-	X(ID_ONE_GENERIC, 'g'), X(ID_TWO_GENERICS, 'h'), \
-	X(ID_THREE_GENERICS, 'i'), X(STRUCT, 's'), X(UNION, 'u'), X(ENUM, 'e'), \
-	X(TYPEDEF, 't'), X(STATIC, 'z'), X(END_BLOCK, ';'), \
+	X(ID_ONE_GENERIC, '1'), X(ID_TWO_GENERICS, '2'), \
+	X(ID_THREE_GENERICS, '3'), X(STRUCT, 's'), X(UNION, 's'), X(ENUM, 's'), \
+	X(TYPEDEF, 't'), X(STATIC, 'z'), X(VOID, 'v'), X(END_BLOCK, ';'), \
 	/* Document syntax. */ \
 	X(TAG_TITLE, '@'), X(TAG_PARAM, '@'), X(TAG_AUTHOR, '@'), X(TAG_STD, '@'), \
 	X(TAG_DEPEND, '@'), X(TAG_VERSION, '@'), X(TAG_SINCE, '@'), \

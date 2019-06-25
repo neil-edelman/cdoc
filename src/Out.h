@@ -26,13 +26,23 @@ static void print_tag_header_contents(struct Tag *const tag) {
 	printf("\n");
 }
 
-/** @implements <Tag>Predicate */
-static int tag_is_title(const struct Tag *const tag)
-	{ return tag->token.symbol == TAG_TITLE; }
-
-/** @implements <Tag>Predicate */
-static int tag_is_param(const struct Tag *const tag)
-	{ return tag->token.symbol == TAG_TITLE; }
+/* @implements <Tag>Predicate */
+#define TAG_IS(lc, uc) static int tag_is_ ## lc (const struct Tag *const tag) \
+	{ return tag->token.symbol == uc; }
+TAG_IS(title, TAG_TITLE)
+TAG_IS(param, TAG_PARAM)
+TAG_IS(author, TAG_AUTHOR)
+TAG_IS(std, TAG_STD)
+TAG_IS(depend, TAG_DEPEND)
+TAG_IS(version, TAG_VERSION)
+TAG_IS(since, TAG_SINCE)
+TAG_IS(fixme, TAG_FIXME)
+TAG_IS(depricated, TAG_DEPRICATED)
+TAG_IS(return, TAG_RETURN)
+TAG_IS(throws, TAG_THROWS)
+TAG_IS(implements, TAG_IMPLEMENTS)
+TAG_IS(order, TAG_ORDER)
+TAG_IS(allow, TAG_ALLOW)
 
 /** @implements <Segment>Action */
 static void segment_print_doc(struct Segment *const segment) {
@@ -48,7 +58,9 @@ static void segment_print_code(struct Segment *const segment) {
 /** @implements <Segment>Action */
 static void segment_print_all(struct Segment *const segment) {
 	segment_print_doc(segment);
-	/* fixme: _etc_ */
+	TagArrayIfEach(&segment->tags, &tag_is_author, &print_tag_contents);
+	TagArrayIfEach(&segment->tags, &tag_is_std, &print_tag_contents);
+	TagArrayIfEach(&segment->tags, &tag_is_depend, &print_tag_contents);
 	TagArrayIfEach(&segment->tags, &tag_is_param, &print_tag_header_contents);
 	segment_print_code(segment);
 	printf("\n\n***\n\n");

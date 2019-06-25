@@ -51,8 +51,7 @@ static const char *const sections[] = { SECTION(STRINGISE) };
 static void token_to_string(const struct Token *s, char (*const a)[12]) {
 	int len = s->length >= 5 ? 5 : s->length;
 	sprintf(*a, "%.4s<%.*s>", symbols[s->symbol], len, s->from);
-	/*strncpy(*a, symbols[s->symbol], sizeof *a - 1);*/
-	*a[sizeof *a - 1] = '\0';/*???*/
+	(*a)[sizeof *a - 1] = '\0';
 }
 
 #define ARRAY_NAME Token
@@ -69,12 +68,6 @@ size_t TokensSize(const struct TokenArray *const ta) {
 struct Token *TokensNext(const struct TokenArray *const a,
 	struct Token *const here) {
 	return TokenArrayNext(a, here);
-}
-
-/** `token.symbol` is used in `Marker`. */
-enum Symbol TokenSymbol(const struct Token *const token) {
-	assert(token);
-	return token->symbol;
 }
 
 /* `static` constants that require memory so are initialised on start and
@@ -94,8 +87,8 @@ struct Tag {
 };
 
 static void tag_to_string(const struct Tag *t, char (*const a)[12]) {
-	strncpy(*a, symbols[t->token.symbol], sizeof *a - 1),
-		*a[sizeof *a - 1] = '\0';
+	strncpy(*a, symbols[t->token.symbol], sizeof *a - 1);
+	(*a)[sizeof *a - 1] = '\0';
 }
 
 static void tag_init(struct Tag *const tag) {
@@ -140,8 +133,8 @@ static void segment_init(struct Segment *const segment) {
 }
 
 static void segment_to_string(const struct Segment *seg, char (*const a)[12]) {
-	strncpy(*a, sections[seg->section], sizeof *a - 1),
-		*a[sizeof *a - 1] = '\0';
+	strncpy(*a, sections[seg->section], sizeof *a - 1);
+	(*a)[sizeof *a - 1] = '\0';
 }
 
 #define ARRAY_NAME Segment
@@ -158,41 +151,8 @@ static void segment_array_remove(struct SegmentArray *const sa) {
 	SegmentArray_(sa);
 }
 
-
-
-/** Cleans the whitespace so it's just in between words and adds paragraphs
- where needed. */
-static void clean_whitespace(struct TokenArray *const sa) {
-	const struct TokenArray *replace;
-	struct Token *x = 0, *x_start = 0;
-	size_t count_nl = 0;
-	int is_content = 0;
-	assert(sa);
-	while((x = TokenArrayNext(sa, x))) {
-		if(x->symbol == NEWLINE) {
-			if(!x_start) x_start = x;
-			count_nl++;
-		} else {
-			if(x_start) {
-				replace = (is_content && count_nl > 1) ? &paragraph : 0;
-				count_nl = 0;
-				TokenArrayReplace(sa, x_start, (long)(x - x_start), replace);
-				x = x_start + TokenArraySize(replace);
-				x_start = 0;
-			}
-			is_content = 1;
-		}
-	}
-	/* Whitespace at end of section. */
-	if(x_start) TokenArrayReplace(sa, x_start, -1, 0);
-	printf("Parser:Clean: %s.\n", TokenArrayToString(sa));
-}
-
-/** @implements{Predicate<Segment>} */
-static int keep_segment(const struct Segment *const s) {
-	if(TokenArraySize(&s->doc) || s->section == FUNCTION) return 1;
-	return 0;
-}
+#include "Transform.h"
+#include "Out.h"
 
 static struct Sorter {
 	int is_indent, is_struct, is_differed_cut;
@@ -220,16 +180,6 @@ static void sorter_err(void) {
 		sorter.info.indent_level,
 		symbols[sorter.token.symbol], sorter.token.length, sorter.token.from);
 }
-
-
-
-
-
-
-
-
-
-#include "Out.h"
 
 int main(int argc, char **argv) {
 	struct SegmentArray segments = ARRAY_ZERO;
@@ -263,7 +213,7 @@ int main(int argc, char **argv) {
 			if(sorter.segment && !TokenArraySize(&sorter.segment->code))
 				printf("No code within distance, assigning %s.\n",
 				sections[sorter.segment->section]), sorter_end_segment();
-			continue;
+			break;
 
 		case SEMI:
 			/* A semicolon always ends the section; we should see what section
@@ -281,8 +231,6 @@ int main(int argc, char **argv) {
 			if(!sorter.segment)
 				{ printf("Stray code-block ending on line %lu?\n",
 				(unsigned long)sorter.token.line); continue; }
-			assert(sorter.segment->section == FUNCTION);
-			printf("We already know it's a function.\n");
 			sorter.is_differed_cut = 1;
 			break;
 
@@ -297,10 +245,10 @@ int main(int argc, char **argv) {
 				ScannerIgnoreBlock();
 				continue;
 			}
-			/* fixme: assumes function. */
 			Marker(&sorter.segment->code);
-			sorter.segment->section = FUNCTION;
-			printf("Determined this to be %s because it's always a fn.\n",
+			sorter.segment->section = MarkerIsFunction()
+				? FUNCTION : DECLARATION;
+			printf("Determined this to be %s.\n",
 				sections[sorter.segment->section]);
 			ScannerIgnoreBlock();
 			continue;
@@ -372,31 +320,56 @@ int main(int argc, char **argv) {
 	/* Cull. Rid uncommented blocks. Whitespace clean-up, (after!) */
 	{
 		struct Segment *segment;
-		SegmentArrayKeepIf(&segments, &keep_segment);
+		fputs("\n\n -- Edit: --\n", stdout);
+		printf("segments size %lu.\n", SegmentArraySize(&segments));
 		segment = 0;
 		while((segment = SegmentArrayNext(&segments, segment)))
+			printf("segment: %p %s\n", (void *)segment,
+			sections[segment->section]);
+
+		SegmentArrayKeepIf(&segments, &keep_segment);
+		printf("after keepif:\n");
+		printf("segments size %lu.\n", SegmentArraySize(&segments));
+		segment = 0;
+		while((segment = SegmentArrayNext(&segments, segment)))
+			printf("segment: %p %s\n", (void *)segment,
+			sections[segment->section]);
+
+#if 0
+		segment = 0;
+		while((segment = SegmentArrayNext(&segments, segment)))
+			printf("segment: %p %s\n", (void *)segment,
+			sections[segment->section]),
 			/* <-- Segfaults here in XCode, not in Clang, bullshit error,
 			 "warning: Unable to restore previously selected frame. warning:
 			 Unable to restore ..." We have better things to do. */
-			/*clean_whitespace(&segment->doc)*/;
+			clean_whitespace(&segment->doc);
+#endif
 
+		fputs("\n -- Print out: --\n", stdout);
+		printf("segments size %lu.\n", SegmentArraySize(&segments));
 		segment = 0;
-		fputs("\n\n*****\n\n", stdout);
+		while((segment = SegmentArrayNext(&segments, segment)))
+			printf("segment: %p %s\n", (void *)segment,
+			sections[segment->section]);
+		segment = 0;
 		while((segment = SegmentArrayNext(&segments, segment))) {
-			struct Tag *tag;
-			printf("Segment(%s):\n\tdoc: %s.\n\tcode: %s.\n",
+			/*struct Tag *tag;*/
+			TokenArrayToString(&segment->doc);
+			/*printf("Segment(%s):\n\tdoc: %s.\n\tcode: %s.\n",
 				sections[segment->section], TokenArrayToString(&segment->doc),
-				TokenArrayToString(&segment->code));
-			tag = 0;
+				TokenArrayToString(&segment->code));*/
+			/*tag = 0;
 			while((tag = TagArrayNext(&segment->tags, tag))) {
 				printf("\t%s{%s} %s.\n", symbols[tag->token.symbol],
 					TokenArrayToString(&tag->header),
 					TokenArrayToString(&tag->contents));
-			}
+			}*/
 		}
 		fputc('\n', stdout);
 	}
 
+	printf("  -- Output: --\n\n");
 	/* Now output. */
 	out(&segments);
 

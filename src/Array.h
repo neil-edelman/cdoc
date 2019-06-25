@@ -571,9 +571,6 @@ static void T_(ArrayTrim)(struct T_(Array) *const a,
 	memmove(a->data, a->data + i, sizeof *a->data * i), a->size -= i;
 }
 
-#ifdef ARRAY_TO_STRING
-static const char *T_(ArrayToString)(const struct T_(Array) *const a);
-#endif
 /** In {a}, replaces the elements from {r} up to {range} with a copy of {b}.
  @param a: If null, returns zero.
  @param replace: Beginning of the replaced value, inclusive. If null, appends to
