@@ -39,7 +39,7 @@ static const ScannerFn state_fn[] = { STATE(PARAM2_B) };
 
 static void state_to_string(const enum State *s, char (*const a)[12]) {
 	strncpy(*a, states[*s], sizeof *a - 1);
-	*a[sizeof *a - 1] = '\0';
+	(*a)[sizeof *a - 1] = '\0';
 }
 
 /* Define {StateArray}, a stack of states. */
