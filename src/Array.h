@@ -501,6 +501,22 @@ static void T_(ArrayForEach)(struct T_(Array) *const a,
 	for(t = a->data, end = t + a->size; t < end; t++) action(t);
 }
 
+/** Iterates though {a} and calls {action} on all the elements for which
+ {predicate} returns true. The topology of the list can not change while in
+ this function.
+ @param a, predicate, action: If null, does nothing.
+ @order O({size} \times {action})
+ @fixme Untested.
+ @fixme Sequence interface.
+ @allow */
+static void T_(ArrayIfEach)(struct T_(Array) *const a,
+	const PT_(Predicate) predicate, const PT_(Action) action) {
+	T *t, *end;
+	if(!a || !action || !predicate) return;
+	for(t = a->data, end = t + a->size; t < end; t++)
+		if(predicate(t)) action(t);
+}
+
 /** For all elements of {a}, calls {keep}, and for each element, if the return
  value is false, lazy deletes that item.
  @param a, keep: If null, does nothing.
@@ -709,6 +725,7 @@ static void PT_(unused_set)(void) {
 	T_(ArrayBuffer)(0, 0);
 	T_(ArrayAddSize)(0, 0);
 	T_(ArrayForEach)(0, 0);
+	T_(ArrayIfEach)(0, 0, 0);
 	T_(ArrayKeepIf)(0, 0);
 	T_(ArrayTrim)(0, 0);
 	T_(ArrayReplace)(0, 0, 0, 0);

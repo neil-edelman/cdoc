@@ -204,6 +204,10 @@ static struct Sorter {
 } sorter;
 
 static void sorter_end_segment(void) {
+	char a[12];
+	if(sorter.segment) segment_to_string(sorter.segment, &a);
+	else strcpy(a, "null");
+	printf("<Ending %s segment.>\n", a);
 	sorter.is_differed_cut = 0, sorter.is_struct = 0, sorter.tag = 0;
 	sorter.segment = 0;
 	sorter.tag = 0;
@@ -225,7 +229,7 @@ static void sorter_err(void) {
 
 
 
-
+#include "Out.h"
 
 int main(int argc, char **argv) {
 	struct SegmentArray segments = ARRAY_ZERO;
@@ -256,15 +260,30 @@ int main(int argc, char **argv) {
 		case BEGIN_DOC:
 			/* If there's no `code`, end the segment.
 			 eg, `/ ** Header * / / ** Function * / int main(void)`. */
-			if(sorter.segment && !TokenArraySize(&sorter.segment->code)) sorter_end_segment();
+			if(sorter.segment && !TokenArraySize(&sorter.segment->code))
+				printf("No code within distance, assigning %s.\n",
+				sections[sorter.segment->section]), sorter_end_segment();
 			continue;
 
 		case SEMI:
 			/* A semicolon always ends the section; we should see what section
 			 it's supposed to be in. */
+			if(!sorter.segment) { printf("Stray semicolon on line %lu?\n",
+				(unsigned long)sorter.token.line); continue; }
 			sorter.is_differed_cut = 1;
-			printf("Marker brought on by semicolon.\n"),
-				Marker(&sorter.segment->code); /* fixme: and then classify. */
+			printf("Marker brought on by semicolon.\n");
+			Marker(&sorter.segment->code); /* fixme: and then classify. */
+			sorter.segment->section = DECLARATION;
+			break;
+
+		case END_BLOCK:
+			/* It's a function; behaves like a semicolon; already classified. */
+			if(!sorter.segment)
+				{ printf("Stray code-block ending on line %lu?\n",
+				(unsigned long)sorter.token.line); continue; }
+			assert(sorter.segment->section == FUNCTION);
+			printf("We already know it's a function.\n");
+			sorter.is_differed_cut = 1;
 			break;
 
 		case LBRACE:
@@ -272,12 +291,18 @@ int main(int argc, char **argv) {
 			 function, in which case we ignore all code in it. But also
 			 definition of `struct`, `union`, or `enum`. */
 			if(sorter.info.indent_level != 1) break;
-			Marker(&sorter.segment->code);
+			if(!sorter.segment) {
+				printf("Stray code-block beginning on line %lu?\n",
+					(unsigned long)sorter.token.line);
+				ScannerIgnoreBlock();
+				continue;
+			}
 			/* fixme: assumes function. */
-			ScannerIgnoreBlock();
-			if(!sorter.segment) continue;
+			Marker(&sorter.segment->code);
 			sorter.segment->section = FUNCTION;
-			sorter_end_segment();
+			printf("Determined this to be %s because it's always a fn.\n",
+				sections[sorter.segment->section]);
+			ScannerIgnoreBlock();
 			continue;
 
 		case RBRACE:
@@ -297,7 +322,7 @@ int main(int argc, char **argv) {
 
 		/* Create new segment if need be. */
 		if(!sorter.segment) {
-			printf("<new segment>\n");
+			printf("<New segment>\n");
 			if(!(sorter.segment = SegmentArrayNew(&segments)))
 				{ sorter_err(); goto catch; }
 			segment_init(sorter.segment);
@@ -311,22 +336,30 @@ int main(int argc, char **argv) {
 				tag_init(sorter.tag);
 				sorter.tokens = &sorter.tag->contents;
 				continue;
-			} else if(!sorter.tokens) {
+			} else if(!sorter.tokens
+				|| sorter.tokens == &sorter.segment->code) {
+				/* fixme: new doc, new paragraph. */
 				sorter.tokens = &sorter.segment->doc;
 			}
-		} else {
+		} else { /* !is_doc */
 			sorter.tokens = &sorter.segment->code;
 		}
 		{
 			struct Token *token;
+			char a[12];
 			/* Push symbol. */
 			if(!(token = TokenArrayNew(sorter.tokens)))
 				{ sorter_err(); goto catch; }
 			ScannerToken(token);
+			token_to_string(token, &a);
+			printf("Pushed symbol %s onto %s.\n", a,
+				sorter.tokens == &sorter.tag->contents ? "tag"
+				: sorter.tokens == &sorter.segment->doc ? "doc"
+				: sorter.tokens == &sorter.segment->code ? "code"
+				: "don't really know");
 		}
 		/* Create another segment next time. */
 		if(sorter.is_differed_cut) sorter_end_segment();
-		printf("->%d\n", sorter.info.indent_level);
 	}
 
 	/* Finished the compilation unit, the indent level should be zero. */
@@ -342,8 +375,10 @@ int main(int argc, char **argv) {
 		SegmentArrayKeepIf(&segments, &keep_segment);
 		segment = 0;
 		while((segment = SegmentArrayNext(&segments, segment)))
-			clean_whitespace(&segment->doc); /* <-- Segfaults here in XCode, not in
-			 Clang */
+			/* <-- Segfaults here in XCode, not in Clang, bullshit error,
+			 "warning: Unable to restore previously selected frame. warning:
+			 Unable to restore ..." We have better things to do. */
+			/*clean_whitespace(&segment->doc)*/;
 
 		segment = 0;
 		fputs("\n\n*****\n\n", stdout);
@@ -361,6 +396,9 @@ int main(int argc, char **argv) {
 		}
 		fputc('\n', stdout);
 	}
+
+	/* Now output. */
+	out(&segments);
 
 	is_done = 1;
 	goto finally;

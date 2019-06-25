@@ -160,7 +160,6 @@ static void debug(void) {
  so much easier logic without. */
 int ScannerNext(void) {
 	enum State state;
-start:
 	/* Ignore a block of code if `scanner.ignore_block` is on. */
 	do {
 		if(!(state = state_look())
@@ -172,9 +171,9 @@ start:
 	/* Coming out of an ignore-block. */
 	if(scanner.ignore_block) {
 		assert(scanner.symbol == RBRACE);
+		scanner.symbol = END_BLOCK;
 		printf("Ignore-block ended.\n");
 		scanner.ignore_block = 0;
-		goto start;
 	}
 	return 1;
 }
