@@ -34,7 +34,6 @@
  satisfying {<T>Action}. Requires {ARRAY_TO_STRING} and not {NDEBUG}.
 
  @title		Array.h
- @fixme		Run under Valgrind!
  @std		C89
  @author	Neil
  @version	2019-03 Renamed {Pool} to {Array}. Took out migrate.
