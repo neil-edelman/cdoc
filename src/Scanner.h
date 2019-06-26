@@ -65,6 +65,7 @@ enum State { STATE(PARAM2_A) };
 /* Define the sections of output. */
 #define SECTION(X) X(HEADER), X(DECLARATION), X(FUNCTION)
 enum Section { SECTION(PARAM) };
+static const char *const sections[] = { SECTION(STRINGISE) };
 
 /** `Token` has a `Symbol` and is associated with an area of the text.
  Tokenisation can only to done when the `Scanner` is active and in

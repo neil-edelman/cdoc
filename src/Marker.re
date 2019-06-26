@@ -50,6 +50,7 @@ enum Section Marker(const struct TokenArray *const ta) {
 	char *a;
 	size_t size, big_size;
 	struct Token *token = 0;
+	enum Section sec;
 	marker.s0 = marker.s1 = marker.s2 = marker.s3 = marker.s4 = marker.s5
 		= marker.s6 = marker.s7 = marker.s8 = 0;
 	if(!ta) {
@@ -62,7 +63,6 @@ enum Section Marker(const struct TokenArray *const ta) {
 	big_size = size + YYMAXFILL;
 	/*printf("marker: \"%.*s\" size = %lu/%lu\n", (int)CharArraySize(&marker.buffer), CharArrayGet(&marker.buffer), size, big_size);*/
 	if(!(a = CharArrayBuffer(&marker.buffer, big_size))) return 0;
-	printf("--> Marker: ");
 	while((token = TokensNext(ta, token)))
 		*a++ = symbol_mark[token->symbol],
 		printf("%.*s ", token->length, token->from);
@@ -71,8 +71,10 @@ enum Section Marker(const struct TokenArray *const ta) {
 	memset(a, '\0', big_size - size);
 	marker.cursor = marker.marker = marker.from = CharArrayGet(&marker.buffer);
 	marker.limit = marker.cursor + size;
-	printf("\"%s\"\n", CharArrayGet(&marker.buffer));
-	return section();
+	sec = section();
+	printf("--> Marker: \"%s\" -> %s.\n", CharArrayGet(&marker.buffer),
+		sections[sec]);
+	return sec;
 }
 
 /*!re2c
@@ -96,6 +98,8 @@ declaration = "x"* typename array* "x" array*;
 param = "x"* declaration;
 paramlist = param ("," param)*;
 fn = unknown* static? unknown* typename "x(" (void | paramlist) ")";
+typedef = "t";
+equals = "=";
 
 */
 
@@ -107,7 +111,7 @@ static enum Section section(void) {
 code:
 	marker.from = marker.cursor;
 /*!re2c
-	"\x00" { return DECLARATION; }
+	"=" | "t" | "\x00" { return DECLARATION; }
 	generic { goto code; }
 	* { goto code; }
 	")\x00" { return FUNCTION; }

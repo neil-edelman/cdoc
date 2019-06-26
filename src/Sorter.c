@@ -39,9 +39,6 @@
 #include "Sorter.h"
 #include "Marker.h"
 
-/* Define the sections of output. */
-static const char *const sections[] = { SECTION(STRINGISE) };
-
 /* `Token` is in `Scanner.h` to be used by `ScannerToken`. */
 
 static void token_to_string(const struct Token *s, char (*const a)[12]) {
@@ -217,8 +214,7 @@ int main(int argc, char **argv) {
 				"Stray semicolon on line %lu?\n",
 				(unsigned long)sorter.token.line); continue; }
 			sorter.is_differed_cut = 1;
-			Marker(&sorter.segment->code); /* fixme: and then classify. */
-			sorter.segment->section = DECLARATION;
+			sorter.segment->section = Marker(&sorter.segment->code);
 			break;
 
 		case END_BLOCK:
@@ -241,8 +237,6 @@ int main(int argc, char **argv) {
 				continue;
 			}
 			sorter.segment->section = Marker(&sorter.segment->code);
-			printf("Determined this to be %s.\n",
-				sections[sorter.segment->section]);
 			if(sorter.segment->section == FUNCTION) ScannerIgnoreBlock();
 			continue;
 
