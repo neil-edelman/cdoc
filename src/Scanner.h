@@ -60,6 +60,12 @@ static const char symbol_mark[] = { SYMBOL(PARAM2_B) };
 	X(CODE, &scan_code), X(COMMENT, &scan_comment), X(STRING, &scan_string), \
 	X(CHAR, &scan_char), X(MACRO, &scan_macro)
 
+enum State { STATE(PARAM2_A) };
+
+/* Define the sections of output. */
+#define SECTION(X) X(HEADER), X(DECLARATION), X(FUNCTION)
+enum Section { SECTION(PARAM) };
+
 /** `Token` has a `Symbol` and is associated with an area of the text.
  Tokenisation can only to done when the `Scanner` is active and in
  steady-state, and is done by the lexer calling `ScannerFillToken`. */
@@ -69,8 +75,6 @@ struct Token {
 	int length;
 	size_t line;
 };
-
-enum State { STATE(PARAM2_A) };
 
 /** `TokenInfo` is associated to the `Token`, but not stored. */
 struct TokenInfo {

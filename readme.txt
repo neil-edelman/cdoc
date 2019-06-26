@@ -2,6 +2,8 @@ Copyright (C) 2017 Neil Edelman.
 
 neil dot edelman each mail dot mcgill dot ca
 
+C identifiers are limited to C90.
+
 Version 1.3.
 
 "sudo make install" will make "cdoc" and copy it to /usr/local/bin.

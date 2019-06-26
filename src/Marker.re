@@ -35,17 +35,23 @@
 struct Marker {
 	const char *limit, *cursor, *marker, *from;
 	struct CharArray buffer;
+	/* fixme: The params; not used. */
+	const char *s0, *s1, *s2, *s3, *s4, *s5, *s6, *s7, *s8;
 } marker;
 
 /* Have {re2c} generate {YYMAXFILL}.
  \url{ http://re2c.org/examples/example_02.html }. */
 /*!max:re2c*/
 
+static enum Section section(void);
+
 /** @param{ta} Set to null to destroy. */
-int Marker(const struct TokenArray *const ta) {
+enum Section Marker(const struct TokenArray *const ta) {
 	char *a;
 	size_t size, big_size;
 	struct Token *token = 0;
+	marker.s0 = marker.s1 = marker.s2 = marker.s3 = marker.s4 = marker.s5
+		= marker.s6 = marker.s7 = marker.s8 = 0;
 	if(!ta) {
 		CharArray_(&marker.buffer);
 		marker.limit = marker.cursor = marker.marker = marker.from = 0;
@@ -65,9 +71,8 @@ int Marker(const struct TokenArray *const ta) {
 	memset(a, '\0', big_size - size);
 	marker.cursor = marker.marker = marker.from = CharArrayGet(&marker.buffer);
 	marker.limit = marker.cursor + size;
-	printf("\"%s\" Is:%s%s.\n", CharArrayGet(&marker.buffer),
-		MarkerIsFunction() ? " fn" : "", MarkerIsDefinition() ? " dn" : "");
-	return 1;
+	printf("\"%s\"\n", CharArrayGet(&marker.buffer));
+	return section();
 }
 
 /*!re2c
@@ -78,39 +83,36 @@ re2c:define:YYLIMIT  = marker.limit;
 re2c:define:YYCURSOR = marker.cursor;
 re2c:define:YYMARKER = marker.marker;
 re2c:yyfill:enable = 0;
+
+unknown = "x";
+// generic types are "A_(Foo)" which we assume is "<A>Foo"
+generic = "x" | "1(".")" | "2(".",".")" | "3(".",".",".")";
+void = "v";
+struct = "s";
+static = "z";
+typename = ((struct? generic) | void) (unknown* "*"*)*;
+array = "[" "x"? "]";
+declaration = "x"* typename array* "x" array*;
+param = "x"* declaration;
+paramlist = param ("," param)*;
+fn = unknown* static? unknown* typename "x(" (void | paramlist) ")";
+
 */
 
-int MarkerIsFunction(void) {
+/** This really is very complcated and differs from one compiler and version to
+ to next. We might !stags:re2c format = 'const char *@@;'; but that's really
+ difficult. */
+static enum Section section(void) {
 	marker.cursor = CharArrayGet(&marker.buffer);
+code:
+	marker.from = marker.cursor;
 /*!re2c
-	"\x00" { return 0; }
-	unknown = "x";
-	// generic types are "A_(Foo)" which we assume is "<A>Foo"
-	generic = "x" | "1(x)" | "2(x,x)" | "3(x,x,x)"; // fixme: kind of
-	void = "v";
-	struct = "s";
-	static = "z";
-	typename = ((struct? generic) | void) unknown* "*"* unknown*;
-	array = "[" "x"? "]";
-	declaration = "x"* typename array* "x" array*;
-	param = "x"* declaration;
-	paramlist = param ("," param)*;
+	"\x00" { return DECLARATION; }
+	generic { goto code; }
+	* { goto code; }
+	")\x00" { return FUNCTION; }
 	// fixme: This does not take into account function pointers.
 	// fixme: Old-style function definitions.
-	newfn = unknown* static? unknown* typename "x(" (void | paramlist) ")";
-	newfn "\x00" { return 1; }
+	// fixme: int (*foo)(void) would trivally break it.
 */
-	return 0;
-}
-
-int MarkerIsDefinition(void) {
-	marker.cursor = CharArrayGet(&marker.buffer);
-/*!re2c
-	"\x00" { return 0; }
-	definition = unknown* static? unknown* typename "x";
-	equals = "=";
-	typedef = "t";
-	definition "\x00" | definition equals | typedef { return 1; }
-*/
-	return 0;
 }

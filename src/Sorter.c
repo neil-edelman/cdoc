@@ -40,11 +40,7 @@
 #include "Marker.h"
 
 /* Define the sections of output. */
-#define SECTION(X) X(HEADER), X(DECLARATION), X(FUNCTION)
-enum Section { SECTION(PARAM) };
 static const char *const sections[] = { SECTION(STRINGISE) };
-
-
 
 /* `Token` is in `Scanner.h` to be used by `ScannerToken`. */
 
@@ -244,9 +240,7 @@ int main(int argc, char **argv) {
 				ScannerIgnoreBlock();
 				continue;
 			}
-			Marker(&sorter.segment->code);
-			sorter.segment->section = MarkerIsFunction()
-				? FUNCTION : DECLARATION;
+			sorter.segment->section = Marker(&sorter.segment->code);
 			printf("Determined this to be %s.\n",
 				sections[sorter.segment->section]);
 			if(sorter.segment->section == FUNCTION) ScannerIgnoreBlock();

@@ -1,3 +1,1 @@
-int Marker(const struct TokenArray *const ta);
-int MarkerIsFunction(void);
-int MarkerIsDefinition(void);
+enum Section Marker(const struct TokenArray *const ta);
