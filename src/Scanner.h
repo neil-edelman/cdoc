@@ -29,27 +29,7 @@
 	X(BS_PRE, '\\'), X(BACKQUOTE, '`'), X(ITALICS, '_'), X(DOC_LBRACE, '<'), \
 	X(DOC_RBRACE, '>'), X(DOC_COMMA, '.'), X(NEWLINE, 'n'), X(WORD, 'w'), \
 	/* Also do these from LaTeX to HTML. */ \
-	X(HTML_AMP, '&'), X(HTML_LT, '&'), X(HTML_GT, '&'), X(HTML_DOT, '&'), \
-	X(HTML_LCEIL, '&'), X(HTML_RCEIL, '&'), X(HTML_LFLOOR, '&'), \
-	X(HTML_RFLOOR, '&'), X(HTML_TO, '&'), X(HTML_GE, '&'), X(HTML_LE, '&'), \
-	X(HTML_NE, '&'), X(HTML_CAP, '&'), X(HTML_CUP, '&'), X(HTML_VEE, '&'), \
-	X(HTML_WEDGE, '&'), X(HTML_SUM, '&'), X(HTML_PROD, '&'), \
-	X(HTML_IN, '&'), X(HTML_EXISTS, '&'), X(HTML_FORALL, '&'), \
-	X(HTML_NEG, '&'), X(HTML_TIMES, '&'), X(HTML_SQRT, '&'), \
-	X(HTML_PROPTO, '&'), X(HTML_PM, '&'), X(HTML_PARTIAL, '&'), \
-	X(HTML_INT, '&'), X(HTML_INFTY, '&'), \
-	X(HTML_UGAMMA, '&'), X(HTML_UDELTA, '&'), X(HTML_ILAMBDA, '&'), \
-	X(HTML_UPHI, '&'), X(HTML_UPI, '&'), X(HTML_UPSY, '&'), \
-	X(HTML_USIGMA, '&'), X(HTML_UTHETA, '&'), \
-	X(HTML_UUPSILON, '&'), X(HTML_UXI, '&'), \
-	X(HTML_UOMEGA, '&'), X(HTML_ALPHA, '&'), X(HTML_BETA, '&'), \
-	X(HTML_GAMMA, '&'), X(HTML_DELTA, '&'), \
-	X(HTML_EPSILON, '&'), X(HTML_ZETA, '&'), X(HTML_ETA, '&'), \
-	X(HTML_THETA, '&'), X(HTML_IOTA, '&'), X(HTML_KAPPA, '&'), \
-	X(HTML_LAMBDA, '&'), X(HTML_MU, '&'), X(HTML_NU, '&'), \
-	X(HTML_XI, '&'), X(HTML_RHO, '&'), X(HTML_SIGMA, '&'), \
-	X(HTML_TAU, '&'), X(HTML_UPSILON, '&'), X(HTML_PHI, '&'), \
-	X(HTML_CHI, '&'), X(HTML_PSI, '&'), X(HTML_OMEGA, '&')
+	X(HTML_AMP, '&'), X(HTML_LT, '&'), X(HTML_GT, '&')
 
 enum Symbol { SYMBOL(PARAM2_A) };
 static const char *const symbols[] = { SYMBOL(STRINGISE2_A) };

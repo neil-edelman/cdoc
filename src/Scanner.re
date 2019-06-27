@@ -292,7 +292,7 @@ doc:
 	whitespace+ { goto doc; }
 
 	newline = "\n" | "\r" "\n"?;
-	art = "*"? newline " *";
+	art = "*"? whitespace* newline " *";
 	newline { scanner.line++; return NEWLINE; }
 	art / [^/] { scanner.line++; return NEWLINE; }
 
@@ -301,7 +301,7 @@ doc:
 
 	"\\\\" { return ESCAPED_BACKSLASH; }
 	"\`" { return ESCAPED_BACKQUOTE; }
-	"\\@" { return ESCAPED_EACH; }
+	"\\@" | "@" { return ESCAPED_EACH; }
 	"\\_" { return ESCAPED_UNDERSCORE; }
 	"\\*" { return ESCAPED_ASTERISK; }
 	"*" | "_" { return ITALICS; }
@@ -336,67 +336,6 @@ doc:
 	"&" { return HTML_AMP; }
 	"<" { return HTML_LT; }
 	">" { return HTML_GT; }
-	
-	// Also provide these for convenience: common compsci math and Greek.
-	"\\dot" { return HTML_DOT; }
-	"\\lceil" { return HTML_LCEIL; }
-	"\\rceil" { return HTML_RCEIL; }
-	"\\lfloor" { return HTML_LFLOOR; }
-	"\\rfloor" { return HTML_RFLOOR; }
-	"\\to" { return HTML_TO; }
-	"\\ge" { return HTML_GE; }
-	"\\le" { return HTML_LE; }
-	"\\ne" { return HTML_NE; }
-	"\\cap" { return HTML_CAP; }
-	"\\cup" { return HTML_CUP; }
-	"\\vee" { return HTML_VEE; }
-	"\\wedge" { return HTML_WEDGE; }
-	"\\sum" { return HTML_SUM; }
-	"\\prod" { return HTML_PROD; }
-	"\\in" { return HTML_IN; }
-	"\\exists" { return HTML_EXISTS; }
-	"\\forall" { return HTML_FORALL; }
-	"\\neg" { return HTML_NEG; }
-	"\\times" { return HTML_TIMES; }
-	"\\sqrt" { return HTML_SQRT; }
-	"\\propto" { return HTML_PROPTO; }
-	"\\pm" { return HTML_PM; }
-	"\\partial" { return HTML_PARTIAL; }
-	"\\int" { return HTML_INT; }
-	"\\infty" { return HTML_INFTY; }
-	"\\Gamma" { return HTML_UGAMMA; }
-	"\\Delta" { return HTML_UDELTA; }
-	"\\Lambda" { return HTML_ILAMBDA; }
-	"\\Phi" { return HTML_UPHI; }
-	"\\Pi" { return HTML_UPI; }
-	"\\Psi" { return HTML_UPSY; }
-	"\\Sigma" { return HTML_USIGMA; }
-	"\\Theta" { return HTML_UTHETA; }
-	"\\Upsilon" { return HTML_UUPSILON; }
-	"\\Xi" { return HTML_UXI; }
-	"\\Omega" { return HTML_UOMEGA; }
-	"\\alpha" { return HTML_ALPHA; }
-	"\\beta" { return HTML_BETA; }
-	"\\gamma" { return HTML_GAMMA; }
-	"\\delta" { return HTML_DELTA; }
-	"\\epsilon" { return HTML_EPSILON; }
-	"\\zeta" { return HTML_ZETA; }
-	"\\eta" { return HTML_ETA; }
-	"\\theta" { return HTML_THETA; }
-	"\\iota" { return HTML_IOTA; }
-	"\\kappa" { return HTML_KAPPA; }
-	"\\lambda" { return HTML_LAMBDA; }
-	"\\mu" { return HTML_MU; }
-	"\\nu" { return HTML_NU; }
-	"\\xi" { return HTML_XI; }
-	"\\rho" { return HTML_RHO; }
-	"\\sigma" { return HTML_SIGMA; }
-	"\\tau" { return HTML_TAU; }
-	"\\upsilon" { return HTML_UPSILON; }
-	"\\phi" { return HTML_PHI; }
-	"\\chi" { return HTML_CHI; }
-	"\\psi" { return HTML_PSI; }
-	"\\omega" { return HTML_OMEGA; }
 */
 }
 
