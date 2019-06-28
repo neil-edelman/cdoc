@@ -205,7 +205,7 @@ int main(int argc, char **argv) {
 			 eg, `/ ** Header * / / ** Function * / int main(void)`. */
 			if(sorter.segment && !TokenArraySize(&sorter.segment->code))
 				sorter_end_segment();
-			break;
+			continue;
 
 		case SEMI:
 			/* A semicolon always ends the section; we should see what section
@@ -273,19 +273,11 @@ int main(int argc, char **argv) {
 		} else { /* !is_doc */
 			sorter.tokens = &sorter.segment->code;
 		}
-		{
+		{ /* Push symbol. */
 			struct Token *token;
-			char a[12];
-			/* Push symbol. */
 			if(!(token = TokenArrayNew(sorter.tokens)))
 				{ sorter_err(); goto catch; }
 			ScannerToken(token);
-			token_to_string(token, &a);
-			/*printf("Pushed symbol %s onto %s.\n", a,
-				sorter.tokens == &sorter.tag->contents ? "tag"
-				: sorter.tokens == &sorter.segment->doc ? "doc"
-				: sorter.tokens == &sorter.segment->code ? "code"
-				: "don't really know");*/
 		}
 		/* Create another segment next time. */
 		if(sorter.is_differed_cut) sorter_end_segment();
@@ -312,8 +304,14 @@ int main(int argc, char **argv) {
 
 		/* Cleans out the whitespace. */
 		segment = 0;
-		while((segment = SegmentArrayNext(&segments, segment)))
+		while((segment = SegmentArrayNext(&segments, segment))) {
+			struct Tag *tag = 0;
 			clean_whitespace(&segment->doc);
+			while((tag = TagArrayNext(&segment->tags, tag))) {
+				clean_whitespace(&tag->header);
+				clean_whitespace(&tag->contents);
+			}
+		}
 
 		fputs("\n -- Print out: --\n", stdout);
 		printf("segments size %lu.\n", SegmentArraySize(&segments));

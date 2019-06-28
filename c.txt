@@ -1,0 +1,36 @@
+/** Yo \url{ http://foo.org/ }
+
+Paragraph
+
+@title Foo
+@depend C89
+*/
+
+
+
+/** A `a`. */
+static T_(Array) a;
+
+/** Returns eof.
+ @implements ScannerFn
+ @allow */
+static enum Token scan_eof(struct Scanner *const s) { (void)s; return END; }
+
+/**
+ * This is a
+ * kernel-style comment.
+ */
+
+/** C style comments. Actively ignore.
+ @implements ScannerFn
+ @allow */
+static enum Token scan_comment(struct Scanner *const s) {
+	assert(s && state_look(s) == COMMENT);
+comment:
+}
+
+
+T a(int (*ptr)(int a, int (*fn)(void))) /** yo */ {
+	/** @param{a, fn} Doesn't do anything. */
+	a = a;
+}

@@ -4,36 +4,45 @@
 #define PARAM2_A(A, B) A
 #define PARAM2_B(A, B) B
 #define STRINGISE2_A(A, B) #A
+#define PARAM3_A(A, B, C) A
+#define PARAM3_B(A, B, C) B
+#define PARAM3_C(A, B, C) C
+#define STRINGISE3_A(A, B, C) #A
 
 /* Define the symbols. */
 #define SYMBOL(X) \
-	X(END, '~'), X(BEGIN_DOC, '~'), \
+	X(END, '~', 0), X(BEGIN_DOC, '~', 0), \
 	/* `C` syntax. */ \
-	X(OPERATOR, '*'), X(COMMA, ','), X(SEMI, ';'), \
-	X(LBRACE, '{'), X(RBRACE, '}'), X(LPAREN, '('), X(RPAREN, ')'), \
-	X(LBRACK, '['), X(RBRACK, ']'), X(CONSTANT, '#'), X(ID, 'x'), \
-	X(ID_ONE_GENERIC, '1'), X(ID_TWO_GENERICS, '2'), \
-	X(ID_THREE_GENERICS, '3'), X(STRUCT, 's'), X(UNION, 's'), X(ENUM, 's'), \
-	X(TYPEDEF, 't'), X(STATIC, 'z'), X(VOID, 'v'), X(END_BLOCK, ';'), \
+	X(OPERATOR, '*', &lit), X(COMMA, ',', &lit), X(SEMI, ';', &lit), \
+	X(LBRACE, '{', &lit), X(RBRACE, '}', &lit), X(LPAREN, '(', &lit), \
+	X(RPAREN, ')', &lit), X(LBRACK, '[', &lit), X(RBRACK, ']', &lit), \
+	X(CONSTANT, '#', &lit), X(ID, 'x', &lit), \
+	X(ID_ONE_GENERIC, '1', &gen1), X(ID_TWO_GENERICS, '2', &gen2), \
+	X(ID_THREE_GENERICS, '3', &gen3), X(STRUCT, 's', &lit), \
+	X(UNION, 's', &lit), X(ENUM, 's', &lit), X(TYPEDEF, 't', &lit), \
+	X(STATIC, 'z', &lit), X(VOID, 'v', &lit), X(END_BLOCK, ';', 0), \
 	/* Document syntax. */ \
-	X(TAG_TITLE, '@'), X(TAG_PARAM, '@'), X(TAG_AUTHOR, '@'), X(TAG_STD, '@'), \
-	X(TAG_DEPEND, '@'), X(TAG_VERSION, '@'), X(TAG_SINCE, '@'), \
-	X(TAG_FIXME, '@'), X(TAG_DEPRICATED, '@'), X(TAG_RETURN, '@'), \
-	X(TAG_THROWS, '@'), X(TAG_IMPLEMENTS, '@'), \
-	X(TAG_ORDER, '@'), X(TAG_ALLOW, '@'), \
+	X(TAG_TITLE, '@', &lit), X(TAG_PARAM, '@', &lit), \
+	X(TAG_AUTHOR, '@', &lit), X(TAG_STD, '@', &lit), X(TAG_DEPEND, '@', &lit), \
+	X(TAG_VERSION, '@', &lit), X(TAG_SINCE, '@', &lit), \
+	X(TAG_FIXME, '@', &lit), X(TAG_DEPRICATED, '@', &lit), \
+	X(TAG_RETURN, '@', &lit), X(TAG_THROWS, '@', &lit), \
+	X(TAG_IMPLEMENTS, '@', &lit), X(TAG_ORDER, '@', &lit), \
+	X(TAG_ALLOW, '@', &lit), \
 	/* Meaning/escapes document syntax. */ \
-	X(ESCAPED_BACKSLASH, '\\'), X(ESCAPED_BACKQUOTE, '\\'), \
-	X(ESCAPED_EACH, '\\'), X(ESCAPED_UNDERSCORE, '\\'), \
-	X(ESCAPED_ASTERISK, '\\'), \
-	X(BS_URL, '\\'), X(BS_CITE, '\\'), X(BS_SEE, '\\'), \
-	X(BS_PRE, '\\'), X(BACKQUOTE, '`'), X(ITALICS, '_'), X(DOC_LBRACE, '<'), \
-	X(DOC_RBRACE, '>'), X(DOC_COMMA, '.'), X(NEWLINE, 'n'), X(WORD, 'w'), \
+	X(ESCAPED_BACKSLASH, '\\', &esc_bs), X(ESCAPED_BACKQUOTE, '\\', &esc_bq), \
+	X(ESCAPED_EACH, '\\', &esc_each), X(ESCAPED_UNDERSCORE, '\\', &esc_under), \
+	X(ESCAPED_ASTERISK, '\\', &esc_ast), \
+	X(BS_URL, '\\', &url), X(BS_CITE, '\\', &cite), X(BS_SEE, '\\', &see), \
+	X(BS_PRE, '\\', &pre), X(BACKQUOTE, '`', &lit), X(ITALICS, '_', &it), \
+	X(DOC_LBRACE, '<', &lb), X(DOC_RBRACE, '>', &rb), \
+	X(DOC_COMMA, '.', &lit), X(NEWLINE, 'n', &par), X(WORD, 'w', &lit), \
 	/* Also do these from LaTeX to HTML. */ \
-	X(HTML_AMP, '&'), X(HTML_LT, '&'), X(HTML_GT, '&')
+	X(HTML_AMP, '&', &amp), X(HTML_LT, '&', &lt), X(HTML_GT, '&', &gt)
 
-enum Symbol { SYMBOL(PARAM2_A) };
-static const char *const symbols[] = { SYMBOL(STRINGISE2_A) };
-static const char symbol_mark[] = { SYMBOL(PARAM2_B) };
+enum Symbol { SYMBOL(PARAM3_A) };
+static const char *const symbols[] = { SYMBOL(STRINGISE3_A) };
+static const char symbol_mark[] = { SYMBOL(PARAM3_B) };
 
 /* Define the states of the input file. */
 #define STATE(X) X(END_OF_FILE, &scan_eof), X(DOC, &scan_doc), \

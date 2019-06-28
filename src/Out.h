@@ -1,19 +1,25 @@
-/**
- * Outputs a file when given a `SegmentArray`.
- */
+/** Selects `token` out of `ta` and prints it and returns the next token. */
+typedef const struct Token *(*OutFn)(const struct TokenArray *const ta,
+	const struct Token *const token);
+
+/* `SYMBOL` is declared in `Scanner.h`. */
+/*static const OutFn symbol_out[] = { SYMBOL(PARAM3_C) };*/
 
 /** @implements <Token>Action */
 static void token_print(struct Token *const token) {
+	/* fixme: This is only true with `lit`. */
 	printf("%.*s\n", token->length, token->from);
 }
 
 /** @implements <Tag>Action */
 static void print_tag_contents(struct Tag *const tag) {
+	/* fixme */
 	TokenArrayForEach(&tag->contents, &token_print);
 }
 
 /** @implements <Tag>Action */
 static void print_tag_header(struct Tag *const tag) {
+	/* fixme */
 	TokenArrayForEach(&tag->header, &token_print);
 }
 
@@ -46,11 +52,13 @@ TAG_IS(allow, TAG_ALLOW)
 
 /** @implements <Segment>Action */
 static void segment_print_doc(struct Segment *const segment) {
+	/* fixme */
 	TokenArrayForEach(&segment->doc, &token_print);
 }
 
 /** @implements <Segment>Action */
 static void segment_print_code(struct Segment *const segment) {
+	/* fixme */
 	TokenArrayForEach(&segment->code, &token_print);
 	printf("\n");
 }
@@ -86,6 +94,9 @@ static int segment_is_function(const struct Segment *const segment) {
 	return segment->section == FUNCTION;
 }
 
+/**
+ * Outputs a file when given a `SegmentArray`.
+ */
 static void out(struct SegmentArray *const sa) {
 	assert(sa);
 	printf("# ");

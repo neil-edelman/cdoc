@@ -1,5 +1,5 @@
-/** Cleans the whitespace so it's just in between words and adds paragraphs
- where needed. */
+/** Deletes all new-lines, except where there is a at-least double newline in a
+ text-block, which it will replace with a single new-line. */
 static void clean_whitespace(struct TokenArray *const sa) {
 	const struct TokenArray *replace;
 	struct Token *x = 0, *x_start = 0;
@@ -23,11 +23,13 @@ static void clean_whitespace(struct TokenArray *const sa) {
 	}
 	/* Whitespace at end of section. */
 	if(x_start) TokenArrayReplace(sa, x_start, -1, 0);
-	printf("Parser:Clean: %s.\n", TokenArrayToString(sa));
+	printf("Parser:Transform:clean_whitespace: %s.\n", TokenArrayToString(sa));
 }
 
-/** @implements{Predicate<Segment>} */
+/** Keeps only the stuff we care about.
+ @implements{Predicate<Segment>} */
 static int keep_segment(const struct Segment *const s) {
+	/* fixme: and not static or containing @allow tag. */
 	if(TokenArraySize(&s->doc) || s->section == FUNCTION) return 1;
 	return 0;
 }
