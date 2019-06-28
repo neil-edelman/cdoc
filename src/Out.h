@@ -4,13 +4,20 @@ typedef const struct Token *(*OutFn)(const struct TokenArray *const ta,
 
 /* @implements <Tag>Predicate */
 #define OUT(name) static const struct Token *name(const struct TokenArray \
-	*const ta, struct Token *const token)
+	*const ta, const struct Token *const token)
 OUT(lit) {
-	printf("%.*s\n", token->length, token->from);
+	printf("%.*s~", token->length, token->from);
 	return TokenArrayNext(ta, token);
 }
 OUT(gen1) {
-	return 0;
+	struct Token *const lbr = TokenArrayNext(ta, token),
+		*const param = TokenArrayNext(ta, lbr),
+		*const rbr = TokenArrayNext(ta, param);
+	if(!lbr || lbr->symbol != LBRACE || !param || !rbr
+		|| rbr->symbol != RBRACE) return 0;
+	printf("<%.*s>%.*s",
+		token->length, token->from, param->length, param->from);
+	return TokenArrayNext(ta, rbr);
 }
 OUT(gen2) {
 	return 0;
@@ -70,8 +77,18 @@ OUT(gt) {
 	return 0;
 }
 
-/* `SYMBOL` is declared in `Scanner.h`. */
+/* `SYMBOL` is declared in `Scanner.h` and `PARAM3_C` is one of the preceding
+ functions. */
 static const OutFn symbol_out[] = { SYMBOL(PARAM3_C) };
+
+static void tokens_print(const struct TokenArray *const ta) {
+	const struct Token *token = TokenArrayNext(ta, 0);
+	OutFn sym_out;
+	if(!token) return;
+	while((sym_out = symbol_out[token->symbol])
+		&& (token = sym_out(ta, token)));
+	fputc('\n', stdout);
+}
 
 /** @implements <Token>Action */
 static void token_print(struct Token *const token) {
@@ -83,12 +100,14 @@ static void token_print(struct Token *const token) {
 static void print_tag_contents(struct Tag *const tag) {
 	/* fixme */
 	TokenArrayForEach(&tag->contents, &token_print);
+	tokens_print(&tag->contents);
 }
 
 /** @implements <Tag>Action */
 static void print_tag_header(struct Tag *const tag) {
 	/* fixme */
 	TokenArrayForEach(&tag->header, &token_print);
+	tokens_print(&tag->header);
 }
 
 /** @implements <Tag>Action */
@@ -122,12 +141,14 @@ TAG_IS(allow, TAG_ALLOW)
 static void segment_print_doc(struct Segment *const segment) {
 	/* fixme */
 	TokenArrayForEach(&segment->doc, &token_print);
+	tokens_print(&segment->doc);
 }
 
 /** @implements <Segment>Action */
 static void segment_print_code(struct Segment *const segment) {
 	/* fixme */
 	TokenArrayForEach(&segment->code, &token_print);
+	tokens_print(&segment->code);
 	printf("\n");
 }
 
