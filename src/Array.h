@@ -382,7 +382,7 @@ static T *T_(ArrayPop)(struct T_(Array) *const a) {
  @return A pointer to the previous element or null if it does not exist.
  @order \Theta(1)
  @allow */
-static T *T_(ArrayBack)(const struct T_(Array) *const a, T *const here) {
+static T *T_(ArrayBack)(const struct T_(Array) *const a, const T *const here) {
 	size_t idx;
 	if(!a) return 0;
 	if(!here) {
@@ -403,8 +403,8 @@ static T *T_(ArrayBack)(const struct T_(Array) *const a, T *const here) {
  @return A pointer to the next element or null if there are no more.
  @order \Theta(1)
  @allow */
-static T *T_(ArrayNext)(const struct T_(Array) *const a, T *const here) {
-	T *data;
+static T *T_(ArrayNext)(const struct T_(Array) *const a, const T *const here) {
+	const T *data;
 	size_t idx;
 	if(!a) return 0;
 	if(!here) {
@@ -414,7 +414,7 @@ static T *T_(ArrayNext)(const struct T_(Array) *const a, T *const here) {
 		data = here + 1;
 		idx = (size_t)(data - a->data);
 	}
-	return idx < a->size ? data : 0;
+	return idx < a->size ? (T *)data : 0;
 }
 
 /** Called from \see{<T>ArrayNew} and \see{<T>ArrayUpdateNew}. */

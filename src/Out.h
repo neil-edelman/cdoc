@@ -2,8 +2,76 @@
 typedef const struct Token *(*OutFn)(const struct TokenArray *const ta,
 	const struct Token *const token);
 
+/* @implements <Tag>Predicate */
+#define OUT(name) static const struct Token *name(const struct TokenArray \
+	*const ta, struct Token *const token)
+OUT(lit) {
+	printf("%.*s\n", token->length, token->from);
+	return TokenArrayNext(ta, token);
+}
+OUT(gen1) {
+	return 0;
+}
+OUT(gen2) {
+	return 0;
+}
+OUT(gen3) {
+	return 0;
+}
+OUT(esc_bs) {
+	return 0;
+}
+OUT(esc_bq) {
+	return 0;
+}
+OUT(esc_each) {
+	return 0;
+}
+OUT(esc_under) {
+	return 0;
+}
+OUT(esc_ast) {
+	return 0;
+}
+OUT(ast) {
+	return 0;
+}
+OUT(url) {
+	return 0;
+}
+OUT(cite) {
+	return 0;
+}
+OUT(see) {
+	return 0;
+}
+OUT(pre) {
+	return 0;
+}
+OUT(it) {
+	return 0;
+}
+OUT(lb) {
+	return 0;
+}
+OUT(rb) {
+	return 0;
+}
+OUT(par) {
+	return 0;
+}
+OUT(amp) {
+	return 0;
+}
+OUT(lt) {
+	return 0;
+}
+OUT(gt) {
+	return 0;
+}
+
 /* `SYMBOL` is declared in `Scanner.h`. */
-/*static const OutFn symbol_out[] = { SYMBOL(PARAM3_C) };*/
+static const OutFn symbol_out[] = { SYMBOL(PARAM3_C) };
 
 /** @implements <Token>Action */
 static void token_print(struct Token *const token) {
