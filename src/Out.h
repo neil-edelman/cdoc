@@ -10,14 +10,15 @@ OUT(lit) {
 	return TokenArrayNext(ta, token);
 }
 OUT(gen1) {
-	struct Token *const lbr = TokenArrayNext(ta, token),
-		*const param = TokenArrayNext(ta, lbr),
-		*const rbr = TokenArrayNext(ta, param);
-	if(!lbr || lbr->symbol != LBRACE || !param || !rbr
-		|| rbr->symbol != RBRACE) return 0;
-	printf("<%.*s>%.*s",
-		token->length, token->from, param->length, param->from);
-	return TokenArrayNext(ta, rbr);
+	struct Token *const lparen = TokenArrayNext(ta, token),
+		*const param = TokenArrayNext(ta, lparen),
+		*const rparen = TokenArrayNext(ta, param);
+	if(!lparen || lparen->symbol != LPAREN || !param || !rparen
+		|| rparen->symbol != RPAREN) return 0;
+	assert(token->length);
+	printf("<%.*s>%.*s~",
+		token->length - 1, token->from, param->length, param->from);
+	return TokenArrayNext(ta, rparen);
 }
 OUT(gen2) {
 	return 0;
@@ -90,23 +91,13 @@ static void tokens_print(const struct TokenArray *const ta) {
 	fputc('\n', stdout);
 }
 
-/** @implements <Token>Action */
-static void token_print(struct Token *const token) {
-	/* fixme: This is only true with `lit`. */
-	printf("%.*s\n", token->length, token->from);
-}
-
 /** @implements <Tag>Action */
 static void print_tag_contents(struct Tag *const tag) {
-	/* fixme */
-	TokenArrayForEach(&tag->contents, &token_print);
 	tokens_print(&tag->contents);
 }
 
 /** @implements <Tag>Action */
 static void print_tag_header(struct Tag *const tag) {
-	/* fixme */
-	TokenArrayForEach(&tag->header, &token_print);
 	tokens_print(&tag->header);
 }
 
@@ -139,27 +130,23 @@ TAG_IS(allow, TAG_ALLOW)
 
 /** @implements <Segment>Action */
 static void segment_print_doc(struct Segment *const segment) {
-	/* fixme */
-	TokenArrayForEach(&segment->doc, &token_print);
 	tokens_print(&segment->doc);
 }
 
 /** @implements <Segment>Action */
 static void segment_print_code(struct Segment *const segment) {
-	/* fixme */
-	TokenArrayForEach(&segment->code, &token_print);
 	tokens_print(&segment->code);
 	printf("\n");
 }
 
 /** @implements <Segment>Action */
 static void segment_print_all(struct Segment *const segment) {
+	segment_print_code(segment);
 	segment_print_doc(segment);
 	TagArrayIfEach(&segment->tags, &tag_is_author, &print_tag_contents);
 	TagArrayIfEach(&segment->tags, &tag_is_std, &print_tag_contents);
 	TagArrayIfEach(&segment->tags, &tag_is_depend, &print_tag_contents);
 	TagArrayIfEach(&segment->tags, &tag_is_param, &print_tag_header_contents);
-	segment_print_code(segment);
 	printf("\n\n***\n\n");
 }
 
