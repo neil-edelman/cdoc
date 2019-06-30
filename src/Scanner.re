@@ -17,7 +17,7 @@
  @fixme Old-style function support. */
 
 #include <stdio.h>  /* printf */
-#include <string.h> /* memset */
+#include <string.h> /* memset strchr */
 /* #define NDEBUG */
 #include <assert.h> /* assert */
 #include <limits.h> /* INT_MAX */
@@ -296,27 +296,29 @@ doc:
 	newline { scanner.line++; return NEWLINE; }
 	art / [^/] { scanner.line++; return NEWLINE; }
 
-	word = [^ \t\n\v\f\r\\,@{}&<>*]*; // This is kind of sketchy.
+	word = [^ \t\n\v\f\r\\,@{}&<>_`]*; // This is kind of sketchy. Why @?
 	word { return WORD; }
 
 	"\\\\" { return ESCAPED_BACKSLASH; }
 	// fixme: what to '\' do with this? this does not work at all
 	//"\\" / [^\\] { return ESCAPED_BACKSLASH; }
-	"\`" { return ESCAPED_BACKQUOTE; }
+	"\\`" { return ESCAPED_BACKQUOTE; }
 	"\\@" | "@" { return ESCAPED_EACH; }
 	"\\_" { return ESCAPED_UNDERSCORE; }
-	"\\*"/[^/] { return ESCAPED_ASTERISK; }
-	"*" | "_" { return ITALICS; }
-	"`" { return BACKQUOTE; }
+	// * is easyly confused with * in comments, use _
+	// "\\*"/[^/] { return ESCAPED_ASTERISK; }
+	//"*" | "_" { return ITALICS; }
+	"_" { return ITALICS; }
+	"`" { return MATH; }
 	"{" { return DOC_LBRACE; }
 	"}" { return DOC_RBRACE; }
 	"," { return DOC_COMMA; }
 
 	// These are recognised in the documentation as stuff.
-	"\\url" { return BS_URL; }
-	"\\cite" { return BS_CITE; }
-	"\\see" { return BS_SEE; }
-	"\\$" { return BS_PRE; }
+	"\\url" { return URL; }
+	"\\cite" { return CITE; }
+	"\\see" { return SEE; }
+	"\\$" { return MATH; }
 
 	// These are tags.
 	"@title" { return TAG_TITLE; }

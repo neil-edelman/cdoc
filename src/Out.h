@@ -101,10 +101,11 @@ OUT(esc_under) {
 	printf("_~");
 	return TokenArrayNext(ta, token);
 }
-OUT(esc_ast) {
+/* Don't select this as special.
+ OUT(esc_ast) {
 	printf("*~");
 	return TokenArrayNext(ta, token);
-}
+}*/
 OUT(esc_amp) {
 	printf("&~");
 	return TokenArrayNext(ta, token);
@@ -159,21 +160,43 @@ OUT(cite) {
 	}
 	printf("]~");
 	return TokenArrayNext(ta, next);
-	catch:
+catch:
 	fprintf(stderr, "Expected: \\cite{<source>}.\n"), sorter_err();
 	return 0;
 }
-OUT(see) {
-	return 0;
+OUT(see) { /* fixme: Have a new field in segment. */
+	printf("(fixme)\\see");
+	return TokenArrayNext(ta, token);
 }
-OUT(pre) {
+OUT(math) { /* Math and code. */
+	struct Token *next = TokenArrayNext(ta, token);
+	printf("{code:`");
+	while(next->symbol != MATH) {
+		printf("%.*s", next->length, next->from);
+		if(!(next = TokenArrayNext(ta, next))) goto catch;
+	}
+	printf("`:code}~");
+	return TokenArrayNext(ta, next);
+catch:
+	fprintf(stderr, "Expected: `<math/code>`.\n"), sorter_err();
 	return 0;
 }
 OUT(it) {
+	struct Token *next = TokenArrayNext(ta, token);
+	printf("{it:`");
+	while(next->symbol != ITALICS) {
+		printf("%.*s~", next->length, next->from);
+		if(!(next = TokenArrayNext(ta, next))) goto catch;
+	}
+	printf("`:it}~");
+	return TokenArrayNext(ta, next);
+	catch:
+	fprintf(stderr, "Expected: _<italics>_.\n"), sorter_err();
 	return 0;
 }
 OUT(par) {
-	return 0;
+	printf("^\n^\n");
+	return TokenArrayNext(ta, token);
 }
 
 /* `SYMBOL` is declared in `Scanner.h` and `PARAM3_C` is one of the preceding

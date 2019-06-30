@@ -32,11 +32,11 @@
 	/* Meaning/escapes document syntax. */ \
 	X(ESCAPED_BACKSLASH, '\\', &esc_bs), X(ESCAPED_BACKQUOTE, '\\', &esc_bq), \
 	X(ESCAPED_EACH, '\\', &esc_each), X(ESCAPED_UNDERSCORE, '\\', &esc_under), \
-	X(ESCAPED_ASTERISK, '\\', &esc_ast), \
-	X(BS_URL, '\\', &url), X(BS_CITE, '\\', &cite), X(BS_SEE, '\\', &see), \
-	X(BS_PRE, '\\', &pre), X(BACKQUOTE, '`', &lit), X(ITALICS, '_', &it), \
-	X(DOC_LBRACE, '<', &lb), X(DOC_RBRACE, '>', &rb), \
-	X(DOC_COMMA, '.', &lit), X(NEWLINE, 'n', &par), X(WORD, 'w', &lit), \
+	/*X(ESCAPED_ASTERISK, '\\', &esc_ast),*/ \
+	X(URL, '\\', &url), X(CITE, '\\', &cite), X(SEE, '\\', &see), \
+	X(MATH, '$', &math), X(ITALICS, '_', &it), X(DOC_LBRACE, '<', &lb), \
+	X(DOC_RBRACE, '>', &rb), X(DOC_COMMA, '.', &lit), X(NEWLINE, 'n', &par), \
+	X(WORD, 'w', &lit), \
 	/* Also do these from LaTeX to HTML. */ \
 	X(HTML_AMP, '&', &esc_amp), X(HTML_LT, '&', &esc_lt), \
 	X(HTML_GT, '&', &esc_gt)
