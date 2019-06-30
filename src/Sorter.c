@@ -144,8 +144,7 @@ static void segment_array_remove(struct SegmentArray *const sa) {
 	SegmentArray_(sa);
 }
 
-#include "Transform.h"
-#include "Out.h"
+
 
 static struct Sorter {
 	int is_indent, is_struct, is_differed_cut;
@@ -168,11 +167,17 @@ static void sorter_end_segment(void) {
 }
 
 static void sorter_err(void) {
-	fprintf(stderr, "At %lu%c indent level %d; %s \"%.*s\".\n",
+	fprintf(stderr, "At %lu%c %s \"%.*s\".\n",
 		(unsigned long)sorter.token.line, sorter.info.is_doc ? '~' : ':',
-		sorter.info.indent_level,
 		symbols[sorter.token.symbol], sorter.token.length, sorter.token.from);
 }
+
+
+
+#include "Transform.h"
+#include "Out.h"
+
+
 
 int main(int argc, char **argv) {
 	struct SegmentArray segments = ARRAY_ZERO;

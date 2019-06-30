@@ -300,10 +300,12 @@ doc:
 	word { return WORD; }
 
 	"\\\\" { return ESCAPED_BACKSLASH; }
+	// fixme: what to '\' do with this? this does not work at all
+	//"\\" / [^\\] { return ESCAPED_BACKSLASH; }
 	"\`" { return ESCAPED_BACKQUOTE; }
 	"\\@" | "@" { return ESCAPED_EACH; }
 	"\\_" { return ESCAPED_UNDERSCORE; }
-	"\\*" { return ESCAPED_ASTERISK; }
+	"\\*"/[^/] { return ESCAPED_ASTERISK; }
 	"*" | "_" { return ITALICS; }
 	"`" { return BACKQUOTE; }
 	"{" { return DOC_LBRACE; }

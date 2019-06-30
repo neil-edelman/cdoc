@@ -38,7 +38,8 @@
 	X(DOC_LBRACE, '<', &lb), X(DOC_RBRACE, '>', &rb), \
 	X(DOC_COMMA, '.', &lit), X(NEWLINE, 'n', &par), X(WORD, 'w', &lit), \
 	/* Also do these from LaTeX to HTML. */ \
-	X(HTML_AMP, '&', &amp), X(HTML_LT, '&', &lt), X(HTML_GT, '&', &gt)
+	X(HTML_AMP, '&', &esc_amp), X(HTML_LT, '&', &esc_lt), \
+	X(HTML_GT, '&', &esc_gt)
 
 enum Symbol { SYMBOL(PARAM3_A) };
 static const char *const symbols[] = { SYMBOL(STRINGISE3_A) };

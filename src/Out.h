@@ -13,41 +13,154 @@ OUT(gen1) {
 	struct Token *const lparen = TokenArrayNext(ta, token),
 		*const param = TokenArrayNext(ta, lparen),
 		*const rparen = TokenArrayNext(ta, param);
+	const char *a, *type;
+	int type_size;
 	if(!lparen || lparen->symbol != LPAREN || !param || !rparen
-		|| rparen->symbol != RPAREN) return 0;
-	assert(token->length);
+		|| rparen->symbol != RPAREN) goto catch;
+	type = token->from;
+	if(!(a = strchr(type, '_'))) goto catch;
+	type_size = (int)(a - type);
+	assert(token->length == a + 1 - token->from);
 	printf("<%.*s>%.*s~",
 		token->length - 1, token->from, param->length, param->from);
 	return TokenArrayNext(ta, rparen);
+catch:
+	fprintf(stderr, "Expected: generic(id).\n"), sorter_err();
+	return 0;
 }
 OUT(gen2) {
+	struct Token *const lparen = TokenArrayNext(ta, token),
+		*const param1 = TokenArrayNext(ta, lparen),
+		*const comma = TokenArrayNext(ta, param1),
+		*const param2 = TokenArrayNext(ta, comma),
+		*const rparen = TokenArrayNext(ta, param2);
+	const char *a, *type1, *type2;
+	int type1_size, type2_size;
+	if(!lparen || lparen->symbol != LPAREN || !param1 || !comma
+		|| comma->symbol != COMMA || !param2 || !rparen
+		|| rparen->symbol != RPAREN) goto catch;
+	type1 = token->from;
+	if(!(a = strchr(type1, '_'))) goto catch;
+	type1_size = (int)(a - type1);
+	type2 = a + 1;
+	if(!(a = strchr(type2, '_'))) goto catch;
+	type2_size = (int)(a - type2);
+	assert(token->length == a + 1 - token->from);
+	printf("<%.*s>%.*s<%.*s>%.*s~", type1_size, type1, param1->length,
+		param1->from, type2_size, type2, param2->length, param2->from);
+	return TokenArrayNext(ta, rparen);
+catch:
+	fprintf(stderr, "Expected: generic(id,id).\n"), sorter_err();
 	return 0;
 }
 OUT(gen3) {
+	struct Token *const lparen = TokenArrayNext(ta, token),
+		*const param1 = TokenArrayNext(ta, lparen),
+		*const comma1 = TokenArrayNext(ta, param1),
+		*const param2 = TokenArrayNext(ta, comma1),
+		*const comma2 = TokenArrayNext(ta, param2),
+		*const param3 = TokenArrayNext(ta, comma2),
+		*const rparen = TokenArrayNext(ta, param3);
+	const char *a, *type1, *type2, *type3;
+	int type1_size, type2_size, type3_size;
+	if(!lparen || lparen->symbol != LPAREN || !param1 || !comma1
+		|| comma1->symbol != COMMA || !param2 || !comma2 ||
+		comma2->symbol != COMMA || !param3 || !rparen
+		|| rparen->symbol != RPAREN) goto catch;
+	type1 = token->from;
+	if(!(a = strchr(type1, '_'))) goto catch;
+	type1_size = (int)(a - type1);
+	type2 = a + 1;
+	if(!(a = strchr(type2, '_'))) goto catch;
+	type2_size = (int)(a - type2);
+	type3 = a + 1;
+	if(!(a = strchr(type3, '_'))) goto catch;
+	type3_size = (int)(a - type3);
+	assert(token->length == a + 1 - token->from);
+	printf("<%.*s>%.*s<%.*s>%.*s<%.*s>%.*s~", type1_size, type1,
+		param1->length, param1->from, type2_size, type2, param2->length,
+		param2->from, type3_size, type3, param3->length, param3->from);
+	return TokenArrayNext(ta, rparen);
+	catch:
+	fprintf(stderr, "Expected: generic(id,id,id).\n"), sorter_err();
 	return 0;
 }
 OUT(esc_bs) {
-	return 0;
+	printf("\\~");
+	return TokenArrayNext(ta, token);
 }
 OUT(esc_bq) {
-	return 0;
+	printf("`~");
+	return TokenArrayNext(ta, token);
 }
 OUT(esc_each) {
-	return 0;
+	printf("@~");
+	return TokenArrayNext(ta, token);
 }
 OUT(esc_under) {
-	return 0;
+	printf("_~");
+	return TokenArrayNext(ta, token);
 }
 OUT(esc_ast) {
-	return 0;
+	printf("*~");
+	return TokenArrayNext(ta, token);
 }
-OUT(ast) {
-	return 0;
+OUT(esc_amp) {
+	printf("&~");
+	return TokenArrayNext(ta, token);
+}
+OUT(esc_lt) {
+	printf("<~");
+	return TokenArrayNext(ta, token);
+}
+OUT(esc_gt) {
+	printf(">~");
+	return TokenArrayNext(ta, token);
+}
+OUT(lb) {
+	printf("{~");
+	return TokenArrayNext(ta, token);
+}
+OUT(rb) {
+	printf("}~");
+	return TokenArrayNext(ta, token);
 }
 OUT(url) {
+	struct Token *const lbr = TokenArrayNext(ta, token),
+		*next = TokenArrayNext(ta, lbr); /* Variable no. */
+	if(!lbr || lbr->symbol != DOC_LBRACE || !next) goto catch;
+	printf("(");
+	while(next->symbol != DOC_RBRACE) {
+		/* We don't care about the symbol's meaning in the url. */
+		printf("%.*s", next->length, next->from);
+		if(!(next = TokenArrayNext(ta, next))) goto catch;
+	}
+	printf(")~");
+	return TokenArrayNext(ta, next);
+catch:
+	fprintf(stderr, "Expected: \\url{<cat url>}.\n"), sorter_err();
 	return 0;
 }
 OUT(cite) {
+	struct Token *const lbr = TokenArrayNext(ta, token),
+		*next = TokenArrayNext(ta, lbr); /* Variable no. */
+	if(!lbr || lbr->symbol != DOC_LBRACE || !next) goto catch;
+	printf("(");
+	while(next->symbol != DOC_RBRACE) {
+		printf("%.*s~", next->length, next->from);
+		if(!(next = TokenArrayNext(ta, next))) goto catch;
+	}
+	printf(")[https://scholar.google.ca/scholar?q=");
+	next = TokenArrayNext(ta, lbr);
+	while(next->symbol != DOC_RBRACE) {
+		/* fixme: escape url! */
+		printf("%.*s_", next->length, next->from);
+		if(!(next = TokenArrayNext(ta, next))) goto catch;
+	}
+	printf("]~");
+	return TokenArrayNext(ta, next);
+	catch:
+	fprintf(stderr, "Expected: \\cite{<source>}.\n"), sorter_err();
 	return 0;
 }
 OUT(see) {
@@ -59,22 +172,7 @@ OUT(pre) {
 OUT(it) {
 	return 0;
 }
-OUT(lb) {
-	return 0;
-}
-OUT(rb) {
-	return 0;
-}
 OUT(par) {
-	return 0;
-}
-OUT(amp) {
-	return 0;
-}
-OUT(lt) {
-	return 0;
-}
-OUT(gt) {
 	return 0;
 }
 
