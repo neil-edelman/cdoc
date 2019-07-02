@@ -101,11 +101,6 @@ OUT(esc_under) {
 	printf("_~");
 	return TokenArrayNext(ta, token);
 }
-/* Don't select this as special.
- OUT(esc_ast) {
-	printf("*~");
-	return TokenArrayNext(ta, token);
-}*/
 OUT(esc_amp) {
 	printf("&~");
 	return TokenArrayNext(ta, token);
@@ -224,11 +219,11 @@ static void print_tag_header(struct Tag *const tag) {
 
 /** @implements <Tag>Action */
 static void print_tag_header_contents(struct Tag *const tag) {
-	printf("*");
+	printf("<tag:%s # ", symbols[tag->token.symbol]);
 	print_tag_header(tag);
-	printf("* ");
+	printf(" #\n");
 	print_tag_contents(tag);
-	printf("\n");
+	printf(">\n");
 }
 
 /* @implements <Tag>Predicate */

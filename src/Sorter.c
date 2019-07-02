@@ -272,8 +272,15 @@ int main(int argc, char **argv) {
 				continue;
 			} else if(!sorter.tokens
 				|| sorter.tokens == &sorter.segment->code) {
+				/* Is _code_ mode when we want it to be in _doc_ mode. */
 				/* fixme: new doc, new paragraph. */
 				sorter.tokens = &sorter.segment->doc;
+			} else if(sorter.tag && !TokenArraySize(&sorter.tag->contents)
+				&& sorter.token.symbol == DOC_LBRACE) {
+				/* { "@tag", "{", } */
+				/* fixme: no; this should be another state in the lexer. */
+				sorter.tokens = &sorter.tag->header;
+				printf("~~~~~The title of this is: %s:%.*s.\n", symbols[sorter.token.symbol], sorter.token.length, sorter.token.from);
 			}
 		} else { /* !is_doc */
 			sorter.tokens = &sorter.segment->code;
