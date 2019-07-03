@@ -21,6 +21,7 @@
 /* #define NDEBUG */
 #include <assert.h> /* assert */
 #include <limits.h> /* INT_MAX */
+#include <errno.h>  /* errno EILSEQ */
 
 #include "../src/Scanner.h"
 
@@ -29,14 +30,16 @@
 typedef enum Symbol (*ScannerFn)(void);
 static enum Symbol scan_eof(void);
 static enum Symbol scan_doc(void);
+static enum Symbol scan_doc_param(void);
 static enum Symbol scan_doc_math(void);
 static enum Symbol scan_code(void);
 static enum Symbol scan_comment(void);
 static enum Symbol scan_string(void);
 static enum Symbol scan_char(void);
 static enum Symbol scan_macro(void);
-static const char *const states[] = { STATE(STRINGISE2_A) };
-static const ScannerFn state_fn[] = { STATE(PARAM2_B) };
+static const char *const states[] = { STATE(STRINGISE3_A) };
+static const ScannerFn state_fn[] = { STATE(PARAM3_B) };
+static const int state_is_doc[] = { STATE(PARAM3_C) };
 
 static void state_to_string(const enum State *s, char (*const a)[12]) {
 	strncpy(*a, states[*s], sizeof *a - 1);
@@ -76,7 +79,7 @@ struct Scanner {
 	struct CharArray buffer, marks;
 	struct StateArray states;
 	enum Symbol symbol;
-	int indent_level;
+	int indent_level, doc_indent_level;
 	int ignore_block;
 	size_t line, doc_line;
 } scanner;
@@ -87,7 +90,7 @@ void Scanner_(void) {
 	CharArray_(&scanner.marks);
 	StateArray_(&scanner.states);
 	scanner.symbol = END;
-	scanner.indent_level = 0;
+	scanner.indent_level = scanner.doc_indent_level = 0;
 	scanner.ignore_block = 0;
 	scanner.line = scanner.doc_line = 0;
 	scanner.limit = scanner.cursor = scanner.marker = scanner.ctx_marker
@@ -200,13 +203,13 @@ void ScannerToken(struct Token *const token) {
 
 /** Fills `info` with the last token information not stored in the token. */
 void ScannerTokenInfo(struct TokenInfo *const info) {
-	enum State *state;
+	enum State state;
 	if(!info) return;
+	state = state_look();
 	info->indent_level = scanner.indent_level;
-	info->is_doc = state_look() == DOC;
+	info->is_doc = state_is_doc[state];
 	info->is_doc_far = scanner.doc_line + 2 < scanner.line;
-	state = StateArrayPeek(&scanner.states);
-	info->state = state ? *state : END_OF_FILE;
+	info->state = state;
 }
 
 
@@ -297,8 +300,8 @@ doc:
 	newline { scanner.line++; return NEWLINE; }
 	art / [^/] { scanner.line++; return NEWLINE; }
 
-	word = [^ \t\n\v\f\r\\,@{}&<>_`]*; // This is kind of sketchy. Why @?
-	word { return WORD; }
+	wordchars = [^ \t\n\v\f\r\\@&<>_`,{}]; // Why @?
+	(wordchars | ",")* { return WORD; }
 
 	"\\\\" { return ESCAPED_BACKSLASH; }
 	// fixme: what to '\' do with this? this does not work at all
@@ -306,24 +309,19 @@ doc:
 	"\\`" { return ESCAPED_BACKQUOTE; }
 	"\\@" | "@" { return ESCAPED_EACH; }
 	"\\_" { return ESCAPED_UNDERSCORE; }
-	// * is easyly confused with * in comments, use _
-	// "\\*"/[^/] { return ESCAPED_ASTERISK; }
-	//"*" | "_" { return ITALICS; }
 	"_" { return ITALICS; }
-	"`" { return MATH; }
-	"{" { return DOC_LBRACE; }
+	"`" { return push(DOC_MATH) ? BEGIN_MATH : END; }
+	"{" { return push(DOC_PARAM) ? DOC_LBRACE : END; }
 	"}" { return DOC_RBRACE; }
-	"," { return DOC_COMMA; }
 
 	// These are recognised in the documentation as stuff.
 	"\\url" { return URL; }
 	"\\cite" { return CITE; }
 	"\\see" { return SEE; }
-	"\\$" { return MATH; }
 
 	// These are tags.
 	"@title" { return TAG_TITLE; }
-	"@param" { return TAG_PARAM; }
+	"@param{" { return TAG_PARAM; }
 	"@author" { return TAG_AUTHOR; }
 	"@std" { return TAG_STD; }
 	"@depend" { return TAG_DEPEND; }
@@ -332,10 +330,38 @@ doc:
 	"@fixme" { return TAG_FIXME; }
 	"@deprecated" { return TAG_DEPRICATED; }
 	"@return" { return TAG_RETURN; }
-	"@throws" { return TAG_THROWS; }
+	"@throws{" { return TAG_THROWS; }
 	"@implements" { return TAG_IMPLEMENTS; }
 	"@order" { return TAG_ORDER; }
 	"@allow" { return TAG_ALLOW; }
+
+	// Also escape these for {HTML}.
+	"&" { return HTML_AMP; }
+	"<" { return HTML_LT; }
+	">" { return HTML_GT; }
+*/
+}
+
+/** Scans {param, list} in documentation.
+ @implements ScannerFn */
+static enum Symbol scan_doc_param(void) {
+	assert(state_look() == DOC_PARAM);
+doc_param:
+	scanner.from = scanner.cursor;
+/*!re2c
+	"\x00" { if(scanner.limit - scanner.cursor <= YYMAXFILL)
+		return errno = EILSEQ, END; goto doc_param; }
+	"*""/" { return errno = EILSEQ, END; }
+	newline { scanner.line++; goto doc_param; }
+	art / [^/] { scanner.line++; goto doc_param; }
+	whitespace+ { goto doc_param; }
+	* { printf("Unknown, <%.*s>, just roll with it.\n",
+		(int)(scanner.cursor - scanner.from), scanner.from); goto doc_param; }
+
+	(wordchars | "_" | "`" | "\\")* { return WORD; }
+	"," { return DOC_COMMA; }
+	"}" { return pop() ? DOC_RBRACE : END; }
+	"{" { return errno = EILSEQ, END; }
 
 	// Also escape these for {HTML}.
 	"&" { return HTML_AMP; }
@@ -349,7 +375,27 @@ doc:
 static enum Symbol scan_doc_math(void) {
 	assert(state_look() == DOC_MATH);
 doc_math:
-	return END;
+	scanner.from = scanner.cursor;
+/*!re2c
+	"\x00" { if(scanner.limit - scanner.cursor <= YYMAXFILL)
+		return errno = EILSEQ, END; goto doc_math; }
+	"*""/" { return errno = EILSEQ, END; }
+	newline { scanner.line++; goto doc_math; }
+	art / [^/] { scanner.line++; goto doc_math; }
+	whitespace+ { goto doc_math; }
+	* { printf("Unknown, <%.*s>, just roll with it.\n",
+		(int)(scanner.cursor - scanner.from), scanner.from); goto doc_math; }
+
+	(wordchars | "," | "_")* { return WORD; }
+	"\\\\" { return ESCAPED_BACKSLASH; }
+	"\\`" { return ESCAPED_BACKQUOTE; }
+	"`" { return pop() ? END_MATH : END; }
+
+	// Also escape these for {HTML}.
+	"&" { return HTML_AMP; }
+	"<" { return HTML_LT; }
+	">" { return HTML_GT; }
+*/
 }
 
 /** Scans C code. See \see{ http://re2c.org/examples/example_07.html }.
@@ -441,8 +487,7 @@ static enum Symbol scan_comment(void) {
 	printf("Comment Line%lu.\n", scanner.line);
 comment:
 /*!re2c
-	"\x00" { if(scanner.limit - scanner.cursor <= YYMAXFILL) return END;
-		goto comment; }
+	"\x00" { if(scanner.limit - scanner.cursor <= YYMAXFILL) return errno = EILSEQ, END; goto comment; }
 	* { goto comment; }
 	"\\". { goto comment; }
 	newline { scanner.line++; goto comment; }
@@ -459,8 +504,7 @@ static enum Symbol scan_string(void) {
 	assert(state_look() == STRING);
 string:
 /*!re2c
-	"\x00" { if(scanner.limit - scanner.cursor <= YYMAXFILL) return END;
-		goto string; }
+	"\x00" { if(scanner.limit - scanner.cursor <= YYMAXFILL) return errno = EILSEQ, END; goto string; }
 	* { goto string; }
 	"\"" { return pop() ? CONSTANT : END; }
 	"\\" newline { scanner.line++; goto string; } // Continuation.
@@ -476,8 +520,8 @@ static enum Symbol scan_char(void) {
 	assert(state_look() == CHAR);
 character:
 /*!re2c
-	"\x00" { if(scanner.limit - scanner.cursor <= YYMAXFILL) return END;
-		goto character; }
+	"\x00" { if(scanner.limit - scanner.cursor <= YYMAXFILL)
+		return errno = EILSEQ, END; goto character; }
 	* { goto character; }
 	"'" { return pop() ? CONSTANT : END; }
 	"\\" newline { scanner.line++; goto character; } /* Continuation. */
@@ -493,8 +537,8 @@ static enum Symbol scan_macro(void) {
 	assert(state_look() == MACRO);
 macro:
 /*!re2c
-	"\x00" { if(scanner.limit - scanner.cursor <= YYMAXFILL) return END;
-		goto macro; }
+	"\x00" { if(scanner.limit - scanner.cursor <= YYMAXFILL)
+		return errno = EILSEQ, END; goto macro; }
 	* { goto macro; }
 	doc / [^/] { return push_call(DOC); }
 	comment { return push_call(COMMENT); }

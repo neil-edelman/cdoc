@@ -166,7 +166,7 @@ OUT(see) { /* fixme: Have a new field in segment. */
 OUT(math) { /* Math and code. */
 	struct Token *next = TokenArrayNext(ta, token);
 	printf("{code:`");
-	while(next->symbol != MATH) {
+	while(next->symbol != END_MATH) {
 		printf("%.*s", next->length, next->from);
 		if(!(next = TokenArrayNext(ta, next))) goto catch;
 	}

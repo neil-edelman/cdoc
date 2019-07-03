@@ -34,9 +34,9 @@
 	X(ESCAPED_EACH, '\\', &esc_each), X(ESCAPED_UNDERSCORE, '\\', &esc_under), \
 	/*X(ESCAPED_ASTERISK, '\\', &esc_ast),*/ \
 	X(URL, '\\', &url), X(CITE, '\\', &cite), X(SEE, '\\', &see), \
-	X(MATH, '$', &math), X(ITALICS, '_', &it), X(DOC_LBRACE, '<', &lb), \
-	X(DOC_RBRACE, '>', &rb), X(DOC_COMMA, '.', &lit), X(NEWLINE, 'n', &par), \
-	X(WORD, 'w', &lit), \
+	X(BEGIN_MATH, '$', &math), X(END_MATH, '$', &math), X(ITALICS, '_', &it), \
+	X(DOC_LBRACE, '<', &lb), X(DOC_RBRACE, '>', &rb), X(DOC_COMMA, '.', &lit), \
+	X(NEWLINE, 'n', &par), X(WORD, 'w', &lit), \
 	/* Also do these from LaTeX to HTML. */ \
 	X(HTML_AMP, '&', &esc_amp), X(HTML_LT, '&', &esc_lt), \
 	X(HTML_GT, '&', &esc_gt)
@@ -46,12 +46,12 @@ static const char *const symbols[] = { SYMBOL(STRINGISE3_A) };
 static const char symbol_mark[] = { SYMBOL(PARAM3_B) };
 
 /* Define the states of the input file. */
-#define STATE(X) X(END_OF_FILE, &scan_eof), X(DOC, &scan_doc), \
-	X(DOC_MATH, &scan_doc_math), X(CODE, &scan_code), \
-	X(COMMENT, &scan_comment), X(STRING, &scan_string), \
-	X(CHAR, &scan_char), X(MACRO, &scan_macro)
+#define STATE(X) X(END_OF_FILE, &scan_eof, 0), X(DOC, &scan_doc, 1), \
+	X(DOC_PARAM, &scan_doc_param, 1), X(DOC_MATH, &scan_doc_math, 1), \
+	X(CODE, &scan_code, 0), X(COMMENT, &scan_comment, 0), \
+	X(STRING, &scan_string, 0), X(CHAR, &scan_char, 0), X(MACRO, &scan_macro, 0)
 
-enum State { STATE(PARAM2_A) };
+enum State { STATE(PARAM3_A) };
 
 /* Define the sections of output. */
 #define SECTION(X) X(HEADER), X(DECLARATION), X(FUNCTION)

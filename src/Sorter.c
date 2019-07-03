@@ -203,6 +203,8 @@ int main(int argc, char **argv) {
 		ScannerToken(&sorter.token);
 		ScannerTokenInfo(&sorter.info);
 
+		printf("SSC: %s.\n", sorter.segment ? TokenArrayToString(&sorter.segment->code) : "no segment");
+
 		switch(sorter.token.symbol) {
 
 		case BEGIN_DOC:
@@ -310,6 +312,7 @@ int main(int argc, char **argv) {
 			}
 		} else { /* !is_doc */
 			sorter.chosen_tokens = &sorter.segment->code;
+			printf("Is code: %s.\n", symbols[sorter.token.symbol]);
 		}
 		{ /* Push symbol. */
 			struct Token *token;
@@ -320,6 +323,8 @@ int main(int argc, char **argv) {
 		/* Create another segment next time. */
 		if(sorter.is_differed_cut) sorter_end_segment();
 	}
+
+	if(errno) goto catch; /* Didn't make it through. */
 
 	/* Finished the compilation unit, the indent level should be zero. */
 	if(ScannerTokenInfo(&sorter.info), sorter.info.indent_level) {
@@ -352,11 +357,6 @@ int main(int argc, char **argv) {
 		}
 
 		fputs("\n -- Print out: --\n", stdout);
-		printf("segments size %lu.\n", SegmentArraySize(&segments));
-		segment = 0;
-		while((segment = SegmentArrayNext(&segments, segment)))
-			printf("segment: %p %s\n", (void *)segment,
-			sections[segment->section]);
 		segment = 0;
 		while((segment = SegmentArrayNext(&segments, segment))) {
 			struct Tag *tag;
