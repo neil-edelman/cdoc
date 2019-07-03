@@ -147,12 +147,12 @@ static void segment_array_remove(struct SegmentArray *const sa) {
 
 
 static struct Sorter {
-	int is_indent, is_struct, is_differed_cut;
+	int is_indent, is_struct, is_differed_cut, is_variable;
 	struct Token token;
 	struct TokenInfo info;
 	struct Segment *segment;
 	struct Tag *tag;
-	struct TokenArray *tokens;
+	struct TokenArray *chosen_tokens;
 } sorter;
 
 static void sorter_end_segment(void) {
@@ -160,10 +160,10 @@ static void sorter_end_segment(void) {
 	if(sorter.segment) segment_to_string(sorter.segment, &a);
 	else strcpy(a, "null");
 	printf("<Ending %s segment.>\n", a);
-	sorter.is_differed_cut = 0, sorter.is_struct = 0, sorter.tag = 0;
+	sorter.is_differed_cut = sorter.is_struct = sorter.is_variable = 0;
 	sorter.segment = 0;
 	sorter.tag = 0;
-	sorter.tokens = 0;
+	sorter.chosen_tokens = 0;
 }
 
 static void sorter_err(void) {
@@ -268,26 +268,52 @@ int main(int argc, char **argv) {
 				if(!(sorter.tag = TagArrayNew(&sorter.segment->tags)))
 					{ sorter_err(); goto catch; }
 				tag_init(sorter.tag);
-				sorter.tokens = &sorter.tag->contents;
+				sorter.chosen_tokens = &sorter.tag->contents;
 				continue;
-			} else if(!sorter.tokens
-				|| sorter.tokens == &sorter.segment->code) {
+			} else if(!sorter.chosen_tokens
+				|| sorter.chosen_tokens == &sorter.segment->code) {
 				/* Is _code_ mode when we want it to be in _doc_ mode. */
 				/* fixme: new doc, new paragraph. */
-				sorter.tokens = &sorter.segment->doc;
-			} else if(sorter.tag && !TokenArraySize(&sorter.tag->contents)
-				&& sorter.token.symbol == DOC_LBRACE) {
-				/* { "@tag", "{", } */
+				sorter.chosen_tokens = &sorter.segment->doc;
+			} else if(sorter.tag
+				&& sorter.token.symbol == DOC_LBRACE
+				&& sorter.chosen_tokens == &sorter.tag->contents
+				&& !TokenArraySize(&sorter.tag->contents)
+				&& !TokenArraySize(&sorter.tag->header)) {
+				/* Context-sensitive?? "@param{" -> doc_code(count {}, underscores) -> "}" -> doc? */
+				/* @{ -- header. */
+				sorter.chosen_tokens = &sorter.tag->header;
+				sorter.is_variable = 1;
+				continue;
+			} else if(sorter.chosen_tokens == &sorter.tag->header) {
+				switch(sorter.token.symbol) {
+					case WORD:
+						/* not like this! `like_this`: BACKTICK ID BACKTICK and
+						 like_this: WORD BOLD WORD. It has to have a
+						 destinct input state. */
+						break;
+					default:
+						break;
+				}
+				/* Decide No header, @{w}www, just @www */
+				if(!TokenArraySize(&sorter.tag->header)) {
+				}
+				if(!TokenArraySize(&sorter.tag->header)) {
+					if(sorter.token.symbol != DOC_LBRACE)
+						sorter.chosen_tokens = &sorter.tag->contents;
+					else
+						continue;
+				}
 				/* fixme: no; this should be another state in the lexer. */
-				sorter.tokens = &sorter.tag->header;
+				sorter.chosen_tokens = &sorter.tag->header;
 				printf("~~~~~The title of this is: %s:%.*s.\n", symbols[sorter.token.symbol], sorter.token.length, sorter.token.from);
 			}
 		} else { /* !is_doc */
-			sorter.tokens = &sorter.segment->code;
+			sorter.chosen_tokens = &sorter.segment->code;
 		}
 		{ /* Push symbol. */
 			struct Token *token;
-			if(!(token = TokenArrayNew(sorter.tokens)))
+			if(!(token = TokenArrayNew(sorter.chosen_tokens)))
 				{ sorter_err(); goto catch; }
 			ScannerToken(token);
 		}

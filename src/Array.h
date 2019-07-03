@@ -1,34 +1,31 @@
-/** 2016 Neil Edelman, distributed under the terms of the MIT License;
- see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
+/** 2016 Neil Edelman, distributed under the terms of the MIT License; see
+ \url{ https://opensource.org/licenses/MIT }.
 
- {<T>Array} is a dynamic array that stores unordered {<T>}, which must be set
- using {ARRAY_TYPE}. The capacity is greater then or equal to the size;
- resizing incurs amortised cost. You cannot shrink the capacity, only cause it
- to grow.
-
- {<T>Array} is contiguous, and therefore unstable; that is, when adding new
- elements, it may change the memory location. Pointers to this memory become
- stale and unusable.
+ {<T>Array} is a dynamic contiguous array that stores {<T>}, which must be set
+ using {ARRAY_TYPE}. The capacity is greater then or equal to the size, and
+ resizing incurs amortised cost. When adding new elements, the elements may
+ change memory location to fit, it is therefore unstable; any pointers to this
+ memory become stale and unusable.
 
  {<T>Array} is not synchronised. Errors are returned with {errno}. The
  parameters are preprocessor macros, and are all undefined at the end of the
  file for convenience. {assert.h} is included in this file; to stop the
  debug assertions, use {#define NDEBUG} before inclusion.
 
- @param ARRAY_NAME, ARRAY_TYPE
+ @param `ARRAY_NAME, ARRAY_TYPE`
  The name that literally becomes {<T>}, and a valid type associated therewith,
  accessible to the compiler at the time of inclusion; should be conformant to
  naming and to the maximum available length of identifiers. Must each be
  present before including.
 
- @param ARRAY_STACK
+ @param `ARRAY_STACK`
  Doesn't define removal functions except \see{<T>ArrayPop}, making it a stack.
 
- @param ARRAY_TO_STRING
+ @param `ARRAY_TO_STRING`
  Optional print function implementing {<T>ToString}; makes available
  \see{<T>ArrayToString}.
 
- @param ARRAY_TEST
+ @param `ARRAY_TEST`
  Unit testing framework using {<T>ArrayTest}, included in a separate header,
  {../test/ArrayTest.h}. Must be defined equal to a (random) filler function,
  satisfying {<T>Action}. Requires {ARRAY_TO_STRING} and not {NDEBUG}.
@@ -36,19 +33,8 @@
  @title		Array.h
  @std		C89
  @author	Neil
- @version	2019-03 Renamed {Pool} to {Array}. Took out migrate.
- @since		2018-04 Merged {Stack} into {Pool} again to eliminate duplication;
-			2018-03 Why have an extra level of indirection?
-			2018-02 Errno instead of custom errors.
-			2017-12 Introduced {POOL_PARENT} for type-safety.
-			2017-11 Forked {Stack} from {Pool}.
-			2017-10 Replaced {PoolIsEmpty} by {PoolElement}, much more useful.
-			2017-10 Renamed Pool; made migrate automatic.
-			2017-07 Made migrate simpler.
-			2017-05 Split {List} from {Pool}; much simpler.
-			2017-01 Almost-redundant functions simplified.
-			2016-11 Multi-index.
-			2016-08 Permute. */
+ @version	2019-05 Added \see{<T>ArrayReplace} and \see{<T>ArrayBuffer}.
+ @since		2018-03 Renamed {Pool} to {Array}. Took out migrate. */
 
 
 
@@ -131,8 +117,8 @@ typedef int (*PT_(Predicate))(const T *const data);
 
 
 
-/** The array. Zerod data is a valid state. To instantiate explicity, see
- \see{<T>Array} or initalise it with `ARRAY_INIT` or `{0}` (C99.) */
+/** The array. Zeroed data is a valid state. To instantiate explicitly, see
+ \see{<T>Array} or initialise it with `ARRAY_INIT` or `{0}` (C99.) */
 struct T_(Array);
 struct T_(Array) {
 	T *data;
@@ -241,8 +227,8 @@ static void PT_(array)(struct T_(Array) *const a) {
 	a->size          = 0;
 }
 
-/** Destructor for {a}. All the {a} contents should not be accessed
- anymore and the {a} takes no memory.
+/** Destructor for {a}; returns an initialised {a} to the empty state where it
+ takes no memory.
  @param a: If null, does nothing.
  @order \Theta(1)
  @allow */
@@ -252,8 +238,7 @@ static void T_(Array_)(struct T_(Array) *const a) {
 	PT_(array)(a);
 }
 
-/** Initialises {a} to be empty. If it is {static} data then it is
- initialised by default and one doesn't have to call this.
+/** Initialises {a} to be empty.
  @order \Theta(1)
  @allow */
 static void T_(Array)(struct T_(Array) *const a) {
@@ -271,11 +256,11 @@ static size_t T_(ArraySize)(const struct T_(Array) *const a) {
 
 #ifndef ARRAY_STACK /* <-- !stack */
 
-/** Removes {data} from {a}. Only if not {ARRAY_STACK}.
+/** Removes {data} from {a}.
  @param a, data: If null, returns false.
  @param data: Will be removed; data will remain the same but be updated to the
- next element, (ARRAY_TAIL_DELETE causes the next element to be the tail,) or
- if this was the last element, the pointer will be past the end.
+ next element, or if this was the last element, the pointer will be past the
+ end.
  @return Success, otherwise {errno} will be set for valid input.
  @throws EDOM: {data} is not part of {a}.
  @order O(n).
@@ -289,13 +274,12 @@ static int T_(ArrayRemove)(struct T_(Array) *const a, T *const data) {
 	return 1;
 }
 
-/** Removes {data} from {a} and replaces the spot it was in with the tail. Only
- if not {ARRAY_STACK}.
+/** Removes {data} from {a} and replaces the spot it was in with the tail.
  @param a, data: If null, returns false.
  @param data: Will be removed; data will remain the same but be updated to the
  last element, or if this was the last element, the pointer will be past the
  end.
- @return Success.
+ @return Success, otherwise {errno} will be set for valid input.
  @throws EDOM: {data} is not part of {a}.
  @order O(1).
  @allow */
@@ -310,8 +294,9 @@ static int T_(ArrayTailRemove)(struct T_(Array) *const a, T *const data) {
 
 #endif /* !stack --> */
 
-/** Removes all from {a}, but leaves the {a} memory alone; if one wants
- to remove memory, see \see{Array_}.
+/** Sets the size of {a} to zero, effectively removing all the elements, but
+ leaves the capacity alone, (the only thing that will free memory allocation
+ is \see{<T>Array_}.)
  @param a: If null, does nothing.
  @order \Theta(1)
  @allow */
@@ -323,7 +308,7 @@ static void T_(ArrayClear)(struct T_(Array) *const a) {
 /** Causing something to be added to the {<T>Array} may invalidate this
  pointer, see \see{<T>ArrayUpdateNew}.
  @param a: If null, returns null.
- @return A pointer to the array's data, indexable up to the array's size.
+ @return A pointer to the {a}'s data, indexable up to the {a}'s size.
  @order \Theta(1)
  @allow */
 static T *T_(ArrayGet)(const struct T_(Array) *const a) {
@@ -333,7 +318,7 @@ static T *T_(ArrayGet)(const struct T_(Array) *const a) {
 /** Causing something to be added to the {<T>Array} may invalidate this
  pointer, see \see{<T>ArrayUpdateNew}.
  @param a: If null, returns null.
- @return One past the end of the array; take care when dereferincing as it is
+ @return One past the end of the array; take care when dereferencing, as it is
  not part of the array.
  @order \Theta(1)
  @allow */
@@ -343,7 +328,7 @@ static T *T_(ArrayEnd)(const struct T_(Array) *const a) {
 
 /** Gets an index given {data}.
  @param a: Must be a valid object.
- @param data: If the element is not part of the {Array}, behaviour is undefined.
+ @param data: If the element is not part of the {a}, behaviour is undefined.
  @return An index.
  @order \Theta(1)
  @fixme Untested.
@@ -355,7 +340,7 @@ static size_t T_(ArrayIndex)(const struct T_(Array) *const a,
 
 /** @param a: If null, returns null.
  @return The last element or null if the a is empty. Causing something to be
- added to the {array} may invalidate this pointer.
+ added to the {a} may invalidate this pointer.
  @order \Theta(1)
  @fixme Untested.
  @allow */
@@ -424,13 +409,13 @@ static T *PT_(new)(struct T_(Array) *const a, T **const update_ptr) {
 	return a->data + a->size++;
 }
 
-/** Gets an uninitialised new element. May move the {Array} to a new memory
+/** Gets an uninitialised new element. May move the {a} to a new memory
  location to fit the new size.
  @param a: If is null, returns null.
  @return A new, un-initialised, element, or null and {errno} may be set.
  @throws ERANGE: Tried allocating more then can fit in {size_t} objects.
  @throws {realloc} errors: {IEEE Std 1003.1-2001}.
- @order amortised O(1)
+ @order Amortised O(1).
  @allow */
 static T *T_(ArrayNew)(struct T_(Array) *const a) {
 	if(!a) return 0;
@@ -438,7 +423,7 @@ static T *T_(ArrayNew)(struct T_(Array) *const a) {
 }
 
 /** Gets an uninitialised new element and updates the {update_ptr} if it is
- within the memory region that was changed to accomidate new space. For
+ within the memory region that was changed to accomodate new space. For
  example, when iterating a pointer and new element is needed that could change
  the pointer.
  @param a: If null, returns null.
@@ -462,7 +447,7 @@ static T *T_(ArrayUpdateNew)(struct T_(Array) *const a,
  @return One past the end of the array, or null and {errno} may be set.
  @throws ERANGE
  @throws realloc
- @order amortised O({buffer})
+ @order Amortised O({buffer}).
  @fixme Test.
  @allow */
 static T *T_(ArrayBuffer)(struct T_(Array) *const a, const size_t buffer) {
@@ -570,21 +555,22 @@ static void T_(ArrayTrim)(struct T_(Array) *const a,
 	memmove(a->data, a->data + i, sizeof *a->data * i), a->size -= i;
 }
 
-/** In {a}, replaces the elements from {r} up to {range} with a copy of {b}.
- @param a: If null, returns zero.
- @param replace: Beginning of the replaced value, inclusive. If null, appends to
+/** In `a`, replaces the elements from `anchor` up to `range` with a copy of
+ `b`.
+ @param `a` If null, returns zero.
+ @param `anchor` Beginning of the replaced value, inclusive. If null, appends to
  the end.
- @param range: How many replaced values; negative values are fixed and
- implicitly plus the length of the array; clamped at the minimum and maximum.
- @param b: The replacement array. If null, deletes without replacing.
+ @param `range` How many replaced values; negative values are implicitly plus
+ the length of the array; clamped at the minimum and maximum.
+ @param `b` The replacement array. If null, deletes without replacing.
  @return Success.
- @throws EDOM: {a} and {b} are not null and the same.
- @throws ERANGE: {anchor} is not null and not in {a}.
- @throws ERANGE: {range} is greater then 65535 or smaller then -65534.
- @throws ERANGE: {b} would cause the array to overflow.
- @throws {realloc}.
- @order \Theta({b.size}) if the elements have the same size, otherwise,
- amortised O({a.size} + {b.size}).
+ @throws `EDOM` {a} and {b} are not null and the same.
+ @throws `ERANGE` {anchor} is not null and not in {a}.
+ @throws `ERANGE` {range} is greater then 65535 or smaller then -65534.
+ @throws `ERANGE` {b} would cause the array to overflow.
+ @throws `realloc`
+ @order `\Theta({b.size})` if the elements have the same size, otherwise,
+ amortised `O(a.size + b.size)`.
  @allow */
 static int T_(ArrayReplace)(struct T_(Array) *const a, const T *anchor,
 	const long range, const struct T_(Array) *const b) {

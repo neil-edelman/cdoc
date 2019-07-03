@@ -47,7 +47,8 @@ static const char symbol_mark[] = { SYMBOL(PARAM3_B) };
 
 /* Define the states of the input file. */
 #define STATE(X) X(END_OF_FILE, &scan_eof), X(DOC, &scan_doc), \
-	X(CODE, &scan_code), X(COMMENT, &scan_comment), X(STRING, &scan_string), \
+	X(DOC_MATH, &scan_doc_math), X(CODE, &scan_code), \
+	X(COMMENT, &scan_comment), X(STRING, &scan_string), \
 	X(CHAR, &scan_char), X(MACRO, &scan_macro)
 
 enum State { STATE(PARAM2_A) };

@@ -29,6 +29,7 @@
 typedef enum Symbol (*ScannerFn)(void);
 static enum Symbol scan_eof(void);
 static enum Symbol scan_doc(void);
+static enum Symbol scan_doc_math(void);
 static enum Symbol scan_code(void);
 static enum Symbol scan_comment(void);
 static enum Symbol scan_string(void);
@@ -341,6 +342,14 @@ doc:
 	"<" { return HTML_LT; }
 	">" { return HTML_GT; }
 */
+}
+
+/** Scans `code/math` in documentation.
+ @implements ScannerFn */
+static enum Symbol scan_doc_math(void) {
+	assert(state_look() == DOC_MATH);
+doc_math:
+	return END;
 }
 
 /** Scans C code. See \see{ http://re2c.org/examples/example_07.html }.
