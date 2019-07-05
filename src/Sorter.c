@@ -203,7 +203,7 @@ int main(int argc, char **argv) {
 		ScannerToken(&sorter.token);
 		ScannerTokenInfo(&sorter.info);
 
-		printf("SSC: %s.\n", sorter.segment ? TokenArrayToString(&sorter.segment->code) : "no segment");
+		/*printf("SSC: %s.\n", sorter.segment ? TokenArrayToString(&sorter.segment->code) : "no segment");*/
 
 		switch(sorter.token.symbol) {
 
@@ -279,11 +279,12 @@ int main(int argc, char **argv) {
 				sorter.chosen_tokens = &sorter.segment->doc;
 			} else if(sorter.tag
 				&& sorter.token.symbol == DOC_LBRACE
-				&& sorter.chosen_tokens == &sorter.tag->contents
+				/*&& sorter.chosen_tokens == &sorter.tag->contents
 				&& !TokenArraySize(&sorter.tag->contents)
-				&& !TokenArraySize(&sorter.tag->header)) {
+				&& !TokenArraySize(&sorter.tag->header)*/) {
 				/* Context-sensitive?? "@param{" -> doc_code(count {}, underscores) -> "}" -> doc? */
 				/* @{ -- header. */
+				printf("IT'S A HEADER!!!\n");
 				sorter.chosen_tokens = &sorter.tag->header;
 				sorter.is_variable = 1;
 				continue;
@@ -312,7 +313,6 @@ int main(int argc, char **argv) {
 			}
 		} else { /* !is_doc */
 			sorter.chosen_tokens = &sorter.segment->code;
-			printf("Is code: %s.\n", symbols[sorter.token.symbol]);
 		}
 		{ /* Push symbol. */
 			struct Token *token;
@@ -325,6 +325,11 @@ int main(int argc, char **argv) {
 	}
 
 	if(errno) goto catch; /* Didn't make it through. */
+
+
+
+
+
 
 	/* Finished the compilation unit, the indent level should be zero. */
 	if(ScannerTokenInfo(&sorter.info), sorter.info.indent_level) {

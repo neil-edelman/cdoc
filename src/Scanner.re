@@ -321,7 +321,7 @@ doc:
 
 	// These are tags.
 	"@title" { return TAG_TITLE; }
-	"@param{" { return TAG_PARAM; }
+	"@param" { return TAG_PARAM; }
 	"@author" { return TAG_AUTHOR; }
 	"@std" { return TAG_STD; }
 	"@depend" { return TAG_DEPEND; }
@@ -330,7 +330,7 @@ doc:
 	"@fixme" { return TAG_FIXME; }
 	"@deprecated" { return TAG_DEPRICATED; }
 	"@return" { return TAG_RETURN; }
-	"@throws{" { return TAG_THROWS; }
+	"@throws" { return TAG_THROWS; }
 	"@implements" { return TAG_IMPLEMENTS; }
 	"@order" { return TAG_ORDER; }
 	"@allow" { return TAG_ALLOW; }
