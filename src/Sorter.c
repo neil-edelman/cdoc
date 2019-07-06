@@ -166,12 +166,6 @@ static void sorter_end_segment(void) {
 	sorter.chosen_tokens = 0;
 }
 
-static void sorter_err(void) {
-	fprintf(stderr, "At %lu%c %s \"%.*s\".\n",
-		(unsigned long)sorter.token.line, sorter.info.is_doc ? '~' : ':',
-		symbols[sorter.token.symbol], sorter.token.length, sorter.token.from);
-}
-
 
 
 #include "Transform.h"
@@ -205,50 +199,66 @@ int main(int argc, char **argv) {
 
 		/*printf("SSC: %s.\n", sorter.segment ? TokenArrayToString(&sorter.segment->code) : "no segment");*/
 
-		switch(sorter.token.symbol) {
-
-		case BEGIN_DOC:
-			/* If there's no `code`, end the segment.
-			 eg, `/ ** Header * / / ** Function * / int main(void)`. */
-			if(sorter.segment && !TokenArraySize(&sorter.segment->code))
-				sorter_end_segment();
+		switch(sorter.info.state) {
+		case END_OF_FILE: fprintf(stderr, "State EOF.\n"); ScannerPrintState();
 			continue;
-
-		case SEMI:
-			/* A semicolon always ends the section; we should see what section
-			 it's supposed to be in. */
-			if(!sorter.segment) { fprintf(stderr,
-				"Stray semicolon on line %lu?\n",
-				(unsigned long)sorter.token.line); continue; }
-			sorter.is_differed_cut = 1;
-			sorter.segment->section = Marker(&sorter.segment->code);
-			break;
-
-		case END_BLOCK:
-			/* It's a function; behaves like a semicolon; already classified. */
-			if(!sorter.segment)
-				{ fprintf(stderr, "Stray code-block ending on line %lu?\n",
-				(unsigned long)sorter.token.line); continue; }
-			sorter.is_differed_cut = 1;
-			break;
-
-		case LBRACE:
-			/* Starting a code block. If it's global, then it could be a
-			 function, in which case we ignore all code in it. But also
-			 definition of `struct`, `union`, or `enum`. */
-			if(sorter.info.indent_level != 1) break;
-			if(!sorter.segment) {
-				fprintf(stderr, "Stray code-block beginning on line %lu?\n",
-					(unsigned long)sorter.token.line);
-				ScannerIgnoreBlock();
+		case DOC:
+			switch(sorter.token.symbol) {
+			case BEGIN_DOC:
+				/* If there's no `code`, end the segment.
+				 eg, `/ ** Header * / / ** Function * / int main(void)`. */
+				if(sorter.segment && !TokenArraySize(&sorter.segment->code))
+					sorter_end_segment();
 				continue;
+			default: break;
 			}
-			sorter.segment->section = Marker(&sorter.segment->code);
-			if(sorter.segment->section == FUNCTION) ScannerIgnoreBlock();
-			continue;
+			break;
+		case DOC_PARAM:
+		case DOC_MATH:
 
-		default: break;
+		case CODE:
+			switch(sorter.token.symbol) {
+			case SEMI:
+				/* A semicolon always ends the section; we should see what
+				 section it's supposed to be in. */
+				if(!sorter.segment) { fprintf(stderr,
+					"Stray semicolon on line %lu?\n",
+					(unsigned long)sorter.token.line); continue; }
+				sorter.is_differed_cut = 1;
+				sorter.segment->section = Marker(&sorter.segment->code);
+				break;
+			case END_BLOCK:
+				/* It's a function; behaves like a semicolon. */
+				if(!sorter.segment)
+					{ fprintf(stderr, "Stray code-block ending on line %lu?\n",
+					(unsigned long)sorter.token.line); continue; }
+				sorter.is_differed_cut = 1;
+				break;
+			case LBRACE:
+				/* Starting a code block. If it's global, then it could be a
+				 function, in which case we ignore all code in it. But also
+				 definition of `struct`, `union`, or `enum`. */
+				if(sorter.info.indent_level != 1) break;
+				if(!sorter.segment) {
+					fprintf(stderr, "Stray code-block beginning on line %lu?\n",
+							(unsigned long)sorter.token.line);
+					ScannerIgnoreBlock();
+					continue;
+				}
+				sorter.segment->section = Marker(&sorter.segment->code);
+				if(sorter.segment->section == FUNCTION) ScannerIgnoreBlock();
+				continue;
+			default: break;
+			}
+		case COMMENT:
+		case STRING:
+		case CHAR:
+		case MACRO:
+			fprintf(stderr, "This should not happen.\n");
+			ScannerPrintState();
+			break;
 		}
+
 		/* If it's the first line of code that is greater than some reasonable
 		 distance to the documentation, split it up. */
 		/* if(code && !already_code && lines_since_doc) cut; */
@@ -260,7 +270,7 @@ int main(int argc, char **argv) {
 		if(!sorter.segment) {
 			printf("<New segment>\n");
 			if(!(sorter.segment = SegmentArrayNew(&segments)))
-				{ sorter_err(); goto catch; }
+				{ ScannerPrintState(); goto catch; }
 			segment_init(sorter.segment);
 		}
 		/* Choose the token array. */
@@ -268,7 +278,7 @@ int main(int argc, char **argv) {
 			if(symbol_mark[sorter.token.symbol] == '@') {
 				printf("@tag %s\n", symbols[sorter.token.symbol]);
 				if(!(sorter.tag = TagArrayNew(&sorter.segment->tags)))
-					{ sorter_err(); goto catch; }
+					{ ScannerPrintState(); goto catch; }
 				tag_init(sorter.tag);
 				sorter.chosen_tokens = &sorter.tag->contents;
 				continue;
@@ -317,7 +327,7 @@ int main(int argc, char **argv) {
 		{ /* Push symbol. */
 			struct Token *token;
 			if(!(token = TokenArrayNew(sorter.chosen_tokens)))
-				{ sorter_err(); goto catch; }
+				{ ScannerPrintState(); goto catch; }
 			ScannerToken(token);
 		}
 		/* Create another segment next time. */

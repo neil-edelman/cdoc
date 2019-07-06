@@ -32,7 +32,6 @@
 	/* Meaning/escapes document syntax. */ \
 	X(ESCAPED_BACKSLASH, '\\', &esc_bs), X(ESCAPED_BACKQUOTE, '\\', &esc_bq), \
 	X(ESCAPED_EACH, '\\', &esc_each), X(ESCAPED_UNDERSCORE, '\\', &esc_under), \
-	/*X(ESCAPED_ASTERISK, '\\', &esc_ast),*/ \
 	X(URL, '\\', &url), X(CITE, '\\', &cite), X(SEE, '\\', &see), \
 	X(BEGIN_MATH, '$', &math), X(END_MATH, '$', &math), X(ITALICS, '_', &it), \
 	X(DOC_LBRACE, '<', &lb), X(DOC_RBRACE, '>', &rb), X(DOC_COMMA, '.', &lit), \
@@ -79,6 +78,7 @@ struct Scanner;
 
 void Scanner_(void);
 int Scanner(void);
+void ScannerPrintState(void);
 int ScannerNext(void);
 void ScannerIgnoreBlock(void);
 void ScannerToken(struct Token *const token);

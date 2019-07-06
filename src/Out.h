@@ -25,7 +25,7 @@ OUT(gen1) {
 		token->length - 1, token->from, param->length, param->from);
 	return TokenArrayNext(ta, rparen);
 catch:
-	fprintf(stderr, "Expected: generic(id).\n"), sorter_err();
+	fprintf(stderr, "Expected: generic(id).\n"), ScannerPrintState();
 	return 0;
 }
 OUT(gen2) {
@@ -50,7 +50,7 @@ OUT(gen2) {
 		param1->from, type2_size, type2, param2->length, param2->from);
 	return TokenArrayNext(ta, rparen);
 catch:
-	fprintf(stderr, "Expected: generic(id,id).\n"), sorter_err();
+	fprintf(stderr, "Expected: generic(id,id).\n"), ScannerPrintState();
 	return 0;
 }
 OUT(gen3) {
@@ -82,7 +82,7 @@ OUT(gen3) {
 		param2->from, type3_size, type3, param3->length, param3->from);
 	return TokenArrayNext(ta, rparen);
 	catch:
-	fprintf(stderr, "Expected: generic(id,id,id).\n"), sorter_err();
+	fprintf(stderr, "Expected: generic(id,id,id).\n"), ScannerPrintState();
 	return 0;
 }
 OUT(esc_bs) {
@@ -134,7 +134,7 @@ OUT(url) {
 	printf(")~");
 	return TokenArrayNext(ta, next);
 catch:
-	fprintf(stderr, "Expected: \\url{<cat url>}.\n"), sorter_err();
+	fprintf(stderr, "Expected: \\url{<cat url>}.\n"), ScannerPrintState();
 	return 0;
 }
 OUT(cite) {
@@ -156,7 +156,7 @@ OUT(cite) {
 	printf("]~");
 	return TokenArrayNext(ta, next);
 catch:
-	fprintf(stderr, "Expected: \\cite{<source>}.\n"), sorter_err();
+	fprintf(stderr, "Expected: \\cite{<source>}.\n"), ScannerPrintState();
 	return 0;
 }
 OUT(see) { /* fixme: Have a new field in segment. */
@@ -173,7 +173,7 @@ OUT(math) { /* Math and code. */
 	printf("`:code}~");
 	return TokenArrayNext(ta, next);
 catch:
-	fprintf(stderr, "Expected: `<math/code>`.\n"), sorter_err();
+	fprintf(stderr, "Expected: `<math/code>`.\n"), ScannerPrintState();
 	return 0;
 }
 OUT(it) {
@@ -186,7 +186,7 @@ OUT(it) {
 	printf("`:it}~");
 	return TokenArrayNext(ta, next);
 	catch:
-	fprintf(stderr, "Expected: _<italics>_.\n"), sorter_err();
+	fprintf(stderr, "Expected: _<italics>_.\n"), ScannerPrintState();
 	return 0;
 }
 OUT(par) {
@@ -234,7 +234,7 @@ TAG_IS(param, TAG_PARAM)
 TAG_IS(author, TAG_AUTHOR)
 TAG_IS(std, TAG_STD)
 TAG_IS(depend, TAG_DEPEND)
-TAG_IS(version, TAG_VERSION)
+/*TAG_IS(version, TAG_VERSION)
 TAG_IS(since, TAG_SINCE)
 TAG_IS(fixme, TAG_FIXME)
 TAG_IS(depricated, TAG_DEPRICATED)
@@ -242,7 +242,7 @@ TAG_IS(return, TAG_RETURN)
 TAG_IS(throws, TAG_THROWS)
 TAG_IS(implements, TAG_IMPLEMENTS)
 TAG_IS(order, TAG_ORDER)
-TAG_IS(allow, TAG_ALLOW)
+TAG_IS(allow, TAG_ALLOW)*/
 
 /** @implements <Segment>Action */
 static void segment_print_doc(struct Segment *const segment) {
