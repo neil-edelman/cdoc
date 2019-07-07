@@ -93,6 +93,11 @@ $(TOBJS): $(GDIR)/$(TDIR)/%.o: $(TDIR)/%.c $(H)
 $(LSRCS): $(GDIR)/%.re.c: $(SDIR)/%.re
 	# lsrcs rule
 	@mkdir -p $(GDIR)
+	$(LEXER) -o $@ $<
+
+$(GDIR)/Scanner.re.c: $(SDIR)/Scanner.re
+	# lsrcs special rule
+	@mkdir -p $(GDIR)
 	$(LEXER) -c -o $@ $<
 
 $(DOCS): $(DDIR)/%.html: $(SDIR)/%.c $(SDIR)/%.h

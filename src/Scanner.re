@@ -60,12 +60,11 @@ static void state_to_string(const enum State *s, char (*const a)[12]) {
 /*!types:re2c*/
 
 /*!re2c
-// Don't know what this does, but it fails without it.
 re2c:yyfill:enable = 0;
 re2c:define:YYCTYPE  = char;
 re2c:define:YYFILL   = "return END;";
 re2c:define:YYFILL:naked = 1;
-re2c:define:YYLIMIT  = scanner.limit;
+re2c:define:YYLIMIT  = scanner.limit; // fixme: what is this?
 re2c:define:YYCURSOR = scanner.cursor;
 re2c:define:YYMARKER = scanner.marker; // Rules overlap.
 re2c:define:YYCTXMARKER = scanner.ctx_marker;
@@ -116,49 +115,35 @@ void Scanner_(void) {
  @throws malloc free fread */
 int Scanner(void) {
 	const size_t granularity = 1024;
-	int is_done = 0;
-	do { /* Try: read all contents from `stdin` at once. */
-		size_t nread;
-		char *buf;
-		enum State *ps;
-		/* This assumes that the `scanner` is zeroed, thus in a valid state. */
-		for( ; ; ) { /* Read in `granularity` sized chunks. */
-			if(!(buf = CharArrayBuffer(&scanner.buffer, granularity))) break;
-			nread = fread(buf, 1, granularity, stdin);
-			if(ferror(stdin)) break;
-			assert(nread >= 0 && nread <= granularity);
-			if(!CharArrayAddSize(&scanner.buffer, nread)) break;
-			if(nread != granularity) { is_done = 1; break; }
-		}
-		if(!is_done) break;
-		/* Fill the past the file with '\0' for fast lexing. */
-		is_done = 0;
-		if(!(buf = CharArrayBuffer(&scanner.buffer, YYMAXFILL))) break;
-		memset(buf, '\0', YYMAXFILL);
-		if(!CharArrayAddSize(&scanner.buffer, YYMAXFILL)) break;
-		scanner.condition = yyccode;
-		/* Point these toward the first char; `buffer` is necessarily done
-		 growing, or we could not do this. `limit` and `ctx_marker` are set? */
-		scanner.cursor = scanner.marker = scanner.from
-			= CharArrayGet(&scanner.buffer);
-		scanner.line = scanner.doc_line = 1;
-		if(!(ps = StateArrayNew(&scanner.states))) break;
-		*ps = CODE;
-		is_done = 1;
-	} while(0); if(!is_done) { /* Catch. */
-		Scanner_();
-		return 0;
-	}
+	char *read_here;
+	size_t nread;
+	/* Read all contents from `stdin` at once. */
+	do {
+		if(!(read_here = CharArrayBuffer(&scanner.buffer, granularity))
+			|| (nread = fread(read_here, 1, granularity, stdin), ferror(stdin))
+			|| !CharArrayAddSize(&scanner.buffer, nread)) goto catch;
+	} while(nread == granularity);
+	/* Fill the past the file with '\0' for fast lexing, I think? */
+	if(!(read_here = CharArrayBuffer(&scanner.buffer, YYMAXFILL))
+		|| !(memset(read_here, '\0', YYMAXFILL),
+		CharArrayAddSize(&scanner.buffer, YYMAXFILL))) goto catch;
+	scanner.condition = yyccode;
+	/* Point these toward the first char; `buffer` is necessarily done
+	 growing, or we could not do this. */
+	/* fixme: is this right? */
+	scanner.limit = CharArrayBack(&scanner.buffer, 0) + 1;
+	scanner.cursor = scanner.marker = scanner.ctx_marker = scanner.from
+		= CharArrayGet(&scanner.buffer);
+	scanner.line = scanner.doc_line = 1;
 	return 1;
+catch:
+	Scanner_();
+	return 0;
 }
-
-/* Needed in `debug`. */
-static enum State state_look(void);
 
 static void debug(void) {
 	int indent;
-	printf("%lu%c\t", (unsigned long)scanner.line,
-		state_look() == DOC ? '~' : ':');
+	printf("%lu:\t", (unsigned long)scanner.line);
 	for(indent = 0; indent < scanner.indent_level; indent++)
 		fputc('\t', stdout);
 	printf("%s %s \"%.*s\", ignore %d, indent %d\n",
@@ -170,55 +155,6 @@ static void debug(void) {
 void ScannerPrintState(void) {
 	debug();
 }
-
-
-
-
-/* Scanner helper functions. */
-
-
-
-#if 0
-/** @return The state of {s}. */
-static enum State state_look(void) {
-	enum State *ps;
-	if(!(ps = StateArrayPeek(&scanner.states))) return END_OF_FILE;
-	return *ps;
-}
-
-/** Pushes the new state.
- @return Success. */
-static int push(const enum State state) {
-	enum State *ps;
-	if(!(ps = StateArrayNew(&scanner.states))) return 0;
-	*ps = state;
-	return 1;
-}
-
-/** Pushes the new state and calls the state function.
- @return What the state function returns. END if there's an error. */
-static enum Symbol push_call(const enum State state) {
-	if(!(push(state))) return END;
-	return state_fn[state]();
-}
-
-/** Pops and calls the state on top.
- @return Success. */
-static int pop(void) {
-	return !!StateArrayPop(&scanner.states);
-}
-
-/** Pops and calls the state on top and calls the state underneath.
- @return What the state function returns. END if there's an error or the state
- is empty. */
-static enum Symbol pop_call(void) {
-	enum State *ps;
-	if(!pop() || !(ps = StateArrayPeek(&scanner.states))) return END;
-	return state_fn[*ps]();
-}
-#endif
-
-
 
 /** Scans. */
 static enum Symbol scan(void) {
@@ -391,7 +327,6 @@ scan:
  @fixme Is it really neccesary to have docs inside of functions? This would be
  so much easier logic without. */
 int ScannerNext(void) {
-	scan();
 #if 0
 	enum State state;
 	/* Ignore a block of code if `scanner.ignore_block` is on. */
@@ -410,7 +345,7 @@ int ScannerNext(void) {
 		scanner.ignore_block = 0;
 	}
 #endif
-	return 1;
+	return !!(scanner.symbol = scan());
 }
 
 /** We don't care what's in the function, just that it's a function. */
@@ -420,7 +355,7 @@ void ScannerIgnoreBlock(void) { scanner.ignore_block = 1; }
  @param{token} If null, does nothing. */
 void ScannerToken(struct Token *const token) {
 	if(!token) return;
-	assert(scanner.symbol && scanner.from && scanner.from <= scanner.cursor);
+	assert(/*scanner.symbol &&*/ scanner.from && scanner.from <= scanner.cursor);
 	token->symbol = scanner.symbol;
 	token->from = scanner.from;
 	if(scanner.from + INT_MAX < scanner.cursor) {
@@ -436,7 +371,7 @@ void ScannerToken(struct Token *const token) {
 void ScannerTokenInfo(struct TokenInfo *const info) {
 	enum State state;
 	if(!info) return;
-	state = state_look();
+	state = /*state_look()*/0;
 	info->indent_level = scanner.indent_level;
 	info->is_doc = state_is_doc[state];
 	info->is_doc_far = scanner.doc_line + 2 < scanner.line;
