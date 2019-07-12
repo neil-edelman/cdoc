@@ -94,10 +94,7 @@ static void token_to_string(const struct Token *s, char (*const a)[12]) {
 #include "../src/Array.h"
 
 
-/** `Tag` is a specific structure of array of `Token`.
- Ie, `token = TAG_TITLE, header = {}, contents = { all, , your, , base }` or
- `token = TAG_PARAM, header = { ID"x" }, contents = { the, , dependant, ,
- variable }`. */
+/** `Tag` is a specific structure of array of `Token` representing @-tags. */
 struct Tag {
 	struct Token token;
 	struct TokenArray header;
@@ -130,11 +127,8 @@ static void tag_array_remove(struct TagArray *const ta) {
 enum Section { SECTION(PARAM) };
 static const char *const sections[] = { SECTION(STRINGISE) };
 
-/** Is classified to a section of the document and can have documentation
- including tags and code.
- Ie, `section = FUNCTION, doc = { I, , don't, , know, , what, , this, , fn, ,
- does }`, `code = { int foo(int foo) {} }`, `tags = { { TAG_PARAM, { does, ,
- nothing } }, { TAG_ALLOW, { } } }`. */
+/** `Segment` is classified to a section of the document and can have
+ documentation including tags and code. */
 struct Segment {
 	enum Section section;
 	struct TokenArray doc, code;
