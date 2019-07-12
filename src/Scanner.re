@@ -176,7 +176,7 @@ static void doc_(void) {
 struct Scanner {
 	/* `buffer` {re2c} variables. These point directly into {buffer} so no
 	 modifying. */
-	const char *limit, *cursor, *marker, *ctx_marker, *from;
+	const char *marker, *ctx_marker, *from, *cursor;
 	/* Weird {c2re} stuff: these fields have to come after when >5? */
 	struct CharArray buffer;
 	enum ScanState state;
@@ -194,8 +194,7 @@ static void Scanner_(void) {
 	scanner.indent_level = scanner.doc_indent_level = 0;
 	scanner.ignore_block = 0;
 	scanner.line = scanner.doc_line = 0;
-	scanner.limit = scanner.cursor = scanner.marker = scanner.ctx_marker
-		= scanner.from = 0;
+	scanner.marker = scanner.ctx_marker = scanner.from = scanner.cursor = 0;
 }
 
 /* Have {re2c} generate {YYMAXFILL}.
