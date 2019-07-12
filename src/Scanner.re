@@ -37,7 +37,8 @@
 /* Define `Symbols` -- these are the numerical values given to a section of
  text. */
 #define SYMBOL(X) \
-	X(END, '~', 0), X(BEGIN_DOC, '~', 0), \
+	/* EOF -- 0. */ \
+	X(END, '~', 0), \
 	/* `C` syntax. */ \
 	X(C_OPERATOR, '*', &lit), X(C_COMMA, ',', &lit), X(C_SEMI, ';', &lit), \
 	X(C_LBRACE, '{', &lit), X(C_RBRACE, '}', &lit), X(C_LPAREN, '(', &lit), \
@@ -56,20 +57,20 @@
 	X(TAG_IMPLEMENTS, '@', &lit), X(TAG_ORDER, '@', &lit), \
 	X(TAG_ALLOW, '@', &lit), \
 	/* Meaning/escapes document syntax. */ \
-	X(DOC_WORD, 'w', &lit), X(DOC_ESCAPED_BACKSLASH, '\\', &esc_bs), \
-	X(DOC_ESCAPED_BACKQUOTE, '\\', &esc_bq), \
-	X(DOC_ESCAPED_EACH, '\\', &esc_each), \
-	X(DOC_ESCAPED_UNDERSCORE, '\\', &esc_under), X(DOC_URL, '\\', &url), \
-	X(DOC_CITE, '\\', &cite), X(DOC_SEE, '\\', &see), \
+	X(DOC_BEGIN, '~', 0), X(DOC_END, '~', 0), X(DOC_WORD, 'w', &lit), \
+	X(DOC_BACKSLASH, '\\', &esc_bs), X(DOC_BACKQUOTE, '\\', &esc_bq), \
+	X(DOC_EACH, '\\', &esc_each), X(DOC_UNDERSCORE, '\\', &esc_under), \
+	X(DOC_URL, '\\', &url), X(DOC_CITE, '\\', &cite), X(DOC_SEE, '\\', &see), \
 	X(DOC_NEWLINE, 'n', &par), X(DOC_ITALICS, '_', &it), \
-	/* Math/code `like this`. */ \
-	X(BEGIN_MATH, '$', &math), X(END_MATH, '$', &math), X(MATH, 'y', &lit), \
-	/* Variable lists {like, this}. */ \
-	X(BEGIN_PARAM, '<', &lb), X(END_PARAM, '>', &rb), \
-	X(PARAM_COMMA, '.', &lit), X(PARAM_VARIABLE, 'p', &lit), \
 	/* Also do these from LaTeX to HTML. */ \
 	X(DOC_HTML_AMP, '&', &esc_amp), X(DOC_HTML_LT, '&', &esc_lt), \
-	X(DOC_HTML_GT, '&', &esc_gt)
+	X(DOC_HTML_GT, '&', &esc_gt), \
+	/* Math/code `like this`. */ \
+	X(MATH_BEGIN, '$', &math), X(MATH_END, '$', &math), \
+	X(MATH_STUFF, 'y', &lit), \
+	/* Variable lists {like, this}. */ \
+	X(PARAM_BEGIN, '<', &lb), X(PARAM_END, '>', &rb), \
+	X(PARAM_COMMA, '.', &lit), X(PARAM_ITEM, 'p', &lit)
 enum Symbol { SYMBOL(PARAM3_A) };
 static const char *const symbols[] = { SYMBOL(STRINGISE3_A) };
 static const char symbol_mark[] = { SYMBOL(PARAM3_B) };
@@ -122,10 +123,12 @@ static void tag_array_remove(struct TagArray *const ta) {
 	TagArray_(ta);
 }
 
+
 /* Define the sections of output. */
 #define SECTION(X) X(HEADER), X(DECLARATION), X(FUNCTION)
 enum Section { SECTION(PARAM) };
 static const char *const sections[] = { SECTION(STRINGISE) };
+
 
 /** `Segment` is classified to a section of the document and can have
  documentation including tags and code. */
@@ -150,6 +153,7 @@ static void segment_to_string(const struct Segment *seg, char (*const a)[12]) {
 #define ARRAY_TO_STRING &segment_to_string
 #include "../src/Array.h"
 
+
 /** This is the top-level parser. */
 static struct SegmentArray doc;
 
@@ -170,6 +174,8 @@ static void doc_(void) {
 
 /***********/
 
+/* This defines `ScanState`; the trailing comma on an `enum` is not proper
+ `C90`, hopefully they will fix it. */
 /*!types:re2c*/
 
 /** Scanner reads a file and extracts semantic information. */
@@ -196,10 +202,11 @@ static void Scanner_(void) {
 	scanner.line = scanner.doc_line = 0;
 }
 
-/** New Scanner. Reads from `stdin` until done, (it doesn't make sense to
- call this twice.)
+/** New Scanner. Reads from `stdin` until done; it doesn't make sense to
+ call this twice since the input is consumed.
  @return Success.
- @throws malloc free fread EILSEQ */
+ @throws{malloc, fread}
+ @throws{EILSEQ} File has embedded nulls. */
 static int Scanner(void) {
 	const size_t granularity = 1024;
 	char *read_here, *zero;
@@ -226,8 +233,8 @@ static int Scanner(void) {
 		zero_len = (size_t)(strchr(buffer, '\0') - buffer);
 		if(zero_len != CharArraySize(&scanner.buffer) - 1)
 			{ errno = EILSEQ; fprintf(stderr,
-			"Expects Modified UTF-8 encoding; embedded '\\0' at %lu/%lu.\n",
-			(unsigned long)zero_len,
+			"Expects Modified UTF-8 encoding; embedded '\\0' at byte %lu/%lu."
+			"\n", (unsigned long)zero_len,
 			(unsigned long)CharArraySize(&scanner.buffer) - 1); goto catch; }
 	}
 	return 1;
@@ -267,29 +274,31 @@ static void token_current(struct Token *const token, const enum Symbol symbol) {
 }
 
 static int append(const enum Symbol symbol) {
-	struct Token *tok;
+	struct Token *tok = 0;
+	assert(symbol);
 	if(!sorter.segment && !(sorter.segment = SegmentArrayNew(&doc))) return 0;
 	switch(scanner.state) {
 	case yyccode:
-		assert(!strncmp(symbols[symbol], "C_", 2));
-		if(!(tok = TokenArrayNew(&sorter.segment->code))) return 0;
-		token_current(tok, symbol);
+		assert(!strncmp(symbols[symbol], "C_", 2) || symbol == DOC_END);
+		tok = TokenArrayNew(&sorter.segment->code);
 		break;
+	case yycmath:
+	case yycparam:
 	case yycdoc:
 		assert(!strncmp(symbols[symbol], "DOC_", 4)
 			|| !strncmp(symbols[symbol], "TAG_", 4)
-			|| !strncmp(symbols[symbol], "END_", 4) /* fixme? eg `END_MATH`. */);
-		if(!(tok = TokenArrayNew(&sorter.segment->doc))) return 0;
-		token_current(tok, symbol);
-	case yycmath:
-	case yycparam:
-	case yyccharacter:
-	case yyccomment:
-	case yycmacro:
-	case yycmacro_comment:
-	case yycstring:
+			|| !strncmp(symbols[symbol], "END_", 4)
+			|| !strncmp(symbols[symbol], "MATH_", 4)
+			|| !strncmp(symbols[symbol], "PARAM_", 6));
+		tok = TokenArrayNew(&sorter.segment->doc);
 		break;
+	default:
+		/* `yyccharacter, yyccomment, yycmacro, yycmacro_comment, yycstring`
+		 are not returning anything. */
+		assert(0);
 	}
+	if(!tok) return 0;
+	token_current(tok, symbol);
 	return 1;
 }
 
@@ -378,23 +387,23 @@ scan:
 		goto reset;
 	}
 
-	<doc> "*""/" :=> code
+	<doc> "*""/" { return scanner.state = yyccode, DOC_END; }
 	<param, math> "*""/" { fprintf(stderr, "Not finished at end of comment.\n");
 		return errno = EILSEQ, END; }
 
 	<doc> (wordchars | ",")* { return DOC_WORD; }
-	<param> (wordchars | "_" | "`" | "\\")* { return PARAM_VARIABLE; }
+	<param> (wordchars | "_" | "`" | "\\")* { return PARAM_ITEM; }
 	<param> "," { return PARAM_COMMA; }
-	<math> (wordchars | "," | "_")* { return MATH; }
+	<math> (wordchars | "," | "_")* { return MATH_STUFF; }
 
-	<doc, param, math> "\\\\"      { return DOC_ESCAPED_BACKSLASH; }
-	<doc, param, math> "\\`"       { return DOC_ESCAPED_BACKQUOTE; }
-	<doc, param, math> "\\@" | "@" { return DOC_ESCAPED_EACH; }
-	<doc, param, math> "\\_"       { return DOC_ESCAPED_UNDERSCORE; }
+	<doc, param, math> "\\\\"      { return DOC_BACKSLASH; }
+	<doc, param, math> "\\`"       { return DOC_BACKQUOTE; }
+	<doc, param, math> "\\@" | "@" { return DOC_EACH; }
+	<doc, param, math> "\\_"       { return DOC_UNDERSCORE; }
 	<doc> "_"                      { return DOC_ITALICS; }
-	<doc> "`" { return scanner.state = yycmath, BEGIN_MATH; }
-	<math> "`" { return scanner.state = yycdoc, END_MATH; }
-	<doc> "{" { return scanner.state = yycparam, BEGIN_PARAM; }
+	<doc> "`" { return scanner.state = yycmath, MATH_BEGIN; }
+	<math> "`" { return scanner.state = yycdoc, MATH_END; }
+	<doc> "{" { return scanner.state = yycparam, PARAM_BEGIN; }
 	<doc> "}" { fprintf(stderr, "Misplaced '}' in documentation.\n");
 		return errno = EILSEQ, END; }
 	<param> "{" { fprintf(stderr, "Misplaced '{' in documentation.\n");
