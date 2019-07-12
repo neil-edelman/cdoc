@@ -124,9 +124,9 @@ OUT(rb) {
 OUT(url) {
 	struct Token *const lbr = TokenArrayNext(ta, token),
 		*next = TokenArrayNext(ta, lbr); /* Variable no. */
-	if(!lbr || lbr->symbol != DOC_LBRACE || !next) goto catch;
+	if(!lbr || lbr->symbol != PARAM_LBRACE || !next) goto catch;
 	printf("(");
-	while(next->symbol != DOC_RBRACE) {
+	while(next->symbol != PARAM_RBRACE) {
 		/* We don't care about the symbol's meaning in the url. */
 		printf("%.*s", next->length, next->from);
 		if(!(next = TokenArrayNext(ta, next))) goto catch;
@@ -134,21 +134,21 @@ OUT(url) {
 	printf(")~");
 	return TokenArrayNext(ta, next);
 catch:
-	fprintf(stderr, "Expected: \\url{<cat url>}.\n"), ScannerPrintState();
+	ScannerPrintState(), fprintf(stderr, "Expected: \\url{<cat url>}.\n");
 	return 0;
 }
 OUT(cite) {
 	struct Token *const lbr = TokenArrayNext(ta, token),
 		*next = TokenArrayNext(ta, lbr); /* Variable no. */
-	if(!lbr || lbr->symbol != DOC_LBRACE || !next) goto catch;
+	if(!lbr || lbr->symbol != PARAM_LBRACE || !next) goto catch;
 	printf("(");
-	while(next->symbol != DOC_RBRACE) {
+	while(next->symbol != PARAM_RBRACE) {
 		printf("%.*s~", next->length, next->from);
 		if(!(next = TokenArrayNext(ta, next))) goto catch;
 	}
 	printf(")[https://scholar.google.ca/scholar?q=");
 	next = TokenArrayNext(ta, lbr);
-	while(next->symbol != DOC_RBRACE) {
+	while(next->symbol != PARAM_RBRACE) {
 		/* fixme: escape url! */
 		printf("%.*s_", next->length, next->from);
 		if(!(next = TokenArrayNext(ta, next))) goto catch;
