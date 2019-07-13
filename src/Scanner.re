@@ -35,7 +35,7 @@
 #define STRINGISE3_A(A, B, C) #A
 
 /* Define `Symbols` -- these are the numerical values given to a section of
- text. */
+ text. The prefix of symbols themselves have meaning; see \see{append}. */
 #define SYMBOL(X) \
 	/* EOF -- 0. */ \
 	X(END, '~', 0), \
@@ -249,17 +249,6 @@ static void debug(void) {
 		scanner.from, symbols[scanner.symbol]);
 }
 
-/** This holds the sorting state information. */
-static struct {
-	struct Segment *segment;
-	struct Tag *tag;
-} sorter;
-
-static void end_segment(void) {
-	sorter.segment = 0;
-	sorter.tag = 0;
-}
-
 static void token_current(struct Token *const token, const enum Symbol symbol) {
 	assert(token && scanner.from && scanner.from <= scanner.cursor);
 	token->symbol = symbol;
@@ -273,14 +262,47 @@ static void token_current(struct Token *const token, const enum Symbol symbol) {
 	token->line = scanner.line;
 }
 
+/** This holds the sorting state information for `append`. */
+static struct {
+	struct Segment *segment;
+	struct Tag *tag;
+	struct TokenArray *current;
+} sorter;
+
+/*!re2c
+re2c:yyfill:enable   = 0;
+re2c:define:YYCTYPE  = char;
+re2c:define:YYCURSOR = scanner.cursor;
+*/
+
+/** This appends the current token based on the global state in `sorter`.
+ @return Success. */
 static int append(const enum Symbol symbol) {
-	struct Token *tok = 0;
+	struct Token *token = 0;
+	enum { DISCARD, SORT_CODE, SORT_DOC, SORT_BEGIN_TAG, SORT_TAG }
+		sort = DISCARD;
+	const char *const symbol_string = symbols[symbol];
 	assert(symbol);
-	if(!sorter.segment && !(sorter.segment = SegmentArrayNew(&doc))) return 0;
+	if(!sorter.segment && !(sorter.tag = 0, sorter.current = 0,
+		sorter.segment = SegmentArrayNew(&doc))) return 0;
+	/* Decide what to do based on the prefix. */
+	switch(symbol_string[0]) {
+	case 'C':
+	case 'D':
+	case 'T':
+	case 'E':
+	case 'M':
+	case 'P':
+	default:
+		break;
+	}
+	
+	if(!strncmp(symbols[symbol], "C_", 2)) {
+	}
 	switch(scanner.state) {
 	case yyccode:
 		assert(!strncmp(symbols[symbol], "C_", 2) || symbol == DOC_END);
-		tok = TokenArrayNew(&sorter.segment->code);
+		token = TokenArrayNew(&sorter.segment->code);
 		break;
 	case yycmath:
 	case yycparam:
@@ -290,15 +312,15 @@ static int append(const enum Symbol symbol) {
 			|| !strncmp(symbols[symbol], "END_", 4)
 			|| !strncmp(symbols[symbol], "MATH_", 4)
 			|| !strncmp(symbols[symbol], "PARAM_", 6));
-		tok = TokenArrayNew(&sorter.segment->doc);
+		token = TokenArrayNew(&sorter.segment->doc);
 		break;
 	default:
 		/* `yyccharacter, yyccomment, yycmacro, yycmacro_comment, yycstring`
 		 are not returning anything. */
 		assert(0);
 	}
-	if(!tok) return 0;
-	token_current(tok, symbol);
+	if(!token) return 0;
+	token_current(token, symbol);
 	return 1;
 }
 
