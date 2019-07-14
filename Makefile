@@ -4,50 +4,62 @@
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 current_dir := $(notdir $(patsubst %/,%,$(dir $(mkfile_path))))
 
-PROJ  := $(current_dir)
+project := $(current_dir)
 
 # dirs
-SDIR  := src
-TDIR  := test
-GDIR  := build
-BDIR  := bin
-BACK  := backup
-DDIR  := doc
-PREFIX:= /usr/local
+src    := src
+test   := test
+build  := build
+bin    := bin
+backup := backup
+doc    := doc
+media  := media
+PREFIX := /usr/local
 
-# files in bdir
-INST  := $(PROJ)-`date +%Y-%m-%d`
+# files in $(bin)
+install := $(project)-`date +%Y-%m-%d`
 
 # extra stuff we should back up
-EXTRA := $(PROJ).xcodeproj
+extra := $(project).xcodeproj
 
-# John Graham-Cumming:
-# rwildcard is a recursive wildcard
-rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst *,%,$2),$d))
+# John Graham-Cumming: rwildcard is a recursive wildcard
+rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) \
+$(filter $(subst *,%,$2),$d))
 
-# select all automatically
-SRCS  := $(call rwildcard, $(SDIR), *.c) # or *.java
-LEXS  := $(call rwildcard, $(SDIR), *.re)
-LSRCS := $(patsubst $(SDIR)/%.re, $(GDIR)/%.re.c, $(LEXS))
-TEST  := $(call rwildcard, $(TDIR), *.c)
-H     := $(call rwildcard, $(SDIR), *.h) $(call rwildcard, $(TDIR), *.h)
-OBJS  := $(patsubst $(SDIR)/%.c, $(GDIR)/%.o, $(SRCS)) # or *.class
-LOBJS := $(patsubst $(GDIR)/%.re.c, $(GDIR)/%.re.o, $(LSRCS))
-TOBJS := $(patsubst $(TDIR)/%.c, $(GDIR)/$(TDIR)/%.o, $(TEST))
-DOCS  := $(patsubst $(SDIR)/%.c, $(DDIR)/%.html, $(SRCS))
+c_srcs    := $(call rwildcard, $(src), *.c)
+h_srcs    := $(call rwildcard, $(src), *.h)
+java_srcs := $(call rwildcard, $(src), *.java)
+re_srcs   := $(call rwildcard, $(src), *.re)
+re_cnd_srcs := $(call rwildcard, $(src), *.re.cnd)
+c_tests   := $(call rwildcard, $(test), *.c)
+h_tests   := $(call rwildcard, $(test), *.h)
+c_objs    := $(patsubst $(src)/%.c, $(build)/%.o, $(c_srcs))
+re_c      := $(patsubst $(src)/%.re, $(build)/%.re.c, $(re_srcs))
+re_cnd_c := $(patsubst $(src)/%.re.cnd, $(build)/%.re.cnd.c, $(re_cnd_srcs))
+re_c_objs := $(patsubst $(build)/%.re.c, $(build)/%.re.o, $(re_c)) \
+$(patsubst $(build)/%.re.cnd.c, $(build)/%.re.cnd.o, $(re_cnd_c))
+java_class := $(patsubst $(src)/%.java, $(build)/%.class, $(java_srcs))
+test_c_objs := $(patsubst $(test)/%.c, $(build)/$(test)/%.o, $(c_tests))
+html_docs := $(patsubst $(src)/%.c, $(doc)/%.html, $(c_srcs))
+h_all := $(h_srcs) $(h_tests) # we don't know what .h include; just rebuild all
+#icon := icon.ico # in $(media)
+
+cdoc  := cdoc
+re2c  := re2c
+mkdir := mkdir -p
+cat   := cat
+zip   := zip
 
 CC   := clang #gcc
 CF   := -Wall -Wextra -Wno-format-y2k -Wstrict-prototypes \
 -Wmissing-prototypes -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings \
 -Wswitch -Wshadow -Wcast-align -Wbad-function-cast -Wchar-subscripts -Winline \
--Wnested-externs -Wredundant-decls -Wfatal-errors -O3 -ffast-math -funroll-loops -pedantic -ansi # or -std=c99 -mwindows
+-Wnested-externs -Wredundant-decls -Wfatal-errors -O3 -ffast-math \
+-funroll-loops -pedantic -ansi # or -std=c99 -mwindows
 OF   := -O3 # -framework OpenGL -framework GLUT or -lglut -lGLEW
-CDOC := cdoc
-LEXER:= re2c
 
 # Jakob Borg and Eldar Abusalimov
-# $(ARGS) is all the extra arguments
-# $(BRGS) is_all_the_extra_arguments
+# $(ARGS) is all the extra arguments; $(BRGS) is_all_the_extra_arguments
 EMPTY :=
 SPACE := $(EMPTY) $(EMPTY)
 ifeq (backup, $(firstword $(MAKECMDGOALS)))
@@ -62,48 +74,48 @@ endif
 ######
 # compiles the programme by default
 
-default: $(BDIR)/$(PROJ)
-	# . . . success; executable is in $(BDIR)/$(PROJ)
+default: $(bin)/$(project)
+	# . . . success; executable is in $(bin)/$(project)
 
-docs: $(DOCS)
+docs: $(html_docs)
 
 # linking
-$(BDIR)/$(PROJ): $(LOBJS) $(OBJS) $(TOBJS)
+$(bin)/$(project): $(c_objs) $(re_c_objs) $(test_c_objs)
 	# linking rule
-	@mkdir -p $(BDIR)
+	@$(mkdir) $(bin)
 	$(CC) $(OF) -o $@ $^
 
 # compiling
-$(OBJS): $(GDIR)/%.o: $(SDIR)/%.c $(H)
-	# objs rule
-	@mkdir -p $(GDIR)
+$(c_objs): $(build)/%.o: $(src)/%.c $(h_all)
+	# c_objs rule
+	@$(mkdir) $(build)
 	$(CC) $(CF) -c -o $@ $<
 
-$(LOBJS): $(GDIR)/%.o: $(GDIR)/%.c $(H)
-	# lobjs rule
-	@mkdir -p $(GDIR)
+$(re_c_objs): $(build)/%.o: $(build)/%.c $(h_all)
+	# re_c_objs rule
+	@$(mkdir) $(build)
 	$(CC) $(CF) -c -o $@ $<
 
-$(TOBJS): $(GDIR)/$(TDIR)/%.o: $(TDIR)/%.c $(H)
-	# tobjs rule
-	@mkdir -p $(GDIR)
-	@mkdir -p $(GDIR)/$(TDIR)
+$(test_c_objs): $(build)/$(test)/%.o: $(test)/%.c $(h_all)
+	# test_c_objs rule
+	@$(mkdir) $(build)
+	@$(mkdir) $(build)/$(test)
 	$(CC) $(CF) -c -o $@ $<
 
-$(LSRCS): $(GDIR)/%.re.c: $(SDIR)/%.re
-	# lsrcs rule
-	@mkdir -p $(GDIR)
-	$(LEXER) -o $@ $<
+$(re_c): $(build)/%.re.c: $(src)/%.re
+	# re_c (normal) rule
+	@$(mkdir) $(build)
+	$(re2c) -o $@ $<
 
-$(GDIR)/Scanner.re.c: $(SDIR)/Scanner.re
-	# lsrcs special rule
-	@mkdir -p $(GDIR)
-	$(LEXER) -c -o $@ $<
+$(re_cnd_c): $(build)/%.re.cnd.c: $(src)/%.re.cnd
+	# re_c (conditions) rule
+	@$(mkdir) $(build)
+	$(re2c) -c -o $@ $<
 
-$(DOCS): $(DDIR)/%.html: $(SDIR)/%.c $(SDIR)/%.h
+$(html_docs): $(doc)/%.html: $(src)/%.c $(src)/%.h
 	# docs rule
-	@mkdir -p $(DDIR)
-	cat $^ | $(CDOC) > $@
+	@$(mkdir) $(doc)
+	cat $^ | $(cdoc) > $@
 
 ######
 # phoney targets
@@ -111,35 +123,37 @@ $(DOCS): $(DDIR)/%.html: $(SDIR)/%.c $(SDIR)/%.h
 .PHONY: setup clean backup icon install uninstall test docs
 
 clean:
-	-rm -f $(OBJS) $(TOBJS) $(LOBJS) $(LSRCS) $(DOCS)
-	-rm -rf $(BDIR)/$(TDIR)
+	-rm -f $(c_objs) $(test_c_objs) $(re_c_objs) $(re_c) $(html_docs)
+	-rm -rf $(bin)/$(test)
 
 backup:
-	@mkdir -p $(BACK)
-	zip $(BACK)/$(PROJ)-`date +%Y-%m-%dT%H%M%S`$(BRGS).zip readme.txt gpl.txt copying.txt Makefile $(SRCS) $(LEXS) $(TEST) $(H) $(SDIR)/$(ICON) $(EXTRA)
+	@$(mkdir) $(backup)
+	$(zip) $(backup)/$(project)-`date +%Y-%m-%dT%H%M%S`$(BRGS).zip readme.txt \
+Makefile $(c_srcs) $(java_srcs) $(re_srcs) $(re_cnd_srcs) $(c_tests) \
+$(h_all) $(extra)
 
 icon: default
 	# . . . setting icon on a Mac.
-	cp $(MDIR)/$(ICON) $(BDIR)/$(ICON)
-	-sips --addIcon $(BDIR)/$(ICON)
-	-DeRez -only icns $(BDIR)/$(ICON) > $(BDIR)/$(RSRC)
-	-Rez -append $(BDIR)/$(RSRC) -o $(BDIR)/$(PROJ)
-	-SetFile -a C $(BDIR)/$(PROJ)
+	cp $(media)/$(icon) $(bin)/$(icon)
+	-sips --addIcon $(bin)/$(icon)
+	-DeRez -only icns $(bin)/$(icon) > $(bin)/$(RSRC)
+	-Rez -append $(bin)/$(RSRC) -o $(bin)/$(project)
+	-SetFile -a C $(bin)/$(project)
 
 setup: default icon
-	@mkdir -p $(BDIR)/$(INST)
-	cp $(BDIR)/$(PROJ) readme.txt gpl.txt copying.txt $(BDIR)/$(INST)
-	rm -f $(BDIR)/$(INST)-MacOSX.dmg
+	@$(mkdir) $(bin)/$(install)
+	cp $(bin)/$(project) readme.txt $(bin)/$(install)
+	rm -f $(bin)/$(install)-MacOSX.dmg
 	# or rm -f $(BDIR)/$(INST)-Win32.zip
-	hdiutil create $(BDIR)/$(INST)-MacOSX.dmg -volname "$(PROJ)" -srcfolder $(BDIR)/$(INST)
+	hdiutil create $(bin)/$(install)-MacOSX.dmg -volname "$(project)" -srcfolder $(bin)/$(install)
 	# or zip $(BDIR)/$(INST)-Win32.zip -r $(BDIR)/$(INST)
-	rm -R $(BDIR)/$(INST)
+	rm -R $(bin)/$(install)
 
 install: default
-	@mkdir -p $(DESTDIR)$(PREFIX)/bin
-	cp $(BDIR)/$(PROJ) $(DESTDIR)$(PREFIX)/bin/$(PROJ)
+	@$(mkdir) -p $(DESTDIR)$(PREFIX)/bin
+	cp $(bin)/$(project) $(DESTDIR)$(PREFIX)/bin/$(project)
 
 uninstall:
-	rm -f $(DESTDIR)$(PREFIX)/bin/$(PROJ)
+	rm -f $(DESTDIR)$(PREFIX)/bin/$(project)
 
-docs: $(DOCS)
+docs: $(html_docs)

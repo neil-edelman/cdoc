@@ -262,68 +262,6 @@ static void token_current(struct Token *const token, const enum Symbol symbol) {
 	token->line = scanner.line;
 }
 
-/** This holds the sorting state information for `append`. */
-static struct {
-	struct Segment *segment;
-	struct Tag *tag;
-	struct TokenArray *current;
-} sorter;
-
-/*!re2c
-re2c:yyfill:enable   = 0;
-re2c:define:YYCTYPE  = char;
-re2c:define:YYCURSOR = scanner.cursor;
-*/
-
-/** This appends the current token based on the global state in `sorter`.
- @return Success. */
-static int append(const enum Symbol symbol) {
-	struct Token *token = 0;
-	enum { DISCARD, SORT_CODE, SORT_DOC, SORT_BEGIN_TAG, SORT_TAG }
-		sort = DISCARD;
-	const char *const symbol_string = symbols[symbol];
-	assert(symbol);
-	if(!sorter.segment && !(sorter.tag = 0, sorter.current = 0,
-		sorter.segment = SegmentArrayNew(&doc))) return 0;
-	/* Decide what to do based on the prefix. */
-	switch(symbol_string[0]) {
-	case 'C':
-	case 'D':
-	case 'T':
-	case 'E':
-	case 'M':
-	case 'P':
-	default:
-		break;
-	}
-	
-	if(!strncmp(symbols[symbol], "C_", 2)) {
-	}
-	switch(scanner.state) {
-	case yyccode:
-		assert(!strncmp(symbols[symbol], "C_", 2) || symbol == DOC_END);
-		token = TokenArrayNew(&sorter.segment->code);
-		break;
-	case yycmath:
-	case yycparam:
-	case yycdoc:
-		assert(!strncmp(symbols[symbol], "DOC_", 4)
-			|| !strncmp(symbols[symbol], "TAG_", 4)
-			|| !strncmp(symbols[symbol], "END_", 4)
-			|| !strncmp(symbols[symbol], "MATH_", 4)
-			|| !strncmp(symbols[symbol], "PARAM_", 6));
-		token = TokenArrayNew(&sorter.segment->doc);
-		break;
-	default:
-		/* `yyccharacter, yyccomment, yycmacro, yycmacro_comment, yycstring`
-		 are not returning anything. */
-		assert(0);
-	}
-	if(!token) return 0;
-	token_current(token, symbol);
-	return 1;
-}
-
 /*!re2c
 re2c:yyfill:enable   = 0;
 re2c:define:YYCTYPE  = char;
@@ -502,11 +440,73 @@ scan:
 */
 }
 
+/** This holds the sorting state information for `append`. */
+static struct {
+	struct Segment *segment;
+	struct Tag *tag;
+	struct TokenArray *current;
+} sorter;
+
+/*!re2c
+re2c:yyfill:enable   = 0;
+re2c:define:YYCTYPE  = char;
+re2c:define:YYCURSOR = cursor;
+//re2c:define:YYMARKER = marker;
+suffix = [A-Z_]* "\x00";
+*/
+
+/** This appends the current token based on the global state in `sorter`.
+ @return Success. */
+static int append(const enum Symbol symbol) {
+	struct Token *token = 0;
+	enum { DISCARD, SORT_CODE, SORT_DOC, SORT_BEGIN_TAG, SORT_TAG }
+		sort = DISCARD;
+	const char *const symbol_string = symbols[symbol], *cursor = symbol_string,
+		*marker;
+	char yych;
+	assert(symbol);
+	if(!sorter.segment && !(sorter.tag = 0, sorter.current = 0,
+		sorter.segment = SegmentArrayNew(&doc))) return 0;
+	/* Decide what to do based on the prefix. */
+	goto yyc_code; /* No-op. Because we have conditions. */
+	/*!re2c
+	<code> * { fprintf(stderr, "Symbol %s is unspecified.\n", symbol_string); }
+	<code> "C_" suffix { printf("CODE!\n"); sort = SORT_CODE; token = TokenArrayNew(&sorter.segment->code); }
+	<code> "DOC_" suffix { printf("DOC!!\n"); sort = SORT_DOC; }
+	*/
+
+#if 0
+	switch(scanner.state) {
+	case yyccode:
+		assert(!strncmp(symbols[symbol], "C_", 2) || symbol == DOC_END);
+		token = TokenArrayNew(&sorter.segment->code);
+		break;
+	case yycmath:
+	case yycparam:
+	case yycdoc:
+		assert(!strncmp(symbols[symbol], "DOC_", 4)
+			|| !strncmp(symbols[symbol], "TAG_", 4)
+			|| !strncmp(symbols[symbol], "END_", 4)
+			|| !strncmp(symbols[symbol], "MATH_", 4)
+			|| !strncmp(symbols[symbol], "PARAM_", 6));
+		token = TokenArrayNew(&sorter.segment->doc);
+		break;
+	default:
+		/* `yyccharacter, yyccomment, yycmacro, yycmacro_comment, yycstring`
+		 are not returning anything. */
+		assert(0);
+	}
+#endif
+	if(!token) return 0;
+	token_current(token, symbol);
+	return 1;
+}
+
 int main(int argc, char **argv) {
 
 	/* https://stackoverflow.com/questions/10293387/piping-into-application-run-under-xcode/13658537 */
 	if (argc == 2 && strcmp(argv[1], "debug") == 0 ) {
-		const char *test_file_path = "/Users/neil/Movies/Cdoc/c.txt";
+		const char *test_file_path = "/Users/neil/Movies/Cdoc/foo.c";
 		printf("== [RUNNING IN DEBUG MODE with %s]==\n\n", test_file_path);
 		freopen(test_file_path, "r", stdin);
 	}
