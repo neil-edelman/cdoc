@@ -26,23 +26,31 @@ extra := $(project).xcodeproj
 rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) \
 $(filter $(subst *,%,$2),$d))
 
-c_srcs    := $(call rwildcard, $(src), *.c)
-h_srcs    := $(call rwildcard, $(src), *.h)
-java_srcs := $(call rwildcard, $(src), *.java)
-re_srcs   := $(call rwildcard, $(src), *.re)
-re_cnd_srcs := $(call rwildcard, $(src), *.re.cnd)
-c_tests   := $(call rwildcard, $(test), *.c)
-h_tests   := $(call rwildcard, $(test), *.h)
-c_objs    := $(patsubst $(src)/%.c, $(build)/%.o, $(c_srcs))
-re_c      := $(patsubst $(src)/%.re, $(build)/%.re.c, $(re_srcs))
-re_cnd_c := $(patsubst $(src)/%.re.cnd, $(build)/%.re.cnd.c, $(re_cnd_srcs))
-re_c_objs := $(patsubst $(build)/%.re.c, $(build)/%.re.o, $(re_c)) \
-$(patsubst $(build)/%.re.cnd.c, $(build)/%.re.cnd.o, $(re_cnd_c))
+java_srcs  := $(call rwildcard, $(src), *.java)
+c_srcs     := $(call rwildcard, $(src), *.c)
+h_srcs     := $(call rwildcard, $(src), *.h)
+c_re_srcs  := $(call rwildcard, $(src), *.c.re)
+c_rec_srcs := $(call rwildcard, $(src), *.c.re_c)
+h_re_srcs  := $(call rwildcard, $(src), *.h.re)
+h_rec_srcs := $(call rwildcard, $(src), *.h.re_c)
+c_tests    := $(call rwildcard, $(test), *.c)
+h_tests    := $(call rwildcard, $(test), *.h)
+
 java_class := $(patsubst $(src)/%.java, $(build)/%.class, $(java_srcs))
+c_objs     := $(patsubst $(src)/%.c, $(build)/%.o, $(c_srcs))
+# must not conflict, eg, foo.c.re and foo.c would go to the same thing
+c_re_builds := $(patsubst $(src)/%.c.re, $(build)/%.c, $(c_re_srcs))
+c_rec_builds := $(patsubst $(src)/%.c.re_c, $(build)/%.c, $(c_rec_srcs))
+h_re_builds := $(patsubst $(src)/%.h.re, $(build)/%.h, $(h_re_srcs))
+h_rec_builds := $(patsubst $(src)/%.h.re_c, $(build)/%.h, $(h_rec_srcs))
+# together .re/.re_c
+c_re_objs := $(patsubst $(build)/%.c, $(build)/%.o, \
+$(c_re_builds) $(c_rec_builds))
 test_c_objs := $(patsubst $(test)/%.c, $(build)/$(test)/%.o, $(c_tests))
-html_docs := $(patsubst $(src)/%.c, $(doc)/%.html, $(c_srcs))
-h_all := $(h_srcs) $(h_tests) # we don't know what .h include; just rebuild all
-#icon := icon.ico # in $(media)
+html_docs  := $(patsubst $(src)/%.c, $(doc)/%.html, $(c_srcs))
+# just rebuild all
+h_all      := $(h_srcs) $(h_tests) $(h_re_builds) $(h_rec_builds)
+icon       := icon.ico # in $(media)
 
 cdoc  := cdoc
 re2c  := re2c
@@ -80,10 +88,13 @@ default: $(bin)/$(project)
 docs: $(html_docs)
 
 # linking
-$(bin)/$(project): $(c_objs) $(re_c_objs) $(test_c_objs)
+$(bin)/$(project): $(c_objs) $(c_re_objs) $(test_c_objs)
 	# linking rule
 	@$(mkdir) $(bin)
 	$(CC) $(OF) -o $@ $^
+
+# dependancy
+$(c_objs) $(c_re_objs): $(h_re_srcs) $(h_rec_srcs)
 
 # compiling
 $(c_objs): $(build)/%.o: $(src)/%.c $(h_all)
@@ -91,9 +102,8 @@ $(c_objs): $(build)/%.o: $(src)/%.c $(h_all)
 	@$(mkdir) $(build)
 	$(CC) $(CF) -c -o $@ $<
 
-$(re_c_objs): $(build)/%.o: $(build)/%.c $(h_all)
-	# re_c_objs rule
-	@$(mkdir) $(build)
+$(c_re_objs): $(build)/%.o: $(build)/%.c $(h_all)
+	# c_re_objs rule
 	$(CC) $(CF) -c -o $@ $<
 
 $(test_c_objs): $(build)/$(test)/%.o: $(test)/%.c $(h_all)
@@ -102,13 +112,13 @@ $(test_c_objs): $(build)/$(test)/%.o: $(test)/%.c $(h_all)
 	@$(mkdir) $(build)/$(test)
 	$(CC) $(CF) -c -o $@ $<
 
-$(re_c): $(build)/%.re.c: $(src)/%.re
-	# re_c (normal) rule
+$(c_re_builds) $(h_re_builds): $(build)/%: $(src)/%.re
+	# *.re build rule
 	@$(mkdir) $(build)
 	$(re2c) -o $@ $<
 
-$(re_cnd_c): $(build)/%.re.cnd.c: $(src)/%.re.cnd
-	# re_c (conditions) rule
+$(c_rec_builds) $(h_rec_builds): $(build)/%: $(src)/%.re_c
+	# *.re_c (conditions) build rule
 	@$(mkdir) $(build)
 	$(re2c) -c -o $@ $<
 
@@ -123,7 +133,8 @@ $(html_docs): $(doc)/%.html: $(src)/%.c $(src)/%.h
 .PHONY: setup clean backup icon install uninstall test docs
 
 clean:
-	-rm -f $(c_objs) $(test_c_objs) $(re_c_objs) $(re_c) $(html_docs)
+	-rm -f $(c_objs) $(test_c_objs) $(c_re_objs) $(c_re_builds) \
+$(c_rec_builds) $(h_re_builds) $(h_rec_builds) $(html_docs)
 	-rm -rf $(bin)/$(test)
 
 backup:
