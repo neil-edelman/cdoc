@@ -44,17 +44,17 @@ end:
 		sorter.segment = SegmentArrayNew(&doc))) return 0;
 	/* Choose which `TokenArray`. */
 	switch(sort) {
-	case SORT_CODE: printf("CODE!\n"); chosen = &sorter.segment->code; break;
+	case SORT_CODE: chosen = &sorter.segment->code; break;
 	case SORT_WORD:
 		/*chosen = TagArrayPop(sorter.tag_array);*/ /* careful! */
 		if(!chosen) chosen = &sorter.segment->doc;
-		printf("word\n");
 		break;
 	case SORT_BEGIN_TAG:
-		chosen = &sorter.segment->code; break; /* fixme */
+		chosen = &sorter.segment->doc; break; /* fixme */
 	default:
 		assert(0);
 	}
+	assert(chosen);
 	/* Make the token. */
 	if(!(token = TokenArrayNew(chosen))) return 0;
 	token_current(token, symbol);
