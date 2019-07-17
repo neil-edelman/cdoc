@@ -406,70 +406,11 @@ generic = [A-Z]+ "_";
 // Supports only C90 ids. That would be complicated. I suppose you could hack
 // it to accept a super-set?
 id = [a-zA-Z_][a-zA-Z_0-9]*;
-
-
-// <https://tools.ietf.org/html/rfc3986#appendix-B>
-uri = (([^:/?#]+) ":")? ("//" ([^/?#]*))? ([^?#]*) ("?" ([^#]*))? ("#"(.*));
-
-// <https://tools.ietf.org/html/rfc2396#appendix-B>
-//uri = ( ([^:/?#]+) ":" )? ( "//" ([^/?#]*))? ([^?#]*) ( "?" ([^#]*))?
-//	("#" (.*));
-
-// Simplified <https://tools.ietf.org/html/rfc3986#appendix-A>
-uri_HEXDIG = [0-9a-fA-F]; // right?
-uri_ALPHA  = [A-Fa-f];
-uri_DIGIT  = [0-9];
-uri_port = uri_DIGIT*;
-uri_unreserved = [A-Za-z0-9-._~];
-uri_pct_encoded = "%" uri_HEXDIG uri_HEXDIG;
-uri_h16 = (uri_HEXDIG){1,4};
-uri_dec_octet = [0-9] | [1-9][0-9] | "1"[0-9][0-9] | "2"[0-4][0-9] | "25"[0-5];
-uri_IPv4address = uri_dec_octet "." uri_dec_octet "." uri_dec_octet "."
-	uri_dec_octet;
-uri_ls32 = ( uri_h16 ":" uri_h16 ) | uri_IPv4address;
-uri_sub_delims = "!" | "$" | "&" | "'" | "(" | ")" | "*"
-	| "+" | "," | ";" | "=";
-uri_IPvFuture = "v" uri_HEXDIG+ "." ( uri_unreserved | uri_sub_delims | ":" )+;
-uri_IPv6address =                       ( uri_h16 ":" ){6} uri_ls32
-|                                  "::" ( uri_h16 ":" ){5} uri_ls32
-| (                     uri_h16 )? "::" ( uri_h16 ":" ){4} uri_ls32
-| ( ( uri_h16 ":" ){1,} uri_h16 )? "::" ( uri_h16 ":" ){3} uri_ls32
-| ( ( uri_h16 ":" ){2,} uri_h16 )? "::" ( uri_h16 ":" ){2} uri_ls32
-| ( ( uri_h16 ":" ){3,} uri_h16 )? "::"   uri_h16 ":"      uri_ls32
-| ( ( uri_h16 ":" ){4,} uri_h16 )? "::"                    uri_ls32
-| ( ( uri_h16 ":" ){5,} uri_h16 )? "::"                    uri_h16
-| ( ( uri_h16 ":" ){6,} uri_h16 )? "::";
-uri_IP_literal = "[" ( uri_IPv6address | uri_IPvFuture  ) "]";
-uri_reg_name = ( uri_unreserved | uri_pct_encoded | uri_sub_delims )*;
-uri_host = uri_IP_literal | uri_IPv4address | uri_reg_name;
-uri_userinfo = ( uri_unreserved | uri_pct_encoded | uri_sub_delims | ":" )*;
-uri_authority = ( uri_userinfo "@" )? uri_host ( ":" uri_port )?;
-uri_scheme = uri_ALPHA ( uri_ALPHA | uri_DIGIT | "+" | "-" | "." )*;
-uri_pchar = uri_unreserved | uri_pct_encoded | uri_sub_delims | ":" | "@";
-uri_segment = uri_pchar*;
-uri_segment_nz = uri_pchar+;
-// non-zero-length segment without any colon ":"
-uri_segment_nz_nc = ( uri_unreserved | uri_pct_encoded | uri_sub_delims
-	| "@" )+;
-uri_path_abempty = ( "/" uri_segment )*;
-uri_path_absolute = "/" ( uri_segment_nz *( "/" uri_segment ) )?;
-uri_path_noscheme = uri_segment_nz_nc *( "/" uri_segment );
-uri_path_rootless = uri_segment_nz *( "/" uri_segment );
-uri_query = ( uri_pchar | "/" | "?" )*;
-uri_fragment = ( uri_pchar | "/" | "?" )*;
-uri_hier_part = "//" uri_authority (uri_path_abempty | uri_path_absolute
-	| uri_path_rootless)?;
-//uri = uri_scheme ":" uri_hier_part ( "?" uri_query )? ( "#" uri_fragment );
-uri_whatever = [A-Za-z0-9_.]*;
-//uri = "http" "s"? "://" ((uri_whatever+) "/"?)*;
-// These are unused??
-//   path          = path-abempty    ; begins with "/" or is empty
-//                 / path-absolute   ; begins with "/" but not "//"
-//                 / path-noscheme   ; begins with a non-colon segment
-//                 / path-rootless   ; begins with a segment
-//                 / path-empty      ; zero characters
-//uri_reserved = uri_gen_delims | uri_sub_delims;
-//uri_gen_delims = ":" | "/" | "?" | "#" | "[" | "]" | "@";
+// <https://tools.ietf.org/html/rfc3986#appendix-B> and also uhm
+// ' \t\n\v\f\r<>&\x00' might be disallowed? because then it crashes.
+uri = ([^:/?# \t\n\v\f\r<>&\x00]+ ":")? ("//" [^/?# \t\n\v\f\r<>&\x00]*)?
+	[^?# \t\n\v\f\r<>&\x00]* ("?" [^# \t\n\v\f\r<>&\x00]*)?
+	("#" [^ \t\n\v\f\r<>&\x00]*)?;
 */
 
 /** Scans. */
@@ -484,6 +425,13 @@ scan:
 		if(scanner.state != yyccode || scanner.indent_level)
 			fprintf(stderr, "Unexpected EOF.\n"), errno = EILSEQ;
 		return END;
+	}
+	// Ignore code that we don't know how to deal with.
+	<*> * {
+		if(scanner.state == yyccode)
+			fprintf(stderr, "Unknown code, <%.*s>; ignored.\n",
+			(int)(scanner.cursor - scanner.from), scanner.from);
+		goto scan;
 	}
 	// Newlines are generally ignored but documentation counts for paragraphs.
 	<*> newline {
@@ -503,11 +451,6 @@ scan:
 	}
 	// Continuation.
 	<string, character, macro> "\\" newline { scanner.line++; goto scan; }
-	// Ignore code that we don't know how to deal with.
-	<code> * { fprintf(stderr, "Unknown code, <%.*s>; ignored.\n",
-		(int)(scanner.cursor - scanner.from), scanner.from); goto scan; }
-	// This makes no difference at all -- we aren't concerned with that.
-	<comment, macro_comment, string, character, macro> * { goto scan; }
 	// C++ comments we aren't concerned with.
 	<code, macro> cxx_comment { goto reset; }
 	// Ignore whitespace.
