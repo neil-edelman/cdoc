@@ -1,5 +1,5 @@
-/** 2019 Neil Edelman, distributed under the terms of the MIT License,
- \url{ https://opensource.org/licenses/MIT }.
+/** 2019 Neil Edelman, distributed under the terms of the
+ [MIT License](https://opensource.org/licenses/MIT).
 
  This is a context-sensitive parser intended to process (parts of) a `C`
  compilation unit and extract documentation in a manner suited to those
@@ -14,7 +14,70 @@
  \\\@, and \\\\ escapes. You can have ASCII art inside like Kernel comments.
  Like LaTeX, two hard returns is a paragraph. All documentation goes at most
  two lines above what it documents or it's in the header, (like this.) Multiple
- documentation on the same command is appended.
+ documentation on the same command is appended. Embedded in the documentation
+ is <url>, <source>, \\see{<function>}, and \\seedef{<definition>}.
+ 
+ - Paragraphs: one or more blank lines.
+ - Headers: no; no one has time to read that.
+ - Block Quotes: No.
+   $"> " useful for math, but no nesting. Block quotes have a
+   space. pre
+ - Lists: following a blank line, " - ", but not "*", "+", or numbered lists.
+   I prefer "*", but use of asterisks is problematic when dealing with Kernel
+   comments, so we've skipped this.
+ - Code Blocks: Yes; useful for math. Eiter 4 spaces or a tab. pre.
+   no. This is documentation.
+ - Horizontal Rulers: no. What are you writing a dissertation?
+ - Emphasis: \_single underscores\_ at the outside of a word, only words can go
+   in. *, **, \_\_, no.
+ - Strikethrough: no.
+ - Code Spans: \`printf\` but only code (math, etc) can go in, also use for
+   naming variables; no \`\`.
+ - Table of Contents: no.
+ - Tables: no. This is messy.
+ - Fenced Code Blocks: no.
+ - Anchors: ?
+ - HTML blocks: no.
+ - '/ * !', '/ / /', '/ / !', '/ * * * * ...', no.
+ - \\brief: no.
+ - '/ * ! <', '/ * * <', '/ / ! <', '/ / / <': not needed; automaticlly
+   concatenates.
+ - [in], [out]: no; use `const` when appropriate.
+ - '\\param c1', no.
+ - '\@param a' or '\@param{a[, ...]}' will be concatenated.
+
+ ![Caption text](/path/to/img.jpg)
+ - ![Caption text](/path/to/img.jpg "Image title"): no.
+ [The link text](http://example.net/)
+ - [The link text](http://example.net/ "Link title"): no.
+
+ Warnings when all the varibles are not mentioned at least once, in the description or the @var.
+
+"\struct to document a C-struct.
+\union to document a union.
+\enum to document an enumeration type.
+\fn to document a function.
+\var to document a variable or typedef or enum value.
+\def to document a #define.
+\typedef to document a type definition."
+
+"Unlike standard Markdown and Github Flavored Markdown doxygen will not touch internal underscores or stars or tildes, so the following will appear as-is:
+
+a_nice_identifier
+Furthermore, a * or _ only starts an emphasis and a ~ only starts a strikethrough if
+
+it is followed by an alphanumerical character, and
+it is preceded by a space, newline, or one the following characters <{([,:;
+An emphasis or a strikethrough ends if
+
+it is not followed by an alphanumerical character, and
+it is not preceded by a space, newline, or one the following characters ({[<=+-\@
+Lastly, the span of the emphasis or strikethrough is limited to a single paragraph."
+
+"Note that unlike standard Markdown, doxygen leaves the following untouched.
+
+A `cool' word in a `nice' sentence."
+
 
  There are each-blocks separating the documentation until the next paragraph or
  until the next each-block, \@title, (because input comes from `stdin`, there
@@ -22,8 +85,7 @@
  \@std, \@depend, \@version{<version>}, \@fixme, \@return,
  \@throws{<exception1>[, ...]}, \@implements, \@order, \@allow, (the latter
  allows `static` functions to make it into the documentation and is not
- printed.) Embedded in the documentation is \\url{<url>}, \\cite{<source>},
- \\see{<function>}, and \\seedef{<definition>}.
+ printed.)
 
  @title Scanner.c.re
  @author Neil
@@ -36,7 +98,9 @@
  @fixme Trigraph support, (haha.)
  @fixme Old-style function support.
  @fixme `re2c` appends a comma at the end of the enumeration list, not
- compliant with C90. */
+ compliant with C90.
+ @fixme '\~' should \&nbsp; and something should give a slim space "\\," but
+ non-breaking, (is it?) */
 
 #include <stdio.h>  /* printf */
 #include <string.h> /* memset strchr */
@@ -55,8 +119,6 @@
 #define PARAM3_B(A, B, C) B
 #define PARAM3_C(A, B, C) C
 #define STRINGISE3_A(A, B, C) #A
-
-// url syntax?
 
 /* Define `Symbols` -- these are the numerical values given to a section of
  text. The prefix of symbols themselves have meaning; see \see{append}. */
@@ -92,9 +154,12 @@
 	/* Math/code `like this`. */ \
 	X(MATH_BEGIN, '$', &math), X(MATH_END, '$', &math), \
 	X(MATH_WORD, 'y', &lit), \
+	/* All syntax is the same characters for consistency. */ \
+	X(DOC_LEFT, '{', 0), X(DOC_RIGHT, '}', 0), \
 	/* Variable lists {like, this}. */ \
-	X(PARAM_BEGIN, '<', &lb), X(PARAM_END, '>', &rb), \
-	X(PARAM_COMMA, '.', &lit), X(PARAM_ITEM, 'p', &lit)
+	X(DOC_ID, 'p', &lit), X(DOC_COMMA, '.', &lit), \
+	/* URI for \url and \cite. */ \
+	X(DOC_URI, 'u', 0)
 enum Symbol { SYMBOL(PARAM3_A) };
 static const char *const symbols[] = { SYMBOL(STRINGISE3_A) };
 static const char symbol_mark[] = { SYMBOL(PARAM3_B) };
@@ -298,9 +363,20 @@ re2c:define:YYGETCONDITION:naked = 1;
 re2c:define:YYSETCONDITION = "scanner.state = @@;";
 re2c:define:YYSETCONDITION:naked = 1;
 
+
+// ?? re2c:cond:goto = 'goto @@;';
+// re2c:cond:goto = 'return scanner.state = yyc@@, @@;';
+// re2c:cond:goto = 'return scanner.state = yyc@@;'; ??
+// { return scanner.state = yycparam_more, DOC_ID; }
+// :=> param_more, DOC_ID
+// mtags get rid of newlines?
+
+// Eof is marked by null when preparing files for lexing.
+eof = "\x00";
 whitespace = [ \t\v\f];
 newline = "\n" | "\r" "\n"?;
-art = "*"? whitespace* newline " *";
+// This is to support ascii-art Kernel comments.
+art = whitespace* newline " *";
 wordchars = [^ \t\n\v\f\r\\@&<>_`,{}]; // Why @?
 doc = "/""**";
 begin_comment = "/""*";
@@ -325,11 +401,75 @@ operator = ":" | "..." | "::" | "?" | "+" | "-" | "*" | "/" | "%" | "^"
 // Extension (hack) for generic macros; if one names them this way, it will
 // be documented nicely; the down side is, these are legal names for
 // identifiers; will be confused if you name anything this way that IS an
-// identifier.
+// identifier. Don't do that.
 generic = [A-Z]+ "_";
 // Supports only C90 ids. That would be complicated. I suppose you could hack
 // it to accept a super-set?
 id = [a-zA-Z_][a-zA-Z_0-9]*;
+
+
+// <https://tools.ietf.org/html/rfc3986#appendix-B>
+uri = (([^:/?#]+) ":")? ("//" ([^/?#]*))? ([^?#]*) ("?" ([^#]*))? ("#"(.*));
+
+// <https://tools.ietf.org/html/rfc2396#appendix-B>
+//uri = ( ([^:/?#]+) ":" )? ( "//" ([^/?#]*))? ([^?#]*) ( "?" ([^#]*))?
+//	("#" (.*));
+
+// Simplified <https://tools.ietf.org/html/rfc3986#appendix-A>
+uri_HEXDIG = [0-9a-fA-F]; // right?
+uri_ALPHA  = [A-Fa-f];
+uri_DIGIT  = [0-9];
+uri_port = uri_DIGIT*;
+uri_unreserved = [A-Za-z0-9-._~];
+uri_pct_encoded = "%" uri_HEXDIG uri_HEXDIG;
+uri_h16 = (uri_HEXDIG){1,4};
+uri_dec_octet = [0-9] | [1-9][0-9] | "1"[0-9][0-9] | "2"[0-4][0-9] | "25"[0-5];
+uri_IPv4address = uri_dec_octet "." uri_dec_octet "." uri_dec_octet "."
+	uri_dec_octet;
+uri_ls32 = ( uri_h16 ":" uri_h16 ) | uri_IPv4address;
+uri_sub_delims = "!" | "$" | "&" | "'" | "(" | ")" | "*"
+	| "+" | "," | ";" | "=";
+uri_IPvFuture = "v" uri_HEXDIG+ "." ( uri_unreserved | uri_sub_delims | ":" )+;
+uri_IPv6address =                       ( uri_h16 ":" ){6} uri_ls32
+|                                  "::" ( uri_h16 ":" ){5} uri_ls32
+| (                     uri_h16 )? "::" ( uri_h16 ":" ){4} uri_ls32
+| ( ( uri_h16 ":" ){1,} uri_h16 )? "::" ( uri_h16 ":" ){3} uri_ls32
+| ( ( uri_h16 ":" ){2,} uri_h16 )? "::" ( uri_h16 ":" ){2} uri_ls32
+| ( ( uri_h16 ":" ){3,} uri_h16 )? "::"   uri_h16 ":"      uri_ls32
+| ( ( uri_h16 ":" ){4,} uri_h16 )? "::"                    uri_ls32
+| ( ( uri_h16 ":" ){5,} uri_h16 )? "::"                    uri_h16
+| ( ( uri_h16 ":" ){6,} uri_h16 )? "::";
+uri_IP_literal = "[" ( uri_IPv6address | uri_IPvFuture  ) "]";
+uri_reg_name = ( uri_unreserved | uri_pct_encoded | uri_sub_delims )*;
+uri_host = uri_IP_literal | uri_IPv4address | uri_reg_name;
+uri_userinfo = ( uri_unreserved | uri_pct_encoded | uri_sub_delims | ":" )*;
+uri_authority = ( uri_userinfo "@" )? uri_host ( ":" uri_port )?;
+uri_scheme = uri_ALPHA ( uri_ALPHA | uri_DIGIT | "+" | "-" | "." )*;
+uri_pchar = uri_unreserved | uri_pct_encoded | uri_sub_delims | ":" | "@";
+uri_segment = uri_pchar*;
+uri_segment_nz = uri_pchar+;
+// non-zero-length segment without any colon ":"
+uri_segment_nz_nc = ( uri_unreserved | uri_pct_encoded | uri_sub_delims
+	| "@" )+;
+uri_path_abempty = ( "/" uri_segment )*;
+uri_path_absolute = "/" ( uri_segment_nz *( "/" uri_segment ) )?;
+uri_path_noscheme = uri_segment_nz_nc *( "/" uri_segment );
+uri_path_rootless = uri_segment_nz *( "/" uri_segment );
+uri_query = ( uri_pchar | "/" | "?" )*;
+uri_fragment = ( uri_pchar | "/" | "?" )*;
+uri_hier_part = "//" uri_authority (uri_path_abempty | uri_path_absolute
+	| uri_path_rootless)?;
+//uri = uri_scheme ":" uri_hier_part ( "?" uri_query )? ( "#" uri_fragment );
+uri_whatever = [A-Za-z0-9_.]*;
+//uri = "http" "s"? "://" ((uri_whatever+) "/"?)*;
+// These are unused??
+//   path          = path-abempty    ; begins with "/" or is empty
+//                 / path-absolute   ; begins with "/" but not "//"
+//                 / path-noscheme   ; begins with a non-colon segment
+//                 / path-rootless   ; begins with a segment
+//                 / path-empty      ; zero characters
+//uri_reserved = uri_gen_delims | uri_sub_delims;
+//uri_gen_delims = ":" | "/" | "?" | "#" | "[" | "]" | "@";
 */
 
 /** Scans. */
@@ -339,20 +479,13 @@ reset:
 	scanner.from = scanner.cursor;
 scan:
 /*!re2c
-	<code> * { fprintf(stderr, "Unknown code, <%.*s>; ignored.\n",
-		(int)(scanner.cursor - scanner.from), scanner.from); goto reset; }
-	<param> * { return fprintf(stderr, "Unknown parameter, <%.*s>.\n",
-		(int)(scanner.cursor - scanner.from), scanner.from), errno = EILSEQ,
-		END; }
-	<comment, macro_comment, string, character, macro> * { goto scan; }
+	// Everything stops at EOF.
 	<*> "\x00" {
 		if(scanner.state != yyccode || scanner.indent_level)
 			fprintf(stderr, "Unexpected EOF.\n"), errno = EILSEQ;
 		return END;
 	}
-	<doc, param, math, code, macro> whitespace+ { goto reset; }
-	<code, macro> cxx_comment { goto reset; }
-
+	// Newlines are generally ignored but documentation counts for paragraphs.
 	<*> newline {
 		scanner.line++;
 		if(scanner.state == yycdoc) return DOC_NEWLINE;
@@ -362,65 +495,60 @@ scan:
 		else if(scanner.state == yycmacro) scanner.state = yyccode;
 		goto reset;
 	}
-	// Continuation.
-	<string, character, macro> "\\" newline { scanner.line++; goto scan; }
+	// Also newlines in comments should be optionally ascii-art.
 	<doc> art / [^/] {
 		scanner.line++;
 		if(scanner.state == yycdoc) return DOC_NEWLINE;
 		goto reset;
 	}
+	// Continuation.
+	<string, character, macro> "\\" newline { scanner.line++; goto scan; }
+	// Ignore code that we don't know how to deal with.
+	<code> * { fprintf(stderr, "Unknown code, <%.*s>; ignored.\n",
+		(int)(scanner.cursor - scanner.from), scanner.from); goto scan; }
+	// This makes no difference at all -- we aren't concerned with that.
+	<comment, macro_comment, string, character, macro> * { goto scan; }
+	// C++ comments we aren't concerned with.
+	<code, macro> cxx_comment { goto reset; }
+	// Ignore whitespace.
+	<doc, math, code, macro> whitespace+ { goto reset; }
 
+	// Documentation tries to be as not-fancy as possible.
 	<doc> "*""/" { return scanner.state = yyccode, DOC_END; }
-	<param, math> "*""/" { fprintf(stderr, "Not finished at end of comment.\n");
+	<math> "*""/" { fprintf(stderr, "Not finished at end of comment.\n");
 		return errno = EILSEQ, END; }
 
-	<doc> (wordchars | ",")* { return DOC_WORD; }
-	//<doc> * { return DOC_WORD; }
-	<param> (wordchars | "_" | "`" | "\\")* { return PARAM_ITEM; }
-	<param> "," { return PARAM_COMMA; }
-	//<math> (wordchars | "," | "_")* { return MATH_STUFF; }
+	<doc> (wordchars | ",")+ { return DOC_WORD; }
 	<math> * { return MATH_WORD; }
 
-	<doc, param, math> "\\\\"      { return DOC_BACKSLASH; }
-	<doc, param, math> "\\`"       { return DOC_BACKQUOTE; }
-	<doc, param, math> "\\@" | "@" { return DOC_EACH; }
-	<doc, param, math> "\\_"       { return DOC_UNDERSCORE; }
+	<doc, math> "\\\\"      { return DOC_BACKSLASH; }
+	<doc, math> "\\`"       { return DOC_BACKQUOTE; }
+	<doc, math> "\\@" | "@" { return DOC_EACH; }
+	<doc, math> "\\_"       { return DOC_UNDERSCORE; }
 	<doc> "_"                      { return DOC_EM; }
 	<doc> "`" { return scanner.state = yycmath, MATH_BEGIN; }
 	<math> "`" { return scanner.state = yycdoc, MATH_END; }
-	
-	<doc> "{" { return scanner.state = yycparam, PARAM_BEGIN; }
-	<doc> "}" { fprintf(stderr, "Misplaced '}' in documentation.\n");
-		return errno = EILSEQ, END; }
-	<param> "{" { fprintf(stderr, "Misplaced '{' in documentation.\n");
-		return errno = EILSEQ, END; }
-	<param> "}" :=> doc
 
 	// These are recognised in the documentation as stuff.
-	<doc> "\\url"  { return scanner.state = yycparam, DOC_URL; }
-	<doc> "\\cite" { return scanner.state = yycparam, DOC_CITE; }
-	<doc> "\\see"  { return scanner.state = yycparam, DOC_SEE; }
+	<doc> "\\url"  { return scanner.state = yycparam_begin, DOC_URL; }
+	<doc> "\\cite" { return scanner.state = yycparam_begin, DOC_CITE; }
+	<doc> "\\see"  { return scanner.state = yycparam_begin, DOC_SEE; }
 
 	// These are tags.
 	<doc> "@title"      { return TAG_TITLE; }
-	<doc> "@param"      { return scanner.state = yycparam, TAG_PARAM; }
+	<doc> "@param"      { return scanner.state = yycparam_begin, TAG_PARAM; }
 	<doc> "@author"     { return TAG_AUTHOR; }
 	<doc> "@std"        { return TAG_STD; }
 	<doc> "@depend"     { return TAG_DEPEND; }
 	<doc> "@version"    { return TAG_VERSION; }
 	<doc> "@fixme"      { return TAG_FIXME; }
 	<doc> "@return"     { return TAG_RETURN; }
-	<doc> "@throws"     { return scanner.state = yycparam, TAG_THROWS; }
+	<doc> "@throws"     { return scanner.state = yycparam_begin, TAG_THROWS; }
 	<doc> "@implements" { return TAG_IMPLEMENTS; }
 	<doc> "@order"      { return TAG_ORDER; }
 	<doc> "@allow"      { return TAG_ALLOW; }
 
-	// Also escape these for {HTML}.
-	<doc, param, math> "&" { return DOC_HTML_AMP; }
-	<doc, param, math> "<" { return DOC_HTML_LT; }
-	<doc, param, math> ">" { return DOC_HTML_GT; }
-
-	<code> doc / [^/] :=> doc
+	<code> doc / [^/] { return scanner.state = yycdoc, DOC_BEGIN; }
 	// With flattening the `ScanState` stack, this is not actually worth
 	// the effort; honestly, it's not going to matter.
 	<macro> doc / [^/] {
@@ -453,6 +581,23 @@ scan:
 	<code> ","          { return C_COMMA; }
 	<code> ";"          { return C_SEMI; }
 	<code> id           { return C_ID; }
+
+	<doc> "<" uri ">" { return DOC_URL; }
+	// Also escape these for {HTML}.
+	//<doc, math> "&" { return DOC_HTML_AMP; }
+	<doc, math> "<" { return DOC_HTML_LT; }
+	<doc, math> ">" { return DOC_HTML_GT; }
+
+	// parameter lists
+	<param_begin> "{" { return scanner.state = yycparam_item, DOC_LEFT; }
+	<param_item>  id  { return scanner.state = yycparam_more, DOC_ID; }
+	<param_more>  "," { return scanner.state = yycparam_item, DOC_COMMA; }
+	<param_more>  "}" { return scanner.state = yycdoc,        DOC_RIGHT; }
+	<param_item, param_more> whitespace+ { goto reset; }
+	<param_begin, param_item, param_more> * {
+		return fprintf(stderr, "Unrecognised in parameter list, <%.*s>.\n",
+		(int)(scanner.cursor-scanner.from), scanner.from), errno = EILSEQ, END;
+	}	
 
 	<comment> end_comment :=> code
 	<macro_comment> end_comment :=> macro

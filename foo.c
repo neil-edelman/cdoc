@@ -1,4 +1,4 @@
-/** Yo \url{ http://foo.org/ }
+/** Yo <http://foo.org/>
 
 Paragraph
 

@@ -27,7 +27,6 @@ static int sort(const enum Symbol symbol) {
 	const char *const symbol_string = symbols[symbol], *cursor = symbol_string,
 		*marker;
 	assert(symbol);
-	printf("-->%s\n", symbol_string);
 	/* Decide what to do based on the prefix. */
 /*!re2c
 	* { goto end; }
