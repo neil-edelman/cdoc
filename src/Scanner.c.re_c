@@ -143,9 +143,8 @@ A `cool' word in a `nice' sentence."
 	X(TAG_ALLOW, '@', &lit), \
 	/* Meaning/escapes document syntax. */ \
 	X(DOC_BEGIN, '~', 0), X(DOC_END, '~', 0), X(DOC_WORD, 'w', &lit), \
-	X(DOC_BACKSLASH, '\\', &esc_bs), X(DOC_BACKQUOTE, '\\', &esc_bq), \
-	X(DOC_EACH, '\\', &esc_each), X(DOC_UNDERSCORE, '\\', &esc_under), \
-	X(DOC_URL, '\\', &url), X(DOC_CITE, '\\', &cite), X(DOC_SEE, '\\', &see), \
+	X(DOC_ESCAPE, '\\', &esc_bs), X(DOC_URL, '\\', &url), \
+	X(DOC_CITE, '\\', &cite), X(DOC_SEE, '\\', &see), \
 	X(DOC_SEEDEF, '\\', &see), X(DOC_NEWLINE, 'n', &par), \
 	X(DOC_EM, '_', &em), \
 	/* Also do these from LaTeX to HTML. */ \
@@ -428,8 +427,7 @@ scan:
 	}
 	// Ignore code that we don't know how to deal with.
 	<*> * {
-		if(scanner.state == yyccode)
-			fprintf(stderr, "Unknown code, <%.*s>; ignored.\n",
+		fprintf(stderr, "Unknown, <%.*s>; ignored.\n",
 			(int)(scanner.cursor - scanner.from), scanner.from);
 		goto scan;
 	}
@@ -462,18 +460,14 @@ scan:
 		return errno = EILSEQ, END; }
 
 	<doc> (wordchars | ",")+ { return DOC_WORD; }
-	<math> * { return MATH_WORD; }
+	<math> (wordchars) { return MATH_WORD; }
 
-	<doc, math> "\\\\"      { return DOC_BACKSLASH; }
-	<doc, math> "\\`"       { return DOC_BACKQUOTE; }
-	<doc, math> "\\@" | "@" { return DOC_EACH; }
-	<doc, math> "\\_"       { return DOC_UNDERSCORE; }
+	<doc, math> "\\"[^*A-Za-z] { return DOC_ESCAPE; }
 	<doc> "_"                      { return DOC_EM; }
 	<doc> "`" { return scanner.state = yycmath, MATH_BEGIN; }
 	<math> "`" { return scanner.state = yycdoc, MATH_END; }
 
 	// These are recognised in the documentation as stuff.
-	<doc> "\\url"  { return scanner.state = yycparam_begin, DOC_URL; }
 	<doc> "\\cite" { return scanner.state = yycparam_begin, DOC_CITE; }
 	<doc> "\\see"  { return scanner.state = yycparam_begin, DOC_SEE; }
 
@@ -526,8 +520,9 @@ scan:
 	<code> id           { return C_ID; }
 
 	<doc> "<" uri ">" { return DOC_URL; }
+
 	// Also escape these for {HTML}.
-	//<doc, math> "&" { return DOC_HTML_AMP; }
+	<doc, math> "&" { return DOC_HTML_AMP; }
 	<doc, math> "<" { return DOC_HTML_LT; }
 	<doc, math> ">" { return DOC_HTML_GT; }
 
