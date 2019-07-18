@@ -9,15 +9,18 @@
  doesn't do that. Lexes documents on-line and partially parses them to give a
  very rough state with some very broad assumptions.
 
- Documentation commands are '/ * *' and are ended with '* /'. Inside, \_ is
- emphasised block and \` is a code/math block, including variables; \\\_, \\\`,
- \\\@, and \\\\ escapes. You can have ASCII art inside like Kernel comments.
+ Documentation commands are { "/" "*" "*"+ } and are ended with { "*"+ "/" },
+ but not { "/" "*"+ "*" "/" }; one can still use this as a code break.
+ Inside, \_ is emphasised block and \` is a code/math block, including
+ variables; \\ is used as an escape, which escapes whatever comes after. You
+ can have ASCII art inside like Kernel comments and 
  Like LaTeX, two hard returns is a paragraph. All documentation goes at most
  two lines above what it documents or it's in the header, (like this.) Multiple
  documentation on the same command is appended. Embedded in the documentation
  is <url>, <source>, \\see{<function>}, and \\seedef{<definition>}.
  
- - Paragraphs: one or more blank lines.
+ - Paragraphs: one or more blank lines. Paragrahs at end/beginning are cut and
+   new comments are always new paragraphs.
  - Headers: no; no one has time to read that.
  - Block Quotes: No.
    $"> " useful for math, but no nesting. Block quotes have a
@@ -36,7 +39,7 @@
  - Table of Contents: no.
  - Tables: no. This is messy.
  - Fenced Code Blocks: no.
- - Anchors: ?
+ - Anchors: ? <fn:<fn>>? <decl:<decl>>?
  - HTML blocks: no.
  - '/ * !', '/ / /', '/ / !', '/ * * * * ...', no.
  - \\brief: no.
@@ -147,9 +150,6 @@ A `cool' word in a `nice' sentence."
 	X(DOC_CITE, '\\', &cite), X(DOC_SEE, '\\', &see), \
 	X(DOC_SEEDEF, '\\', &see), X(DOC_NEWLINE, 'n', &par), \
 	X(DOC_EM, '_', &em), \
-	/* Also do these from LaTeX to HTML. */ \
-	X(DOC_HTML_AMP, '&', &esc_amp), X(DOC_HTML_LT, '&', &esc_lt), \
-	X(DOC_HTML_GT, '&', &esc_gt), \
 	/* Math/code `like this`. */ \
 	X(MATH_BEGIN, '$', &math), X(MATH_END, '$', &math), \
 	X(MATH_WORD, 'y', &lit), \
@@ -366,13 +366,29 @@ re2c:define:YYSETCONDITION:naked = 1;
 eof = "\x00";
 whitespace = [ \t\v\f];
 newline = "\n" | "\r" "\n"?;
-// This is to support ascii-art Kernel comments.
-art = whitespace* newline " *";
-wordchars = [^ \t\n\v\f\r\\@&<>_`,{}]; // Why @?
-doc = "/""**";
+
+// Words can be composed of anything except:
+// " \t\n\v\f\r" whitespace and newline;
+// "*" potential end-of-comment;
+// "\\" escape;
+// "_" (at the beginning or end) for em;
+// "@" (at the beginning) for each-tag;
+// "<" (at the beginning) ">" (at the end) for links;
+// "\x00" eof.
+word_base = [^ \t\n\v\f\r*\\_@<>\x00];
+word_begin = word_base | ">";
+word_in    = word_begin | "_" | "@" | "<" | ">";
+word_end   = word_begin | "@" | "<";
+word = word_base | (word_begin word_in* word_end);
+// fixme: < > @ _ by themselves should be considered words. Not sure how to do that.
+
+doc = "/""*"+;
 begin_comment = "/""*";
 end_comment = "*""/";
 cxx_comment = "//" [^\n]*;
+// This is to support ascii-art Kernel comments.
+art = whitespace* newline " *";
+comment_break = "/" "*"+ "*" "/";
 macro = ("#" | "%:");
 // @fixme No trigraph support.
 // char_type = "u8"|"u"|"U"|"L"; <- These get caught in id; don't care.
@@ -459,18 +475,18 @@ scan:
 	<doc, math, code, macro> whitespace+ { goto reset; }
 
 	// Documentation tries to be as not-fancy as possible.
-	<doc> "*""/" { return scanner.state = yyccode, DOC_END; }
-	<doc> "\\*""/" { return fprintf(stderr,
-		"Escape past end of comment '\\*""/'.\n"), errno = EILSEQ, END; }
+	<doc, math> "\\*""/" { return fprintf(stderr,
+		"Escape past end of documentation '\\*""/'.\n"), errno = EILSEQ, END; }
 	<math> "*""/" { return fprintf(stderr,
-		"Not finished at end of comment.\n"), errno = EILSEQ, END; }
+		"Math mode at end of documentation.\n"), errno = EILSEQ, END; }
+	<doc> "*""/" { return scanner.state = yyccode, DOC_END; }
 
-	<doc> (wordchars | ",")+ { return DOC_WORD; }
-	<math> (wordchars) { return MATH_WORD; }
+	<doc> word { return DOC_WORD; }
+	<math> word { return MATH_WORD; }
 
 	<doc, math> "\\"[^*] { return DOC_ESCAPE; }
 	<doc, math> "\\*" / [^/] { return DOC_ESCAPE; }
-	<doc> "_"                      { return DOC_EM; }
+	<doc> "_" { return DOC_EM; }
 	<doc> "`" { return scanner.state = yycmath, MATH_BEGIN; }
 	<math> "`" { return scanner.state = yycdoc, MATH_END; }
 
@@ -499,6 +515,7 @@ scan:
 		debug();
 		return errno = EILSEQ, END;
 	}
+	<code> comment_break { goto reset; } // Like this: /*****/.
 	<code> begin_comment :=> comment
 	<macro> begin_comment :=> macro_comment
 	<code> macro :=> macro
@@ -527,11 +544,6 @@ scan:
 
 	<doc> "<" uri ">" { return DOC_URL; }
 	<doc> "<" citation ">" { return DOC_CITE; }
-
-	// Also escape these for {HTML}.
-	<doc, math> "&" { return DOC_HTML_AMP; }
-	<doc, math> "<" { return DOC_HTML_LT; }
-	<doc, math> ">" { return DOC_HTML_GT; }
 
 	// Parameter lists.
 	<param_begin> "{" { return scanner.state = yycparam_item, DOC_LEFT; }

@@ -17,7 +17,7 @@ struct T_U_(Array, Sort) b;
 /** C */
 int T_U_V_(Foo, Bar  ,  Baz)(void);
 
-/** Escapes. \\ \` \@ \_ \*  /// \\\ \*/
+/** Escapes. \\ \` \@ \_ \*  /// \\\ `*/
 
 /** Returns eof.
  @implements ScannerFn

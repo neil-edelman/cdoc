@@ -23,26 +23,26 @@ static int sort(const enum Symbol symbol) {
 	struct TokenArray *chosen = 0;
 	struct Token *token = 0;
 	enum { DISCARD, SORT_CODE, SORT_WORD, SORT_BEGIN_TAG }
-		sort = DISCARD;
+		what = DISCARD;
 	const char *const symbol_string = symbols[symbol], *cursor = symbol_string,
 		*marker;
 	assert(symbol);
 	/* Decide what to do based on the prefix. */
 /*!re2c
 	* { goto end; }
-	"C_" suffix { sort = SORT_CODE; goto end; }
-	("DOC_" | "MATH_" | "PARAM_") suffix { sort = SORT_WORD; goto end; }
-	"TAG_" suffix { sort = SORT_BEGIN_TAG; goto end; }
+	"C_" suffix { what = SORT_CODE; goto end; }
+	("DOC_" | "MATH_" | "PARAM_") suffix { what = SORT_WORD; goto end; }
+	"TAG_" suffix { what = SORT_BEGIN_TAG; goto end; }
 */
 end:
 	/* That's weird but, okay. */
-	if(sort == DISCARD) return fprintf(stderr,
+	if(what == DISCARD) return fprintf(stderr,
 		"sort: Symbol %s is unspecified.\n", symbol_string), 1;
 	/* Make a new segment if needed. */
 	if(!sorter.segment && !(sorter.tag_array = 0, sorter.current = 0,
 		sorter.segment = SegmentArrayNew(&doc))) return 0;
 	/* Choose which `TokenArray`. */
-	switch(sort) {
+	switch(what) {
 	case SORT_CODE: chosen = &sorter.segment->code; break;
 	case SORT_WORD:
 		/*chosen = TagArrayPop(sorter.tag_array);*/ /* careful! */
