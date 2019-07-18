@@ -27,8 +27,8 @@ static enum Token scan_eof(struct Scanner *const s) { (void)s; return END; }
 /**
  * This is a
  * kernel-style comment.
- * \url{ http://   www.  `@.com }
- * \cite{Yo2019 Foo} ?<>&!
+ * <http://www.`@.com>
+ * <Yo2019> ?<>&!
  *
  * Aha!
  */
