@@ -105,7 +105,7 @@ A `cool' word in a `nice' sentence."
  @fixme '\~' should \&nbsp; and something should give a slim space "\\," but
  non-breaking, (is it?) */
 
-#include <stdio.h>  /* printf */
+#include <stdio.h>  /* printf sprintf */
 #include <string.h> /* memset strchr */
 /* #define NDEBUG */
 #include <assert.h> /* assert */
@@ -331,10 +331,17 @@ catch:
 	return 0;
 }
 
-static void debug(void) {
-	printf("Line %lu:%d: \"%.*s\" %s.\n", (unsigned long)scanner.line,
-		scanner.indent_level, (int)(scanner.cursor - scanner.from),
-		scanner.from, symbols[scanner.symbol]);
+/** Prints line info in a static buffer. */
+static const char *pos(void) {
+	static char pos[512];
+	const int max_size = 32;
+	int is_truncated = (scanner.from + max_size < scanner.cursor) ? 1 : 0;
+	int len = is_truncated ? max_size : (int)(scanner.cursor - scanner.from);
+	assert(scanner.from <= scanner.cursor);
+	sprintf(pos, "line %lu, indent %d, %s: \"%.*s\"",
+		(unsigned long)scanner.line, scanner.indent_level,
+		symbols[scanner.symbol], len, scanner.from);
+	return pos;
 }
 
 static void token_current(struct Token *const token, const enum Symbol symbol) {
@@ -342,7 +349,8 @@ static void token_current(struct Token *const token, const enum Symbol symbol) {
 	token->symbol = symbol;
 	token->from = scanner.from;
 	if(scanner.from + INT_MAX < scanner.cursor) {
-		fprintf(stderr, "Length of token truncated to %d.\n", INT_MAX);
+		fprintf(stderr, "Length of token truncated to %d;\n%s.\n", INT_MAX,
+			pos());
 		token->length = INT_MAX;
 	} else {
 		token->length = (int)(scanner.cursor - scanner.from);
@@ -442,13 +450,12 @@ scan:
 	// Everything stops at EOF.
 	<*> "\x00" {
 		if(scanner.state != yyccode || scanner.indent_level)
-			fprintf(stderr, "Unexpected EOF.\n"), errno = EILSEQ;
+			fprintf(stderr, "Unexpected EOF;\n%s.\n", pos()), errno = EILSEQ;
 		return END;
 	}
 	// Ignore code that we don't know how to deal with.
 	<*> * {
-		fprintf(stderr, "Unknown, <%.*s>; ignored.\n",
-			(int)(scanner.cursor - scanner.from), scanner.from);
+		fprintf(stderr, "Unknown;\n%s.\n", pos());
 		goto scan;
 	}
 	// Newlines are generally ignored but documentation counts for paragraphs.
@@ -456,8 +463,8 @@ scan:
 		scanner.line++;
 		if(scanner.state == yycdoc) return DOC_NEWLINE;
 		else if(scanner.state == yycstring || scanner.state == yyccharacter)
-			return fprintf(stderr, "Not done characters.\n"), errno = EILSEQ,
-			END;
+			return fprintf(stderr, "String syntax;%s.\n", pos()),
+			errno = EILSEQ, END;
 		else if(scanner.state == yycmacro) scanner.state = yyccode;
 		goto reset;
 	}
@@ -476,9 +483,9 @@ scan:
 
 	// Documentation tries to be as not-fancy as possible.
 	<doc, math> "\\*""/" { return fprintf(stderr,
-		"Escape past end of documentation '\\*""/'.\n"), errno = EILSEQ, END; }
+		"Escape past end of documentation;%s.\n", pos()), errno = EILSEQ, END; }
 	<math> "*""/" { return fprintf(stderr,
-		"Math mode at end of documentation.\n"), errno = EILSEQ, END; }
+		"Math mode at end of documentation;%s.\n", pos()), errno = EILSEQ, END; }
 	<doc> "*""/" { return scanner.state = yyccode, DOC_END; }
 
 	<doc> word { return DOC_WORD; }
@@ -510,11 +517,8 @@ scan:
 	<code> doc / [^/] { return scanner.state = yycdoc, DOC_BEGIN; }
 	// With flattening the `ScanState` stack, this is not actually worth
 	// the effort; honestly, it's not going to matter.
-	<macro> doc / [^/] {
-		fprintf(stderr, "Documentation comment inside macro.\n");
-		debug();
-		return errno = EILSEQ, END;
-	}
+	<macro> doc / [^/] { return fprintf(stderr,
+		"Documentation inside macro;%s.\n", pos()), errno = EILSEQ, END; }
 	<code> comment_break { goto reset; } // Like this: /*****/.
 	<code> begin_comment :=> comment
 	<macro> begin_comment :=> macro_comment
@@ -552,9 +556,8 @@ scan:
 	<param_more>  "}" { return scanner.state = yycdoc,        DOC_RIGHT; }
 	<param_item, param_more> whitespace+ { goto reset; }
 	<param_begin, param_item, param_more> * {
-		return fprintf(stderr, "Unrecognised in parameter list, <%.*s>.\n",
-		(int)(scanner.cursor-scanner.from), scanner.from), errno = EILSEQ, END;
-	}
+		return fprintf(stderr, "Unrecognised in parameter list;%s.\n", pos()),
+		errno = EILSEQ, END; }
 
 	<comment> end_comment :=> code
 	<macro_comment> end_comment :=> macro
@@ -575,12 +578,14 @@ int main(int argc, char **argv) {
 	/* https://stackoverflow.com/questions/10293387/piping-into-application-run-under-xcode/13658537 */
 	if (argc == 2 && strcmp(argv[1], "debug") == 0 ) {
 		const char *test_file_path = "/Users/neil/Movies/Cdoc/foo.c";
-		printf("== [RUNNING IN DEBUG MODE with %s]==\n\n", test_file_path);
+		fprintf(stderr, "== [RUNNING IN DEBUG MODE with %s]==\n\n",
+			test_file_path);
 		freopen(test_file_path, "r", stdin);
 	}
 
 	if(!Scanner()) goto catch;
-	while((scanner.symbol = scan())) sort(scanner.symbol), debug();
+	while((scanner.symbol = scan()))
+		sort(scanner.symbol), printf("Recorded %s.\n", pos());
 	if(errno) goto catch;
 	{
 		struct Segment *segment = 0;
