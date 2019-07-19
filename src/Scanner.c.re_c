@@ -379,16 +379,16 @@ newline = "\n" | "\r" "\n"?;
 // " \t\n\v\f\r" whitespace and newline;
 // "*" potential end-of-comment;
 // "\\" escape;
-// "_" (at the beginning or end) for em;
+// "`" or "_" (at the beginning or end) for em;
 // "@" (at the beginning) for each-tag;
 // "<" (at the beginning) ">" (at the end) for links;
 // "\x00" eof.
-word_base = [^ \t\n\v\f\r*\\_@<>\x00];
+word_base = [^ \t\n\v\f\r*\\`_@<>\x00];
 word_begin = word_base | ">";
-word_in    = word_begin | "_" | "@" | "<" | ">";
+word_in    = word_begin | "`" | "_" | "@" | "<" | ">";
 word_end   = word_begin | "@" | "<";
 word = word_base | (word_begin word_in* word_end);
-// fixme: < > @ _ by themselves should be considered words. Not sure how to do that.
+// fixme: < > @ _ ` by themselves should be considered words. Not sure how to do that.
 
 doc = "/""*"+;
 begin_comment = "/""*";
@@ -463,7 +463,7 @@ scan:
 		scanner.line++;
 		if(scanner.state == yycdoc) return DOC_NEWLINE;
 		else if(scanner.state == yycstring || scanner.state == yyccharacter)
-			return fprintf(stderr, "String syntax;%s.\n", pos()),
+			return fprintf(stderr, "String syntax;\n%s.\n", pos()),
 			errno = EILSEQ, END;
 		else if(scanner.state == yycmacro) scanner.state = yyccode;
 		goto reset;
@@ -483,9 +483,9 @@ scan:
 
 	// Documentation tries to be as not-fancy as possible.
 	<doc, math> "\\*""/" { return fprintf(stderr,
-		"Escape past end of documentation;%s.\n", pos()), errno = EILSEQ, END; }
+		"Escape past end of documentation;\n%s.\n", pos()), errno = EILSEQ, END; }
 	<math> "*""/" { return fprintf(stderr,
-		"Math mode at end of documentation;%s.\n", pos()), errno = EILSEQ, END; }
+		"Math mode at end of documentation;\n%s.\n", pos()), errno = EILSEQ, END; }
 	<doc> "*""/" { return scanner.state = yyccode, DOC_END; }
 
 	<doc> word { return DOC_WORD; }
@@ -518,7 +518,7 @@ scan:
 	// With flattening the `ScanState` stack, this is not actually worth
 	// the effort; honestly, it's not going to matter.
 	<macro> doc / [^/] { return fprintf(stderr,
-		"Documentation inside macro;%s.\n", pos()), errno = EILSEQ, END; }
+		"Documentation inside macro;\n%s.\n", pos()), errno = EILSEQ, END; }
 	<code> comment_break { goto reset; } // Like this: /*****/.
 	<code> begin_comment :=> comment
 	<macro> begin_comment :=> macro_comment
@@ -556,7 +556,7 @@ scan:
 	<param_more>  "}" { return scanner.state = yycdoc,        DOC_RIGHT; }
 	<param_item, param_more> whitespace+ { goto reset; }
 	<param_begin, param_item, param_more> * {
-		return fprintf(stderr, "Unrecognised in parameter list;%s.\n", pos()),
+		return fprintf(stderr, "Unrecognised in parameter list;\n%s.\n", pos()),
 		errno = EILSEQ, END; }
 
 	<comment> end_comment :=> code
