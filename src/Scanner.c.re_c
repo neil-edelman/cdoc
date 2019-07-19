@@ -385,7 +385,7 @@ newline = "\n" | "\r" "\n"?;
 // "\x00" eof.
 word_base = [^ \t\n\v\f\r*\\`_@<>\x00];
 word_begin = word_base | ">";
-word_in    = word_begin | "`" | "_" | "@" | "<" | ">";
+word_in    = word_begin | "@" | "<";
 word_end   = word_begin | "@" | "<";
 word = word_base | (word_begin word_in* word_end);
 // fixme: < > @ _ ` by themselves should be considered words. Not sure how to do that.
