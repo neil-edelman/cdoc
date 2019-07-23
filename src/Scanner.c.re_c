@@ -1,85 +1,86 @@
 /** 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- This is a context-sensitive parser intended to process (parts of) a `C`
- compilation unit and extract documentation in a manner suited to those
- without knowledge of the scanner, (including the macro A_B_(Foo,Bar) is
- <A>Foo<B>Bar, if not, first see if you can compile `Doxygen`.) Generally, to
- parse a `C` document, you have to set a `C` dialect and compile it; this
- doesn't do that. Lexes documents on-line and partially parses them to give a
- very rough state with some very broad assumptions.
+ This is a context-sensitive lexer intended to process (parts of) a `C`
+ compilation unit and extract documentation. This documentation is an even more
+ stripped-down, simplified, sort-of version of Markup then is used in
+ `Doxygen`, with the intent of making it more strict and simpler. Also, this
+ does very basic text-parsing, including the macro A_B_(Foo,Bar) is
+ <A>Foo<B>Bar, making some very broad assumptions.
 
  Documentation commands are { "/" "*" "*"+ } and are ended with { "*"+ "/" },
- but not { "/" "*"+ "*" "/" }; one can still use this as a code break.
- Inside, \_ is emphasised block and \` is a code/math block, including
- variables; \\ is used as an escape, which escapes whatever comes after. You
- can have ASCII art inside like Kernel comments and 
- Like LaTeX, two hard returns is a paragraph. All documentation goes at most
- two lines above what it documents or it's in the header, (like this.) Multiple
- documentation on the same command is appended. Embedded in the documentation
- is <url>, <source>, \\see{<function>}, and \\seedef{<definition>}.
- 
- - Paragraphs: one or more blank lines. Paragraphs at end/beginning are cut and
-   new comments are always new paragraphs.
- - Headers: no; no one has time to read that.
- - Block Quotes: No.
-   $"> " useful for math, but no nesting. Block quotes have a
-   space. pre
- - Lists: following a blank line, " - ", but not "*", "+", or numbered lists.
-   I prefer "*", but use of asterisks is problematic when dealing with Kernel
-   comments, so we've skipped this.
- - Code Blocks: Yes; useful for math. Either 4 spaces or a tab. pre.
- - Horizontal Rulers: no. What are you writing a dissertation?
- - Emphasis: \_single underscores\_ at the outside of a word, only words can go
-   in. *, **, \_\_, no.
- - Strikethrough: no.
- - Code Spans: \`printf\` but only code (math, etc) can go in, also use for
-   naming variables; no \`\`.
- - Table of Contents: no.
- - Tables: no. This is messy.
- - Fenced Code Blocks: no.
- - Anchors: ? <fn:<fn>>? <def:<def>>?
- - HTML blocks: no.
- - '/ * !', '/ / /', '/ / !', '/ * * * * ...', no.
- - \\brief: no.
- - '/ * ! <', '/ * * <', '/ / ! <', '/ / / <': not needed; automaticlly
-   concatenates.
- - [in], [out]: no; use `const` when appropriate.
- - '\\param c1', no.
- - '\@param a' or '\@param{a[, ...]}' will be concatenated.
+ but not { "/" "*"+ "*" "/" }; one can still use this as a code break. You can
+ have an asterisk at the front, like Kernel comments, or asterisks all over
+ like some crazy ASCII art, (unfortunately, this causes problems with lists
+ being started with "*", so start them with "-".) All documentation goes at
+ most two lines above what it documents or it's appended to the header.
+ Multiple documentation on the same command is appended. Everything that's not
+ a function is considered a declaration for the purpose of the parser. Like
+ LaTeX, two hard returns is a paragraph.
 
- ![Caption text](/path/to/img.jpg)
- - ![Caption text](/path/to/img.jpg "Image title"): no.
- [The link text](http://example.net/)
- - [The link text](http://example.net/ "Link title"): no.
+ Each-rules start a new paragraph specific to that rule, and end on a new
+ paragraph. Each-rules that overlap are concatenated. \@title <title>,
+ \@param[p1[, p2 ...]], \@author, \@std, \@depend, \@version, \@fixme,
+ \@return, \@throws[t1[, t2 ...]], \@implements, \@order, and @allow, the
+ latter being to allow `static` functions in the documentation.
 
- Warnings when all the varibles are not mentioned at least once, in the description or the @var.
+ \\ escapes whatever comes after, and backslash-end-comment is non-sense.
+ Embedded in the documentation,
 
-"\struct to document a C-struct.
-\union to document a union.
-\enum to document an enumeration type.
-\fn to document a function.
-\var to document a variable or typedef or enum value.
-\def to document a #define.
-\typedef to document a type definition."
+ - \_ _emphasised_ block;
+ - \` `code/math` block;
+ - \<url\>;
+ - \<Source, 1999, pp. 1-2\>;
+ - \<fn:\<function\>\>;
+ - \<defn:\<definition\>\>;
+
+ Things that are planned for inclusion,
+
+ - \[The link text\](url);
+ - \!\[Caption text\](/path/to/img.jpg);
+ - lists with " - " at the beginning, but in a separate paragraph;
+ - code blocks are useful useful for math, tab starts pre;
+ - warnings when all the variables are not mentioned at least once, in the
+   description \` code or the \@param.
+
+ Things that are not planned for inclusion,
+
+ - headers;
+ - block quotes "> ";
+ - lists with "*", "+", or numbered;
+ - horizontal rulers;
+ - emphasis by *, **, \_\_;
+ - strikethrough;
+ - code spans by \`\`;
+ - table of contents;
+ - tables;
+ - fenced code blocks;
+ - HTML blocks;
+ - '/ * !', '/ / /', '/ / !';
+ - \\brief;
+ - '/ * ! <', '/ * * <', '/ / ! <', '/ / / <': not needed; automatically
+   concatenates;
+ - [in], [out];
+ - '\\param c1' or '\@param a';
+ - \!\[Caption text\](/path/to/img.jpg "Image title");
+ - \[The link text\](http://example.net/ "Link title");
+ - instead of \\struct, \\union, \\enum, \\var, \\typedef, just insert the
+   documentation comment above the thing; use \<decl:<thing>\> to reference;
+ - \\def;
+ - instead of \\fn, just insert the documentation comment above the function;
+   use \<fn:\<function\>\> to reference.
 
 "Unlike standard Markdown and Github Flavored Markdown doxygen will not touch internal underscores or stars or tildes, so the following will appear as-is:
-
 a_nice_identifier
 Furthermore, a * or _ only starts an emphasis and a ~ only starts a strikethrough if
-
 it is followed by an alphanumerical character, and
 it is preceded by a space, newline, or one the following characters <{([,:;
 An emphasis or a strikethrough ends if
-
 it is not followed by an alphanumerical character, and
 it is not preceded by a space, newline, or one the following characters ({[<=+-\@
 Lastly, the span of the emphasis or strikethrough is limited to a single paragraph."
-
 "Note that unlike standard Markdown, doxygen leaves the following untouched.
-
 A `cool' word in a `nice' sentence."
-
 
  There are each-blocks separating the documentation until the next paragraph or
  until the next each-block, \@title, (because input comes from `stdin`, there

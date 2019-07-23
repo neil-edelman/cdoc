@@ -19,6 +19,8 @@ int T_U_V_(Foo, Bar  ,  Baz)(void);
 
 /** Escapes. \\ \` \@ \_ \*  /// \\\`*/
 
+/****************/
+
 /** Returns eof.
  @implements ScannerFn
  @allow */
