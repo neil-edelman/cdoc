@@ -19,7 +19,7 @@
  documentation on the same command is appended. Embedded in the documentation
  is <url>, <source>, \\see{<function>}, and \\seedef{<definition>}.
  
- - Paragraphs: one or more blank lines. Paragrahs at end/beginning are cut and
+ - Paragraphs: one or more blank lines. Paragraphs at end/beginning are cut and
    new comments are always new paragraphs.
  - Headers: no; no one has time to read that.
  - Block Quotes: No.
@@ -28,8 +28,7 @@
  - Lists: following a blank line, " - ", but not "*", "+", or numbered lists.
    I prefer "*", but use of asterisks is problematic when dealing with Kernel
    comments, so we've skipped this.
- - Code Blocks: Yes; useful for math. Eiter 4 spaces or a tab. pre.
-   no. This is documentation.
+ - Code Blocks: Yes; useful for math. Either 4 spaces or a tab. pre.
  - Horizontal Rulers: no. What are you writing a dissertation?
  - Emphasis: \_single underscores\_ at the outside of a word, only words can go
    in. *, **, \_\_, no.
@@ -390,13 +389,13 @@ word_end   = word_begin | "@" | "<";
 word = word_base | (word_begin word_in* word_end);
 // fixme: < > @ _ ` by themselves should be considered words. Not sure how to do that.
 
-doc = "/""*"+;
+begin_doc = "/""*"+;
+end_doc = "*"+"/";
+art = whitespace* "*"? newline " *";
+comment_break = "/" "*"+ "*" "/";
 begin_comment = "/""*";
 end_comment = "*""/";
 cxx_comment = "//" [^\n]*;
-// This is to support ascii-art Kernel comments.
-art = whitespace* newline " *";
-comment_break = "/" "*"+ "*" "/";
 macro = ("#" | "%:");
 // @fixme No trigraph support.
 // char_type = "u8"|"u"|"U"|"L"; <- These get caught in id; don't care.
@@ -421,14 +420,14 @@ generic = [A-Z]+ "_";
 // Supports only C90 ids. That would be complicated. I suppose you could hack
 // it to accept a super-set?
 id = [a-zA-Z_][a-zA-Z_0-9]*;
-// <https://tools.ietf.org/html/rfc3986#appendix-B> and also uhm
-// ' \t\n\v\f\r<>&\x00' might be disallowed? because then it crashes.
-uri = ([^:/?# \t\n\v\f\r<>&\x00]+ ":") //? <- No; this makes it way to general.
-	("//" [^/?# \t\n\v\f\r<>&\x00]*) //? <- No.
-	[^?# \t\n\v\f\r<>&\x00]*
-	("?" [^# \t\n\v\f\r<>&\x00]*)?
-	("#" [^ \t\n\v\f\r<>&\x00]*)?;
-// Citation format.
+// <https://tools.ietf.org/html/rfc3986#appendix-B> and also
+// " \t\n\v\f\r*<>&\x00" disallowed because then it crashes / escapes comment.
+uri = ([^:/?# \t\n\v\f\r*<>&\x00]+ ":") //? <- No; this makes it way to general.
+	("//" [^/?# \t\n\v\f\r*<>&\x00]*) //? <- No.
+	[^?# \t\n\v\f\r*<>&\x00]*
+	("?" [^# \t\n\v\f\r*<>&\x00]*)?
+	("#" [^ \t\n\v\f\r*<>&\x00]*)?;
+// Citation format. Not authoritative.
 author = [A-Z][A-Za-z'`-]+; // No.
 etalia = "et" whitespace+ "al" "."?;
 authorsep = ","? whitespace* ("and" | "&" | whitespace) whitespace*;
@@ -453,10 +452,9 @@ scan:
 			fprintf(stderr, "Unexpected EOF;\n%s.\n", pos()), errno = EILSEQ;
 		return END;
 	}
-	// Ignore code that we don't know how to deal with.
+	// Oops, don't know how to deal with that.
 	<*> * {
-		fprintf(stderr, "Unknown;\n%s.\n", pos());
-		goto scan;
+		return fprintf(stderr, "Unknown;\n%s.\n", pos()), errno = EILSEQ, END;
 	}
 	// Newlines are generally ignored but documentation counts for paragraphs.
 	<*> newline {
@@ -483,10 +481,12 @@ scan:
 
 	// Documentation tries to be as not-fancy as possible.
 	<doc, math> "\\*""/" { return fprintf(stderr,
-		"Escape past end of documentation;\n%s.\n", pos()), errno = EILSEQ, END; }
-	<math> "*""/" { return fprintf(stderr,
-		"Math mode at end of documentation;\n%s.\n", pos()), errno = EILSEQ, END; }
-	<doc> "*""/" { return scanner.state = yyccode, DOC_END; }
+		"Escape past end of documentation;\n%s.\n", pos()),
+		errno = EILSEQ, END; }
+	<math> end_doc { return fprintf(stderr,
+		"Math mode at end of documentation;\n%s.\n", pos()),
+		errno = EILSEQ, END; }
+	<doc> end_doc { return scanner.state = yyccode, DOC_END; }
 
 	<doc> word { return DOC_WORD; }
 	<math> word { return MATH_WORD; }
@@ -514,10 +514,10 @@ scan:
 	<doc> "@order"      { return TAG_ORDER; }
 	<doc> "@allow"      { return TAG_ALLOW; }
 
-	<code> doc / [^/] { return scanner.state = yycdoc, DOC_BEGIN; }
+	<code> begin_doc / [^/] { return scanner.state = yycdoc, DOC_BEGIN; }
 	// With flattening the `ScanState` stack, this is not actually worth
 	// the effort; honestly, it's not going to matter.
-	<macro> doc / [^/] { return fprintf(stderr,
+	<macro> begin_doc / [^/] { return fprintf(stderr,
 		"Documentation inside macro;\n%s.\n", pos()), errno = EILSEQ, END; }
 	<code> comment_break { goto reset; } // Like this: /*****/.
 	<code> begin_comment :=> comment

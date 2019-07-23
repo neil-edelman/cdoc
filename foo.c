@@ -17,7 +17,7 @@ struct T_U_(Array, Sort) b;
 /** C */
 int T_U_V_(Foo, Bar  ,  Baz)(void);
 
-/** Escapes. \\ \` \@ \_ \*  /// \\\ `*/
+/** Escapes. \\ \` \@ \_ \*  /// \\\`*/
 
 /** Returns eof.
  @implements ScannerFn
@@ -25,13 +25,21 @@ int T_U_V_(Foo, Bar  ,  Baz)(void);
 static enum Token scan_eof(struct Scanner *const s) { (void)s; return END; }
 
 /**
+ *
+ *
  * This is a
  * kernel-style comment.
  * <http://www.`@.com>
  * <Yo2019> ?<>&!
  *
+ *
  * Aha!
  */
+
+/*********************
+ * This is an ascii  *
+ * art comment. Eww. *
+ ********************/
 
 /** C style comments. Actively ignore.
  @implements ScannerFn
