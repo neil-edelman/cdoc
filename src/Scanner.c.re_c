@@ -38,7 +38,7 @@
  - Table of Contents: no.
  - Tables: no. This is messy.
  - Fenced Code Blocks: no.
- - Anchors: ? <fn:<fn>>? <decl:<decl>>?
+ - Anchors: ? <fn:<fn>>? <def:<def>>?
  - HTML blocks: no.
  - '/ * !', '/ / /', '/ / !', '/ * * * * ...', no.
  - \\brief: no.
@@ -146,13 +146,11 @@ A `cool' word in a `nice' sentence."
 	/* Meaning/escapes document syntax. */ \
 	X(DOC_BEGIN, '~', 0), X(DOC_END, '~', 0), X(DOC_WORD, 'w', &lit), \
 	X(DOC_ESCAPE, '\\', &esc_bs), X(DOC_URL, '\\', &url), \
-	X(DOC_CITE, '\\', &cite), X(DOC_SEE, '\\', &see), \
-	X(DOC_SEEDEF, '\\', &see), X(DOC_NEWLINE, 'n', &par), \
-	X(DOC_EM, '_', &em), \
-	/* Math/code `like this`. */ \
-	X(MATH_BEGIN, '$', &math), X(MATH_END, '$', &math), \
-	X(MATH_WORD, 'y', &lit), \
-	/* All syntax is the same characters for consistency. */ \
+	X(DOC_CITE, '\\', &cite), X(DOC_SEE_FN, '\\', &see), \
+	X(DOC_SEE_DECL, '\\', &see), X(DOC_NEWLINE, 'n', &par), \
+	/* `like this` or _like this_ or {like, this}. */ \
+	X(MATH_BEGIN, '`', &math), X(MATH_END, '`', &math), \
+	X(EM_BEGIN, '_', 0), X(EM_END, '_', 0), \
 	X(DOC_LEFT, '{', 0), X(DOC_RIGHT, '}', 0), \
 	/* Variable lists {like, this}. */ \
 	X(DOC_ID, 'p', &lit), X(DOC_COMMA, '.', &lit), \
@@ -420,15 +418,18 @@ generic = [A-Z]+ "_";
 // Supports only C90 ids. That would be complicated. I suppose you could hack
 // it to accept a super-set?
 id = [a-zA-Z_][a-zA-Z_0-9]*;
+generic_id = (("<" id ">")? id)+;
 // <https://tools.ietf.org/html/rfc3986#appendix-B> and also
 // " \t\n\v\f\r*<>&\x00" disallowed because then it crashes / escapes comment.
-uri = ([^:/?# \t\n\v\f\r*<>&\x00]+ ":") //? <- No; this makes it way to general.
-	("//" [^/?# \t\n\v\f\r*<>&\x00]*) //? <- No.
-	[^?# \t\n\v\f\r*<>&\x00]*
-	("?" [^# \t\n\v\f\r*<>&\x00]*)?
-	("#" [^ \t\n\v\f\r*<>&\x00]*)?;
+uri_scheme = ([^:/?# \t\n\v\f\r*<>&\x00]+ ":");
+uri_authority = ("//" [^/?# \t\n\v\f\r*<>&\x00]*);
+uri_path = [^?# \t\n\v\f\r*<>&\x00]*;
+uri_query = ("?" [^# \t\n\v\f\r*<>&\x00]*);
+uri_fragment = ("#" [^ \t\n\v\f\r*<>&\x00]*);
+absolute_uri = uri_scheme uri_authority uri_path uri_query? uri_fragment?;
+relative_uri = uri_scheme? uri_authority? uri_path uri_query? uri_fragment?;
 // Citation format. Not authoritative.
-author = [A-Z][A-Za-z'`-]+; // No.
+author = [A-Z][A-Za-z'`-]+; // Fixme: No!!! UTF-8
 etalia = "et" whitespace+ "al" "."?;
 authorsep = ","? whitespace* ("and" | "&" | whitespace) whitespace*;
 closing = ","? whitespace*;
@@ -446,16 +447,17 @@ reset:
 	scanner.from = scanner.cursor;
 scan:
 /*!re2c
+	// Oops, don't know how to deal with that.
+	<*> * { return fprintf(stderr, "Unknown;\n%s.\n", pos()),
+		errno = EILSEQ, END; }
 	// Everything stops at EOF.
 	<*> "\x00" {
 		if(scanner.state != yyccode || scanner.indent_level)
 			fprintf(stderr, "Unexpected EOF;\n%s.\n", pos()), errno = EILSEQ;
 		return END;
 	}
-	// Oops, don't know how to deal with that.
-	<*> * {
-		return fprintf(stderr, "Unknown;\n%s.\n", pos()), errno = EILSEQ, END;
-	}
+	// Ignore whitespace everywhere.
+	<*> whitespace+ { goto reset; }
 	// Newlines are generally ignored but documentation counts for paragraphs.
 	<*> newline {
 		scanner.line++;
@@ -466,55 +468,16 @@ scan:
 		else if(scanner.state == yycmacro) scanner.state = yyccode;
 		goto reset;
 	}
-	// Also newlines in comments should be optionally ascii-art.
-	<doc> art / [^/] {
-		scanner.line++;
-		if(scanner.state == yycdoc) return DOC_NEWLINE;
-		goto reset;
-	}
+
 	// Continuation.
 	<string, character, macro> "\\" newline { scanner.line++; goto scan; }
+	<string> "\"" { scanner.state = yyccode; return C_CONSTANT; }
+	<character> "'" { scanner.state = yyccode; return C_CONSTANT; }
+	<string, character> "\\". { goto scan; }
+	<comment> end_comment :=> code
+	<macro_comment> end_comment :=> macro
 	// C++ comments we aren't concerned with.
 	<code, macro> cxx_comment { goto reset; }
-	// Ignore whitespace.
-	<doc, math, code, macro> whitespace+ { goto reset; }
-
-	// Documentation tries to be as not-fancy as possible.
-	<doc, math> "\\*""/" { return fprintf(stderr,
-		"Escape past end of documentation;\n%s.\n", pos()),
-		errno = EILSEQ, END; }
-	<math> end_doc { return fprintf(stderr,
-		"Math mode at end of documentation;\n%s.\n", pos()),
-		errno = EILSEQ, END; }
-	<doc> end_doc { return scanner.state = yyccode, DOC_END; }
-
-	<doc> word { return DOC_WORD; }
-	<math> word { return MATH_WORD; }
-
-	<doc, math> "\\"[^*] { return DOC_ESCAPE; }
-	<doc, math> "\\*" / [^/] { return DOC_ESCAPE; }
-	<doc> "_" { return DOC_EM; }
-	<doc> "`" { return scanner.state = yycmath, MATH_BEGIN; }
-	<math> "`" { return scanner.state = yycdoc, MATH_END; }
-
-	// These are recognised in the documentation as stuff.
-	<doc> "\\see"  { return scanner.state = yycparam_begin, DOC_SEE; }
-
-	// These are tags.
-	<doc> "@title"      { return TAG_TITLE; }
-	<doc> "@param"      { return scanner.state = yycparam_begin, TAG_PARAM; }
-	<doc> "@author"     { return TAG_AUTHOR; }
-	<doc> "@std"        { return TAG_STD; }
-	<doc> "@depend"     { return TAG_DEPEND; }
-	<doc> "@version"    { return TAG_VERSION; }
-	<doc> "@fixme"      { return TAG_FIXME; }
-	<doc> "@return"     { return TAG_RETURN; }
-	<doc> "@throws"     { return scanner.state = yycparam_begin, TAG_THROWS; }
-	<doc> "@implements" { return TAG_IMPLEMENTS; }
-	<doc> "@order"      { return TAG_ORDER; }
-	<doc> "@allow"      { return TAG_ALLOW; }
-
-	<code> begin_doc / [^/] { return scanner.state = yycdoc, DOC_BEGIN; }
 	// With flattening the `ScanState` stack, this is not actually worth
 	// the effort; honestly, it's not going to matter.
 	<macro> begin_doc / [^/] { return fprintf(stderr,
@@ -546,26 +509,59 @@ scan:
 	<code> ";"          { return C_SEMI; }
 	<code> id           { return C_ID; }
 
-	<doc> "<" uri ">" { return DOC_URL; }
+	<code> begin_doc / [^/] { return scanner.state = yycdoc, DOC_BEGIN; }
+	// Also newlines in comments should be optionally ascii-art.
+	<doc, math, em> art / [^/] {
+		scanner.line++;
+		if(scanner.state == yycdoc) return DOC_NEWLINE;
+		goto reset;
+	}
+	<doc, math, em> "\\*""/" { return fprintf(stderr,
+		"Escape past end of documentation;\n%s.\n", pos()),
+		errno = EILSEQ, END; }
+	<math, em> end_doc { return fprintf(stderr,
+		"Not finished at end of documentation;\n%s.\n", pos()),
+		errno = EILSEQ, END; }
+	<doc> end_doc { return scanner.state = yyccode, DOC_END; }
+
+	<doc, math, em> word { return DOC_WORD; }
+	<doc, math, em> "\\"[^*] { return DOC_ESCAPE; }
+	<doc, math, em> "\\*" / [^/] { return DOC_ESCAPE; }
+	<doc> "_" { return scanner.state = yycem, EM_BEGIN; }
+	<em> "_" { return scanner.state = yycdoc, EM_END; }
+	<doc> "`" { return scanner.state = yycmath, MATH_BEGIN; }
+	<math> "`" { return scanner.state = yycdoc, MATH_END; }
+
+	// These are recognised in the documentation as stuff.
+	// no, <fn:<fn>> or <decl:<decl>>; meh.
+	// <doc> "\\see"  { return scanner.state = yycparam_begin, DOC_SEE; }
+	<doc> "<" absolute_uri ">" { return DOC_URL; }
 	<doc> "<" citation ">" { return DOC_CITE; }
+	<doc> "<fn:" generic_id ">" { return DOC_SEE_FN; }
+	<doc> "<decl:" generic_id ">" { return DOC_SEE_DECL; }
+
+	// These are tags.
+	<doc> "@title"      { return TAG_TITLE; }
+	<doc> "@param"      { return scanner.state = yycparam_begin, TAG_PARAM; }
+	<doc> "@author"     { return TAG_AUTHOR; }
+	<doc> "@std"        { return TAG_STD; }
+	<doc> "@depend"     { return TAG_DEPEND; }
+	<doc> "@version"    { return TAG_VERSION; }
+	<doc> "@fixme"      { return TAG_FIXME; }
+	<doc> "@return"     { return TAG_RETURN; }
+	<doc> "@throws"     { return scanner.state = yycparam_begin, TAG_THROWS; }
+	<doc> "@implements" { return TAG_IMPLEMENTS; }
+	<doc> "@order"      { return TAG_ORDER; }
+	<doc> "@allow"      { return TAG_ALLOW; }
 
 	// Parameter lists.
 	<param_begin> "{" { return scanner.state = yycparam_item, DOC_LEFT; }
 	<param_item>  id  { return scanner.state = yycparam_more, DOC_ID; }
 	<param_more>  "," { return scanner.state = yycparam_item, DOC_COMMA; }
 	<param_more>  "}" { return scanner.state = yycdoc,        DOC_RIGHT; }
-	<param_item, param_more> whitespace+ { goto reset; }
 	<param_begin, param_item, param_more> * {
 		return fprintf(stderr, "Unrecognised in parameter list;\n%s.\n", pos()),
 		errno = EILSEQ, END; }
-
-	<comment> end_comment :=> code
-	<macro_comment> end_comment :=> macro
-
-	<string> "\""   { scanner.state = yyccode; return C_CONSTANT; }
-	<character> "'" { scanner.state = yyccode; return C_CONSTANT; }
-	// All additional chars are not escaped.
-	<string, character> "\\". { goto scan; }
 */
 }
 
@@ -574,6 +570,7 @@ scan:
 #include "../build/Sorter.h"
 
 int main(int argc, char **argv) {
+	int is_done = 0;
 
 	/* https://stackoverflow.com/questions/10293387/piping-into-application-run-under-xcode/13658537 */
 	if (argc == 2 && strcmp(argv[1], "debug") == 0 ) {
@@ -603,10 +600,15 @@ int main(int argc, char **argv) {
 		}
 		fputc('\n', stdout);
 	}
-	doc_();
-	Scanner_();
-	return EXIT_SUCCESS;
+	is_done = 1;
+	goto finally;
 
 catch:
-	return perror("scanner"), doc_(), Scanner_(), EXIT_FAILURE;
+	perror("scanner");
+
+finally:
+	doc_();
+	Scanner_();
+
+	return is_done ? EXIT_SUCCESS : EXIT_FAILURE;
 }

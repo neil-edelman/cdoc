@@ -31,6 +31,7 @@ static enum Token scan_eof(struct Scanner *const s) { (void)s; return END; }
  * kernel-style comment.
  * <http://www.`@.com>
  * <Yo2019> ?<>&!
+ * <fn:a>
  *
  *
  * Aha!
