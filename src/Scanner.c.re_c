@@ -4,8 +4,8 @@
  This is a context-sensitive lexer intended to process (parts of) a `C`
  compilation unit and extract documentation. This documentation is an even more
  stripped-down, simplified, sort-of version of Markup then is used in
- `Doxygen`, with the intent of making it more strict and simpler. Also, this
- does very basic text-parsing, including the macro A_B_(Foo,Bar) is
+ `Doxygen`, with the intent of making it stricter and simpler. Also, this does
+ very basic text-parsing, not compiling, including the macro A_B_(Foo,Bar) is
  <A>Foo<B>Bar, making some very broad assumptions.
 
  Documentation commands are { "/" "*" "*"+ } and are ended with { "*"+ "/" },
@@ -15,14 +15,16 @@
  being started with "*", so start them with "-".) All documentation goes at
  most two lines above what it documents or it's appended to the header.
  Multiple documentation on the same command is appended. Everything that's not
- a function is considered a declaration for the purpose of the parser. Like
- LaTeX, two hard returns is a paragraph.
+ a function is considered a declaration for the purpose of the parser. Two hard
+ returns is a paragraph.
 
- Each-rules start a new paragraph specific to that rule, and end on a new
- paragraph. Each-rules that overlap are concatenated. \@title <title>,
- \@param[p1[, p2 ...]], \@author, \@std, \@depend, \@version, \@fixme,
- \@return, \@throws[t1[, t2 ...]], \@implements, \@order, and @allow, the
- latter being to allow `static` functions in the documentation.
+ Each-rules separate the documentation until the next paragraph or until the
+ next each-block, and specify a specific structure to fit in. (*planned).
+ Each-rules that overlap are concatenated.
+ \@title, \@param[<param1>[, ...]], \@author, \@std, \@depend,
+ \@version[<version>], \@fixme, \@return, \@throws[<exception1>[, ...]],
+ \@implements, \@order, and @allow, the latter being to allow `static`
+ functions in the documentation.
 
  \\ escapes whatever comes after, and backslash-end-comment is non-sense.
  Embedded in the documentation,
@@ -30,7 +32,7 @@
  - \_ _emphasised_ block;
  - \` `code/math` block;
  - \<url\>;
- - \<Source, 1999, pp. 1-2\>;
+ - \<Source, 1999, pp. 1-2\> (this is extra);
  - \<fn:\<function\>\>;
  - \<defn:\<definition\>\>;
 
@@ -82,14 +84,6 @@ Lastly, the span of the emphasis or strikethrough is limited to a single paragra
 "Note that unlike standard Markdown, doxygen leaves the following untouched.
 A `cool' word in a `nice' sentence."
 
- There are each-blocks separating the documentation until the next paragraph or
- until the next each-block, \@title, (because input comes from `stdin`, there
- is no standard way we can know the title,) \@param{<param1>[, ...]}, \@author,
- \@std, \@depend, \@version{<version>}, \@fixme, \@return,
- \@throws{<exception1>[, ...]}, \@implements, \@order, \@allow, (the latter
- allows `static` functions to make it into the documentation and is not
- printed.)
-
  @title Scanner.c.re
  @author Neil
  @version 2019-06
@@ -102,8 +96,8 @@ A `cool' word in a `nice' sentence."
  @fixme Old-style function support.
  @fixme `re2c` appends a comma at the end of the enumeration list, not
  compliant with C90.
- @fixme '\~' should \&nbsp; and something should give a slim space "\\," but
- non-breaking, (is it?) */
+ @fixme '\~' should \&nbsp; and something should give a "\\,";
+ Unicode's U+202F NARROW NO-BREAK SPACE (HTML &#8239;.) */
 
 #include <stdio.h>  /* printf sprintf */
 #include <string.h> /* memset strchr */
