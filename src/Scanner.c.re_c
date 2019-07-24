@@ -21,15 +21,18 @@
 
  "\\" escapes whatever comes after, with one exception "\\," inserts a U+202F
  narrow no-break space, (HTML &#8239; for working with units,) (fixme) and
- backslash-end-comment is nonsense and will not compile. Embedded inline in the
- documentation,
+ backslash-end-comment is nonsense and will not compile. When two or more
+ definitions are present in a single statement, the first one is used. Embedded
+ inline in the documentation,
 
  - \_ _emphasised_;
  - \` `code/math`;
  - \<url\>;
  - \<Source, 1999, pp. 1-2\>;
  - \<fn:\<function\>\>;
- - \<decl:\<declaration\>\> (fixme);
+ - \<tag:\<struct|union|enum\>\> (fixme);
+ - \<typedef:\<typedef\>\> (fixme);
+ - \<data:\<identifier\>\> (fixme);
 
  Things that are planned for inclusion,
 
@@ -41,11 +44,12 @@
    description \` code or the \@param;
  - '\~' should &nbsp;.
 
- Each-rules separate the documentation until the next paragraph (fixme) or
+ Each-block-tags separate the documentation until the next paragraph (fixme) or
  until the
- next each-block, and specify a specific documentation structure.
- Each-rules that overlap are concatenated. Not all of these are applicable for
- all segments of text, but warnings are emitted (fixme). These are:
+ next each-block-tag, and specify a specific documentation structure.
+ Each-block-tags that overlap are concatenated in the file order. Not all of
+ these are applicable for all segments of text, but warnings are emitted
+ (fixme). These are:
 
  - \@title;
  - \@param[<param1>[, ...]];
@@ -160,7 +164,9 @@ A `cool' word in a `nice' sentence."
 	X(DOC_BEGIN, '~', 0), X(DOC_END, '~', 0), X(DOC_WORD, '~', &lit), \
 	X(DOC_ESCAPE, '~', &esc_bs), X(DOC_URL, '~', &url), \
 	X(DOC_CITE, '~', &cite), X(DOC_SEE_FN, '~', &see), \
-	X(DOC_SEE_DECL, '~', &see), X(DOC_NEWLINE, '~', &par), \
+	X(DOC_SEE_TAG, '~', &see), X(DOC_SEE_TYPEDEF, '~', &see), \
+	X(DOC_SEE_DATA, '~', &see), X(DOC_NEWLINE, '~', &par), \
+	X(DOC_LINK, '~', 0), X(DOC_IMAGE, '~', 0), \
 	/* `like this` or _like this_ or {like, this}. */ \
 	X(MATH_BEGIN, '~', &math), X(MATH_END, '~', &math), \
 	X(EM_BEGIN, '~', 0), X(EM_END, '~', 0), \
@@ -390,15 +396,15 @@ newline = "\n" | "\r" "\n"?;
 // "*" potential end-of-comment;
 // "\\" escape;
 // "`" or "_" (at the beginning or end) for em;
-// "@" (at the beginning) for each-tag;
-// "<" (at the beginning) ">" (at the end) for links;
+// "@" (at the beginning) for each-block-tag;
+// "<>[]" for embedded things;
 // "\x00" eof.
-word_base = [^ \t\n\v\f\r*\\`_@<>\x00];
-word_begin = word_base | ">";
-word_in    = word_begin | "@" | "<";
-word_end   = word_begin | "@" | "<";
+word_base = [^ \t\n\v\f\r*\\`_@<>\[\]\x00];
+word_begin = word_base | ">" | "]";
+word_in    = word_begin | "@" | "<" | ">" | "[" | "]";
+word_end   = word_begin | "@" | "<" | "[";
 word = word_base | (word_begin word_in* word_end);
-// fixme: < > @ _ ` by themselves should be considered words. Not sure how to do that.
+// fixme: < > @ _ ` by themselves should be considered words. Not sure how to do that. Also, [lala] should be considered a word.
 
 begin_doc = "/""*"+;
 end_doc = "*"+"/";
@@ -549,7 +555,20 @@ scan:
 	<doc> "<" absolute_uri ">" { return DOC_URL; }
 	<doc> "<" citation ">" { return DOC_CITE; }
 	<doc> "<fn:" generic_id ">" { return DOC_SEE_FN; }
-	<doc> "<decl:" generic_id ">" { return DOC_SEE_DECL; }
+	<doc> "<tag:" generic_id ">" { return DOC_SEE_TAG; }
+	<doc> "<typedef:" generic_id ">" { return DOC_SEE_TYPEDEF; }
+	<doc> "<data:" generic_id ">" { return DOC_SEE_DATA; }
+	<doc> "[" whitespace* (word whitespace*)+ "](" absolute_uri ")"
+		{ return DOC_LINK; }
+	<doc> "![" whitespace* (word whitespace*)+ "](" relative_uri ")"
+		{ return DOC_IMAGE; }
+
+// - lists with " - " at the beginning, but in a separate paragraph;
+// - code blocks are useful useful for math, tab starts pre;
+// - warnings when all the variables are not mentioned at least once, in the
+//   description \` code or the \@param;
+// - '\~' should &nbsp;.
+// - '\,' nbspthin;
 
 	// These are tags.
 	<doc> "@title"      { return TAG_TITLE; }

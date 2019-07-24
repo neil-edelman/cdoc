@@ -1,4 +1,4 @@
-/** Yo <http://foo.org/>
+/** Yo <http://foo.org/> [MIT](https://foo.org/)
 
 Paragraph
 
