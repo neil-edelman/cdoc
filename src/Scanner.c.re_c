@@ -1,12 +1,13 @@
 /** 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- This is a context-sensitive lexer intended to process (parts of) a `C`
+ This is a context-sensitive lexer intended to process parts of a `C`
  compilation unit and extract documentation. This documentation is an even more
- stripped-down, simplified, sort-of version of Markup then is used in
- `Doxygen`, with the intent of making it stricter and simpler. Also, this does
- very basic text-parsing, not compiling, including the macro A_B_(Foo,Bar) is
- <A>Foo<B>Bar, making some very broad assumptions.
+ stripped-down, simplified, sort-of version of `Markup` then is used in
+ `Doxygen`, with the intent of making it (much) stricter and simpler, and also
+ suitable for sharing and compiling. This does not do any compiling, just very
+ basic text-parsing, including the macro `A_B_(Foo,Bar) -> <A>Foo<B>Bar`
+ (fixme).
 
  Documentation commands are { "/" "*" "*"+ } and are ended with { "*"+ "/" },
  but not { "/" "*"+ "*" "/" }; one can still use this as a code break. You can
@@ -15,26 +16,20 @@
  being started with "*", so start them with "-".) All documentation goes at
  most two lines above what it documents or it's appended to the header.
  Multiple documentation on the same command is appended. Everything that's not
- a function is considered a declaration for the purpose of the parser. Two hard
- returns is a paragraph.
+ a function is considered a declaration for the purpose of the parser (fixme).
+ Two hard returns is a paragraph.
 
- Each-rules separate the documentation until the next paragraph or until the
- next each-block, and specify a specific structure to fit in. (*planned).
- Each-rules that overlap are concatenated.
- \@title, \@param[<param1>[, ...]], \@author, \@std, \@depend,
- \@version[<version>], \@fixme, \@return, \@throws[<exception1>[, ...]],
- \@implements, \@order, and @allow, the latter being to allow `static`
- functions in the documentation.
+ "\\" escapes whatever comes after, with one exception "\\," inserts a U+202F
+ narrow no-break space, (HTML &#8239; for working with units,) (fixme) and
+ backslash-end-comment is nonsense and will not compile. Embedded inline in the
+ documentation,
 
- \\ escapes whatever comes after, and backslash-end-comment is non-sense.
- Embedded in the documentation,
-
- - \_ _emphasised_ block;
- - \` `code/math` block;
+ - \_ _emphasised_;
+ - \` `code/math`;
  - \<url\>;
- - \<Source, 1999, pp. 1-2\> (this is extra);
+ - \<Source, 1999, pp. 1-2\>;
  - \<fn:\<function\>\>;
- - \<defn:\<definition\>\>;
+ - \<decl:\<declaration\>\> (fixme);
 
  Things that are planned for inclusion,
 
@@ -43,17 +38,39 @@
  - lists with " - " at the beginning, but in a separate paragraph;
  - code blocks are useful useful for math, tab starts pre;
  - warnings when all the variables are not mentioned at least once, in the
-   description \` code or the \@param.
+   description \` code or the \@param;
+ - '\~' should &nbsp;.
+
+ Each-rules separate the documentation until the next paragraph (fixme) or
+ until the
+ next each-block, and specify a specific documentation structure.
+ Each-rules that overlap are concatenated. Not all of these are applicable for
+ all segments of text, but warnings are emitted (fixme). These are:
+
+ - \@title;
+ - \@param[<param1>[, ...]];
+ - \@author;
+ - \@std (remove fixme);
+ - \@depend;
+ - \@version[<version>];
+ - \@fixme (remove fixme);
+ - \@bug (fixme);
+ - \@return;
+ - \@throws[<exception1>[, ...]];
+ - \@implements;
+ - \@order;
+ - and \@allow, the latter being to allow `static` functions in the
+   documentation.
 
  Things that are not planned for inclusion,
 
  - headers;
  - block quotes "> ";
- - lists with "*", "+", or numbered;
- - horizontal rulers;
+ - lists with "*", "+", numbered, or multi-level;
+ - horizontal rules;
  - emphasis by *, **, \_\_;
  - strikethrough;
- - code spans by \`\`;
+ - code spans by \`\`, _etc_;
  - table of contents;
  - tables;
  - fenced code blocks;
@@ -63,11 +80,14 @@
  - '/ * ! <', '/ * * <', '/ / ! <', '/ / / <': not needed; automatically
    concatenates;
  - [in], [out];
- - '\\param c1' or '\@param a';
+ - '\\param c1' or '\@param a' -- this probably is the most departure from
+   normal documentation generators, but it's confusing having the text and the
+   variable be indistinguishable;
  - \!\[Caption text\](/path/to/img.jpg "Image title");
  - \[The link text\](http://example.net/ "Link title");
  - instead of \\struct, \\union, \\enum, \\var, \\typedef, just insert the
-   documentation comment above the thing; use \<decl:<thing>\> to reference;
+   documentation comment above the thing; use \<decl:<thing>\> to reference
+   (fixme);
  - \\def;
  - instead of \\fn, just insert the documentation comment above the function;
    use \<fn:\<function\>\> to reference.
@@ -90,14 +110,11 @@ A `cool' word in a `nice' sentence."
  @std C89
  @depend [re2c](http://re2c.org/)
  @fixme Different doc comments need new paragraphs.
- @fixme Lists in comments, etc.
  @fixme `void A_BI_(Create, Thing)(void)` -> `<A>Create<BI>Thing(void)`.
  @fixme Trigraph support, (haha.)
  @fixme Old-style function support.
- @fixme `re2c` appends a comma at the end of the enumeration list, not
- compliant with C90.
- @fixme '\~' should \&nbsp; and something should give a "\\,";
- Unicode's U+202F NARROW NO-BREAK SPACE (HTML &#8239;.) */
+ @bug `re2c` appends a comma at the end of the enumeration list, not
+ compliant with C90. */
 
 #include <stdio.h>  /* printf sprintf */
 #include <string.h> /* memset strchr */
@@ -140,18 +157,18 @@ A `cool' word in a `nice' sentence."
 	X(TAG_IMPLEMENTS, '@', &lit), X(TAG_ORDER, '@', &lit), \
 	X(TAG_ALLOW, '@', &lit), \
 	/* Meaning/escapes document syntax. */ \
-	X(DOC_BEGIN, '~', 0), X(DOC_END, '~', 0), X(DOC_WORD, 'w', &lit), \
-	X(DOC_ESCAPE, '\\', &esc_bs), X(DOC_URL, '\\', &url), \
-	X(DOC_CITE, '\\', &cite), X(DOC_SEE_FN, '\\', &see), \
-	X(DOC_SEE_DECL, '\\', &see), X(DOC_NEWLINE, 'n', &par), \
+	X(DOC_BEGIN, '~', 0), X(DOC_END, '~', 0), X(DOC_WORD, '~', &lit), \
+	X(DOC_ESCAPE, '~', &esc_bs), X(DOC_URL, '~', &url), \
+	X(DOC_CITE, '~', &cite), X(DOC_SEE_FN, '~', &see), \
+	X(DOC_SEE_DECL, '~', &see), X(DOC_NEWLINE, '~', &par), \
 	/* `like this` or _like this_ or {like, this}. */ \
-	X(MATH_BEGIN, '`', &math), X(MATH_END, '`', &math), \
-	X(EM_BEGIN, '_', 0), X(EM_END, '_', 0), \
-	X(DOC_LEFT, '[', 0), X(DOC_RIGHT, ']', 0), \
+	X(MATH_BEGIN, '~', &math), X(MATH_END, '~', &math), \
+	X(EM_BEGIN, '~', 0), X(EM_END, '~', 0), \
+	X(DOC_LEFT, '~', 0), X(DOC_RIGHT, '~', 0), \
 	/* Variable lists {like, this}. */ \
-	X(DOC_ID, 'p', &lit), X(DOC_COMMA, '.', &lit), \
+	X(DOC_ID, '~', &lit), X(DOC_COMMA, '~', &lit), \
 	/* URI for \url and \cite. */ \
-	X(DOC_URI, 'u', 0)
+	X(DOC_URI, '~', 0)
 enum Symbol { SYMBOL(PARAM3_A) };
 static const char *const symbols[] = { SYMBOL(STRINGISE3_A) };
 static const char symbol_mark[] = { SYMBOL(PARAM3_B) };
@@ -261,7 +278,7 @@ static void doc_(void) {
 
 /** Scanner reads a file and extracts semantic information. */
 struct Scanner {
-	/* `buffer` {re2c} variables. These point directly into {buffer}. */
+	/* `re2c` variables; these point directly into `buffer`. */
 	const char *marker, *ctx_marker, *from, *cursor;
 	/* Weird `c2re` stuff: these fields have to come after when >5? */
 	struct CharArray buffer;
@@ -564,7 +581,7 @@ scan:
 #include "../build/Sorter.h"
 
 int main(int argc, char **argv) {
-	int is_done = 0;
+	int exit_code = EXIT_FAILURE;
 
 	/* https://stackoverflow.com/questions/10293387/piping-into-application-run-under-xcode/13658537 */
 	if (argc == 2 && strcmp(argv[1], "debug") == 0 ) {
@@ -594,8 +611,7 @@ int main(int argc, char **argv) {
 		}
 		fputc('\n', stdout);
 	}
-	is_done = 1;
-	goto finally;
+	exit_code = EXIT_SUCCESS; goto finally;
 
 catch:
 	perror("scanner");
@@ -604,5 +620,5 @@ finally:
 	doc_();
 	Scanner_();
 
-	return is_done ? EXIT_SUCCESS : EXIT_FAILURE;
+	return exit_code;
 }

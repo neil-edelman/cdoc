@@ -2,6 +2,8 @@
  `Scanner.re.cnd`, (which is processed into `Scanner.re.cnd.c`.)
  This is because we are very lazy and want two `re2c` passes. */
 
+/** fixme: just switch on the symbol; no need to do this. */
+
 /** This holds the sorting state information for `append`. */
 static struct {
 	struct Segment *segment;
