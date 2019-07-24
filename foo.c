@@ -54,6 +54,6 @@ comment:
 
 
 T a(int (*ptr)(int a, int (*fn)(void))) /** yo */ {
-	/** @param{a, fn} Doesn't do anything `x`. */
+	/** @param[a, fn] Doesn't do anything `x`. */
 	a = a;
 }
