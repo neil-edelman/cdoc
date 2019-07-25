@@ -139,47 +139,46 @@ A `cool' word in a `nice' sentence."
 #define STRINGISE3_A(A, B, C) #A
 
 /* Define `Symbols` -- these are the numerical values given to a section of
- text. The prefix of symbols themselves have meaning; see <fn:sort> in
- `Sorter.h.re`. */
+ text. The prefix of symbols themselves have meaning; see <fn:sort>. */
 #define SYMBOL(X) \
-	/* EOF -- 0. */ \
-	X(END, '~', 0), \
-	/* `C` syntax. */ \
-	X(C_OPERATOR, '*', &lit), X(C_COMMA, ',', &lit), X(C_SEMI, ';', &lit), \
-	X(C_LBRACE, '{', &lit), X(C_RBRACE, '}', &lit), X(C_LPAREN, '(', &lit), \
-	X(C_RPAREN, ')', &lit), X(C_LBRACK, '[', &lit), X(C_RBRACK, ']', &lit), \
-	X(C_CONSTANT, '#', &lit), X(C_ID, 'x', &lit), \
-	X(C_ID_ONE_GENERIC, '1', &gen1), X(C_ID_TWO_GENERICS, '2', &gen2), \
-	X(C_ID_THREE_GENERICS, '3', &gen3), X(C_STRUCT, 's', &lit), \
-	X(C_UNION, 's', &lit), X(C_ENUM, 's', &lit), X(C_TYPEDEF, 't', &lit), \
-	X(C_STATIC, 'z', &lit), X(C_VOID, 'v', &lit), X(C_END_BLOCK, ';', 0), \
-	/* Document syntax. */ \
+	/* EOF -- marked '\0' in memory. */ \
+	X(END, '\0', 0), \
+	/* `C` syntax; 2nd is other stuff than '@'/'~' for inclusion in marker. */ \
+	X(OPERATOR, '*', &lit), X(COMMA, ',', &lit), X(SEMI, ';', &lit), \
+	X(LBRACE, '{', &lit), X(RBRACE, '}', &lit), X(LPAREN, '(', &lit), \
+	X(RPAREN, ')', &lit), X(LBRACK, '[', &lit), X(RBRACK, ']', &lit), \
+	X(CONSTANT, '#', &lit), X(ID, 'x', &lit), \
+	X(ID_ONE_GENERIC, '1', &gen1), X(ID_TWO_GENERICS, '2', &gen2), \
+	X(ID_THREE_GENERICS, '3', &gen3), X(STRUCT, 's', &lit), \
+	X(UNION, 's', &lit), X(ENUM, 's', &lit), X(TYPEDEF, 't', &lit), \
+	X(STATIC, 'z', &lit), X(VOID, 'v', &lit), X(END_BLOCK, ';', 0), \
+	/* Each-block-tags; 2nd is '@' because we want them to have special
+	 meaning. */ \
 	X(TAG_TITLE, '@', &lit), X(TAG_PARAM, '@', &lit), \
 	X(TAG_AUTHOR, '@', &lit), X(TAG_STD, '@', &lit), X(TAG_DEPEND, '@', &lit), \
 	X(TAG_VERSION, '@', &lit), X(TAG_FIXME, '@', &lit), \
 	X(TAG_RETURN, '@', &lit), X(TAG_THROWS, '@', &lit), \
 	X(TAG_IMPLEMENTS, '@', &lit), X(TAG_ORDER, '@', &lit), \
 	X(TAG_ALLOW, '@', &lit), \
-	/* Meaning/escapes document syntax. */ \
-	X(DOC_BEGIN, '~', 0), X(DOC_END, '~', 0), X(DOC_WORD, '~', &lit), \
-	X(DOC_SPACE, '~', 0), \
-	X(DOC_ESCAPE, '~', &esc_bs), X(DOC_URL, '~', &url), \
-	X(DOC_CITE, '~', &cite), X(DOC_SEE_FN, '~', &see), \
-	X(DOC_SEE_TAG, '~', &see), X(DOC_SEE_TYPEDEF, '~', &see), \
-	X(DOC_SEE_DATA, '~', &see), X(DOC_NEWLINE, '~', &par), \
-	X(DOC_LINK, '~', 0), X(DOC_IMAGE, '~', 0), \
-	X(DOC_NBSP, '~', 0), X(DOC_NBTHINSP, '~', 0), \
-	/* `like this` or _like this_ or {like, this}. */ \
+	/* Documentation syntax; 2nd is '~' because it's documentation, it's just
+	 comments as far as `C` is concerned. */ \
+	X(DOC_BEGIN, '~', 0), X(DOC_END, '~', 0), \
+	X(WORD, '~', &lit), X(SPACE, '~', 0), X(NEWLINE, '~', &par), \
+	X(NBSP, '~', 0), X(NBTHINSP, '~', 0), X(ESCAPE, '~', &esc_bs), \
+	/* Like <http://foo.com/>, <Cite1999>, [Foo](http://foo.com),
+	 ![Foo](foo.png), <fn:foo>, _etc_. */ \
+	X(URL, '~', &url), X(CITE, '~', &cite), X(LINK, '~', 0), \
+	X(IMAGE, '~', 0), X(SEE_FN, '~', &see), X(SEE_TAG, '~', &see), \
+	X(SEE_TYPEDEF, '~', &see), X(SEE_DATA, '~', &see), \
+	/* Like `this` or _this_. */ \
 	X(MATH_BEGIN, '~', &math), X(MATH_END, '~', &math), \
 	X(EM_BEGIN, '~', 0), X(EM_END, '~', 0), \
+	/* Like @param[a, b, c]. */ \
 	X(DOC_LEFT, '~', 0), X(DOC_RIGHT, '~', 0), \
-	/* Variable lists {like, this}. */ \
-	X(DOC_ID, '~', &lit), X(DOC_COMMA, '~', &lit), \
-	/* URI for \url and \cite. */ \
-	X(DOC_URI, '~', 0)
+	X(DOC_ID, '~', &lit), X(DOC_COMMA, '~', &lit)
 enum Symbol { SYMBOL(PARAM3_A) };
 static const char *const symbols[] = { SYMBOL(STRINGISE3_A) };
-static const char symbol_mark[] = { SYMBOL(PARAM3_B) };
+static const char symbol_marks[] = { SYMBOL(PARAM3_B) };
 
 
 /** `Token` has a `Symbol` and is associated with an area of the text. */
@@ -408,8 +407,6 @@ word_in    = word_begin | "@" | "<" | ">" | "[" | "]";
 word_end   = word_begin | "@" | "<" | "[";
 word = word_base | (word_begin word_in* word_end)
 	| "*" | "@" | "<" | ">" | "[" | "]";
-// fixme: < > @ _ ` by themselves should be considered words. Not sure how to do that. Also, [lala] should be considered a word.
-
 begin_doc = "/""*"+;
 end_doc = "*"+"/";
 art = whitespace* "*"? newline " *";
@@ -418,7 +415,7 @@ begin_comment = "/""*";
 end_comment = "*""/";
 cxx_comment = "//" [^\n]*;
 macro = ("#" | "%:");
-// @fixme No trigraph support.
+// fixme: No trigraph support.
 // char_type = "u8"|"u"|"U"|"L"; <- These get caught in id; don't care.
 oct = "0" [0-7]*;
 dec = [1-9][0-9]*;
@@ -480,12 +477,12 @@ scan:
 		return END;
 	}
 	// Ignore whitespace everywhere.
-	<doc> whitespace+ { return DOC_SPACE; }
+	<doc> whitespace+ { return SPACE; }
 	<*> whitespace+ { goto reset; }
 	// Newlines are generally ignored but documentation counts for paragraphs.
 	<*> newline {
 		scanner.line++;
-		if(scanner.state == yycdoc) return DOC_NEWLINE;
+		if(scanner.state == yycdoc) return NEWLINE;
 		else if(scanner.state == yycstring || scanner.state == yyccharacter)
 			return fprintf(stderr, "String syntax;\n%s.\n", pos()),
 			errno = EILSEQ, END;
@@ -495,8 +492,8 @@ scan:
 
 	// Continuation.
 	<string, character, macro> "\\" newline { scanner.line++; goto scan; }
-	<string> "\"" { scanner.state = yyccode; return C_CONSTANT; }
-	<character> "'" { scanner.state = yyccode; return C_CONSTANT; }
+	<string> "\"" { scanner.state = yyccode; return CONSTANT; }
+	<character> "'" { scanner.state = yyccode; return CONSTANT; }
 	<string, character> "\\". { goto scan; }
 	<comment> end_comment :=> code
 	<macro_comment> end_comment :=> macro
@@ -512,32 +509,32 @@ scan:
 	<code> macro :=> macro
 	<code> "L"? "\"" :=> string
 	<code> "'" :=> character
-	<code> number       { return C_CONSTANT; }
-	<code> operator     { return C_OPERATOR; }
-	<code> generic      { return C_ID_ONE_GENERIC; }
-	<code> generic generic { return C_ID_TWO_GENERICS; }
-	<code> generic generic generic { return C_ID_THREE_GENERICS; }
-	<code> "struct"     { return C_STRUCT; }
-	<code> "union"      { return C_UNION; }
-	<code> "enum"       { return C_ENUM; }
-	<code> "typedef"    { return C_TYPEDEF; }
-	<code> "static"     { return C_STATIC; }
-	<code> "void"       { return C_VOID; }
-	<code> ("{" | "<%") { scanner.indent_level++; return C_LBRACE; }
-	<code> ("}" | "%>") { scanner.indent_level--; return C_RBRACE; }
-	<code> ("[" | "<:") { return C_LBRACK; }
-	<code> ("]" | ":>") { return C_RBRACK; }
-	<code> "("          { return C_LPAREN; }
-	<code> ")"          { return C_RPAREN; }
-	<code> ","          { return C_COMMA; }
-	<code> ";"          { return C_SEMI; }
-	<code> id           { return C_ID; }
+	<code> number       { return CONSTANT; }
+	<code> operator     { return OPERATOR; }
+	<code> generic      { return ID_ONE_GENERIC; }
+	<code> generic generic { return ID_TWO_GENERICS; }
+	<code> generic generic generic { return ID_THREE_GENERICS; }
+	<code> "struct"     { return STRUCT; }
+	<code> "union"      { return UNION; }
+	<code> "enum"       { return ENUM; }
+	<code> "typedef"    { return TYPEDEF; }
+	<code> "static"     { return STATIC; }
+	<code> "void"       { return VOID; }
+	<code> ("{" | "<%") { scanner.indent_level++; return LBRACE; }
+	<code> ("}" | "%>") { scanner.indent_level--; return RBRACE; }
+	<code> ("[" | "<:") { return LBRACK; }
+	<code> ("]" | ":>") { return RBRACK; }
+	<code> "("          { return LPAREN; }
+	<code> ")"          { return RPAREN; }
+	<code> ","          { return COMMA; }
+	<code> ";"          { return SEMI; }
+	<code> id           { return ID; }
 
 	<code> begin_doc / [^/] { return scanner.state = yycdoc, DOC_BEGIN; }
 	// Also newlines in comments should be optionally ascii-art.
 	<doc, math, em, param_item, param_more> art / [^/] {
 		scanner.line++;
-		if(scanner.state == yycdoc) return DOC_NEWLINE;
+		if(scanner.state == yycdoc) return NEWLINE;
 		goto reset;
 	}
 	<doc, math, em, param_item, param_more> "\\*""/" { return
@@ -548,27 +545,27 @@ scan:
 		errno = EILSEQ, END; }
 	<doc> end_doc { return scanner.state = yyccode, DOC_END; }
 
-	<doc, math, em> word { return DOC_WORD; }
-	<doc, math, em> "\\"[^*,] { return DOC_ESCAPE; }
-	<doc, math, em> "\\," { return DOC_NBTHINSP; }
-	<doc, math, em> "\\*" / [^/] { return DOC_ESCAPE; }
+	<doc, math, em> word { return WORD; }
+	<doc, math, em> "\\"[^*,] { return ESCAPE; }
+	<doc, math, em> "\\," { return NBTHINSP; }
+	<doc, math, em> "\\*" / [^/] { return ESCAPE; }
 	<doc> "_" { return scanner.state = yycem, EM_BEGIN; }
 	<em> "_" { return scanner.state = yycdoc, EM_END; }
 	<doc> "`" { return scanner.state = yycmath, MATH_BEGIN; }
 	<math> "`" { return scanner.state = yycdoc, MATH_END; }
 
 	// These are recognised in the documentation as stuff. fixme: s-tags.
-	<doc> "<" absolute_uri ">" { return DOC_URL; }
-	<doc> "<" citation ">" { return DOC_CITE; }
-	<doc> "<fn:" generic_id ">" { return DOC_SEE_FN; }
-	<doc> "<tag:" generic_id ">" { return DOC_SEE_TAG; }
-	<doc> "<typedef:" generic_id ">" { return DOC_SEE_TYPEDEF; }
-	<doc> "<data:" generic_id ">" { return DOC_SEE_DATA; }
+	<doc> "<" absolute_uri ">" { return URL; }
+	<doc> "<" citation ">" { return CITE; }
+	<doc> "<fn:" generic_id ">" { return SEE_FN; }
+	<doc> "<tag:" generic_id ">" { return SEE_TAG; }
+	<doc> "<typedef:" generic_id ">" { return SEE_TYPEDEF; }
+	<doc> "<data:" generic_id ">" { return SEE_DATA; }
 	<doc> "[" whitespace* (word whitespace*)+ "](" absolute_uri ")"
-		{ return DOC_LINK; }
+		{ return LINK; }
 	<doc> "![" whitespace* (word whitespace*)+ "](" relative_uri ")"
-		{ return DOC_IMAGE; }
-	<doc> "~" { return DOC_NBSP; }
+		{ return IMAGE; }
+	<doc> "~" { return NBSP; }
 
 // - lists with " - " at the beginning, but in a separate paragraph;
 // - code blocks are useful useful for math, tab starts pre;
@@ -600,10 +597,51 @@ scan:
 */
 }
 
-/* Include auto-generated `Sorter.h` from `Sorter.h.re`; this defines
- `static int sort(const enum Symbol symbol)`. */
-#include "../build/Sorter.h"
+/** This holds the sorting state information for `sort`. */
+static struct {
+	struct Segment *segment;
+	struct TagArray *tag_array;
+	struct TokenArray *current;
+} sorter;
 
+/** This appends the current token based on the global state in `sorter`.
+ @return Success. */
+static int sort(const enum Symbol symbol) {
+	struct TokenArray *chosen = 0;
+	struct Token *token = 0;
+	enum { SORT_CODE, SORT_DOCS, SORT_TAG } what;
+	const char symbol_mark = symbol_marks[symbol];
+	assert(symbol);
+	switch(symbol_mark) {
+	case '@': what = SORT_DOCS; break;
+	case '~': what = SORT_TAG; break;
+	case '\0': assert(0);
+	default: what = SORT_CODE;
+	}
+	/* Make a new segment if needed. */
+	if(!sorter.segment && !(sorter.tag_array = 0, sorter.current = 0,
+		sorter.segment = SegmentArrayNew(&doc))) return 0;
+	/* Choose which `TokenArray`. */
+	switch(what) {
+	case SORT_CODE: chosen = &sorter.segment->code; break;
+	case SORT_DOCS:
+		/*chosen = TagArrayPop(sorter.tag_array);*/ /* careful! */
+		if(!chosen) chosen = &sorter.segment->doc;
+		break;
+	case SORT_TAG:
+		chosen = &sorter.segment->doc; break; /* fixme */
+	default:
+		assert(0);
+	}
+	assert(chosen);
+	/* Make the token. */
+	if(!(token = TokenArrayNew(chosen))) return 0;
+	token_current(token, symbol);
+	return 1;
+}
+
+/** Entry-point.
+ @param[argc, argv] If "debug", `freopens` a path that is on my computer. */
 int main(int argc, char **argv) {
 	int exit_code = EXIT_FAILURE;
 
