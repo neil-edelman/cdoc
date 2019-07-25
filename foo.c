@@ -1,6 +1,6 @@
 /** Yo <http://foo.org/> [MIT](https://foo.org/)
 
-Paragraph
+Paragraph @ @a \,~~
 
 @title Foo
 @depend C89

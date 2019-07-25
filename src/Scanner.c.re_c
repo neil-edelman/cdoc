@@ -162,11 +162,13 @@ A `cool' word in a `nice' sentence."
 	X(TAG_ALLOW, '@', &lit), \
 	/* Meaning/escapes document syntax. */ \
 	X(DOC_BEGIN, '~', 0), X(DOC_END, '~', 0), X(DOC_WORD, '~', &lit), \
+	X(DOC_SPACE, '~', 0), \
 	X(DOC_ESCAPE, '~', &esc_bs), X(DOC_URL, '~', &url), \
 	X(DOC_CITE, '~', &cite), X(DOC_SEE_FN, '~', &see), \
 	X(DOC_SEE_TAG, '~', &see), X(DOC_SEE_TYPEDEF, '~', &see), \
 	X(DOC_SEE_DATA, '~', &see), X(DOC_NEWLINE, '~', &par), \
 	X(DOC_LINK, '~', 0), X(DOC_IMAGE, '~', 0), \
+	X(DOC_NBSP, '~', 0), X(DOC_NBTHINSP, '~', 0), \
 	/* `like this` or _like this_ or {like, this}. */ \
 	X(MATH_BEGIN, '~', &math), X(MATH_END, '~', &math), \
 	X(EM_BEGIN, '~', 0), X(EM_END, '~', 0), \
@@ -393,17 +395,19 @@ newline = "\n" | "\r" "\n"?;
 
 // Words can be composed of anything except:
 // " \t\n\v\f\r" whitespace and newline;
+// "~" non-breaking space;
 // "*" potential end-of-comment;
 // "\\" escape;
 // "`" or "_" (at the beginning or end) for em;
 // "@" (at the beginning) for each-block-tag;
 // "<>[]" for embedded things;
 // "\x00" eof.
-word_base = [^ \t\n\v\f\r*\\`_@<>\[\]\x00];
+word_base = [^ \t\n\v\f\r~*\\`_@<>\[\]\x00];
 word_begin = word_base | ">" | "]";
 word_in    = word_begin | "@" | "<" | ">" | "[" | "]";
 word_end   = word_begin | "@" | "<" | "[";
-word = word_base | (word_begin word_in* word_end);
+word = word_base | (word_begin word_in* word_end)
+	| "*" | "@" | "<" | ">" | "[" | "]";
 // fixme: < > @ _ ` by themselves should be considered words. Not sure how to do that. Also, [lala] should be considered a word.
 
 begin_doc = "/""*"+;
@@ -476,6 +480,7 @@ scan:
 		return END;
 	}
 	// Ignore whitespace everywhere.
+	<doc> whitespace+ { return DOC_SPACE; }
 	<*> whitespace+ { goto reset; }
 	// Newlines are generally ignored but documentation counts for paragraphs.
 	<*> newline {
@@ -544,7 +549,8 @@ scan:
 	<doc> end_doc { return scanner.state = yyccode, DOC_END; }
 
 	<doc, math, em> word { return DOC_WORD; }
-	<doc, math, em> "\\"[^*] { return DOC_ESCAPE; }
+	<doc, math, em> "\\"[^*,] { return DOC_ESCAPE; }
+	<doc, math, em> "\\," { return DOC_NBTHINSP; }
 	<doc, math, em> "\\*" / [^/] { return DOC_ESCAPE; }
 	<doc> "_" { return scanner.state = yycem, EM_BEGIN; }
 	<em> "_" { return scanner.state = yycdoc, EM_END; }
@@ -562,13 +568,12 @@ scan:
 		{ return DOC_LINK; }
 	<doc> "![" whitespace* (word whitespace*)+ "](" relative_uri ")"
 		{ return DOC_IMAGE; }
+	<doc> "~" { return DOC_NBSP; }
 
 // - lists with " - " at the beginning, but in a separate paragraph;
 // - code blocks are useful useful for math, tab starts pre;
 // - warnings when all the variables are not mentioned at least once, in the
 //   description \` code or the \@param;
-// - '\~' should &nbsp;.
-// - '\,' nbspthin;
 
 	// These are tags.
 	<doc> "@title"      { return TAG_TITLE; }
