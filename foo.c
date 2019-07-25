@@ -2,6 +2,10 @@
 
 Paragraph @ @a \,~~
 
+ -* This
+ -* is
+ -* bah.
+
 @title Foo
 @depend C89
 */

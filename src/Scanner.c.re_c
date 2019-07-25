@@ -20,29 +20,30 @@
  Two hard returns is a paragraph.
 
  "\\" escapes whatever comes after, with one exception "\\," inserts a U+202F
- narrow no-break space, (HTML &#8239; for working with units,) (fixme) and
+ narrow no-break space, (HTML &#8239; for working with units,) and
  backslash-end-comment is nonsense and will not compile. When two or more
  definitions are present in a single statement, the first one is used. Embedded
  inline in the documentation,
 
- - \_ _emphasised_;
- - \` `code/math`;
- - \<url\>;
- - \<Source, 1999, pp. 1-2\>;
- - \<fn:\<function\>\>;
- - \<tag:\<struct|union|enum\>\> (fixme);
- - \<typedef:\<typedef\>\> (fixme);
- - \<data:\<identifier\>\> (fixme);
+ -* \_ _emphasised_;
+ -* \` `code/math`;
+ -* \<url\>;
+ -* \<Source, 1999, pp. 1-2\>;
+ -* \<fn:\<function\>\>;
+ -* \<tag:\<struct|union|enum\>\> (fixme);
+ -* \<typedef:\<typedef\>\> (fixme);
+ -* \<data:\<identifier\>\> (fixme);
+ -* \[The link text\](url);
+ -* \!\[Caption text\](/path/to/img.jpg);
+ -* lists with "\ -* "; lists can be anywhere and don't nest;
+ -* \~ non-breaking space;
+ -* \\, non-breaking thin space.
 
  Things that are planned for inclusion,
 
- - \[The link text\](url);
- - \!\[Caption text\](/path/to/img.jpg);
- - lists with " - " at the beginning, but in a separate paragraph;
- - code blocks are useful useful for math, tab starts pre;
- - warnings when all the variables are not mentioned at least once, in the
-   description \` code or the \@param;
- - '\~' should &nbsp;.
+ -* code blocks are useful useful for math, tab starts pre;
+ -* warnings when all the variables are not mentioned at least once, in the
+    description \` code or the \@param;
 
  Each-block-tags separate the documentation until the next paragraph (fixme) or
  until the
@@ -51,50 +52,50 @@
  these are applicable for all segments of text, but warnings are emitted
  (fixme). These are:
 
- - \@title;
- - \@param[<param1>[, ...]];
- - \@author;
- - \@std (remove fixme);
- - \@depend;
- - \@version[<version>];
- - \@fixme (remove fixme);
- - \@bug (fixme);
- - \@return;
- - \@throws[<exception1>[, ...]];
- - \@implements;
- - \@order;
- - and \@allow, the latter being to allow `static` functions in the
-   documentation.
+ -* \@title;
+ -* \@param[<param1>[, ...]];
+ -* \@author;
+ -* \@std (remove fixme);
+ -* \@depend;
+ -* \@version[<version>];
+ -* \@fixme (remove fixme);
+ -* \@bug (fixme);
+ -* \@return;
+ -* \@throws[<exception1>[, ...]];
+ -* \@implements;
+ -* \@order;
+ -* and \@allow, the latter being to allow `static` functions in the
+    documentation.
 
  Things that are not planned for inclusion,
 
- - headers;
- - block quotes "> ";
- - lists with "*", "+", numbered, or multi-level;
- - horizontal rules;
- - emphasis by *, **, \_\_;
- - strikethrough;
- - code spans by \`\`, _etc_;
- - table of contents;
- - tables;
- - fenced code blocks;
- - HTML blocks;
- - '/ * !', '/ / /', '/ / !';
- - \\brief;
- - '/ * ! <', '/ * * <', '/ / ! <', '/ / / <': not needed; automatically
-   concatenates;
- - [in], [out];
- - '\\param c1' or '\@param a' -- this probably is the most departure from
-   normal documentation generators, but it's confusing having the text and the
-   variable be indistinguishable;
- - \!\[Caption text\](/path/to/img.jpg "Image title");
- - \[The link text\](http://example.net/ "Link title");
- - instead of \\struct, \\union, \\enum, \\var, \\typedef, just insert the
-   documentation comment above the thing; use \<decl:<thing>\> to reference
-   (fixme);
- - \\def;
- - instead of \\fn, just insert the documentation comment above the function;
-   use \<fn:\<function\>\> to reference.
+ -* headers;
+ -* block quotes "> ";
+ -* lists with "*", "+", numbered, or multi-level;
+ -* horizontal rules;
+ -* emphasis by *, **, \_\_;
+ -* strikethrough;
+ -* code spans by \`\`, _etc_;
+ -* table of contents;
+ -* tables;
+ -* fenced code blocks;
+ -* HTML blocks;
+ -* '/ * !', '/ / /', '/ / !';
+ -* \\brief;
+ -* '/ * ! <', '/ * * <', '/ / ! <', '/ / / <': not needed; automatically
+    concatenates;
+ -* [in], [out];
+ -* '\\param c1' or '\@param a' -- this probably is the most departure from
+    normal documentation generators, but it's confusing having the text and the
+    variable be indistinguishable;
+ -* \!\[Caption text\](/path/to/img.jpg "Image title");
+ -* \[The link text\](http://example.net/ "Link title");
+ -* instead of \\struct, \\union, \\enum, \\var, \\typedef, just insert the
+    documentation comment above the thing; use \<decl:<thing>\> to reference
+    (fixme);
+ -* \\def;
+ -* instead of \\fn, just insert the documentation comment above the function;
+    use \<fn:\<function\>\> to reference.
 
 "Unlike standard Markdown and Github Flavored Markdown doxygen will not touch internal underscores or stars or tildes, so the following will appear as-is:
 a_nice_identifier
@@ -175,7 +176,9 @@ A `cool' word in a `nice' sentence."
 	X(EM_BEGIN, '~', 0), X(EM_END, '~', 0), \
 	/* Like @param[a, b, c]. */ \
 	X(DOC_LEFT, '~', 0), X(DOC_RIGHT, '~', 0), \
-	X(DOC_ID, '~', &lit), X(DOC_COMMA, '~', &lit)
+	X(DOC_ID, '~', &lit), X(DOC_COMMA, '~', &lit), \
+	/* List items. " -* " */ \
+	X(LIST_ITEM, '~', 0)
 enum Symbol { SYMBOL(PARAM3_A) };
 static const char *const symbols[] = { SYMBOL(STRINGISE3_A) };
 static const char symbol_marks[] = { SYMBOL(PARAM3_B) };
@@ -458,6 +461,8 @@ page = ","? whitespace* (("pp" | "p") "."?)? whitespace*
 	[0-9]+ (whitespace* "-"{1,2} whitespace* [0-9]+)?;
 citation = whitespace* author (authorsep author)*
 	(closing etalia)? closing date page? whitespace*;
+// Lists.
+list = " -* ";
 */
 
 /** Scans. */
@@ -477,8 +482,7 @@ scan:
 		return END;
 	}
 	// Ignore whitespace everywhere.
-	<doc> whitespace+ { return SPACE; }
-	<*> whitespace+ { goto reset; }
+	<*> whitespace+ { if(scanner.state == yycdoc) return SPACE; goto reset; }
 	// Newlines are generally ignored but documentation counts for paragraphs.
 	<*> newline {
 		scanner.line++;
@@ -553,6 +557,7 @@ scan:
 	<em> "_" { return scanner.state = yycdoc, EM_END; }
 	<doc> "`" { return scanner.state = yycmath, MATH_BEGIN; }
 	<math> "`" { return scanner.state = yycdoc, MATH_END; }
+	<doc> list { return LIST_ITEM; }
 
 	// These are recognised in the documentation as stuff. fixme: s-tags.
 	<doc> "<" absolute_uri ">" { return URL; }
