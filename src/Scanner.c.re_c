@@ -19,8 +19,7 @@
  a function is considered a declaration for the purpose of the parser (fixme).
  Two hard returns is a paragraph.
 
- "\\" escapes whatever comes after, with one exception "\\," inserts a U+202F
- narrow no-break space, (HTML &#8239; for working with units,) and
+ "\\" escapes whatever comes after, with one exception "\\," inserts a  and
  backslash-end-comment is nonsense and will not compile. When two or more
  definitions are present in a single statement, the first one is used. Embedded
  inline in the documentation,
@@ -36,21 +35,15 @@
  -* \[The link text\](url);
  -* \!\[Caption text\](/path/to/img.jpg);
  -* lists with "\ -* "; lists can be anywhere and don't nest;
+ -* a tab causes all the line after to be preformatted;
  -* \~ non-breaking space;
- -* \\, non-breaking thin space.
-
- Things that are planned for inclusion,
-
- -* code blocks are useful useful for math, tab starts pre;
- -* warnings when all the variables are not mentioned at least once, in the
-    description \` code or the \@param;
+ -* \\, non-breaking thin space (U+202F HTML &#8239; for working with units.)
 
  Each-block-tags separate the documentation until the next paragraph (fixme) or
  until the
  next each-block-tag, and specify a specific documentation structure.
  Each-block-tags that overlap are concatenated in the file order. Not all of
- these are applicable for all segments of text, but warnings are emitted
- (fixme). These are:
+ these are applicable for all segments of text. These are:
 
  -* \@title;
  -* \@param[<param1>[, ...]];
@@ -178,7 +171,9 @@ A `cool' word in a `nice' sentence."
 	X(DOC_LEFT, '~', 0), X(DOC_RIGHT, '~', 0), \
 	X(DOC_ID, '~', &lit), X(DOC_COMMA, '~', &lit), \
 	/* List items. " -* " */ \
-	X(LIST_ITEM, '~', 0)
+	X(LIST_ITEM, '~', 0), \
+	/* Preformated. */ \
+	X(PREFORMATED, '~', 0)
 enum Symbol { SYMBOL(PARAM3_A) };
 static const char *const symbols[] = { SYMBOL(STRINGISE3_A) };
 static const char symbol_marks[] = { SYMBOL(PARAM3_B) };
@@ -416,7 +411,7 @@ art = whitespace* "*"? newline " *";
 comment_break = "/" "*"+ "*" "/";
 begin_comment = "/""*";
 end_comment = "*""/";
-cxx_comment = "//" [^\n]*;
+cxx_comment = "//" [^\n\x00]*;
 macro = ("#" | "%:");
 // fixme: No trigraph support.
 // char_type = "u8"|"u"|"U"|"L"; <- These get caught in id; don't care.
@@ -463,6 +458,8 @@ citation = whitespace* author (authorsep author)*
 	(closing etalia)? closing date page? whitespace*;
 // Lists.
 list = " -* ";
+// Math/code blocks.
+preformated = "\t" [^\n\x00]*;
 */
 
 /** Scans. */
@@ -550,14 +547,15 @@ scan:
 	<doc> end_doc { return scanner.state = yyccode, DOC_END; }
 
 	<doc, math, em> word { return WORD; }
-	<doc, math, em> "\\"[^*,] { return ESCAPE; }
+	<doc, math, em> "\\"[^*,\x00] { return ESCAPE; }
 	<doc, math, em> "\\," { return NBTHINSP; }
 	<doc, math, em> "\\*" / [^/] { return ESCAPE; }
+	<doc, math, em> "\\\x00" { return fprintf(stderr,
+		"Escape past EOF;\n%s.\n", pos()), errno = EILSEQ, END; }
 	<doc> "_" { return scanner.state = yycem, EM_BEGIN; }
 	<em> "_" { return scanner.state = yycdoc, EM_END; }
 	<doc> "`" { return scanner.state = yycmath, MATH_BEGIN; }
 	<math> "`" { return scanner.state = yycdoc, MATH_END; }
-	<doc> list { return LIST_ITEM; }
 
 	// These are recognised in the documentation as stuff. fixme: s-tags.
 	<doc> "<" absolute_uri ">" { return URL; }
@@ -571,11 +569,8 @@ scan:
 	<doc> "![" whitespace* (word whitespace*)+ "](" relative_uri ")"
 		{ return IMAGE; }
 	<doc> "~" { return NBSP; }
-
-// - lists with " - " at the beginning, but in a separate paragraph;
-// - code blocks are useful useful for math, tab starts pre;
-// - warnings when all the variables are not mentioned at least once, in the
-//   description \` code or the \@param;
+	<doc> list { return LIST_ITEM; }
+	<doc> preformated { return PREFORMATED; }
 
 	// These are tags.
 	<doc> "@title"      { return TAG_TITLE; }
