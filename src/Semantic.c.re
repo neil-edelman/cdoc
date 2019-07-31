@@ -21,7 +21,7 @@
 #include "../src/Semantic.h" /* Semantic */
 
 
-/** Copies marks in code and then figures out what the code is. */
+/** Not thread safe. */
 struct Semantic {
 	const char *buffer, *marker, *from, *cursor;
 	/* fixme: The params; not used. */
@@ -39,8 +39,9 @@ enum Namespace Semantic(const char *const marks) {
 	semantic.buffer = semantic.marker = semantic.from = semantic.cursor = marks;
 	semantic.s0 = semantic.s1 = semantic.s2 = semantic.s3 = semantic.s4
 		= semantic.s5 = semantic.s6 = semantic.s7 = semantic.s8 = 0;
+	name = namespace();
 	printf("--> Semantic(\"%s\") = %s.\n", marks, namespaces[name]);
-	return namespace();
+	return name;
 }
 
 /*!re2c
@@ -49,20 +50,38 @@ re2c:define:YYCTYPE  = char;
 re2c:define:YYCURSOR = semantic.cursor;
 re2c:define:YYMARKER = semantic.marker;
 
-unknown = "x";
-// generic types are "A_(Foo)" which we assume is "<A>Foo"
-generic = "x" | "1(".")" | "2(".",".")" | "3(".",".",".")";
-void = "v";
-struct = "s";
-static = "z";
-typename = ((struct? generic) | void) (unknown* "*"*)*;
-array = "[" "x"? "]";
-declaration = "x"* typename array* "x" array*;
-param = "x"* declaration;
-paramlist = param ("," param)*;
-fn = unknown* static? unknown* typename "x(" (void | paramlist) ")";
+// Must match `SYMBOL` in `Scanner.c.re`.
+end = "\x00";
+star = [^\x00];
+operator = "*";
+constant = "#";
+id = "x"; // Everything that's not recogised is id.
+tag = "s";
 typedef = "t";
-equals = "=";
+static = "z";
+void = "v";
+ellipses = ".";
+name = id | typedef | static | void;
+generic = id
+	| "1(" name ")"
+	| "2(" name "," name ")"
+	| "3(" name "," name "," name ")"; // Includes macros.
+
+typename = id* (tag? generic) (id* operator*)*;
+constant_or_macro = constant | id; 
+array = "[" constant_or_macro? "]";
+
+left_things = "(" | "[" | "]" | operator | id; // const is an id
+right_things = ")" | "[" | "]" | operator;
+
+id_detail = ("("|"["|"]"operator);
+declaration = id* typename array* id array*;
+param = id* declaration; // fixme: or fn declaration
+paramlist = param ("," param)* ("," ellipses)?;
+fn = id* static? id* typename id "(" (void | paramlist) ")"; // fixme: or old-
+
+fn_ptr = (operator|id|tag|void)+ "(" operator (operator|id|tag)* generic ")"
+	"(" (operator|id|tag|void|"("|")"|array)* ")" array*;
 
 */
 
@@ -75,12 +94,13 @@ code:
 	semantic.from = semantic.cursor;
 /*!re2c
 	"\x00" { return NAME_PREAMBLE; }
-	"t" { return NAME_TYPEDEF; }
-	"=" { return NAME_DATA; }
-	"s" { return NAME_TAG; } // no
+	"t" ("("|")"|operator|constant|id|tag|void|ellipses){2,} "\x00" { return NAME_TYPEDEF; }
+	static? (operator|id|tag|void)+ array* "="  { return NAME_DATA; }
+	tag { return NAME_TAG; } // no
 	generic { goto code; }
 	* { goto code; }
 	")\x00" { return NAME_FUNCTION; }
+	fn ( ( "{" [^x00]* "}\x00" ) | ( ";\x00" ) ) { return NAME_FUNCTION; }
 	// fixme: This does not take into account function pointers.
 	// fixme: Old-style function definitions.
 	// fixme: int (*foo)(void) would trivally break it.

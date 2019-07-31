@@ -1,4 +1,4 @@
-/** Yo <http://foo.org/> [MIT](https://foo.org/)
+/** Header. Yo <http://foo.org/> [MIT](https://foo.org/)
 
 Paragraph @ @a \,~~
 
@@ -6,23 +6,20 @@ Paragraph @ @a \,~~
  -* is
  -* bah.
 
-@title Foo
-@depend C89
-lala	lala? <http://foo.com/>
-*/
+ Escapes. \\ \` \@ \_ \*  /// \\\`
 
+ @title Foo `Bar`
+ @depend C89
+ lala	lala? <http://foo.com/> */
 
+/** Data. */
+static struct T_(Array) (*const a)(int, int a, int (*a)(const int a));
 
-/** A `a`. */
-static T_(Array) a;
+/** Typedef. */
+typedef A_B_(Foo, Bar) int (*)(int);
 
-/** B */
-struct T_U_(Array, Sort) b;
-
-/** C */
-int T_U_V_(Foo, Bar  ,  Baz)(void);
-
-/** Escapes. \\ \` \@ \_ \*  /// \\\`*/
+/** Data. */
+static int T_U_V_(Foo, Bar  ,  Baz)(void) = 0;
 
 /****************/
 
@@ -32,6 +29,7 @@ int T_U_V_(Foo, Bar  ,  Baz)(void);
 static enum Token scan_eof(struct Scanner *const s) { (void)s; return END; }
 
 /**
+ * Header. That also goes in the header.
  *
  *
  * This is a
@@ -41,15 +39,15 @@ static enum Token scan_eof(struct Scanner *const s) { (void)s; return END; }
  * <fn:a>
  *
  *
- * Aha!
  */
 
 /*********************
+ * Header.           *
  * This is an ascii  *
  * art comment. Eww. *
- ********************/
+ *********************/
 
-/** C style comments. Actively ignore.
+/** Function.
  @implements ScannerFn
  @allow */
 static enum Token scan_comment(struct Scanner *const s) {
@@ -57,8 +55,8 @@ static enum Token scan_comment(struct Scanner *const s) {
 comment:
 }
 
-
+/** Function. */
 T a(int (*ptr)(int a, int (*fn)(void))) /** yo */ {
-	/** @param[a, fn] Doesn't do anything `x`. */
+	/** @param[a, fn] Doesn't do anything. */
 	a = a;
 }

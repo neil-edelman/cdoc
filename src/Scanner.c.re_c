@@ -128,7 +128,7 @@ A `cool' word in a `nice' sentence."
 #include "../src/Semantic.h"
 
 /* Define `Symbols` -- these are the numerical values given to a section of
- text. The prefix of symbols themselves have meaning; see <fn:sort>. */
+ text. Don't change these without changing the code in `Semantic.c.re`. */
 #define SYMBOL(X) \
 	/* EOF -- marked '\0' in memory. */ \
 	X(END, '\0', 0), \
@@ -140,7 +140,7 @@ A `cool' word in a `nice' sentence."
 	X(ID_ONE_GENERIC, '1', &gen1), X(ID_TWO_GENERICS, '2', &gen2), \
 	X(ID_THREE_GENERICS, '3', &gen3), X(STRUCT, 's', &lit), \
 	X(UNION, 's', &lit), X(ENUM, 's', &lit), X(TYPEDEF, 't', &lit), \
-	X(STATIC, 'z', &lit), X(VOID, 'v', &lit), \
+	X(STATIC, 'z', &lit), X(VOID, 'v', &lit), X(ELLIPSES, '.', &lit), \
 	/* Each-block-tags; 2nd is '@' because we want them to have special
 	 meaning. */ \
 	X(TAG_TITLE, '@', &lit), X(TAG_PARAM, '@', &lit), \
@@ -520,6 +520,7 @@ scan:
 	<code> ")"          { return RPAREN; }
 	<code> ","          { return COMMA; }
 	<code> ";"          { return SEMI; }
+	<code> "..."        { return ELLIPSES; }
 	<code> id           { return ID; }
 
 	<code> begin_doc / [^/] { return scanner.state = yycdoc, DOC_BEGIN; }
@@ -588,28 +589,22 @@ scan:
 */
 }
 
-/** This holds the sorting state information for `sort`. */
-static struct {
-	struct Segment *segment;
-	struct TagArray *tag_array;
-	struct TokenArray *current;
-} sorter;
-
-/** Extracts the approximate meaning of the code from whatever's in the
- `Scanner`. */
-static enum Namespace namespace(void) {
+/** Extracts the approximate meaning of `code`. Does this by copying characters
+ clobbers to `semantic_buffer` in global `scanner` and then calls external
+ `Semantic`. */
+static enum Namespace namespace(const struct TokenArray *const code) {
 	struct Token *token = 0;
 	size_t size;
 	char *a;
-	assert(sorter.segment);
+	assert(code);
 	/* Copy the meanings of all the symbols into `sematic_buffer`, overriding
 	 what was there. */
 	CharArrayClear(&scanner.semantic_buffer);
-	size = TokenArraySize(&sorter.segment->code) + 1;
+	size = TokenArraySize(code) + 1;
 	if(!(a = CharArrayBuffer(&scanner.semantic_buffer, size)))
 		return perror("namespace"), NAME_PREAMBLE; /* Lazy. */
 	CharArrayAddSize(&scanner.semantic_buffer, size);
-	while((token = TokenArrayNext(&sorter.segment->code, token)))
+	while((token = TokenArrayNext(code, token)))
 		*a++ = symbol_marks[token->symbol];
 	*a++ = '\0';
 	assert((size_t)(a - CharArrayGet(&scanner.semantic_buffer))
@@ -625,6 +620,12 @@ static int sort(const enum Symbol symbol) {
 	struct Token *token = 0;
 	enum { SORT_CODE, SORT_DOCS, SORT_TAG } what;
 	const char symbol_mark = symbol_marks[symbol];
+	/** This holds the sorting state. */
+	static struct {
+		struct Segment *segment;
+		struct TagArray *tag_array;
+		struct TokenArray *current;
+	} sorter = { 0, 0, 0 };
 
 	/* Sort `symbol` based on it's code mark. */
 	assert(symbol);
@@ -635,11 +636,16 @@ static int sort(const enum Symbol symbol) {
 	default: what = SORT_CODE;
 	}
 
-	/* End the segment if the `symbol` is `DOC_BEGIN` and it has no code. This
-	 will be classified as the header documentation. */
-	if(symbol == DOC_BEGIN && sorter.segment
-		&& TokenArraySize(&sorter.segment->code) == 0)
-		printf("\t*****CUT(1)***\n"), sorter.segment = 0;
+	if(symbol == DOC_BEGIN && sorter.segment) {
+		if(TokenArraySize(&sorter.segment->code) == 0) {
+			/* No code. This will be classified as the header documentation. */
+			printf("\t*****CUT(1)***\n"), sorter.segment = 0;
+		} else {
+			/* Go back to no tag, since this is a new comment. */
+			sorter.tag_array = 0;
+			sorter.current = 0;
+		}
+	}
 
 	/* Make a new segment if needed. */
 	if(!sorter.segment && !(sorter.tag_array = 0, sorter.current = 0,
@@ -663,13 +669,15 @@ static int sort(const enum Symbol symbol) {
 	/* Paragraphs after the fact. */
 	if(scanner.indent_level == 0
 		&& (symbol == SEMI || symbol == RBRACE)) {
-		sorter.segment->namespace = namespace();
+		sorter.segment->namespace = namespace(&sorter.segment->code);
 		sorter.segment = 0;
 		printf("\t!!!!!!CUT(2)!!\n");
 	}
 
 	return 1;
 }
+
+#include "../src/Out.h"
 
 /** Entry-point.
  @param[argc, argv] If "debug", `freopens` a path that is on my computer. */
@@ -694,7 +702,8 @@ int main(int argc, char **argv) {
 		while((segment = SegmentArrayNext(&doc, segment))) {
 			struct Tag *tag = 0;
 			printf("Segment(%s):\n\tdoc: %s.\n\tcode: %s.\n",
-				namespaces[segment->namespace], TokenArrayToString(&segment->doc),
+				namespaces[segment->namespace],
+				TokenArrayToString(&segment->doc),
 				TokenArrayToString(&segment->code));
 			while((tag = TagArrayNext(&segment->tags, tag))) {
 				printf("\t%s{%s} %s.\n", symbols[tag->token.symbol],
@@ -704,6 +713,12 @@ int main(int argc, char **argv) {
 		}
 		fputc('\n', stdout);
 	}
+
+	{
+		fputs("\n\n", stdout);
+		out(&doc);
+	}
+
 	exit_code = EXIT_SUCCESS; goto finally;
 
 catch:

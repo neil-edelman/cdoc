@@ -25,7 +25,7 @@ OUT(gen1) {
 		token->length - 1, token->from, param->length, param->from);
 	return TokenArrayNext(ta, rparen);
 catch:
-	fprintf(stderr, "Expected: generic(id).\n"), ScannerPrintState();
+	fprintf(stderr, "Expected: generic(id);\n%s.\n", pos());
 	return 0;
 }
 OUT(gen2) {
@@ -50,7 +50,7 @@ OUT(gen2) {
 		param1->from, type2_size, type2, param2->length, param2->from);
 	return TokenArrayNext(ta, rparen);
 catch:
-	fprintf(stderr, "Expected: generic(id,id).\n"), ScannerPrintState();
+	fprintf(stderr, "Expected: generic(id,id);\n%s.\n", pos());
 	return 0;
 }
 OUT(gen3) {
@@ -82,7 +82,7 @@ OUT(gen3) {
 		param2->from, type3_size, type3, param3->length, param3->from);
 	return TokenArrayNext(ta, rparen);
 	catch:
-	fprintf(stderr, "Expected: generic(id,id,id).\n"), ScannerPrintState();
+	fprintf(stderr, "Expected: generic(id,id,id);\n%s.\n", pos());
 	return 0;
 }
 OUT(esc_bs) {
@@ -124,9 +124,9 @@ OUT(rb) {
 OUT(url) {
 	struct Token *const lbr = TokenArrayNext(ta, token),
 		*next = TokenArrayNext(ta, lbr); /* Variable no. */
-	if(!lbr || lbr->symbol != PARAM_LBRACE || !next) goto catch;
+	if(!lbr || lbr->symbol != LBRACE || !next) goto catch;
 	printf("(");
-	while(next->symbol != PARAM_RBRACE) {
+	while(next->symbol != RBRACE) {
 		/* We don't care about the symbol's meaning in the url. */
 		printf("%.*s", next->length, next->from);
 		if(!(next = TokenArrayNext(ta, next))) goto catch;
@@ -134,21 +134,21 @@ OUT(url) {
 	printf(")~");
 	return TokenArrayNext(ta, next);
 catch:
-	ScannerPrintState(), fprintf(stderr, "Expected: \\url{<cat url>}.\n");
+	fprintf(stderr, "Expected: \\url{<cat url>};\n%s.\n", pos());
 	return 0;
 }
 OUT(cite) {
 	struct Token *const lbr = TokenArrayNext(ta, token),
 		*next = TokenArrayNext(ta, lbr); /* Variable no. */
-	if(!lbr || lbr->symbol != PARAM_LBRACE || !next) goto catch;
+	if(!lbr || lbr->symbol != LBRACE || !next) goto catch;
 	printf("(");
-	while(next->symbol != PARAM_RBRACE) {
+	while(next->symbol != RBRACE) {
 		printf("%.*s~", next->length, next->from);
 		if(!(next = TokenArrayNext(ta, next))) goto catch;
 	}
 	printf(")[https://scholar.google.ca/scholar?q=");
 	next = TokenArrayNext(ta, lbr);
-	while(next->symbol != PARAM_RBRACE) {
+	while(next->symbol != RBRACE) {
 		/* fixme: escape url! */
 		printf("%.*s_", next->length, next->from);
 		if(!(next = TokenArrayNext(ta, next))) goto catch;
@@ -156,7 +156,7 @@ OUT(cite) {
 	printf("]~");
 	return TokenArrayNext(ta, next);
 catch:
-	fprintf(stderr, "Expected: \\cite{<source>}.\n"), ScannerPrintState();
+	fprintf(stderr, "Expected: \\cite{<source>};\n%s.\n", pos());
 	return 0;
 }
 OUT(see) { /* fixme: Have a new field in segment. */
@@ -166,27 +166,27 @@ OUT(see) { /* fixme: Have a new field in segment. */
 OUT(math) { /* Math and code. */
 	struct Token *next = TokenArrayNext(ta, token);
 	printf("{code:`");
-	while(next->symbol != END_MATH) {
+	while(next->symbol != MATH_END) {
 		printf("%.*s", next->length, next->from);
 		if(!(next = TokenArrayNext(ta, next))) goto catch;
 	}
 	printf("`:code}~");
 	return TokenArrayNext(ta, next);
 catch:
-	fprintf(stderr, "Expected: `<math/code>`.\n"), ScannerPrintState();
+	fprintf(stderr, "Expected: `<math/code>`;\n%s.\n", pos());
 	return 0;
 }
 OUT(it) {
 	struct Token *next = TokenArrayNext(ta, token);
 	printf("{it:`");
-	while(next->symbol != ITALICS) {
+	while(next->symbol != EM_END) {
 		printf("%.*s~", next->length, next->from);
 		if(!(next = TokenArrayNext(ta, next))) goto catch;
 	}
 	printf("`:it}~");
 	return TokenArrayNext(ta, next);
 	catch:
-	fprintf(stderr, "Expected: _<italics>_.\n"), ScannerPrintState();
+	fprintf(stderr, "Expected: _<italics>_;\n%s.\n", pos());
 	return 0;
 }
 OUT(par) {
@@ -273,17 +273,17 @@ static void segment_print_all_title(struct Segment *const segment) {
 
 /** @implements <Segment>Predictate */
 static int segment_is_header(const struct Segment *const segment) {
-	return segment->section == HEADER;
+	return segment->namespace == NAME_PREAMBLE;
 }
 
 /** @implements <Segment>Predictate */
 static int segment_is_declaration(const struct Segment *const segment) {
-	return segment->section == DECLARATION;
+	return segment->namespace == NAME_TAG || segment->namespace == NAME_TYPEDEF;
 }
 
 /** @implements <Segment>Predictate */
 static int segment_is_function(const struct Segment *const segment) {
-	return segment->section == FUNCTION;
+	return segment->namespace == NAME_FUNCTION;
 }
 
 /**
