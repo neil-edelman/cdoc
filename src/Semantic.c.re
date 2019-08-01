@@ -94,7 +94,7 @@ code:
 	semantic.from = semantic.cursor;
 /*!re2c
 	"\x00" { return NAME_PREAMBLE; }
-	"t" ("("|")"|operator|constant|id|tag|void|ellipses){2,} "\x00" { return NAME_TYPEDEF; }
+	"t" ("("|")"|operator|id|tag|void|ellipses){2,} "\x00" { return NAME_TYPEDEF; }
 	static? (operator|id|tag|void)+ array* "="  { return NAME_DATA; }
 	generic { goto code; }
 	* { goto code; }
