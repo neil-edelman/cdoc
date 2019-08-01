@@ -203,12 +203,6 @@ static void tag_to_string(const struct Tag *t, char (*const a)[12]) {
 	strncpy(*a, symbols[t->token.symbol], sizeof *a - 1);
 	(*a)[sizeof *a - 1] = '\0';
 }
-static void tag_init(struct Tag *const tag) {
-	assert(tag);
-	TokenArray(&tag->header);
-	TokenArray(&tag->contents);
-	/* FIXME!! Token(&tag->token);*/
-}
 #define ARRAY_NAME Tag
 #define ARRAY_TYPE struct Tag
 #define ARRAY_TO_STRING &tag_to_string
@@ -229,13 +223,6 @@ struct Segment {
 	struct TokenArray doc, code;
 	struct TagArray tags;
 };
-static void segment_init(struct Segment *const segment) {
-	assert(segment);
-	segment->namespace = NAME_PREAMBLE; /* Default. */
-	TokenArray(&segment->doc);
-	TokenArray(&segment->code);
-	TagArray(&segment->tags);
-}
 static void segment_to_string(const struct Segment *seg, char (*const a)[12]) {
 	strncpy(*a, namespaces[seg->namespace], sizeof *a - 1);
 	(*a)[sizeof *a - 1] = '\0';
@@ -245,9 +232,9 @@ static void segment_to_string(const struct Segment *seg, char (*const a)[12]) {
 #define ARRAY_TO_STRING &segment_to_string
 #include "../src/Array.h"
 
-
 /** This is the top-level parser. */
 static struct SegmentArray doc;
+
 
 static void doc_(void) {
 	struct Segment *seg;
@@ -362,6 +349,26 @@ static void token_current(struct Token *const token, const enum Symbol symbol) {
 		token->length = (int)(scanner.cursor - scanner.from);
 	}
 	token->line = scanner.line;
+}
+
+/** The `token` field will be uninitialised! */
+static struct Tag *segment_new_tag(struct Segment *const segment) {
+	struct Tag *tag;
+	assert(segment);
+	if(!(tag = TagArrayNew(&segment->tags))) return 0;
+	TokenArray(&tag->header);
+	TokenArray(&tag->contents);
+	return tag;
+}
+
+static struct Segment *doc_new_segment(void) {
+	struct Segment *segment;
+	if(!(segment = SegmentArrayNew(&doc))) return 0;
+	segment->namespace = NAME_PREAMBLE; /* Default. */
+	TokenArray(&segment->doc);
+	TokenArray(&segment->code);
+	TagArray(&segment->tags);
+	return segment;
 }
 
 /*!re2c
@@ -616,54 +623,41 @@ static enum Namespace namespace(const struct TokenArray *const code) {
 /** This appends the current token based on the global state in `sorter`.
  @return Success. */
 static int sort(const enum Symbol symbol) {
-	struct TokenArray *chosen = 0;
 	struct Token *token = 0;
-	enum { SORT_CODE, SORT_DOCS, SORT_TAG } what;
 	const char symbol_mark = symbol_marks[symbol];
-	/** This holds the sorting state. */
 	static struct {
 		struct Segment *segment;
-		struct TagArray *tag_array;
-		struct TokenArray *current;
-	} sorter = { 0, 0, 0 };
+		struct Tag *tag;
+		struct TokenArray *tag_current;
+	} sorter = { 0, 0, 0 }; /* This holds the sorting state. */
 
-	/* Sort `symbol` based on it's code mark. */
-	assert(symbol);
-	switch(symbol_mark) {
-	case '@': what = SORT_DOCS; break;
-	case '~': what = SORT_TAG; break;
-	case '\0': assert(0); return 0; /* Impossible. */
-	default: what = SORT_CODE;
-	}
-
+	/* Multiple doc comments. If the code is empty, it's a preamble, otherwise,
+	 no tag. */
 	if(symbol == DOC_BEGIN && sorter.segment) {
-		if(TokenArraySize(&sorter.segment->code) == 0) {
-			/* No code. This will be classified as the header documentation. */
-			printf("\t*****CUT(1)***\n"), sorter.segment = 0;
-		} else {
-			/* Go back to no tag, since this is a new comment. */
-			sorter.tag_array = 0;
-			sorter.current = 0;
-		}
+		if(!TokenArraySize(&sorter.segment->code)) sorter.segment = 0;
+		else sorter.tag = 0;
 	}
 
 	/* Make a new segment if needed. */
-	if(!sorter.segment && !(sorter.tag_array = 0, sorter.current = 0,
-		sorter.segment = SegmentArrayNew(&doc))) return 0;
+	if(!sorter.segment && !(sorter.tag = 0,
+		sorter.segment = doc_new_segment())) return 0;
 
-	/* Choose which `TokenArray`. */
-	switch(what) {
-	case SORT_CODE: chosen = &sorter.segment->code; break;
-	case SORT_DOCS:
-		/*chosen = TagArrayPop(sorter.tag_array);*/ /* careful! */
-		if(!chosen) chosen = &sorter.segment->doc;
+	/* Make a `token`. */
+	switch(symbol_mark) {
+	case '~':
+		token = TokenArrayNew(sorter.tag
+			? sorter.tag_current : &sorter.segment->doc);
 		break;
-	case SORT_TAG:
-		chosen = &sorter.segment->doc; break; /* fixme */
+	case '@':
+		if(!(sorter.tag = segment_new_tag(sorter.segment))) return 0;
+		sorter.tag_current = &sorter.tag->contents;
+		token = &sorter.tag->token;
+		break;
+	default:
+		token = TokenArrayNew(&sorter.segment->code);
+		break;
 	}
-
-	/* Make the token. */
-	if(!(token = TokenArrayNew(chosen))) return 0;
+	if(!token) return 0;
 	token_current(token, symbol);
 
 	/* Paragraphs after the fact. */
@@ -710,8 +704,8 @@ int main(int argc, char **argv) {
 					TokenArrayToString(&tag->header),
 					TokenArrayToString(&tag->contents));
 			}
+			fputc('\n', stdout);
 		}
-		fputc('\n', stdout);
 	}
 
 	{

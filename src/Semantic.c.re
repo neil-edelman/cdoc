@@ -96,7 +96,6 @@ code:
 	"\x00" { return NAME_PREAMBLE; }
 	"t" ("("|")"|operator|constant|id|tag|void|ellipses){2,} "\x00" { return NAME_TYPEDEF; }
 	static? (operator|id|tag|void)+ array* "="  { return NAME_DATA; }
-	tag { return NAME_TAG; } // no
 	generic { goto code; }
 	* { goto code; }
 	")\x00" { return NAME_FUNCTION; }
@@ -104,5 +103,8 @@ code:
 	// fixme: This does not take into account function pointers.
 	// fixme: Old-style function definitions.
 	// fixme: int (*foo)(void) would trivally break it.
+
+	// something <tag> [name];
+	static? id* tag id? end { return NAME_TAG; }
 */
 }
