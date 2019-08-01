@@ -456,8 +456,8 @@ citation = whitespace* author (authorsep author)*
 	(closing etalia)? closing date page? whitespace*;
 // Lists.
 list = " -* ";
-// Math/code blocks.
-preformated = "\t" [^\n\x00]*;
+// Math/code blocks. Added after; very meh.
+preformated = "\t" [^*\n\x00]*;
 */
 
 /** Scans. */
@@ -620,37 +620,62 @@ static enum Namespace namespace(const struct TokenArray *const code) {
 	return Semantic(CharArrayGet(&scanner.semantic_buffer));
 }
 
-/** This appends the current token based on the global state in `sorter`.
+/** This appends the current token based on the state it was last in.
  @return Success. */
-static int sort(const enum Symbol symbol) {
+static int place(const enum Symbol symbol) {
 	struct Token *token = 0;
 	const char symbol_mark = symbol_marks[symbol];
 	static struct {
 		struct Segment *segment;
 		struct Tag *tag;
-		struct TokenArray *tag_current;
+		int is_tag_header;
 	} sorter = { 0, 0, 0 }; /* This holds the sorting state. */
 
-	/* Multiple doc comments. If the code is empty, it's a preamble, otherwise,
-	 no tag. */
-	if(symbol == DOC_BEGIN && sorter.segment) {
+	/* These symbols require special consideration. */
+	switch(symbol) {
+	case DOC_BEGIN: /* Multiple doc comments. */
+		sorter.tag = 0;
+		if(!sorter.segment) return 1;
 		if(!TokenArraySize(&sorter.segment->code)) sorter.segment = 0;
-		else sorter.tag = 0;
+		printf("CUT!!!!!!!!!!\n");
+		break;
+		/*return 1;*/
+	/*case DOC_END: return 1;*/ /* Doesn't actually do something. */
+	case DOC_LEFT: /* Should only happen in @foo[]. */
+		if(!sorter.segment || !sorter.tag || sorter.is_tag_header)
+			return fprintf(stderr, "Out-of-place '[';\n%s.\n", pos()), 0;
+		sorter.is_tag_header = 1;
+		return 1;
+	case DOC_RIGHT:
+		if(!sorter.segment || !sorter.tag || !sorter.is_tag_header)
+			return fprintf(stderr, "Out-of-place ']';\n%s.\n", pos()), 0;
+		sorter.is_tag_header = 0;
+		return 1;
+	case DOC_COMMA:
+		if(!sorter.segment || !sorter.tag || !sorter.is_tag_header)
+			return fprintf(stderr, "Out-of-place ',';\n%s.\n", pos()), 0;
+		return 1; /* Doesn't actually do something. */
+	/* Fixme: SPACE, NEWLINE, should have more complex handling. */
+	/* Fixme: SEMI, LBRACE, move from down below. */
+	default: break;
 	}
 
 	/* Make a new segment if needed. */
-	if(!sorter.segment && !(sorter.tag = 0,
-		sorter.segment = doc_new_segment())) return 0;
+	if(!sorter.segment) {
+		if(!(sorter.segment = doc_new_segment())) return 0;
+		sorter.tag = 0;
+	}
 
-	/* Make a `token`. */
+	/* Make a `token` where the context places us. */
 	switch(symbol_mark) {
 	case '~':
 		token = TokenArrayNew(sorter.tag
-			? sorter.tag_current : &sorter.segment->doc);
+			? (sorter.is_tag_header ? &sorter.tag->header
+			: &sorter.tag->contents) : &sorter.segment->doc);
 		break;
 	case '@':
 		if(!(sorter.tag = segment_new_tag(sorter.segment))) return 0;
-		sorter.tag_current = &sorter.tag->contents;
+		assert(!sorter.is_tag_header);
 		token = &sorter.tag->token;
 		break;
 	default:
@@ -688,7 +713,7 @@ int main(int argc, char **argv) {
 
 	if(!Scanner()) goto catch;
 	while((scanner.symbol = scan()))
-		sort(scanner.symbol), printf("Recorded %s.\n", pos());
+		place(scanner.symbol), printf("Read %s.\n", pos());
 	if(errno) goto catch;
 	{
 		struct Segment *segment = 0;

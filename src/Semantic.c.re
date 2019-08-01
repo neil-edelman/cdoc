@@ -40,7 +40,7 @@ enum Namespace Semantic(const char *const marks) {
 	semantic.s0 = semantic.s1 = semantic.s2 = semantic.s3 = semantic.s4
 		= semantic.s5 = semantic.s6 = semantic.s7 = semantic.s8 = 0;
 	name = namespace();
-	printf("--> Semantic(\"%s\") = %s.\n", marks, namespaces[name]);
+	printf("--> Semantic: \"%s\" = %s.\n", marks, namespaces[name]);
 	return name;
 }
 
