@@ -219,7 +219,7 @@ static void print_tag_header(struct Tag *const tag) {
 
 /** @implements <Tag>Action */
 static void print_tag_header_contents(struct Tag *const tag) {
-	printf("<tag:%s # ", symbols[tag->token.symbol]);
+	printf("<tag:%s # ", symbols[tag->symbol]);
 	print_tag_header(tag);
 	printf(" #\n");
 	print_tag_contents(tag);
@@ -228,7 +228,7 @@ static void print_tag_header_contents(struct Tag *const tag) {
 
 /* @implements <Tag>Predicate */
 #define TAG_IS(lc, uc) static int tag_is_ ## lc (const struct Tag *const tag) \
-	{ return tag->token.symbol == uc; }
+	{ return tag->symbol == uc; }
 TAG_IS(title, TAG_TITLE)
 TAG_IS(param, TAG_PARAM)
 TAG_IS(author, TAG_AUTHOR)

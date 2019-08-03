@@ -195,12 +195,12 @@ static void token_to_string(const struct Token *s, char (*const a)[12]) {
 
 /** `Tag` is a specific structure of array of `Token` representing @-tags. */
 struct Tag {
-	struct Token token;
+	enum Symbol symbol;
 	struct TokenArray header;
 	struct TokenArray contents;
 };
 static void tag_to_string(const struct Tag *t, char (*const a)[12]) {
-	strncpy(*a, symbols[t->token.symbol], sizeof *a - 1);
+	strncpy(*a, symbols[t->symbol], sizeof *a - 1);
 	(*a)[sizeof *a - 1] = '\0';
 }
 #define ARRAY_NAME Tag
@@ -337,8 +337,13 @@ static const char *pos(void) {
 	return pos;
 }
 
-static void token_current(struct Token *const token, const enum Symbol symbol) {
-	assert(token && scanner.from && scanner.from <= scanner.cursor);
+/** Creates a new token of `symbol` from `tokens`.
+ @return Success. */
+static int tokens_current(struct TokenArray *const tokens,
+	const enum Symbol symbol) {
+	struct Token *token;
+	assert(tokens && scanner.from && scanner.from <= scanner.cursor);
+	if(!(token = TokenArrayNew(tokens))) return 0;
 	token->symbol = symbol;
 	token->from = scanner.from;
 	if(scanner.from + INT_MAX < scanner.cursor) {
@@ -349,13 +354,15 @@ static void token_current(struct Token *const token, const enum Symbol symbol) {
 		token->length = (int)(scanner.cursor - scanner.from);
 	}
 	token->line = scanner.line;
+	return 1;
 }
 
-/** The `token` field will be uninitialised! */
-static struct Tag *segment_new_tag(struct Segment *const segment) {
+static struct Tag *segment_new_tag(struct Segment *const segment,
+	const enum Symbol symbol) {
 	struct Tag *tag;
 	assert(segment);
 	if(!(tag = TagArrayNew(&segment->tags))) return 0;
+	tag->symbol = symbol;
 	TokenArray(&tag->header);
 	TokenArray(&tag->contents);
 	return tag;
@@ -623,14 +630,14 @@ static enum Namespace namespace(const struct TokenArray *const code) {
 /** This appends the current token based on the state it was last in.
  @return Success. */
 static int place(const enum Symbol symbol) {
-	struct Token *token = 0;
 	const char symbol_mark = symbol_marks[symbol];
 	int is_differed_cut = 0;
 	static struct {
 		struct Segment *segment;
 		struct Tag *tag;
+		unsigned space, newline;
 		int is_tag_header, is_ignored_code;
-	} sorter = { 0, 0, 0, 0 }; /* This holds the sorting state. */
+	} sorter = { 0, 0, 0, 0, 0, 0 }; /* This holds the sorting state. */
 
 	/* These symbols require special consideration. */
 	switch(symbol) {
@@ -655,7 +662,8 @@ static int place(const enum Symbol symbol) {
 		if(!sorter.segment || !sorter.tag || !sorter.is_tag_header)
 			return fprintf(stderr, "Out-of-place ',';\n%s.\n", pos()), 0;
 		return 1; /* Doesn't actually do something. */
-	/* Fixme: SPACE, NEWLINE, should have more complex handling. */
+	case SPACE:   sorter.space++; return 1;
+	case NEWLINE: sorter.newline++; return 1;
 	case SEMI:
 		if(scanner.indent_level != 0) break;
 		sorter.segment->namespace = namespace(&sorter.segment->code);
@@ -679,6 +687,7 @@ static int place(const enum Symbol symbol) {
 	if(!sorter.segment) {
 		if(!(sorter.segment = doc_new_segment())) return 0;
 		sorter.tag = 0;
+		sorter.space = sorter.newline = 0;
 		sorter.is_ignored_code = 0;
 		assert(!sorter.is_tag_header);
 	}
@@ -686,22 +695,37 @@ static int place(const enum Symbol symbol) {
 	/* Make a `token` where the context places us. */
 	switch(symbol_mark) {
 	case '~':
-		token = TokenArrayNew(sorter.tag
-			? (sorter.is_tag_header ? &sorter.tag->header
-			: &sorter.tag->contents) : &sorter.segment->doc);
+		{ /* This lazily places whitespace when other stuff is added. */
+			struct TokenArray *selected = sorter.tag
+				? (sorter.is_tag_header ? &sorter.tag->header
+				: &sorter.tag->contents) : &sorter.segment->doc;
+			const int is_para = sorter.newline > 1,
+				is_space = sorter.space || sorter.newline,
+				is_doc_empty = !TokenArraySize(&sorter.segment->doc),
+				is_selected_empty = !TokenArraySize(selected);
+			sorter.space = sorter.newline = 0;
+			if(is_para) {
+				/* Switch out of tag. */
+				sorter.tag = 0, sorter.is_tag_header = 0;
+				selected = &sorter.segment->doc;
+				if(!is_doc_empty
+					&& !tokens_current(&sorter.segment->doc, NEWLINE)) return 0;
+			} else if(is_space) {
+				if(!is_selected_empty
+					&& !tokens_current(selected, SPACE)) return 0;
+			}
+			if(!tokens_current(selected, symbol)) return 0;
+		}
 		break;
 	case '@':
-		if(!(sorter.tag = segment_new_tag(sorter.segment))) return 0;
+		if(!(sorter.tag = segment_new_tag(sorter.segment, symbol))) return 0;
 		assert(!sorter.is_tag_header);
-		token = &sorter.tag->token;
 		break;
 	default:
 		if(sorter.is_ignored_code) goto differed;
-		token = TokenArrayNew(&sorter.segment->code);
+		if(!tokens_current(&sorter.segment->code, symbol)) return 0;
 		break;
 	}
-	if(!token) return 0;
-	token_current(token, symbol);
 
 differed:
 	/* End the segment? */
@@ -739,7 +763,7 @@ int main(int argc, char **argv) {
 				TokenArrayToString(&segment->doc),
 				TokenArrayToString(&segment->code));
 			while((tag = TagArrayNext(&segment->tags, tag))) {
-				printf("\t%s{%s} %s.\n", symbols[tag->token.symbol],
+				printf("\t%s{%s} %s.\n", symbols[tag->symbol],
 					TokenArrayToString(&tag->header),
 					TokenArrayToString(&tag->contents));
 			}
