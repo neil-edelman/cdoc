@@ -286,19 +286,42 @@ static int segment_is_function(const struct Segment *const segment) {
 	return segment->namespace == NAME_FUNCTION;
 }
 
-/**
- * Outputs a file when given a `SegmentArray`.
+void segments_if() {
+}
+
+void print_header(struct SegmentArray *const sa) {
+}
+
+/** Outputs a file when given a `SegmentArray`.
+ #define NAMESPACE(X) X(NAME_PREAMBLE), X(NAME_FUNCTION), X(NAME_TAG), \
+ X(NAME_TYPEDEF), X(NAME_GENERAL_DECLARATION)
  */
 static void out(struct SegmentArray *const sa) {
 	assert(sa);
-	printf("# ");
+
+	/* Print header. */
+	printf("->Header:\n");
+	printf(" # ");
 	SegmentArrayIfEach(sa, &segment_is_header, &segment_print_all_title);
 	printf(" #\n\n");
 	SegmentArrayIfEach(sa, &segment_is_header, &segment_print_doc);
+
+	/* Print typedefs. */
+	printf("->Typedefs:\n");
+
+	/* Print tags. */
+	printf("->Tags:\n");
+
+	/* Print general declarations. */
+	printf("->Declarations:\n");
 	printf("\n\n## Declarations ##\n\n");
 	SegmentArrayIfEach(sa, &segment_is_declaration, &segment_print_all);
+
+	printf("->Function summary:\n");
 	printf("\n\n## Functions ##\n\n");
 	SegmentArrayIfEach(sa, &segment_is_function, &segment_print_code);
+
+	printf("->Function detail:\n");
 	printf("\n\n## Function Detail ##\n\n");
 	SegmentArrayIfEach(sa, &segment_is_function, &segment_print_all);
 }

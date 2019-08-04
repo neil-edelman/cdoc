@@ -51,37 +51,40 @@ re2c:define:YYCURSOR = semantic.cursor;
 re2c:define:YYMARKER = semantic.marker;
 
 // Must match `SYMBOL` in `Scanner.c.re`.
-end = "\x00";
-star = [^\x00];
+// The symbols are "*,;{}()[]#x123stzv.\x00" (as yet); the symbols that don't
+// have a 1-to-1 correspendence are as follows:
 operator = "*";
 constant = "#";
-id = "x"; // Everything that's not recogised is id.
+word = "x";
 tag = "s";
 typedef = "t";
 static = "z";
 void = "v";
 ellipses = ".";
-name = id | typedef | static | void;
-generic = id
+end = "\x00";
+name = word | typedef | static | void;
+foo = word
 	| "1(" name ")"
 	| "2(" name "," name ")"
-	| "3(" name "," name "," name ")"; // Includes macros.
+	| "3(" name "," name "," name ")"; // Includes specific potential macros.
 
-typename = id* (tag? generic) (id* operator*)*;
-constant_or_macro = constant | id; 
-array = "[" constant_or_macro? "]";
+// These are derived.
+star = [^\x00];
+array = "[" (constant | word)? "]";
+typename = word* (tag? foo) (word* operator*)*;
 
-left_things = "(" | "[" | "]" | operator | id; // const is an id
+definition = ("("|")"|operator|foo|tag|void|ellipses|array)+;
+
+left_things = "(" | "[" | "]" | operator | word; // const is an id
 right_things = ")" | "[" | "]" | operator;
 
 id_detail = ("("|"["|"]"operator);
-declaration = id* typename array* id array*;
-param = id* declaration; // fixme: or fn declaration
-paramlist = param ("," param)* ("," ellipses)?;
-fn = id* static? id* typename id "(" (void | paramlist) ")"; // fixme: or old-
+param = word* typename array* foo array*;
+paramlist = ( param ("," param)* ("," ellipses)? ) | void;
+fn = static? word* typename foo "(" paramlist ")"; // fixme: or old-style
 
-fn_ptr = (operator|id|tag|void)+ "(" operator (operator|id|tag)* generic ")"
-	"(" (operator|id|tag|void|"("|")"|array)* ")" array*;
+fn_ptr = (operator|foo|tag|void)+ "(" operator (operator|word|tag)* foo ")"
+	"(" (operator|word|tag|void|"("|")"|array)* ")" array*;
 
 */
 
@@ -90,21 +93,26 @@ fn_ptr = (operator|id|tag|void)+ "(" operator (operator|id|tag)* generic ")"
  difficult. */
 static enum Namespace namespace(void) {
 	semantic.cursor = semantic.buffer;
-code:
 	semantic.from = semantic.cursor;
 /*!re2c
 	"\x00" { return NAME_PREAMBLE; }
-	"t" ("("|")"|operator|id|tag|void|ellipses){2,} "\x00" { return NAME_TYPEDEF; }
-	static? (operator|id|tag|void)+ array* "="  { return NAME_DATA; }
-	generic { goto code; }
-	* { goto code; }
-	")\x00" { return NAME_FUNCTION; }
-	fn ( ( "{" [^x00]* "}\x00" ) | ( ";\x00" ) ) { return NAME_FUNCTION; }
+	typedef definition definition end { return NAME_TYPEDEF; }
+	
+	// These are tags, despite also being potentially data.
+	static? word* tag foo? end { return NAME_TAG; }
+
 	// fixme: This does not take into account function pointers.
+
+	static? (operator|foo|tag|void)+ array* (operator *+)? end
+		{ return NAME_GENERAL_DECLARATION; }
+	")\x00" { return NAME_FUNCTION; }
+
 	// fixme: Old-style function definitions.
 	// fixme: int (*foo)(void) would trivally break it.
+	fn { return NAME_FUNCTION; }
 
-	// something <tag> [name];
-	static? id* tag id? end { return NAME_TAG; }
+	* { fprintf(stderr,
+		"Semantic: wasn't able to determine the namespace; assuming data.\n");
+		return NAME_GENERAL_DECLARATION; }
 */
 }
