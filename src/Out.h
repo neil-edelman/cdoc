@@ -89,38 +89,6 @@ OUT(esc_bs) {
 	printf("\\~");
 	return TokenArrayNext(ta, token);
 }
-OUT(esc_bq) {
-	printf("`~");
-	return TokenArrayNext(ta, token);
-}
-OUT(esc_each) {
-	printf("@~");
-	return TokenArrayNext(ta, token);
-}
-OUT(esc_under) {
-	printf("_~");
-	return TokenArrayNext(ta, token);
-}
-OUT(esc_amp) {
-	printf("&~");
-	return TokenArrayNext(ta, token);
-}
-OUT(esc_lt) {
-	printf("<~");
-	return TokenArrayNext(ta, token);
-}
-OUT(esc_gt) {
-	printf(">~");
-	return TokenArrayNext(ta, token);
-}
-OUT(lb) {
-	printf("{~");
-	return TokenArrayNext(ta, token);
-}
-OUT(rb) {
-	printf("}~");
-	return TokenArrayNext(ta, token);
-}
 OUT(url) {
 	struct Token *const lbr = TokenArrayNext(ta, token),
 		*next = TokenArrayNext(ta, lbr); /* Variable no. */
@@ -176,17 +144,17 @@ catch:
 	fprintf(stderr, "Expected: `<math/code>`;\n%s.\n", pos());
 	return 0;
 }
-OUT(it) {
+OUT(em) {
 	struct Token *next = TokenArrayNext(ta, token);
-	printf("{it:`");
+	printf("{em:`");
 	while(next->symbol != EM_END) {
 		printf("%.*s~", next->length, next->from);
 		if(!(next = TokenArrayNext(ta, next))) goto catch;
 	}
-	printf("`:it}~");
+	printf("`:em}~");
 	return TokenArrayNext(ta, next);
 	catch:
-	fprintf(stderr, "Expected: _<italics>_;\n%s.\n", pos());
+	fprintf(stderr, "Expected: _<emphasis>_;\n%s.\n", pos());
 	return 0;
 }
 OUT(par) {
@@ -286,16 +254,7 @@ static int segment_is_function(const struct Segment *const segment) {
 	return segment->namespace == NAME_FUNCTION;
 }
 
-void segments_if() {
-}
-
-void print_header(struct SegmentArray *const sa) {
-}
-
-/** Outputs a file when given a `SegmentArray`.
- #define NAMESPACE(X) X(NAME_PREAMBLE), X(NAME_FUNCTION), X(NAME_TAG), \
- X(NAME_TYPEDEF), X(NAME_GENERAL_DECLARATION)
- */
+/** Outputs a file when given a `SegmentArray`. */
 static void out(struct SegmentArray *const sa) {
 	assert(sa);
 
