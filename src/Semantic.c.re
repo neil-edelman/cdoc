@@ -51,7 +51,7 @@ re2c:define:YYCURSOR = semantic.cursor;
 re2c:define:YYMARKER = semantic.marker;
 
 // Must match `SYMBOL` in `Scanner.c.re`.
-// The symbols are "*,;{}()[]#x123stzv.\x00" (as yet); the symbols that don't
+// The symbols are "*=,;{}()[]#x123stzv.\x00" (as yet); the symbols that don't
 // have a 1-to-1 correspendence are as follows:
 operator = "*";
 constant = "#";
@@ -63,7 +63,7 @@ void = "v";
 ellipses = ".";
 end = "\x00";
 name = word | typedef | static | void;
-foo = word
+id = word
 	| "1(" name ")"
 	| "2(" name "," name ")"
 	| "3(" name "," name "," name ")"; // Includes specific potential macros.
@@ -71,20 +71,68 @@ foo = word
 // These are derived.
 star = [^\x00];
 array = "[" (constant | word)? "]";
-typename = word* (tag? foo) (word* operator*)*;
+typename = word* (tag? id) (word* operator*)*;
 
-definition = ("("|")"|operator|foo|tag|void|ellipses|array)+;
+definition = ("("|")"|operator|id|tag|void|ellipses|array)+;
 
 left_things = "(" | "[" | "]" | operator | word; // const is an id
 right_things = ")" | "[" | "]" | operator;
 
 id_detail = ("("|"["|"]"operator);
-param = word* typename array* foo array*;
+param = word* typename array* id array*;
 paramlist = ( param ("," param)* ("," ellipses)? ) | void;
-fn = static? word* typename foo "(" paramlist ")"; // fixme: or old-style
+fn = static? word* typename id "(" paramlist ")"; // fixme: or old-style
 
-fn_ptr = (operator|foo|tag|void)+ "(" operator (operator|word|tag)* foo ")"
+fn_ptr = (operator|id|tag|void)+ "(" operator (operator|word|tag)* id ")"
 	"(" (operator|word|tag|void|"("|")"|array)* ")" array*;
+
+
+
+
+
+storage_class_specifier = typedef | word | static;
+type_qualifier = word;
+pointer = ( operator type_qualifier* )+;
+
+//
+//declarator
+//	: pointer direct_declarator
+//	| direct_declarator
+//	;
+//
+//direct_declarator = (id | "(" declarator ")")
+//	( "[" constant_expression? "]"
+//	| "(" (parameter_type_list | identifier_list)? ")")?
+//
+//struct_declarator
+//	: declarator
+//	| ':' constant_expression
+//	| declarator ':' constant_expression
+//	;
+
+// struct_or_union_ or enum_
+tag_specifier = tag id? ( "{"
+	//(struct_declaration_list | enumerator_list)
+	"}" )?;
+
+// VOID | CHAR | SHORT | INT | LONG | FLOAT | DOUBLE | SIGNED | UNSIGNED
+// | struct_or_union_specifier | enum_specifier | TYPE_NAME
+type_specifier = word | id | tag_specifier;
+
+//declaration_specifiers
+//	: storage_class_specifier
+//	| storage_class_specifier declaration_specifiers
+//	| type_specifier
+//	| type_specifier declaration_specifiers
+//	| type_qualifier
+//	| type_qualifier declaration_specifiers
+//	;
+
+//function_definition =
+//	declaration_specifiers declarator declaration_list //compound_statement
+//	| declaration_specifiers declarator //compound_statement
+//	| declarator declaration_list //compound_statement
+//	| declarator //compound_statement
 
 */
 
@@ -99,16 +147,16 @@ static enum Namespace namespace(void) {
 	typedef definition definition end { return NAME_TYPEDEF; }
 	
 	// These are tags, despite also being potentially data.
-	static? word* tag foo? end { return NAME_TAG; }
+	static? word* tag id? end { return NAME_TAG; }
 
 	// fixme: This does not take into account function pointers.
 
-	static? (operator|foo|tag|void)+ array* (operator *+)? end
+	static? (operator|id|tag|void)+ array* (operator *+)? end
 		{ return NAME_GENERAL_DECLARATION; }
 	")\x00" { return NAME_FUNCTION; }
 
 	// fixme: Old-style function definitions.
-	// fixme: int (*foo)(void) would trivally break it.
+	// fixme: int (*id)(void) would trivally break it.
 	fn { return NAME_FUNCTION; }
 
 	* { fprintf(stderr,

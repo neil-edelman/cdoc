@@ -14,6 +14,7 @@ bin    := bin
 backup := backup
 doc    := doc
 media  := media
+lemon  := lemon
 PREFIX := /usr/local
 
 # files in $(bin)
@@ -33,6 +34,7 @@ c_re_srcs  := $(call rwildcard, $(src), *.c.re)
 c_rec_srcs := $(call rwildcard, $(src), *.c.re_c)
 h_re_srcs  := $(call rwildcard, $(src), *.h.re)
 h_rec_srcs := $(call rwildcard, $(src), *.h.re_c)
+y_srcs     := $(call rwildcard, $(src), *.y)
 c_tests    := $(call rwildcard, $(test), *.c)
 h_tests    := $(call rwildcard, $(test), *.h)
 
@@ -43,9 +45,10 @@ c_re_builds := $(patsubst $(src)/%.c.re, $(build)/%.c, $(c_re_srcs))
 c_rec_builds := $(patsubst $(src)/%.c.re_c, $(build)/%.c, $(c_rec_srcs))
 h_re_builds := $(patsubst $(src)/%.h.re, $(build)/%.h, $(h_re_srcs))
 h_rec_builds := $(patsubst $(src)/%.h.re_c, $(build)/%.h, $(h_rec_srcs))
-# together .re/.re_c
-c_re_objs := $(patsubst $(build)/%.c, $(build)/%.o, \
-$(c_re_builds) $(c_rec_builds))
+c_y_builds := $(patsubst $(src)/%.y, $(build)/%.c, $(y_srcs))
+# together .re/.re_c/.y
+c_other_objs := $(patsubst $(build)/%.c, $(build)/%.o, \
+$(c_re_builds) $(c_rec_builds) $(c_y_builds))
 test_c_objs := $(patsubst $(test)/%.c, $(build)/$(test)/%.o, $(c_tests))
 html_docs  := $(patsubst $(src)/%.c, $(doc)/%.html, $(c_srcs))
 # just rebuild all
@@ -88,22 +91,27 @@ default: $(bin)/$(project)
 docs: $(html_docs)
 
 # linking
-$(bin)/$(project): $(c_objs) $(c_re_objs) $(test_c_objs)
+$(bin)/$(project): $(c_objs) $(c_other_objs) $(c_y_objs) $(test_c_objs)
 	# linking rule
 	@$(mkdir) $(bin)
 	$(CC) $(OF) -o $@ $^
 
 # dependancy
-$(c_objs) $(c_re_objs): $(h_re_srcs) $(h_rec_srcs)
+$(c_objs) $(c_other_objs): $(h_re_srcs) $(h_rec_srcs)
 
 # compiling
+$(lemon)/$(bin)/lemon: $(lemon)/$(src)/lemon.c
+	# compiling lemon
+	@$(mkdir) $(lemon)/$(bin)
+	$(CC) $(CF) -o $@ $<
+
 $(c_objs): $(build)/%.o: $(src)/%.c $(h_all)
 	# c_objs rule
 	@$(mkdir) $(build)
 	$(CC) $(CF) -c -o $@ $<
 
-$(c_re_objs): $(build)/%.o: $(build)/%.c $(h_all)
-	# c_re_objs rule
+$(c_other_objs) $(c_y_objs): $(build)/%.o: $(build)/%.c $(h_all)
+	# c_other_objs and c_y_objs rule
 	$(CC) $(CF) -c -o $@ $<
 
 $(test_c_objs): $(build)/$(test)/%.o: $(test)/%.c $(h_all)
@@ -122,6 +130,11 @@ $(c_rec_builds) $(h_rec_builds): $(build)/%: $(src)/%.re_c
 	@$(mkdir) $(build)
 	$(re2c) -c -o $@ $<
 
+$(c_y_builds): $(build)/%.c: $(src)/%.y $(lemon)/$(bin)/lemon
+	# .y rule
+	@$(mkdir) $(build)
+	$(lemon)/$(bin)/lemon -d$(build) -T$(lemon)/$(src)/lempar.c $<
+
 $(html_docs): $(doc)/%.html: $(src)/%.c $(src)/%.h
 	# docs rule
 	@$(mkdir) $(doc)
@@ -133,7 +146,7 @@ $(html_docs): $(doc)/%.html: $(src)/%.c $(src)/%.h
 .PHONY: setup clean backup icon install uninstall test docs
 
 clean:
-	-rm -f $(c_objs) $(test_c_objs) $(c_re_objs) $(c_re_builds) \
+	-rm -f $(c_objs) $(test_c_objs) $(c_other_objs) $(c_re_builds) \
 $(c_rec_builds) $(h_re_builds) $(h_rec_builds) $(html_docs)
 	-rm -rf $(bin)/$(test)
 

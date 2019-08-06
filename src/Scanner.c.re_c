@@ -141,6 +141,7 @@ A `cool' word in a `nice' sentence."
 	X(ID_THREE_GENERICS, '3', &gen3), X(STRUCT, 's', &lit), \
 	X(UNION, 's', &lit), X(ENUM, 's', &lit), X(TYPEDEF, 't', &lit), \
 	X(STATIC, 'z', &lit), X(VOID, 'v', &lit), X(ELLIPSES, '.', &lit), \
+	X(ASSIGNMENT, '=', &lit), \
 	/* Each-block-tags; 2nd is '@' because we want them to have special
 	 meaning. */ \
 	X(TAG_TITLE, '@', &lit), X(TAG_PARAM, '@', &lit), \
@@ -429,10 +430,11 @@ flt = (frc exp? | [0-9]+ exp) [fFlL]?;
 number = (oct | dec | hex | flt) [uUlL]*;
 operator = ":" | "..." | "::" | "?" | "+" | "-" | "*" | "/" | "%" | "^"
 	| "xor" | "&" | "bitand" | "|" | "bitor" | "~" | "compl" | "!" | "not"
-	| "=" | "<" | ">" | "==" | "+=" | "-=" | "%=" | "^=" | "xor_eq"
+	| "<" | ">" | "==" | "+=" | "-=" | "%=" | "^=" | "xor_eq"
 	| "&=" | "and_eq" | "|=" | "or_eq" | "<<" | ">>" | ">>=" | "<<="
 	| "!=" | "not_eq" | "<=" | ">=" | "&&" | "and" | "||" | "or" | "++"
 	| "--" | "." | "->";
+assignment = "=";
 // Extension (hack) for generic macros; if one names them this way, it will
 // be documented nicely; the down side is, these are legal names for
 // identifiers; will be confused if you name anything this way that IS an
@@ -517,6 +519,7 @@ scan:
 	<code> "'" :=> character
 	<code> number       { return CONSTANT; }
 	<code> operator     { return OPERATOR; }
+	<code> assignment   { return ASSIGNMENT; }
 	<code> generic      { return ID_ONE_GENERIC; }
 	<code> generic generic { return ID_TWO_GENERICS; }
 	<code> generic generic generic { return ID_THREE_GENERICS; }
