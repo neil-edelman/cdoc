@@ -37,6 +37,13 @@ h_rec_srcs := $(call rwildcard, $(src), *.h.re_c)
 y_srcs     := $(call rwildcard, $(src), *.y)
 c_tests    := $(call rwildcard, $(test), *.c)
 h_tests    := $(call rwildcard, $(test), *.h)
+icons      := $(call rwildcard, $(media), *.ico)
+
+# combinations
+all_h      := $(h_srcs) $(h_tests) $(h_re_builds) $(h_rec_builds)
+all_srcs   := $(java_srcs) $(c_srcs) $(c_re_srcs) $(c_rec_srcs) $(y_srcs)
+all_tests  := $(c_tests)
+all_icons  := $(icons)
 
 java_class := $(patsubst $(src)/%.java, $(build)/%.class, $(java_srcs))
 c_objs     := $(patsubst $(src)/%.c, $(build)/%.o, $(c_srcs))
@@ -51,15 +58,13 @@ c_other_objs := $(patsubst $(build)/%.c, $(build)/%.o, \
 $(c_re_builds) $(c_rec_builds) $(c_y_builds))
 test_c_objs := $(patsubst $(test)/%.c, $(build)/$(test)/%.o, $(c_tests))
 html_docs  := $(patsubst $(src)/%.c, $(doc)/%.html, $(c_srcs))
-# just rebuild all
-h_all      := $(h_srcs) $(h_tests) $(h_re_builds) $(h_rec_builds)
-icon       := icon.ico # in $(media)
 
 cdoc  := cdoc
 re2c  := re2c
 mkdir := mkdir -p
 cat   := cat
 zip   := zip
+lem   := lemon
 
 CC   := clang #gcc
 CF   := -Wall -Wextra -Wno-format-y2k -Wstrict-prototypes \
@@ -100,21 +105,21 @@ $(bin)/$(project): $(c_objs) $(c_other_objs) $(c_y_objs) $(test_c_objs)
 $(c_objs) $(c_other_objs): $(h_re_srcs) $(h_rec_srcs)
 
 # compiling
-$(lemon)/$(bin)/lemon: $(lemon)/$(src)/lemon.c
+$(lemon)/$(bin)/$(lem): $(lemon)/$(src)/lemon.c
 	# compiling lemon
 	@$(mkdir) $(lemon)/$(bin)
 	$(CC) $(CF) -o $@ $<
 
-$(c_objs): $(build)/%.o: $(src)/%.c $(h_all)
+$(c_objs): $(build)/%.o: $(src)/%.c $(all_h)
 	# c_objs rule
 	@$(mkdir) $(build)
 	$(CC) $(CF) -c -o $@ $<
 
-$(c_other_objs) $(c_y_objs): $(build)/%.o: $(build)/%.c $(h_all)
+$(c_other_objs) $(c_y_objs): $(build)/%.o: $(build)/%.c $(all_h)
 	# c_other_objs and c_y_objs rule
 	$(CC) $(CF) -c -o $@ $<
 
-$(test_c_objs): $(build)/$(test)/%.o: $(test)/%.c $(h_all)
+$(test_c_objs): $(build)/$(test)/%.o: $(test)/%.c $(all_h)
 	# test_c_objs rule
 	@$(mkdir) $(build)
 	@$(mkdir) $(build)/$(test)
@@ -130,10 +135,10 @@ $(c_rec_builds) $(h_rec_builds): $(build)/%: $(src)/%.re_c
 	@$(mkdir) $(build)
 	$(re2c) -c -o $@ $<
 
-$(c_y_builds): $(build)/%.c: $(src)/%.y $(lemon)/$(bin)/lemon
+$(c_y_builds): $(build)/%.c: $(src)/%.y $(lemon)/$(bin)/$(lem)
 	# .y rule
 	@$(mkdir) $(build)
-	$(lemon)/$(bin)/lemon -d$(build) -T$(lemon)/$(src)/lempar.c $<
+	$(lemon)/$(bin)/$(lem) -d$(build) -T$(lemon)/$(src)/lempar.c $<
 
 $(html_docs): $(doc)/%.html: $(src)/%.c $(src)/%.h
 	# docs rule
@@ -152,9 +157,8 @@ $(c_rec_builds) $(h_re_builds) $(h_rec_builds) $(html_docs)
 
 backup:
 	@$(mkdir) $(backup)
-	$(zip) $(backup)/$(project)-`date +%Y-%m-%dT%H%M%S`$(BRGS).zip readme.txt \
-Makefile $(c_srcs) $(java_srcs) $(re_srcs) $(re_cnd_srcs) $(c_tests) \
-$(h_all) $(extra)
+	$(zip) $(backup)/$(project)-`date +%Y-%m-%dT%H%M%S`$(BRGS).zip \
+readme.txt Makefile $(all_h) $(all_srcs) $(all_tests) $(all_icons)
 
 icon: default
 	# . . . setting icon on a Mac.

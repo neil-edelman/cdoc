@@ -1,3 +1,7 @@
+#ifndef PARAM3_A
+#include "XMacro.h"
+#endif
+
 /* Define `Symbols` -- these are the numerical values given to a section of
  text. */
 #define SYMBOL(X) \

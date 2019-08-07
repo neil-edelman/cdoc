@@ -1,4 +1,5 @@
-/**
+/** Parses one line of code very fuzzily to determine where in the document it
+ should be.
  @depend [Lemon](http://www.hwaci.com/sw/lemon/) (included.) */
 
 /* Copyright (GPL) 2004 mchirico@users.sourceforge.net or mchirico@comcast.net
@@ -39,8 +40,7 @@
 
 %include {   
 #include <stdio.h>
-#include "../src/XMacro.h"
-#include "../src/Namespace.h"
+#include "../src/Division.h"
 #include "../src/Parse.h"
 }
 

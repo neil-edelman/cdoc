@@ -120,96 +120,21 @@ A `cool' word in a `nice' sentence."
 #include <string.h> /* memset strchr */
 /* #define NDEBUG */
 #include <assert.h> /* assert */
-#include <limits.h> /* INT_MAX */
 #include <errno.h>  /* errno EILSEQ */
-
-#include "../src/XMacro.h" /* Define things needed for `Namespace.h`, _etc_. */
-#include "../src/Namespace.h" /* Define `enum Namespace`. */
 #include "../src/Parse.h"
 #include "../src/Symbol.h"
 
-/** `Token` has a `Symbol` and is associated with an area of the text. */
-struct Token {
-	enum Symbol symbol;
-	const char *from;
-	int length;
-	size_t line;
-};
-static void token_to_string(const struct Token *s, char (*const a)[12]) {
-	/*int len = s->length >= 5 ? 5 : s->length;
-	sprintf(*a, "%.4s<%.*s>", symbols[s->symbol], len, s->from);*/
-	strncpy(*a, symbols[s->symbol], sizeof *a - 1);
-	(*a)[sizeof *a - 1] = '\0';
-}
-#define ARRAY_NAME Token
-#define ARRAY_TYPE struct Token
-#define ARRAY_TO_STRING &token_to_string
-#include "../src/Array.h"
-
-
-/** `Tag` is a specific structure of array of `Token` representing @-tags. */
-struct Tag {
-	enum Symbol symbol;
-	struct TokenArray header;
-	struct TokenArray contents;
-};
-static void tag_to_string(const struct Tag *t, char (*const a)[12]) {
-	strncpy(*a, symbols[t->symbol], sizeof *a - 1);
-	(*a)[sizeof *a - 1] = '\0';
-}
-#define ARRAY_NAME Tag
-#define ARRAY_TYPE struct Tag
-#define ARRAY_TO_STRING &tag_to_string
-#include "../src/Array.h"
-static void tag_array_remove(struct TagArray *const ta) {
-	struct Tag *t;
-	if(!ta) return;
-	while((t = TagArrayPop(ta)))
-		TokenArray_(&t->header), TokenArray_(&t->contents);
-	TagArray_(ta);
-}
-
-
-/** `Segment` is classified to a section of the document and can have
- documentation including tags and code. */
-struct Segment {
-	enum Namespace namespace;
-	struct TokenArray doc, code;
-	struct TagArray tags;
-};
-static void segment_to_string(const struct Segment *seg, char (*const a)[12]) {
-	strncpy(*a, namespaces[seg->namespace], sizeof *a - 1);
-	(*a)[sizeof *a - 1] = '\0';
-}
-#define ARRAY_NAME Segment
-#define ARRAY_TYPE struct Segment
-#define ARRAY_TO_STRING &segment_to_string
-#include "../src/Array.h"
-
-/** Top-level. */
-static struct SegmentArray doc;
-
-
-static void doc_(void) {
-	struct Segment *seg;
-	while((seg = SegmentArrayPop(&doc)))
-		TokenArray_(&seg->doc), TokenArray_(&seg->code),
-		tag_array_remove(&seg->tags);
-	SegmentArray_(&doc);
-}
-
-/***********/
 
 /* Define {CharArray}, a vector of characters -- dynamic string. */
 #define ARRAY_NAME Char
 #define ARRAY_TYPE char
 #include "../src/Array.h"
 
-/***********/
 
 /* This defines `ScanState`; the trailing comma on an `enum` is not proper
  `C90`, hopefully they will fix it. */
 /*!types:re2c*/
+
 
 /** Scanner reads a file and extracts semantic information. */
 struct Scanner {
@@ -224,7 +149,8 @@ struct Scanner {
 	size_t line, doc_line;
 } scanner;
 
-/** Unloads Scanner from memory. */
+
+/** Unloads scanner from memory. */
 static void Scanner_(void) {
 	scanner.marker = scanner.ctx_marker = scanner.from = scanner.cursor = 0;
 	CharArray_(&scanner.buffer);
@@ -235,8 +161,8 @@ static void Scanner_(void) {
 	scanner.line = scanner.doc_line = 0;
 }
 
-/** New Scanner. Reads from `stdin` until done; it doesn't make sense to
- call this twice since the input is consumed.
+/** New scanner (singleton.) Reads from `stdin` until done; it doesn't make
+ sense to call this twice since the input is consumed.
  @return Success.
  @throws[malloc, fread]
  @throws[EILSEQ] File has embedded nulls. */
@@ -276,7 +202,7 @@ catch:
 	return 0;
 }
 
-/** Prints line info in a static buffer. */
+/** Prints line info in a static buffer, (to be printed?) */
 static const char *pos(void) {
 	static char pos[512];
 	const int max_size = 32;
@@ -287,47 +213,6 @@ static const char *pos(void) {
 		(unsigned long)scanner.line, scanner.indent_level,
 		symbols[scanner.symbol], len, scanner.from);
 	return pos;
-}
-
-/** Creates a new token of `symbol` from `tokens`.
- @return Success. */
-static int tokens_current(struct TokenArray *const tokens,
-	const enum Symbol symbol) {
-	struct Token *token;
-	assert(tokens && scanner.from && scanner.from <= scanner.cursor);
-	if(!(token = TokenArrayNew(tokens))) return 0;
-	token->symbol = symbol;
-	token->from = scanner.from;
-	if(scanner.from + INT_MAX < scanner.cursor) {
-		fprintf(stderr, "Length of token truncated to %d;\n%s.\n", INT_MAX,
-			pos());
-		token->length = INT_MAX;
-	} else {
-		token->length = (int)(scanner.cursor - scanner.from);
-	}
-	token->line = scanner.line;
-	return 1;
-}
-
-static struct Tag *segment_new_tag(struct Segment *const segment,
-	const enum Symbol symbol) {
-	struct Tag *tag;
-	assert(segment);
-	if(!(tag = TagArrayNew(&segment->tags))) return 0;
-	tag->symbol = symbol;
-	TokenArray(&tag->header);
-	TokenArray(&tag->contents);
-	return tag;
-}
-
-static struct Segment *doc_new_segment(void) {
-	struct Segment *segment;
-	if(!(segment = SegmentArrayNew(&doc))) return 0;
-	segment->namespace = NAME_PREAMBLE; /* Default. */
-	TokenArray(&segment->doc);
-	TokenArray(&segment->code);
-	TagArray(&segment->tags);
-	return segment;
 }
 
 /*!re2c
@@ -557,11 +442,7 @@ scan:
 */
 }
 
-/** Extracts the approximate meaning of `code`. Stub. */
-static enum Namespace namespace(const struct TokenArray *const code) {
-	assert(code);
-	return NAME_PREAMBLE;
-}
+////// Go into Report.c????
 
 /** This appends the current token based on the state it was last in.
  @return Success. */
@@ -670,7 +551,13 @@ differed:
 	return 1;
 }
 
-#include "../src/Out.h"
+/** Keeps only the stuff we care about.
+ @implements{Predicate<Segment>} */
+static int keep_segment(const struct Segment *const s) {
+	/* fixme: and not static or containing @allow tag. */
+	if(TokenArraySize(&s->doc) || s->section == FUNCTION) return 1;
+	return 0;
+}
 
 /** Entry-point.
  @param[argc, argv] If "debug", `freopens` a path that is on my computer. */
