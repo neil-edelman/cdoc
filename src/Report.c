@@ -8,6 +8,7 @@
 #include <limits.h> /* INT_MAX */
 #include "Division.h"
 #include "Symbol.h"
+#include "Scanner.h"
 #include "Report.h"
 
 /** `Token` has a `Symbol` and is associated with an area of the text. */
@@ -29,7 +30,7 @@ static void token_to_string(const struct Token *s, char (*const a)[12]) {
 #include "Array.h"
 
 /** `Attribute` is a specific structure of array of `Token` representing
- each-tags. */
+ each-attributes, "@param ...". */
 struct Attribute {
 	enum Symbol symbol;
 	struct TokenArray header;
@@ -53,7 +54,7 @@ static void attributes_(struct AttributeArray *const atts) {
 }
 
 /** `Segment` is classified to a section of the document and can have
- documentation including tags and code. */
+ documentation including attributes and code. */
 struct Segment {
 	enum Division division;
 	struct TokenArray doc, code;
@@ -81,7 +82,7 @@ void Report_(void) {
 }
 
 /** @return A new empty segment, defaults to the preamble, or null on error. */
-struct Segment *ReportNewSegment(void) {
+static struct Segment *new_segment(void) {
 	struct Segment *segment;
 	if(!(segment = SegmentArrayNew(&report))) return 0;
 	segment->division = DIV_PREAMBLE; /* Default. */
@@ -91,9 +92,9 @@ struct Segment *ReportNewSegment(void) {
 	return segment;
 }
 
-/** @return A new `Attribute` on `segment` with `symbol`, (should be a tag
- symbol.) */
-struct Attribute *ReportSegmentNewAttribute(struct Segment *const
+/** @return A new `Attribute` on `segment` with `symbol`, (should be a
+ attribute symbol.) Null on error. */
+static struct Attribute *new_attribute(struct Segment *const
 	segment, const enum Symbol symbol) {
 	struct Attribute *att;
 	assert(segment);
@@ -104,30 +105,18 @@ struct Attribute *ReportSegmentNewAttribute(struct Segment *const
 	return att;
 }
 
-/** @return Whether there is code in this `segment`. */
-int ReportSegmentIsCode(const struct Segment *const segment) {
-	if(!segment) return 0;
-	return !!TokenArraySize(&segment->code);
-}
-
-/** @return Whether there is documentation in this `segment`. */
-int ReportSegmentIsDoc(const struct Segment *const segment) {
-	if(!segment) return 0;
-	return !!TokenArraySize(&segment->doc);
-}
-
-/** Creates a new token of `symbol` from `segment`.
+/** Creates a new token from `tokens` and fills it with `symbol` and the
+ most recent scanner location.
  @return Success. */
-int ReportSegmentNewToken(struct Segment *const segment,
-	const enum ReportSegmentWhere where, const enum Symbol symbol,
-	const char *const from, const char *const to, const size_t line) {
-	struct Attribute *recent;
-	struct TokenArray *tokens = 0;
+static int new_token(struct TokenArray *const tokens, const enum Symbol symbol)
+{
 	struct Token *token;
-	if(!segment) return 0;
-	if(!from || from > to || from + INT_MAX < to) return errno = EILSEQ, 0;
+	const char *const from = ScannerFrom(), *const to = ScannerTo();
+
+	assert(tokens && from && from <= to);
+	if(from + INT_MAX < to) return errno = EILSEQ, 0;
 	/* Choose `where`. */
-	recent = AttributeArrayPeek(&segment->attributes);
+	/*recent = AttributeArrayPeek(&segment->attributes);
 	switch(where) {
 	case WHERE_DOC: tokens = &segment->doc; break;
 	case WHERE_CODE: tokens = &segment->code; break;
@@ -138,11 +127,129 @@ int ReportSegmentNewToken(struct Segment *const segment,
 		if(!recent) return errno = EILSEQ, 0;
 		tokens = &recent->contents; break;
 	}
-	assert(tokens);
+	assert(tokens);*/
 	if(!(token = TokenArrayNew(tokens))) return 0;
 	token->symbol = symbol;
 	token->from = from;
 	token->length = (int)(to - from);
-	token->line = line;
+	token->line = ScannerLine();
 	return 1;
+}
+
+/** This appends the current token based on the state it was last in.
+ @return Success. */
+int ReportPlace(void) {
+	const enum Symbol symbol = ScannerSymbol();
+	const int indent_level = ScannerIndentLevel();
+	const char symbol_mark = symbol_marks[symbol];
+	int is_differed_cut = 0;
+	static struct {
+		struct Segment *segment;
+		struct Attribute *attribute;
+		unsigned space, newline;
+		int is_attribute_header, is_ignored_code;
+	} sorter = { 0, 0, 0, 0, 0, 0 }; /* This holds the sorting state. */
+
+	/* These symbols require special consideration. */
+	switch(symbol) {
+	case DOC_BEGIN: /* Multiple doc comments. */
+		sorter.attribute = 0;
+		if(!sorter.segment) return 1;
+		if(!TokenArraySize(&sorter.segment->code)) sorter.segment = 0;
+		printf("----CUT in preamble----\n");
+		return 1;
+	case DOC_END: return 1; /* Doesn't actually do something. */
+	case DOC_LEFT: /* Should only happen in @foo[]. */
+		if(!sorter.segment || !sorter.attribute || sorter.is_attribute_header)
+			return errno = EILSEQ, 0;
+		sorter.is_attribute_header = 1;
+		return 1;
+	case DOC_RIGHT:
+		if(!sorter.segment || !sorter.attribute || !sorter.is_attribute_header)
+			return errno = EILSEQ, 0;
+		sorter.is_attribute_header = 0;
+		return 1;
+	case DOC_COMMA:
+		if(!sorter.segment || !sorter.attribute || !sorter.is_attribute_header)
+			return errno = EILSEQ, 0;
+		return 1; /* Doesn't actually do something. */
+	case SPACE:   sorter.space++; return 1;
+	case NEWLINE: sorter.newline++; return 1;
+	case SEMI:
+		if(indent_level != 0) break;
+		sorter.segment->division = DIV_FUNCTION/*namespace(&sorter.segment->code)*/;
+		sorter.is_ignored_code = 1;
+		is_differed_cut = 1;
+		break;
+	case LBRACE:
+		if(indent_level != 1) break;
+		sorter.segment->division = DIV_FUNCTION/* fixme!!! namespace(&sorter.segment->code)*/;
+		if(sorter.segment->division == DIV_FUNCTION)
+			sorter.is_ignored_code = 1;
+		break;
+	case RBRACE: /* Functions don't have ';' to end them. */
+		if(indent_level != 0) break;
+		if(sorter.segment->division == DIV_FUNCTION) is_differed_cut = 1;
+		break;
+	default: break;
+	}
+	
+	/* Make a new segment if needed. */
+	if(!sorter.segment) {
+		if(!(sorter.segment = new_segment())) return 0;
+		sorter.attribute = 0;
+		sorter.space = sorter.newline = 0;
+		sorter.is_ignored_code = 0;
+		assert(!sorter.is_attribute_header);
+	}
+	
+	/* Make a `token` where the context places us. */
+	switch(symbol_mark) {
+	case '~':
+	{ /* This lazily places whitespace when other stuff is added. */
+		struct TokenArray *selected = sorter.attribute
+		? (sorter.is_attribute_header ? &sorter.attribute->header
+		   : &sorter.attribute->contents) : &sorter.segment->doc;
+		const int is_para = sorter.newline > 1,
+		is_space = sorter.space || sorter.newline,
+		is_doc_empty = !TokenArraySize(&sorter.segment->doc),
+		is_selected_empty = !TokenArraySize(selected);
+		sorter.space = sorter.newline = 0;
+		if(is_para) {
+			/* Switch out of attribute. */
+			sorter.attribute = 0, sorter.is_attribute_header = 0;
+			selected = &sorter.segment->doc;
+			if(!is_doc_empty
+			   && !new_token(&sorter.segment->doc, NEWLINE)) return 0;
+		} else if(is_space) {
+			if(!is_selected_empty
+			   && !new_token(selected, SPACE)) return 0;
+		}
+		if(!new_token(selected, symbol)) return 0;
+	}
+		break;
+	case '@':
+		if(!(sorter.attribute = new_attribute(sorter.segment, symbol)))
+			return 0;
+		assert(!sorter.is_attribute_header);
+		break;
+	default:
+		if(sorter.is_ignored_code) goto differed;
+		if(!new_token(&sorter.segment->code, symbol)) return 0;
+		break;
+	}
+	
+differed:
+	/* End the segment? */
+	if(is_differed_cut) printf("----Differered CUT----\n"), sorter.segment = 0;
+	
+	return 1;
+}
+
+/** Keeps only the stuff we care about.
+ @implements{Predicate<Segment>} */
+static int keep_segment(const struct Segment *const s) {
+	/* fixme: and not static or containing @allow tag. */
+	if(TokenArraySize(&s->doc) || s->division == DIV_FUNCTION) return 1;
+	return 0;
 }

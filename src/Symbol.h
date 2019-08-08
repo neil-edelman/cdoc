@@ -1,3 +1,6 @@
+#ifndef SYMBOL_H /* <-- !sym */
+#define SYMBOL_H
+
 #ifndef PARAM3_A
 #include "XMacro.h"
 #endif
@@ -49,3 +52,5 @@
 enum Symbol { SYMBOL(PARAM3_A) };
 static const char *const symbols[] = { SYMBOL(STRINGISE3_A) };
 static const char symbol_marks[] = { SYMBOL(PARAM3_B) };
+
+#endif /* !sym --> */
