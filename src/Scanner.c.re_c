@@ -37,10 +37,10 @@ struct Scanner {
 
 /** Prints line info in a static buffer, (to be printed?) */
 static const char *pos(void) {
-	static char pos[512];
-	const int max_size = 32;
-	int is_truncated = (scanner.from + max_size < scanner.cursor) ? 1 : 0;
-	int len = is_truncated ? max_size : (int)(scanner.cursor - scanner.from);
+	static char pos[128];
+	const int max_size = 32,
+		is_truncated = (scanner.from + max_size < scanner.cursor) ? 1 : 0,
+		len = is_truncated ? max_size : (int)(scanner.cursor - scanner.from);
 	assert(scanner.from <= scanner.cursor);
 	sprintf(pos, "line %lu, indent %d, %s: \"%.*s\"",
 		(unsigned long)scanner.line, scanner.indent_level,
@@ -251,18 +251,18 @@ scan:
 	<doc> preformated { return PREFORMATED; }
 
 	// These are tags.
-	<doc> "@title"      { return TAG_TITLE; }
-	<doc> "@param"      { return scanner.state = yycparam_begin, TAG_PARAM; }
-	<doc> "@author"     { return TAG_AUTHOR; }
-	<doc> "@std"        { return TAG_STD; }
-	<doc> "@depend"     { return TAG_DEPEND; }
-	<doc> "@version"    { return TAG_VERSION; }
-	<doc> "@fixme"      { return TAG_FIXME; }
-	<doc> "@return"     { return TAG_RETURN; }
-	<doc> "@throws"     { return scanner.state = yycparam_begin, TAG_THROWS; }
-	<doc> "@implements" { return TAG_IMPLEMENTS; }
-	<doc> "@order"      { return TAG_ORDER; }
-	<doc> "@allow"      { return TAG_ALLOW; }
+	<doc> "@title"      { return ATT_TITLE; }
+	<doc> "@param"      { return scanner.state = yycparam_begin, ATT_PARAM; }
+	<doc> "@author"     { return ATT_AUTHOR; }
+	<doc> "@std"        { return ATT_STD; }
+	<doc> "@depend"     { return ATT_DEPEND; }
+	<doc> "@version"    { return ATT_VERSION; }
+	<doc> "@fixme"      { return ATT_FIXME; }
+	<doc> "@return"     { return ATT_RETURN; }
+	<doc> "@throws"     { return scanner.state = yycparam_begin, ATT_THROWS; }
+	<doc> "@implements" { return ATT_IMPLEMENTS; }
+	<doc> "@order"      { return ATT_ORDER; }
+	<doc> "@allow"      { return ATT_ALLOW; }
 
 	// Parameter lists.
 	<param_begin> "[" { return scanner.state = yycparam_item, DOC_LEFT; }

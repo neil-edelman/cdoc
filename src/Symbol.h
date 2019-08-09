@@ -22,12 +22,12 @@
 	X(ASSIGNMENT, '=', &lit), \
 	/* Each-block-tags; 2nd is '@' because we want them to have special
 	meaning. */ \
-	X(TAG_TITLE, '@', &lit), X(TAG_PARAM, '@', &lit), \
-	X(TAG_AUTHOR, '@', &lit), X(TAG_STD, '@', &lit), X(TAG_DEPEND, '@', &lit), \
-	X(TAG_VERSION, '@', &lit), X(TAG_FIXME, '@', &lit), \
-	X(TAG_RETURN, '@', &lit), X(TAG_THROWS, '@', &lit), \
-	X(TAG_IMPLEMENTS, '@', &lit), X(TAG_ORDER, '@', &lit), \
-	X(TAG_ALLOW, '@', &lit), \
+	X(ATT_TITLE, '@', &lit), X(ATT_PARAM, '@', &lit), \
+	X(ATT_AUTHOR, '@', &lit), X(ATT_STD, '@', &lit), X(ATT_DEPEND, '@', &lit), \
+	X(ATT_VERSION, '@', &lit), X(ATT_FIXME, '@', &lit), \
+	X(ATT_RETURN, '@', &lit), X(ATT_THROWS, '@', &lit), \
+	X(ATT_IMPLEMENTS, '@', &lit), X(ATT_ORDER, '@', &lit), \
+	X(ATT_ALLOW, '@', &lit), \
 	/* Documentation syntax; 2nd is '~' because it's documentation, it's just
 	comments as far as `C` is concerned. */ \
 	X(DOC_BEGIN, '~', 0), X(DOC_END, '~', 0), \
