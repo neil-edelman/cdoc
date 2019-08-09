@@ -1,3 +1,6 @@
+#ifndef DIVISION_H /* <-- !div */
+#define DIVISION_H
+
 #ifndef PARAM
 #include "XMacro.h"
 #endif
@@ -8,3 +11,5 @@
  namespaces. */
 enum Division { DIVISION(PARAM) };
 static const char *const divisions[] = { DIVISION(STRINGISE) };
+
+#endif /* !div --> */

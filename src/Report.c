@@ -7,8 +7,8 @@
 #include <string.h> /* size_t strncpy sprintf */
 #include <limits.h> /* INT_MAX */
 #include "Division.h"
-#include "Symbol.h"
 #include "Scanner.h"
+#include "Parser.h"
 #include "Report.h"
 
 /** `Token` has a `Symbol` and is associated with an area of the text. */
@@ -72,13 +72,20 @@ static void segment_to_string(const struct Segment *seg, char (*const a)[12]) {
 /** Top-level static document. */
 static struct SegmentArray report;
 
+static struct TokenArray segment_params;
+static enum Division segment_division;
+
 /** Destructor for the static document. */
 void Report_(void) {
 	struct Segment *segment;
+	/* Destroy the report. */
 	while((segment = SegmentArrayPop(&report)))
 		TokenArray_(&segment->doc), TokenArray_(&segment->code),
 		attributes_(&segment->attributes);
 	SegmentArray_(&report);
+	/* Destroy the rest. */
+	TokenArray_(&segment_params);
+	segment_division = DIV_PREAMBLE;
 }
 
 /** @return A new empty segment, defaults to the preamble, or null on error. */
@@ -136,6 +143,19 @@ static int new_token(struct TokenArray *const tokens, const enum Symbol symbol)
 	return 1;
 }
 
+/** This calls the parser with `tokens`. */
+static void parse(const struct TokenArray *const tokens) {
+	struct Token *token = 0;
+	assert(tokens);
+	printf("Parsing: ");
+	while((token = TokenArrayNext(tokens, token))) printf("%s, ", symbols[token->symbol]), ParserSymbol(token->symbol);
+	printf("END.\n"), ParserSymbol(END);
+}
+
+void ReportDivision(const enum Division division) {
+	segment_division = division;
+}
+
 /** This appends the current token based on the state it was last in.
  @return Success. */
 int ReportPlace(void) {
@@ -177,13 +197,15 @@ int ReportPlace(void) {
 	case NEWLINE: sorter.newline++; return 1;
 	case SEMI:
 		if(indent_level != 0) break;
-		sorter.segment->division = DIV_FUNCTION/*namespace(&sorter.segment->code)*/;
+		parse(&sorter.segment->code);
+		sorter.segment->division = segment_division;
 		sorter.is_ignored_code = 1;
 		is_differed_cut = 1;
 		break;
 	case LBRACE:
 		if(indent_level != 1) break;
-		sorter.segment->division = DIV_FUNCTION/* fixme!!! namespace(&sorter.segment->code)*/;
+		parse(&sorter.segment->code);
+		sorter.segment->division = segment_division;
 		if(sorter.segment->division == DIV_FUNCTION)
 			sorter.is_ignored_code = 1;
 		break;
@@ -250,14 +272,14 @@ differed:
 
 /** Prints line info in a static buffer, (to be printed?) */
 static const char *pos(const struct Token *const token) {
-	static char pos[128];
+	static char p[128];
 	const int max_size = 32,
 		is_truncated = token->length > max_size ? 1 : 0,
 		len = is_truncated ? max_size : token->length;
 	assert(token);
-	sprintf(pos, "line %lu, %s: \"%.*s\"", (unsigned long)token->line,
+	sprintf(p, "line %lu, %s: \"%.*s\"", (unsigned long)token->line,
 		symbols[token->symbol], len, token->from);
-	return pos;
+	return p;
 }
 
 /** Keeps only the stuff we care about.

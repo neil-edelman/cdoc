@@ -37,15 +37,15 @@ struct Scanner {
 
 /** Prints line info in a static buffer, (to be printed?) */
 static const char *pos(void) {
-	static char pos[128];
+	static char p[128];
 	const int max_size = 32,
 		is_truncated = (scanner.from + max_size < scanner.cursor) ? 1 : 0,
 		len = is_truncated ? max_size : (int)(scanner.cursor - scanner.from);
 	assert(scanner.from <= scanner.cursor);
-	sprintf(pos, "line %lu, indent %d, %s: \"%.*s\"",
+	sprintf(p, "line %lu, indent %d, %s: \"%.*s\"",
 		(unsigned long)scanner.line, scanner.indent_level,
 		symbols[scanner.symbol], len, scanner.from);
-	return pos;
+	return p;
 }
 
 /*!re2c
