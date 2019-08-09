@@ -121,11 +121,12 @@
 #include <string.h> /* strcmp */
 #include "Scanner.h"
 #include "Report.h"
+#include "Parser.h"
 
 /** @param[argc, argv] If "debug", `freopens` a path that is on my computer. */
 int main(int argc, char **argv) {
 	int exit_code = EXIT_FAILURE;
-	
+
 	/* https://stackoverflow.com/questions/10293387/piping-into-application-run-under-xcode/13658537 */
 	if (argc == 2 && strcmp(argv[1], "debug") == 0 ) {
 		const char *test_file_path = "/Users/neil/Movies/Cdoc/foo.c";
@@ -134,6 +135,9 @@ int main(int argc, char **argv) {
 		freopen(test_file_path, "r", stdin);
 	}
 
+	/* `parser` is the thing that tells us which division it is by looking at
+	 the code. */
+	if(!Parser()) goto catch;
 	fputs("\n\n-- In --\n", stdout);
 	if(!Scanner()) goto catch;
 	fputs("\n\n-- Out --\n", stdout);
@@ -149,6 +153,7 @@ catch:
 finally:
 	Report_();
 	Scanner_();
-	
+	Parser_();
+
 	return exit_code;
 }
