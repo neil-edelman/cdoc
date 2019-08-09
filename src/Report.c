@@ -525,32 +525,22 @@ static int segment_is_function(const struct Segment *const segment) {
 }
 
 /** Outputs a file when given a `SegmentArray`. */
-static void out(struct SegmentArray *const sa) {
-	assert(sa);
-	
+void ReportOut(void) {
 	/* Print header. */
-	printf("->Header:\n");
-	printf(" # ");
-	SegmentArrayIfEach(sa, &segment_is_header, &segment_print_all_title);
+	printf("<header:title>\n # ");
+	SegmentArrayIfEach(&report, &segment_is_header, &segment_print_all_title);
 	printf(" #\n\n");
-	SegmentArrayIfEach(sa, &segment_is_header, &segment_print_doc);
-	
+	printf("<header:doc>\n");
+	SegmentArrayIfEach(&report, &segment_is_header, &segment_print_doc);
 	/* Print typedefs. */
-	printf("->Typedefs:\n");
-	
-	/* Print atts. */
-	printf("->Attributes:\n");
-	
+	printf("\n\n## Typedefs ##\n");
+	/* Print tags. */
+	printf("\n\n## Tags ##\n");
 	/* Print general declarations. */
-	printf("->Declarations:\n");
 	printf("\n\n## Declarations ##\n\n");
-	SegmentArrayIfEach(sa, &segment_is_declaration, &segment_print_all);
-	
-	printf("->Function summary:\n");
+	SegmentArrayIfEach(&report, &segment_is_declaration, &segment_print_all);
 	printf("\n\n## Functions ##\n\n");
-	SegmentArrayIfEach(sa, &segment_is_function, &segment_print_code);
-	
-	printf("->Function detail:\n");
+	SegmentArrayIfEach(&report, &segment_is_function, &segment_print_code);
 	printf("\n\n## Function Detail ##\n\n");
-	SegmentArrayIfEach(sa, &segment_is_function, &segment_print_all);
+	SegmentArrayIfEach(&report, &segment_is_function, &segment_print_all);
 }

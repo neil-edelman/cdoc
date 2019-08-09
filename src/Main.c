@@ -135,6 +135,7 @@ int main(int argc, char **argv) {
 	}
 	
 	if(!Scanner()) goto catch;
+	ReportOut();
 	/*{
 		struct Segment *segment = 0;
 		fputs("\n -- Print out: --\n", stdout);
