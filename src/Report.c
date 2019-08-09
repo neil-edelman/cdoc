@@ -524,6 +524,22 @@ static int segment_is_function(const struct Segment *const segment) {
 	return segment->division == DIV_FUNCTION;
 }
 
+void ReportDebug(void) {
+	struct Segment *segment = 0;
+	struct Attribute *att = 0;
+	while((segment = SegmentArrayNext(&report, segment))) {
+		printf("Segment(%s):\n\tdoc: %s.\n\tcode: %s.\n",
+			divisions[segment->division],
+			TokenArrayToString(&segment->doc),
+			TokenArrayToString(&segment->code));
+		while((att = AttributeArrayNext(&segment->attributes, att)))
+			printf("\t%s{%s} %s.\n", symbols[att->symbol],
+			TokenArrayToString(&att->header),
+			TokenArrayToString(&att->contents));
+		fputc('\n', stdout);
+	}
+}
+
 /** Outputs a file when given a `SegmentArray`. */
 void ReportOut(void) {
 	/* Print header. */

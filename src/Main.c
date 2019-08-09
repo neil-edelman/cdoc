@@ -133,32 +133,14 @@ int main(int argc, char **argv) {
 				test_file_path);
 		freopen(test_file_path, "r", stdin);
 	}
-	
+
+	fputs("\n\n-- In --\n", stdout);
 	if(!Scanner()) goto catch;
+	fputs("\n\n-- Out --\n", stdout);
 	ReportOut();
-	/*{
-		struct Segment *segment = 0;
-		fputs("\n -- Print out: --\n", stdout);
-		while((segment = SegmentArrayNext(&doc, segment))) {
-			struct Tag *tag = 0;
-			printf("Segment(%s):\n\tdoc: %s.\n\tcode: %s.\n",
-				   namespaces[segment->namespace],
-				   TokenArrayToString(&segment->doc),
-				   TokenArrayToString(&segment->code));
-			while((tag = TagArrayNext(&segment->tags, tag))) {
-				printf("\t%s{%s} %s.\n", symbols[tag->symbol],
-					   TokenArrayToString(&tag->header),
-					   TokenArrayToString(&tag->contents));
-			}
-			fputc('\n', stdout);
-		}
-	}
-	
-	{
-		fputs("\n\n", stdout);
-		out(&doc);
-	}*/
-	
+	fputs("\n\n-- Debug --\n", stdout);
+	ReportDebug();
+
 	exit_code = EXIT_SUCCESS; goto finally;
 	
 catch:
