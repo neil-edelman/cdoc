@@ -6,6 +6,7 @@
 
 #include <string.h> /* size_t strncpy sprintf */
 #include <limits.h> /* INT_MAX */
+#include <stdio.h>  /* sprintf */
 #include "Division.h"
 #include "Scanner.h"
 #include "Parser.h"
@@ -18,11 +19,17 @@ struct Token {
 	int length;
 	size_t line;
 };
-static void token_to_string(const struct Token *s, char (*const a)[12]) {
-	/*int len = s->length >= 5 ? 5 : s->length;
-	 sprintf(*a, "%.4s<%.*s>", symbols[s->symbol], len, s->from);*/
-	strncpy(*a, symbols[s->symbol], sizeof *a - 1);
-	(*a)[sizeof *a - 1] = '\0';
+static void token_to_string(const struct Token *t, char (*const a)[12]) {
+	switch(t->symbol) {
+	case WORD: { int len = t->length >= 9 ? 9 : t->length;
+		sprintf(*a, "<%.*s>", len, t->from); break; }
+	case ID: { int len = t->length >= 8 ? 8 : t->length;
+		sprintf(*a, "ID:%.*s", len, t->from); break; }
+	case SPACE: { (*a)[0] = '~', (*a)[1] = '\0'; break; }
+	default:
+		strncpy(*a, symbols[t->symbol], sizeof *a - 1);
+		(*a)[sizeof *a - 1] = '\0';
+	}
 }
 #define ARRAY_NAME Token
 #define ARRAY_TYPE struct Token
@@ -148,8 +155,11 @@ static void parse(const struct TokenArray *const tokens) {
 	struct Token *token = 0;
 	assert(tokens);
 	printf("Parsing: ");
-	while((token = TokenArrayNext(tokens, token))) printf("%s, ", symbols[token->symbol]), ParserSymbol(token->symbol);
-	printf("END.\n"), ParserSymbol(END);
+	while((token = TokenArrayNext(tokens, token)))
+		printf("%s, ", symbols[token->symbol]);
+	printf("END.\n");
+	while((token = TokenArrayNext(tokens, token))) ParserSymbol(token->symbol);
+	ParserSymbol(END);
 }
 
 void ReportDivision(const enum Division division) {

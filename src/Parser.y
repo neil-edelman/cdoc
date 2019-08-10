@@ -2,11 +2,10 @@
  should be.
  @depend [Lemon](http://www.hwaci.com/sw/lemon/) (included.) */
 
-%token_type {enum Symbol}
-
 %include {
 #include <stdlib.h> /* malloc free */
 #include <stdio.h>
+#include "../src/Symbol.h"
 #include "../src/Division.h"
 #include "../src/Parser.h"
 
@@ -20,8 +19,10 @@ int ParseFallback(int iToken);
 
 }
 
+%token_type {enum Symbol}
+
 %syntax_error {
-	fprintf(stderr, "Syntax error!\n");
+	fprintf(stderr, "Syntax error: %s.\n", symbols[yyminor]);
 }
 
 %parse_accept {
@@ -29,22 +30,24 @@ int ParseFallback(int iToken);
 }
 
 //%extra_argument
-%left PLUS MINUS.
+//%left PLUS MINUS.
 
 program ::= expr(A). { printf("Result = %s.\n", symbols[A]); }
 
 expr(A) ::= INTEGER(B). { A = B; }
+//expr(A) ::= tag(B). { A = B; }
+expr(A) ::= id(B). { A = B; }
 
 /*program ::= id(A).   { printf("Result=%s\n", A); }
-program ::= id.
+program ::= id.*/
 
-tag ::= STRUCT | UNION | ENUM.
-name ::= ID | STATIC | VOID | STRUCT | UNION | ENUM.
+//tag ::= STRUCT | UNION | ENUM.
+//name ::= ID | STATIC | VOID | STRUCT | UNION | ENUM.
 
-id ::= ID
-| ID_ONE_GENERIC LPAREN name RPAREN
-| ID_TWO_GENERICS LPAREN name COMMA name RPAREN
-| ID_THREE_GENERICS LPAREN name COMMA name COMMA name RPAREN.
+id ::= ID.
+id ::= ID_ONE_GENERIC LPAREN ID RPAREN.
+/*| ID_TWO_GENERICS LPAREN name COMMA name RPAREN
+| ID_THREE_GENERICS LPAREN name COMMA name COMMA name RPAREN.*/
 
 /*expr(A) ::= expr(B) MINUS  expr(C).   { A = B - C; }
 expr(A) ::= expr(B) PLUS  expr(C).   { A = B + C; }

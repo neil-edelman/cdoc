@@ -60,3 +60,6 @@ T a(int (*ptr)(int a, int (*fn)(void))) /** yo */ {
 	/** @param[a, fn] [] Doesn't do anything. */
 	a = a;
 }
+
+/** Foo. */
+(foo);
