@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include "../src/Symbol.h"
 #include "../src/Division.h"
+#include "../src/Report.h"
 #include "../src/Parser.h"
 
 void ParseTrace(FILE *TraceFILE, char *zTracePrompt);
@@ -70,5 +71,6 @@ int Parser(void) {
 void ParserSymbol(enum Symbol symbol) {
 	if(!parser) return;
 	Parse(parser, 0, symbol);
+	if(!symbol) { printf("END Parse.\n"); ReportDivision(DIV_FUNCTION); }
 }
 }
