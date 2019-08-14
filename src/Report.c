@@ -36,6 +36,20 @@ static void token_to_string(const struct Token *t, char (*const a)[12]) {
 #define ARRAY_TO_STRING &token_to_string
 #include "Array.h"
 
+static void token_copy(struct Token *const dst, const struct Token *const src) {
+	assert(dst && src);
+	dst->symbol = src->symbol;
+	dst->from   = src->from;
+	dst->length = src->length;
+	dst->line   = src->line;
+}
+
+/** Accessor for symbol required for `Parser.y`. */
+enum Symbol TokenSymbol(const struct Token *const token) {
+	if(!token) return END;
+	return token->symbol;
+}
+
 /** `Attribute` is a specific structure of array of `Token` representing
  each-attributes, "@param ...". */
 struct Attribute {
@@ -79,10 +93,43 @@ static void segment_to_string(const struct Segment *seg, char (*const a)[12]) {
 /** Top-level static document. */
 static struct SegmentArray report;
 
-static struct TokenArray segment_params;
-static enum Division segment_division;
+/** Where is the current segment. */
+static struct {
+	enum Division division;
+	int division_set;
+	struct TokenArray params;
+} current;
 
-/** Destructor for the static document. */
+/** @return Whether this is a new division, reset with
+ <fn:ReportCurrentReset>. */
+int ReportCurrentDivision(const enum Division division) {
+	int division_set = current.division_set;
+	if(division_set) fprintf(stderr,
+		"ReportCurrentDivision: division %s changed to %s.\n",
+		divisions[current.division], divisions[division]);
+	current.division = division;
+	current.division_set = 1;
+	return division_set;
+}
+
+/** @param Which token to add.
+ @return Success. */
+int ReportCurrentParam(const struct Token *const token) {
+	struct Token *copy;
+	if(!token) return 0;
+	if(!(copy = TokenArrayNew(&current.params))) return 0;
+	token_copy(copy, token);
+	return 1;
+}
+
+/** Resets the current. */
+static void current_reset(void) {
+	current.division = DIV_PREAMBLE;
+	current.division_set = 0;
+	TokenArrayClear(&current.params);
+}
+
+/** Destructor for the static document. Also destucts the current. */
 void Report_(void) {
 	struct Segment *segment;
 	/* Destroy the report. */
@@ -91,8 +138,8 @@ void Report_(void) {
 		attributes_(&segment->attributes);
 	SegmentArray_(&report);
 	/* Destroy the rest. */
-	TokenArray_(&segment_params);
-	segment_division = DIV_PREAMBLE;
+	ReportCurrentReset();
+	TokenArray_(&current.params);
 }
 
 /** @return A new empty segment, defaults to the preamble, or null on error. */
@@ -129,19 +176,6 @@ static int new_token(struct TokenArray *const tokens, const enum Symbol symbol)
 
 	assert(tokens && from && from <= to);
 	if(from + INT_MAX < to) return errno = EILSEQ, 0;
-	/* Choose `where`. */
-	/*recent = AttributeArrayPeek(&segment->attributes);
-	switch(where) {
-	case WHERE_DOC: tokens = &segment->doc; break;
-	case WHERE_CODE: tokens = &segment->code; break;
-	case WHERE_ATT_HEADER:
-		if(!recent) return errno = EILSEQ, 0;
-		tokens = &recent->header; break;
-	case WHERE_ATT_CONTENTS:
-		if(!recent) return errno = EILSEQ, 0;
-		tokens = &recent->contents; break;
-	}
-	assert(tokens);*/
 	if(!(token = TokenArrayNew(tokens))) return 0;
 	token->symbol = symbol;
 	token->from = from;
@@ -155,16 +189,15 @@ static void parse(const struct TokenArray *const tokens) {
 	struct Token *token = 0;
 	assert(tokens);
 	printf("Parsing: ");
+	current_reset();
 	while((token = TokenArrayNext(tokens, token)))
 		printf("%s, ", symbols[token->symbol]);
 	printf("END.\n");
-	while((token = TokenArrayNext(tokens, token))) ParserSymbol(token->symbol);
-	ParserSymbol(END);
+	while((token = TokenArrayNext(tokens, token))) ParserToken(token);
+	ParserToken(0);
 }
 
-void ReportDivision(const enum Division division) {
-	segment_division = division;
-}
+
 
 /** This appends the current token based on the state it was last in.
  @return Success. */
@@ -208,14 +241,14 @@ int ReportPlace(void) {
 	case SEMI:
 		if(indent_level != 0) break;
 		parse(&sorter.segment->code);
-		sorter.segment->division = segment_division;
+		sorter.segment->division = current.division;
 		sorter.is_ignored_code = 1;
 		is_differed_cut = 1;
 		break;
 	case LBRACE:
 		if(indent_level != 1) break;
 		parse(&sorter.segment->code);
-		sorter.segment->division = segment_division;
+		sorter.segment->division = current.division;
 		if(sorter.segment->division == DIV_FUNCTION)
 			sorter.is_ignored_code = 1;
 		break;

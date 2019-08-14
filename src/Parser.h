@@ -1,7 +1,8 @@
-#ifndef SYMBOL_H /* <-- !sym */
 #include "Symbol.h"
-#endif /* !sym --> */
+#include "Division.h"
+
+struct Token;
 
 void Parser_(void);
 int Parser(void);
-void ParserSymbol(enum Symbol symbol);
+void ParserToken(const struct Token *const token);

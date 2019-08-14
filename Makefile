@@ -14,7 +14,7 @@ bin    := bin
 backup := backup
 doc    := doc
 media  := media
-lemon  := lemon
+#lemon  := lemon
 PREFIX := /usr/local
 
 # files in $(bin)
@@ -64,7 +64,7 @@ re2c  := re2c
 mkdir := mkdir -p
 cat   := cat
 zip   := zip
-lem   := lemon
+bison := bison
 
 CC   := clang #gcc
 CF   := -Wall -Wextra -Wno-format-y2k -Wstrict-prototypes \
@@ -105,10 +105,10 @@ $(bin)/$(project): $(c_objs) $(c_other_objs) $(c_y_objs) $(test_c_objs)
 $(c_objs) $(c_other_objs): $(h_re_srcs) $(h_rec_srcs)
 
 # compiling
-$(lemon)/$(bin)/$(lem): $(lemon)/$(src)/lemon.c
-	# compiling lemon
-	@$(mkdir) $(lemon)/$(bin)
-	$(CC) $(CF) -o $@ $<
+#$(lemon)/$(bin)/$(lem): $(lemon)/$(src)/lemon.c
+#	# compiling lemon
+#	@$(mkdir) $(lemon)/$(bin)
+#	$(CC) $(CF) -o $@ $<
 
 $(c_objs): $(build)/%.o: $(src)/%.c $(all_h)
 	# c_objs rule
@@ -135,10 +135,10 @@ $(c_rec_builds) $(h_rec_builds): $(build)/%: $(src)/%.re_c
 	@$(mkdir) $(build)
 	$(re2c) -c -o $@ $<
 
-$(c_y_builds): $(build)/%.c: $(src)/%.y $(lemon)/$(bin)/$(lem)
+$(c_y_builds): $(build)/%.c: $(src)/%.y # $(lemon)/$(bin)/$(lem)
 	# .y rule
 	@$(mkdir) $(build)
-	$(lemon)/$(bin)/$(lem) -d$(build) -T$(lemon)/$(src)/lempar.c $<
+	$(bison) -o $@ $<
 
 $(html_docs): $(doc)/%.html: $(src)/%.c $(src)/%.h
 	# docs rule

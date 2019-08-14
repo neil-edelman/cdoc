@@ -103,7 +103,12 @@
  paragraph."
  "Note that unlike standard Markdown, doxygen leaves the following untouched.
  A `cool' word in a `nice' sentence."
- 
+
+ Fixme:
+
+ -* Function pointers must be declared as `typedef`.
+ -* Old-style function definitions are not supported.
+
  @title Main.c
  @author Neil
  @version 2019-06
