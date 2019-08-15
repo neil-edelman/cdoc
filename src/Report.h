@@ -1,4 +1,5 @@
 #include "Division.h"
+#include "Symbol.h"
 
 struct Token;
 

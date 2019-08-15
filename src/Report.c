@@ -138,7 +138,7 @@ void Report_(void) {
 		attributes_(&segment->attributes);
 	SegmentArray_(&report);
 	/* Destroy the rest. */
-	ReportCurrentReset();
+	current_reset();
 	TokenArray_(&current.params);
 }
 

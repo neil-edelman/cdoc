@@ -18,7 +18,7 @@
 	X(ID_ONE_GENERIC, '1', &gen1), X(ID_TWO_GENERICS, '2', &gen2), \
 	X(ID_THREE_GENERICS, '3', &gen3), X(STRUCT, 's', &lit), \
 	X(UNION, 's', &lit), X(ENUM, 's', &lit), X(TYPEDEF, 't', &lit), \
-	X(STATIC, 'z', &lit), X(VOID, 'v', &lit), X(ELLIPSES, '.', &lit), \
+	X(STATIC, 'z', &lit), X(VOID, 'v', &lit), X(ELLIPSIS, '.', &lit), \
 	X(ASSIGNMENT, '=', &lit), \
 	/* Each-block-tags; 2nd is '@' because we want them to have special
 	meaning. */ \

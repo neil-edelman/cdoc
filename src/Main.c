@@ -142,7 +142,7 @@ int main(int argc, char **argv) {
 
 	/* `parser` is the thing that tells us which division it is by looking at
 	 the code. */
-	if(!Parser()) goto catch;
+	/*if(!Parser()) goto catch;*/
 	fputs("\n\n-- In --\n", stdout);
 	if(!Scanner()) goto catch;
 	fputs("\n\n-- Out --\n", stdout);
@@ -158,7 +158,7 @@ catch:
 finally:
 	Report_();
 	Scanner_();
-	Parser_();
+	/*Parser_();*/
 
 	return exit_code;
 }
