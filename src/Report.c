@@ -9,7 +9,7 @@
 #include <stdio.h>  /* sprintf */
 #include "Division.h"
 #include "Scanner.h"
-#include "Parser.h"
+#include "Semantic.h"
 #include "Report.h"
 
 /** `Token` has a `Symbol` and is associated with an area of the text. */
@@ -35,20 +35,6 @@ static void token_to_string(const struct Token *t, char (*const a)[12]) {
 #define ARRAY_TYPE struct Token
 #define ARRAY_TO_STRING &token_to_string
 #include "Array.h"
-
-static void token_copy(struct Token *const dst, const struct Token *const src) {
-	assert(dst && src);
-	dst->symbol = src->symbol;
-	dst->from   = src->from;
-	dst->length = src->length;
-	dst->line   = src->line;
-}
-
-/** Accessor for symbol required for `Parser.y`. */
-enum Symbol TokenSymbol(const struct Token *const token) {
-	if(!token) return END;
-	return token->symbol;
-}
 
 /** `Attribute` is a specific structure of array of `Token` representing
  each-attributes, "@param ...". */
@@ -93,43 +79,37 @@ static void segment_to_string(const struct Segment *seg, char (*const a)[12]) {
 /** Top-level static document. */
 static struct SegmentArray report;
 
-/** Where is the current segment. */
-static struct {
-	enum Division division;
-	int division_set;
-	struct TokenArray params;
-} current;
 
-/** @return Whether this is a new division, reset with
- <fn:ReportCurrentReset>. */
-int ReportCurrentDivision(const enum Division division) {
-	int division_set = current.division_set;
-	if(division_set) fprintf(stderr,
-		"ReportCurrentDivision: division %s changed to %s.\n",
-		divisions[current.division], divisions[division]);
-	current.division = division;
-	current.division_set = 1;
-	return division_set;
+
+#define ARRAY_NAME Char
+#define ARRAY_TYPE char
+#include "../src/Array.h"
+
+/** @param[tokens] The `TokenArray` that converts to a string. If null, frees
+ memory.
+ @return A null-terminated static string that is replaced every time, or null
+ on error or null input. */
+static const char *tokens_to_string(const struct TokenArray *const tokens) {
+	static struct CharArray char_array;
+	char *string, *str_pos;
+	struct Token *token = 0;
+	/* If passed null, destroy. */
+	if(!tokens) { CharArray_(&char_array); return 0; }
+	CharArrayClear(&char_array);
+	if(!CharArrayBuffer(&char_array, TokenArraySize(tokens) + 1)) return 0;
+	string = str_pos = CharArrayGet(&char_array);
+	while((token = TokenArrayNext(tokens, token)))
+		*str_pos++ = symbol_marks[token->symbol];
+	assert((size_t)(str_pos - string) == TokenArraySize(tokens));
+	*str_pos = '\0';
+	printf("-> tokens_to_string: <%s>.\n", string);
+	return string;
 }
 
-/** @param Which token to add.
- @return Success. */
-int ReportCurrentParam(const struct Token *const token) {
-	struct Token *copy;
-	if(!token) return 0;
-	if(!(copy = TokenArrayNew(&current.params))) return 0;
-	token_copy(copy, token);
-	return 1;
-}
 
-/** Resets the current. */
-static void current_reset(void) {
-	current.division = DIV_PREAMBLE;
-	current.division_set = 0;
-	TokenArrayClear(&current.params);
-}
 
-/** Destructor for the static document. Also destucts the current. */
+/** Destructor for the static document. Also destucts the string used for
+ tokens. */
 void Report_(void) {
 	struct Segment *segment;
 	/* Destroy the report. */
@@ -137,9 +117,9 @@ void Report_(void) {
 		TokenArray_(&segment->doc), TokenArray_(&segment->code),
 		attributes_(&segment->attributes);
 	SegmentArray_(&report);
-	/* Destroy the rest. */
-	current_reset();
-	TokenArray_(&current.params);
+	/* Destroy the semantic buffer. */
+	Semantic(0);
+	tokens_to_string(0);
 }
 
 /** @return A new empty segment, defaults to the preamble, or null on error. */
@@ -173,7 +153,6 @@ static int new_token(struct TokenArray *const tokens, const enum Symbol symbol)
 {
 	struct Token *token;
 	const char *const from = ScannerFrom(), *const to = ScannerTo();
-
 	assert(tokens && from && from <= to);
 	if(from + INT_MAX < to) return errno = EILSEQ, 0;
 	if(!(token = TokenArrayNew(tokens))) return 0;
@@ -184,19 +163,6 @@ static int new_token(struct TokenArray *const tokens, const enum Symbol symbol)
 	return 1;
 }
 
-/** This calls the parser with `tokens`. */
-static void parse(const struct TokenArray *const tokens) {
-	struct Token *token = 0;
-	assert(tokens);
-	printf("Parsing: ");
-	current_reset();
-	while((token = TokenArrayNext(tokens, token)))
-		printf("%s, ", symbols[token->symbol]);
-	printf("END.\n");
-	while((token = TokenArrayNext(tokens, token))) ParserToken(token);
-	ParserToken(0);
-}
-
 
 
 /** This appends the current token based on the state it was last in.
@@ -205,6 +171,7 @@ int ReportPlace(void) {
 	const enum Symbol symbol = ScannerSymbol();
 	const int indent_level = ScannerIndentLevel();
 	const char symbol_mark = symbol_marks[symbol];
+	const char *semantic;
 	int is_differed_cut = 0;
 	static struct {
 		struct Segment *segment;
@@ -212,14 +179,13 @@ int ReportPlace(void) {
 		unsigned space, newline;
 		int is_attribute_header, is_ignored_code;
 	} sorter = { 0, 0, 0, 0, 0, 0 }; /* This holds the sorting state. */
-
 	/* These symbols require special consideration. */
 	switch(symbol) {
 	case DOC_BEGIN: /* Multiple doc comments. */
 		sorter.attribute = 0;
 		if(!sorter.segment) return 1;
-		if(!TokenArraySize(&sorter.segment->code)) sorter.segment = 0;
-		printf("----CUT in preamble----\n");
+		if(!TokenArraySize(&sorter.segment->code)) sorter.segment = 0,
+			printf("----CUT in preamble----\n");
 		return 1;
 	case DOC_END: return 1; /* Doesn't actually do something. */
 	case DOC_LEFT: /* Should only happen in @foo[]. */
@@ -235,20 +201,22 @@ int ReportPlace(void) {
 	case DOC_COMMA:
 		if(!sorter.segment || !sorter.attribute || !sorter.is_attribute_header)
 			return errno = EILSEQ, 0;
-		return 1; /* Doesn't actually do something. */
+		return 1; /* Doesn't actually do something. [,,] */
 	case SPACE:   sorter.space++; return 1;
 	case NEWLINE: sorter.newline++; return 1;
 	case SEMI:
 		if(indent_level != 0) break;
-		parse(&sorter.segment->code);
-		sorter.segment->division = current.division;
+		if(!(semantic = tokens_to_string(&sorter.segment->code))) return 0;
+		Semantic(semantic);
+		sorter.segment->division = SemanticDivision();
 		sorter.is_ignored_code = 1;
 		is_differed_cut = 1;
 		break;
 	case LBRACE:
 		if(indent_level != 1) break;
-		parse(&sorter.segment->code);
-		sorter.segment->division = current.division;
+		if(!(semantic = tokens_to_string(&sorter.segment->code))) return 0;
+		Semantic(semantic);
+		sorter.segment->division = SemanticDivision();
 		if(sorter.segment->division == DIV_FUNCTION)
 			sorter.is_ignored_code = 1;
 		break;
@@ -258,7 +226,7 @@ int ReportPlace(void) {
 		break;
 	default: break;
 	}
-	
+
 	/* Make a new segment if needed. */
 	if(!sorter.segment) {
 		if(!(sorter.segment = new_segment())) return 0;
@@ -267,7 +235,7 @@ int ReportPlace(void) {
 		sorter.is_ignored_code = 0;
 		assert(!sorter.is_attribute_header);
 	}
-	
+
 	/* Make a `token` where the context places us. */
 	switch(symbol_mark) {
 	case '~':
@@ -303,11 +271,10 @@ int ReportPlace(void) {
 		if(!new_token(&sorter.segment->code, symbol)) return 0;
 		break;
 	}
-	
+
 differed:
 	/* End the segment? */
 	if(is_differed_cut) printf("----Differered CUT----\n"), sorter.segment = 0;
-	
 	return 1;
 }
 

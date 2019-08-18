@@ -126,7 +126,7 @@
 #include <string.h> /* strcmp */
 #include "Scanner.h"
 #include "Report.h"
-#include "Parser.h"
+#include "Semantic.h"
 
 /** @param[argc, argv] If "debug", `freopens` a path that is on my computer. */
 int main(int argc, char **argv) {
@@ -142,7 +142,6 @@ int main(int argc, char **argv) {
 
 	/* `parser` is the thing that tells us which division it is by looking at
 	 the code. */
-	/*if(!Parser()) goto catch;*/
 	fputs("\n\n-- In --\n", stdout);
 	if(!Scanner()) goto catch;
 	fputs("\n\n-- Out --\n", stdout);
@@ -158,7 +157,7 @@ catch:
 finally:
 	Report_();
 	Scanner_();
-	/*Parser_();*/
+	Semantic(0);
 
 	return exit_code;
 }
