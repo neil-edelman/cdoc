@@ -1,4 +1,6 @@
 #include "Division.h"
 
-int Semantic(const char *const code);
+struct TokenArray;
+
+int Semantic(const struct TokenArray *const code);
 enum Division SemanticDivision(void);

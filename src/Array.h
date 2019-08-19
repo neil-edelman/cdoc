@@ -12,20 +12,20 @@
  file for convenience. {assert.h} is included in this file; to stop the
  debug assertions, use {#define NDEBUG} before inclusion.
 
- @param `ARRAY_NAME, ARRAY_TYPE`
+ @param ARRAY_NAME, ARRAY_TYPE
  The name that literally becomes {<T>}, and a valid type associated therewith,
  accessible to the compiler at the time of inclusion; should be conformant to
  naming and to the maximum available length of identifiers. Must each be
  present before including.
 
- @param `ARRAY_STACK`
+ @param ARRAY_STACK
  Doesn't define removal functions except \see{<T>ArrayPop}, making it a stack.
 
- @param `ARRAY_TO_STRING`
+ @param ARRAY_TO_STRING
  Optional print function implementing {<T>ToString}; makes available
  \see{<T>ArrayToString}.
 
- @param `ARRAY_TEST`
+ @param ARRAY_TEST
  Unit testing framework using {<T>ArrayTest}, included in a separate header,
  {../test/ArrayTest.h}. Must be defined equal to a (random) filler function,
  satisfying {<T>Action}. Requires {ARRAY_TO_STRING} and not {NDEBUG}.
@@ -462,7 +462,7 @@ static T *T_(ArrayBuffer)(struct T_(Array) *const a, const size_t buffer) {
  @order O(1)
  @fixme Test.
  @allow */
-static int T_(ArrayAddSize)(struct T_(Array) *const a, const size_t add) {
+static int T_(ArrayExpand)(struct T_(Array) *const a, const size_t add) {
 	if(!a) return 0;
 	if(add > a->capacity || a->size > a->capacity - add)
 		return errno = ERANGE, 0;
@@ -555,22 +555,22 @@ static void T_(ArrayTrim)(struct T_(Array) *const a,
 	memmove(a->data, a->data + i, sizeof *a->data * i), a->size -= i;
 }
 
-/** In `a`, replaces the elements from `anchor` up to `range` with a copy of
- `b`.
- @param `a` If null, returns zero.
- @param `anchor` Beginning of the replaced value, inclusive. If null, appends to
+/** In {a}, replaces the elements from {anchor} up to {range} with a copy of
+ {b}.
+ @param a: If null, returns zero.
+ @param anchor: Beginning of the replaced value, inclusive. If null, appends to
  the end.
- @param `range` How many replaced values; negative values are implicitly plus
+ @param range: How many replaced values; negative values are implicitly plus
  the length of the array; clamped at the minimum and maximum.
- @param `b` The replacement array. If null, deletes without replacing.
+ @param b: The replacement array. If null, deletes without replacing.
  @return Success.
- @throws `EDOM` {a} and {b} are not null and the same.
- @throws `ERANGE` {anchor} is not null and not in {a}.
- @throws `ERANGE` {range} is greater then 65535 or smaller then -65534.
- @throws `ERANGE` {b} would cause the array to overflow.
- @throws `realloc`
- @order `\Theta({b.size})` if the elements have the same size, otherwise,
- amortised `O(a.size + b.size)`.
+ @throws EDOM: {a} and {b} are not null and the same.
+ @throws ERANGE: {anchor} is not null and not in {a}.
+ @throws ERANGE: {range} is greater then 65535 or smaller then -65534.
+ @throws ERANGE: {b} would cause the array to overflow.
+ @throws {realloc}.
+ @order \Theta({b.size}) if the elements have the same size, otherwise,
+ amortised O({a.size} + {b.size}).
  @allow */
 static int T_(ArrayReplace)(struct T_(Array) *const a, const T *anchor,
 	const long range, const struct T_(Array) *const b) {
@@ -705,7 +705,7 @@ static void PT_(unused_set)(void) {
 	T_(ArrayNew)(0);
 	T_(ArrayUpdateNew)(0, 0);
 	T_(ArrayBuffer)(0, 0);
-	T_(ArrayAddSize)(0, 0);
+	T_(ArrayExpand)(0, 0);
 	T_(ArrayForEach)(0, 0);
 	T_(ArrayIfEach)(0, 0, 0);
 	T_(ArrayKeepIf)(0, 0);

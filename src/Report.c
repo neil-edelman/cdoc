@@ -35,6 +35,27 @@ static void token_to_string(const struct Token *t, char (*const a)[12]) {
 #define ARRAY_TYPE struct Token
 #define ARRAY_TO_STRING &token_to_string
 #include "Array.h"
+/** This is used in `Semantic.c.re` to get the size of the string for
+ `tokens`. */
+size_t TokensMarkSize(const struct TokenArray *const tokens) {
+	if(!tokens) return 0;
+	return TokenArraySize(tokens) + 1; /* Fixme: overflow? */
+}
+/** @param[tokens] The `TokenArray` that converts to a string. If null, frees
+ memory.
+ @param[marks] Must be an at-least <fn:TokensMarkSize> buffer, or null.
+ @return A null-terminated static string that is replaced every time, or null
+ on error or null input. */
+size_t TokensMark(const struct TokenArray *const tokens, char *const marks) {
+	struct Token *token = 0;
+	char *mark = marks;
+	if(!marks) return 0;
+	while((token = TokenArrayNext(tokens, token)))
+		*mark++ = symbol_marks[token->symbol];
+	*mark = '\0';
+	assert((size_t)(mark - marks) == TokenArraySize(tokens));
+	return (size_t)(mark - marks);
+}
 
 /** `Attribute` is a specific structure of array of `Token` representing
  each-attributes, "@param ...". */
@@ -81,33 +102,6 @@ static struct SegmentArray report;
 
 
 
-#define ARRAY_NAME Char
-#define ARRAY_TYPE char
-#include "../src/Array.h"
-
-/** @param[tokens] The `TokenArray` that converts to a string. If null, frees
- memory.
- @return A null-terminated static string that is replaced every time, or null
- on error or null input. */
-static const char *tokens_to_string(const struct TokenArray *const tokens) {
-	static struct CharArray char_array;
-	char *string, *str_pos;
-	struct Token *token = 0;
-	/* If passed null, destroy. */
-	if(!tokens) { CharArray_(&char_array); return 0; }
-	CharArrayClear(&char_array);
-	if(!CharArrayBuffer(&char_array, TokenArraySize(tokens) + 1)) return 0;
-	string = str_pos = CharArrayGet(&char_array);
-	while((token = TokenArrayNext(tokens, token)))
-		*str_pos++ = symbol_marks[token->symbol];
-	assert((size_t)(str_pos - string) == TokenArraySize(tokens));
-	*str_pos = '\0';
-	printf("-> tokens_to_string: <%s>.\n", string);
-	return string;
-}
-
-
-
 /** Destructor for the static document. Also destucts the string used for
  tokens. */
 void Report_(void) {
@@ -119,7 +113,6 @@ void Report_(void) {
 	SegmentArray_(&report);
 	/* Destroy the semantic buffer. */
 	Semantic(0);
-	tokens_to_string(0);
 }
 
 /** @return A new empty segment, defaults to the preamble, or null on error. */
@@ -171,7 +164,6 @@ int ReportPlace(void) {
 	const enum Symbol symbol = ScannerSymbol();
 	const int indent_level = ScannerIndentLevel();
 	const char symbol_mark = symbol_marks[symbol];
-	const char *semantic;
 	int is_differed_cut = 0;
 	static struct {
 		struct Segment *segment;
@@ -206,16 +198,14 @@ int ReportPlace(void) {
 	case NEWLINE: sorter.newline++; return 1;
 	case SEMI:
 		if(indent_level != 0) break;
-		if(!(semantic = tokens_to_string(&sorter.segment->code))
-			|| !Semantic(semantic)) return 0;
+		if(!Semantic(&sorter.segment->code)) return 0;
 		sorter.segment->division = SemanticDivision();
 		sorter.is_ignored_code = 1;
 		is_differed_cut = 1;
 		break;
 	case LBRACE:
 		if(indent_level != 1) break;
-		if(!(semantic = tokens_to_string(&sorter.segment->code))
-			|| !Semantic(semantic)) return 0;
+		if(!Semantic(&sorter.segment->code)) return 0;
 		sorter.segment->division = SemanticDivision();
 		if(sorter.segment->division == DIV_FUNCTION)
 			sorter.is_ignored_code = 1;

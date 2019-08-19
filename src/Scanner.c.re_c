@@ -299,7 +299,7 @@ int Scanner(void) {
 	do {
 		if(!(read_here = CharArrayBuffer(&scanner.buffer, granularity))
 			|| (nread = fread(read_here, 1, granularity, stdin), ferror(stdin))
-			|| !CharArrayAddSize(&scanner.buffer, nread)) goto catch;
+			|| !CharArrayExpand(&scanner.buffer, nread)) goto catch;
 	} while(nread == granularity);
 	/* Embed '\0' on the end for simple lexing. */
 	if(!(zero = CharArrayNew(&scanner.buffer))) goto catch;
