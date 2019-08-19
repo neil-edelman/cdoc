@@ -62,4 +62,4 @@ T a(int (*ptr)(int a, int (*fn)(void))) /** yo */ {
 }
 
 /** Foo. */
-(foo);
+(foo)];
