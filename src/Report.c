@@ -41,20 +41,17 @@ size_t TokensMarkSize(const struct TokenArray *const tokens) {
 	if(!tokens) return 0;
 	return TokenArraySize(tokens) + 1; /* Fixme: overflow? */
 }
-/** @param[tokens] The `TokenArray` that converts to a string. If null, frees
- memory.
+/** @param[tokens] The `TokenArray` that converts to a string.
  @param[marks] Must be an at-least <fn:TokensMarkSize> buffer, or null.
- @return A null-terminated static string that is replaced every time, or null
- on error or null input. */
-size_t TokensMark(const struct TokenArray *const tokens, char *const marks) {
+ @return The size of the string, including null. */
+void TokensMark(const struct TokenArray *const tokens, char *const marks) {
 	struct Token *token = 0;
 	char *mark = marks;
-	if(!marks) return 0;
+	if(!marks) return;
 	while((token = TokenArrayNext(tokens, token)))
 		*mark++ = symbol_marks[token->symbol];
 	*mark = '\0';
 	assert((size_t)(mark - marks) == TokenArraySize(tokens));
-	return (size_t)(mark - marks);
 }
 
 /** `Attribute` is a specific structure of array of `Token` representing

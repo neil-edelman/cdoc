@@ -15,6 +15,7 @@
 
 static struct {
 	struct CharArray buffer, work;
+	struct SizeArray work_to_buffer;
 	enum Division division;
 	struct SizeArray params;
 } semantic;
@@ -50,11 +51,11 @@ fn = static? qualifier*;
 /* X(DIV_PREAMBLE), X(DIV_FUNCTION), X(DIV_TAG), \
 	X(DIV_TYPEDEF), X(DIV_GENERAL_DECLARATION) */
 
-static int parse(const char *const code) {
-	const char *cursor = code/*, *marker = code*/;
-	assert(code);
+static int parse(void) {
+	const char *cursor = CharArrayGet(&semantic.buffer)/*, *marker = code*/;
+
 	semantic.division = DIV_FUNCTION;
-	printf("parse <%s>.\n", code);
+	printf("parse <%s>.\n", cursor);
 	/*!re2c
 	* { printf("* rule.\n"); }
 	"\x00" { printf("end.\n"); }
@@ -63,13 +64,14 @@ static int parse(const char *const code) {
 	return 1;
 }
 
-/*static void simplify_brackets() {
-}*/
+static void simplify_brackets() {
+}
 
 static int check_symbols(int *const checks) {
 	const char *cursor = CharArrayGet(&semantic.buffer);
 	char *stack;
-	assert(checks && cursor);
+	assert(checks && cursor
+		&& semantic.buffer.capacity == semantic.work.capacity);
 	printf("check_symbols: buffer %s.\n", cursor);
 	CharArrayClear(&semantic.work);
 	*checks = 1;
@@ -99,34 +101,46 @@ check:
  consists of characters from `symbol_marks` defined in `Symbol.h`.
  @return Success, otherwise `errno` may (POSIX will) be set. */
 int Semantic(const struct TokenArray *const code) {
-	int checks;
 	char *buffer;
+	size_t buffer_size;
+
 	/* `Semantic(0)` should clear out memory and reset. */
 	if(!code) {
 		CharArray_(&semantic.buffer);
 		CharArray_(&semantic.work);
+		SizeArray_(&semantic.work_to_buffer);
 		semantic.division = DIV_PREAMBLE;
 		SizeArray_(&semantic.params);
 		return 1;
 	}
+
 	/* Reset the semantic to the most general state. */
 	CharArrayClear(&semantic.buffer);
 	semantic.division = DIV_GENERAL_DECLARATION;
 	SizeArrayClear(&semantic.params);
 
-	/* Make a string from `symbol_marks`. */
-	if(!(buffer = CharArrayBuffer(&semantic.buffer, TokensMarkSize(code))))
-		return 0;
-	CharArrayExpand(&semantic.buffer, TokensMark(code, buffer));
+	/* Make a string from `symbol_marks` and allocate maximum memory. */
+	buffer_size = TokensMarkSize(code);
+	assert(buffer_size);
+	if(!(buffer = CharArrayBuffer(&semantic.buffer, buffer_size))) return 0;
+	TokensMark(code, buffer);
+	CharArrayExpand(&semantic.buffer, buffer_size);
+	assert(CharArrayGet(&semantic.buffer)[buffer_size - 1] == '\0');
 	printf("Semantic: %s\n", buffer);
+	CharArrayClear(&semantic.work);
+	if(!CharArrayBuffer(&semantic.work, buffer_size)) return 0;
+	SizeArrayClear(&semantic.work_to_buffer);
+	if(!SizeArrayBuffer(&semantic.work_to_buffer, buffer_size)) return 0;
 
-	/* Checks whether this makes sense. */
-	if(!check_symbols(&checks)) return 0;
-	if(!checks) { fprintf(stderr,
-		"Classifying unknown statement as a general declaration.\n");
-		return 1; }
+	{ /* Checks whether this makes sense. */
+		int checks = 0;
+		if(!check_symbols(&checks)) return 0;
+		if(!checks) { fprintf(stderr,
+			"Classifying unknown statement as a general declaration.\n");
+			return 1; }
+	}
 
-	parse(buffer);
+	parse();
 	return 1;
 }
 

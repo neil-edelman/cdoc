@@ -4,7 +4,7 @@
 struct TokenArray;
 
 size_t TokensMarkSize(const struct TokenArray *const tokens);
-size_t TokensMark(const struct TokenArray *const tokens, char *const marks);
+void TokensMark(const struct TokenArray *const tokens, char *const marks);
 
 struct Token;
 
