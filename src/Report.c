@@ -206,16 +206,16 @@ int ReportPlace(void) {
 	case NEWLINE: sorter.newline++; return 1;
 	case SEMI:
 		if(indent_level != 0) break;
-		if(!(semantic = tokens_to_string(&sorter.segment->code))) return 0;
-		Semantic(semantic);
+		if(!(semantic = tokens_to_string(&sorter.segment->code))
+			|| !Semantic(semantic)) return 0;
 		sorter.segment->division = SemanticDivision();
 		sorter.is_ignored_code = 1;
 		is_differed_cut = 1;
 		break;
 	case LBRACE:
 		if(indent_level != 1) break;
-		if(!(semantic = tokens_to_string(&sorter.segment->code))) return 0;
-		Semantic(semantic);
+		if(!(semantic = tokens_to_string(&sorter.segment->code))
+			|| !Semantic(semantic)) return 0;
 		sorter.segment->division = SemanticDivision();
 		if(sorter.segment->division == DIV_FUNCTION)
 			sorter.is_ignored_code = 1;
