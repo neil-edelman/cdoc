@@ -4,6 +4,7 @@
 #include "../src/Report.h"
 #include "../src/Semantic.h"
 
+/* fixme: range. */
 #define ARRAY_NAME Size
 #define ARRAY_TYPE size_t
 #include "../src/Array.h"
@@ -101,8 +102,8 @@ check:
  consists of characters from `symbol_marks` defined in `Symbol.h`.
  @return Success, otherwise `errno` may (POSIX will) be set. */
 int Semantic(const struct TokenArray *const code) {
-	char *buffer;
-	size_t buffer_size;
+	size_t buffer_size, i;
+	size_t *w2b;
 
 	/* `Semantic(0)` should clear out memory and reset. */
 	if(!code) {
@@ -122,15 +123,15 @@ int Semantic(const struct TokenArray *const code) {
 	/* Make a string from `symbol_marks` and allocate maximum memory. */
 	buffer_size = TokensMarkSize(code);
 	assert(buffer_size);
-	if(!(buffer = CharArrayBuffer(&semantic.buffer, buffer_size))) return 0;
-	TokensMark(code, buffer);
+	if(!CharArrayBuffer(&semantic.buffer, buffer_size)) return 0;
+	TokensMark(code, CharArrayGet(&semantic.buffer));
 	CharArrayExpand(&semantic.buffer, buffer_size);
 	assert(CharArrayGet(&semantic.buffer)[buffer_size - 1] == '\0');
-	printf("Semantic: %s\n", buffer);
+	printf("Semantic: %s\n", CharArrayGet(&semantic.buffer));
 	CharArrayClear(&semantic.work);
 	if(!CharArrayBuffer(&semantic.work, buffer_size)) return 0;
 	SizeArrayClear(&semantic.work_to_buffer);
-	if(!SizeArrayBuffer(&semantic.work_to_buffer, buffer_size)) return 0;
+	if(!SizeArrayBuffer(&semantic.work_to_buffer, buffer_size)) return 0;	
 
 	{ /* Checks whether this makes sense. */
 		int checks = 0;
@@ -139,6 +140,13 @@ int Semantic(const struct TokenArray *const code) {
 			"Classifying unknown statement as a general declaration.\n");
 			return 1; }
 	}
+
+	/* Copies `buffer` to `work`. */
+	strcpy(CharArrayGet(&semantic.work), CharArrayGet(&semantic.buffer));
+	CharArrayExpand(&semantic.work, buffer_size);
+	w2b = SizeArrayGet(&semantic.work_to_buffer);
+	for(i = 0; i < buffer_size; i++) w2b[i] = i;
+	SizeArrayExpand(&semantic.work_to_buffer, buffer_size);
 
 	parse();
 	return 1;
