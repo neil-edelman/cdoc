@@ -161,13 +161,13 @@ int ReportPlace(void) {
 	const enum Symbol symbol = ScannerSymbol();
 	const int indent_level = ScannerIndentLevel();
 	const char symbol_mark = symbol_marks[symbol];
-	int is_differed_cut = 0, is_post_block = 0;
+	int is_differed_cut = 0;
 	static struct {
 		struct Segment *segment;
 		struct Attribute *attribute;
 		unsigned space, newline;
-		int is_attribute_header, is_ignored_code;
-	} sorter = { 0, 0, 0, 0, 0, 0 }; /* This holds the sorting state. */
+		int is_attribute_header, is_ignored_code, is_post_block;
+	} sorter = { 0, 0, 0, 0, 0, 0, 0 }; /* This holds the sorting state. */
 	/* These symbols require special consideration. */
 	switch(symbol) {
 	case DOC_BEGIN: /* Multiple doc comments. */
@@ -199,14 +199,18 @@ int ReportPlace(void) {
 		sorter.segment->division = SemanticDivision();
 		sorter.is_ignored_code = 1;
 		is_differed_cut = 1;
-		is_post_block = 0;
+		sorter.is_post_block = 0;
 		break;
 	case LBRACE:
 		if(indent_level != 1) break;
-		if(is_post_block) {
-			fprintf(stderr, "---CUT classification failed?---\n");
-			is_post_block = 0;
+		if(sorter.is_post_block) {
+			fprintf(stderr, "Line %lu: More then one top-level block in this "
+				"segment; previous segment should have been classified as a "
+				"function?\n", (unsigned long)ScannerLine());
+			sorter.is_post_block = 0;
 			sorter.segment = 0;
+			sorter.is_ignored_code = 1;
+			break;
 		}
 		if(!Semantic(&sorter.segment->code)) return 0;
 		sorter.segment->division = SemanticDivision();
@@ -216,7 +220,7 @@ int ReportPlace(void) {
 	case RBRACE: /* Functions don't have ';' to end them. */
 		if(indent_level != 0) break;
 		if(sorter.segment->division == DIV_FUNCTION) is_differed_cut = 1;
-		else is_post_block = 1;
+		else sorter.is_post_block = 1;
 		break;
 	default: break;
 	}
