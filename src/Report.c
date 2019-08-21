@@ -161,7 +161,7 @@ int ReportPlace(void) {
 	const enum Symbol symbol = ScannerSymbol();
 	const int indent_level = ScannerIndentLevel();
 	const char symbol_mark = symbol_marks[symbol];
-	int is_differed_cut = 0;
+	int is_differed_cut = 0, is_post_block = 0;
 	static struct {
 		struct Segment *segment;
 		struct Attribute *attribute;
@@ -199,9 +199,15 @@ int ReportPlace(void) {
 		sorter.segment->division = SemanticDivision();
 		sorter.is_ignored_code = 1;
 		is_differed_cut = 1;
+		is_post_block = 0;
 		break;
 	case LBRACE:
 		if(indent_level != 1) break;
+		if(is_post_block) {
+			fprintf(stderr, "---CUT classification failed?---\n");
+			is_post_block = 0;
+			sorter.segment = 0;
+		}
 		if(!Semantic(&sorter.segment->code)) return 0;
 		sorter.segment->division = SemanticDivision();
 		if(sorter.segment->division == DIV_FUNCTION)
@@ -210,6 +216,7 @@ int ReportPlace(void) {
 	case RBRACE: /* Functions don't have ';' to end them. */
 		if(indent_level != 0) break;
 		if(sorter.segment->division == DIV_FUNCTION) is_differed_cut = 1;
+		else is_post_block = 1;
 		break;
 	default: break;
 	}

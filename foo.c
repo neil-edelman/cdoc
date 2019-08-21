@@ -21,6 +21,20 @@ typedef A_B_(Foo, Bar) int (*)(int);
 /** Data. */
 static int T_U_V_(Foo, Bar  ,  Baz)(void) = 0;
 
+/** declare x as array 3 of pointer to function returning pointer to array 5 of
+ char */
+char (*(*x[3])())[5];
+
+/** declare foo as pointer to function (void) returning pointer to array 3 of
+ int */
+int (*(*foo)(void ))[3];
+
+
+/** declare x as function (int) returning pointer to function (int) returning
+ pointer to function (pointer to function (int) returning int) returning int */
+int (*(*x(const int a))(int ))(int (*)(int )) {
+}
+
 /****************/
 
 /** Returns eof.
