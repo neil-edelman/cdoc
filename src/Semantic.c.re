@@ -116,9 +116,6 @@ identifier = "x";
 static = "z";
 */
 
-/* X(DIV_PREAMBLE), X(DIV_FUNCTION), X(DIV_TAG), \
-	X(DIV_TYPEDEF), X(DIV_GENERAL_DECLARATION) */
-
 static void parse(void) {
 	const char *const buffer = CharArrayGet(&semantic.buffer);
 	const char *cursor = buffer, *marker = cursor;
@@ -142,17 +139,12 @@ static void parse(void) {
 		semantic.division = DIV_TAG;
 		return;
 	}
-	* { goto exit; }
-*/
-exit:
-	effectively_typedef_fn_ptr(CharArrayGet(&semantic.buffer));
-	printf("fn ptr: <%s>\n", CharArrayGet(&semantic.buffer));
-/*!re2c
-	/* Fixme: this is one of the . . . four? ways to define a function? */
+	// Fixme: this is one of the . . . four? ways to define a function?
 	static? ignore* ((generic | type) ignore*){2,} "(" statement* ")" end {
 		semantic.division = DIV_FUNCTION;
 		return;
 	}
+	// All others are general declaration.
 	* {
 		semantic.division = DIV_GENERAL_DECLARATION;
 		return;
@@ -248,6 +240,8 @@ int Semantic(const struct TokenArray *const code) {
 	/* "Returning an array of this" and "returning this" are isomorphic. */
 	remove_recursive(buffer, '[', ']', '_');
 	printf("Now with the {}[] removed <%s>.\n", buffer);
+	effectively_typedef_fn_ptr(buffer);
+	printf("Now with effective typedef fn ptr: <%s>.\n", buffer);
 	parse();
 	printf("-> It has been determined to be %s.\n",
 		divisions[semantic.division]);
