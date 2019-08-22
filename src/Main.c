@@ -106,8 +106,9 @@
 
  Fixme:
 
- -* Function pointers must be declared as `typedef`.
  -* Old-style function definitions are not supported.
+ -* @depend in functions should automatically be placed in header.
+ -* Warnings about un-documented variables, either like `this` or \@param[this].
 
  @title Main.c
  @author Neil

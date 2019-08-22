@@ -197,7 +197,7 @@ int ReportPlace(void) {
 		if(indent_level != 0) break;
 		if(!Semantic(&sorter.segment->code)) return 0;
 		sorter.segment->division = SemanticDivision();
-		sorter.is_ignored_code = 1;
+		/*sorter.is_ignored_code = 1; <- what?? */
 		is_differed_cut = 1;
 		sorter.is_post_block = 0;
 		break;
@@ -208,8 +208,8 @@ int ReportPlace(void) {
 				"segment; previous segment should have been classified as a "
 				"function?\n", (unsigned long)ScannerLine());
 			sorter.is_post_block = 0;
-			sorter.segment = 0;
 			sorter.is_ignored_code = 1;
+			if(sorter.segment) sorter.segment->division = DIV_FUNCTION;
 			break;
 		}
 		if(!Semantic(&sorter.segment->code)) return 0;

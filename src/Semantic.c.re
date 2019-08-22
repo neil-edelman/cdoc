@@ -2,105 +2,9 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include "../src/Report.h"
 #include "../src/Semantic.h"
-
-/* fixme: range. */
-#define ARRAY_NAME Size
-#define ARRAY_TYPE size_t
-#include "../src/Array.h"
-
-/* Define {CharArray}, a vector of characters -- (again!) */
-#define ARRAY_NAME Char
-#define ARRAY_TYPE char
-#include "../src/Array.h"
-
-static struct {
-	struct CharArray buffer, work;
-	enum Division division;
-	struct SizeArray params;
-} semantic;
-
-/*!re2c
-re2c:yyfill:enable   = 0;
-re2c:define:YYCTYPE  = char;
-re2c:define:YYCURSOR = cursor;
-re2c:define:YYMARKER = marker;
-
-// The entire C language has been reduced to these tokens.
-end = "\x00";
-symbol = "*" | "," | "#" | "x" | "1" | "2" | "3" | "s" | "t" | "z" | "v" | "."
-| "=";
-separator = ";";
-recursion = "{" | "}" | "(" | ")" | "[" | "]";
-ignore = "_";
-statement = symbol | recursion;
-language = statement | separator | ignore;
-
-qualifier = "x" | "*"; // Eg, __Atomic const * & ->.
-part = "x" | "s" | "t" | "z" | "v"; // Part of an identifier.
-struct_union_or_enum = "s";
-// Eg, X_(Array)
-generic = "x"
-| "1(" part ")"
-| "2(" part "," part ")"
-| "3(" part "," part "," part ")";
-// Eg, struct X_(Array)
-type = ignore* struct_union_or_enum? ignore* generic ignore*;
-typedef = "t";
-const = "#" | "x"; // Eg, 42, SEMANTIC_NO.
-identifier = "x";
-static = "z";
-
-postfix = qualifier* type identifier;
-
-fn = static? qualifier*;
-
-*/
-
-/* X(DIV_PREAMBLE), X(DIV_FUNCTION), X(DIV_TAG), \
-	X(DIV_TYPEDEF), X(DIV_GENERAL_DECLARATION) */
-
-static int parse(void) {
-	const char *cursor = CharArrayGet(&semantic.buffer), *marker = cursor;
-
-	semantic.division = DIV_FUNCTION;
-	printf("parse <%s>.\n", cursor);
-
-easy:
-	/*!re2c
-	// "typedef anything" is considered a typedef.
-	typedef ignore* (statement ignore*)* end {
-		semantic.division = DIV_TYPEDEF;
-		return 1;
-	}
-	// "something tag [id]" is a tag.
-	language* struct_union_or_enum ignore* generic? ignore* end {
-		semantic.division = DIV_TAG;
-		return 1;
-	}
-	* { printf("* rule '%c'.\n", yych); goto easy; }
-	end { printf("end.\n"); return 0; }
-	fn { printf("fn.\n"); }
-	*/
-
-	return 1;
-}
-
-/** From `buffer` it removes all between `left` and `right` and replaces the
- characters with underscore. */
-static void remove_recursive(char *const buffer,
-	const char left, const char right, const char output) {
-	char *b;
-	int level;
-	assert(buffer && left && right && output);
-	for(level = 0, b = buffer; *b != '\0'; b++) {
-		if(*b == left)  level++;
-		if(!level) continue;
-		if(*b == right) level--;
-		*b = output;
-	}
-}
 
 /** `right` is in the string `buffer`. Has assumed <fn:remove_recursive> has
  been called to eliminate `[]`. Very ad-hoc.
@@ -110,9 +14,7 @@ static char *type_from_right(char *const buffer, char *const right) {
 	char *left = 0, *ch = right;
 	assert(buffer && right);
 	if(right < buffer) return 0;
-	printf("type_from_right: <%.*s>\n", (int)(right - buffer + 1), buffer);
 	do {
-		printf("ch %c\n", *ch);
 		if(*ch == ')') { /* Generic? Lookbehind. */
 			do { ch--; if(ch <= buffer || *ch == ')') break; }
 				while(*ch != '(');
@@ -125,14 +27,10 @@ static char *type_from_right(char *const buffer, char *const right) {
 		if(!strchr("sx*_", *ch)) break;
 		is_type = 1;
 	} while(left = ch, --ch >= buffer);
-	if(is_type) printf("Yes, it looks like a type <%.*s>.\n",
-		(int)(right - left + 1), left);
 	return is_type ? left : 0;
 }
 
-/* Eg, x(*(*x(xxx))(x))(x(*)(x)) -> ___(*x(xxx))(x)__________
- -> _____x(xxx)______________
- Make sure to <fn:check_symbols> before using; it assumes parentheses are
+/* Make sure to <fn:check_symbols> before using; it assumes parentheses are
  well-formed and <fn:remove_recursive> has been called to eliminate `[]`. */
 static void effectively_typedef_fn_ptr(char *const buffer) {
 	char *middle, *prefix, *suffix, *operator, *ret_type;
@@ -166,6 +64,114 @@ static void effectively_typedef_fn_ptr(char *const buffer) {
 		printf("now:     <%.*s> <%.*s>.\n",
 			(int)(prefix - ret_type), ret_type,
 			(int)(suffix - prefix + 1), prefix);
+	}
+}
+
+/* fixme: range? */
+#define ARRAY_NAME Size
+#define ARRAY_TYPE size_t
+#include "../src/Array.h"
+
+/* Define {CharArray}, a vector of characters -- (again!) */
+#define ARRAY_NAME Char
+#define ARRAY_TYPE char
+#include "../src/Array.h"
+
+static struct {
+	struct CharArray buffer, work;
+	enum Division division;
+	struct SizeArray params;
+} semantic;
+
+/*!re2c
+re2c:yyfill:enable   = 0;
+re2c:define:YYCTYPE  = char;
+re2c:define:YYCURSOR = cursor;
+re2c:define:YYMARKER = marker;
+
+// The entire C language has been reduced to these tokens.
+end = "\x00";
+symbol = "*" | "," | "#" | "x" | "1" | "2" | "3" | "s" | "t" | "z" | "v" | "."
+| "=";
+separator = ";";
+recursion = "{" | "}" | "(" | ")" | "[" | "]";
+ignore = "_";
+statement = symbol | recursion | ignore;
+language = statement | separator;
+
+qualifier = "x" | "*"; // Eg, __Atomic const * & ->.
+part = "x" | "s" | "t" | "z" | "v"; // Part of an identifier.
+struct_union_or_enum = "s";
+void = "v";
+// Eg, X_(Array)
+generic = "x"
+| "1(" part ")"
+| "2(" part "," part ")"
+| "3(" part "," part "," part ")";
+// Eg, struct X_(Array)
+type = (struct_union_or_enum? ignore* generic) | void;
+typedef = "t";
+const = "#" | "x"; // Eg, 42, SEMANTIC_NO.
+identifier = "x";
+static = "z";
+*/
+
+/* X(DIV_PREAMBLE), X(DIV_FUNCTION), X(DIV_TAG), \
+	X(DIV_TYPEDEF), X(DIV_GENERAL_DECLARATION) */
+
+static void parse(void) {
+	const char *const buffer = CharArrayGet(&semantic.buffer);
+	const char *cursor = buffer, *marker = cursor;
+
+	assert(buffer);
+	printf("parse <%s>.\n", cursor);
+
+/*!re2c
+	// If there is no code, put it in the header.
+	end {
+		semantic.division = DIV_PREAMBLE;
+		return;
+	}
+	// "typedef anything" is considered a typedef.
+	typedef ignore* (statement ignore*)+ end {
+		semantic.division = DIV_TYPEDEF;
+		return;
+	}
+	// "something tag [id]" is a tag.
+	statement* struct_union_or_enum ignore* generic? ignore* end {
+		semantic.division = DIV_TAG;
+		return;
+	}
+	* { goto exit; }
+*/
+exit:
+	effectively_typedef_fn_ptr(CharArrayGet(&semantic.buffer));
+	printf("fn ptr: <%s>\n", CharArrayGet(&semantic.buffer));
+/*!re2c
+	/* Fixme: this is one of the . . . four? ways to define a function? */
+	static? (identifier|ignore)* type ignore* generic ignore* "(" statement* ")" end {
+		semantic.division = DIV_FUNCTION;
+		return;
+	}
+	* {
+		semantic.division = DIV_GENERAL_DECLARATION;
+		return;
+	}
+*/
+}
+
+/** From `buffer` it removes all between `left` and `right` and replaces the
+ characters with underscore. */
+static void remove_recursive(char *const buffer,
+	const char left, const char right, const char output) {
+	char *b;
+	int level;
+	assert(buffer && left && right && output);
+	for(level = 0, b = buffer; *b != '\0'; b++) {
+		if(*b == left)  level++;
+		if(!level) continue;
+		if(*b == right) level--;
+		*b = output;
 	}
 }
 
@@ -241,11 +247,10 @@ int Semantic(const struct TokenArray *const code) {
 	remove_recursive(buffer, '{', '}', '_');
 	/* "Returning an array of this" and "returning this" are isomorphic. */
 	remove_recursive(buffer, '[', ']', '_');
-	printf("-> Now <%s>\n", buffer);
-	/* Typedef all function pointers. */
-	effectively_typedef_fn_ptr(buffer);
-	printf("-> Now <%s>\n", buffer);
+	printf("Now with the {}[] removed <%s>.\n", buffer);
 	parse();
+	printf("-> It has been determined to be %s.\n",
+		divisions[semantic.division]);
 	return 1;
 }
 
