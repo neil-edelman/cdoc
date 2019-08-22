@@ -264,13 +264,12 @@ int ReportPlace(void) {
 			return 0;
 		assert(!sorter.is_attribute_header);
 		break;
-	default:
-		if(sorter.is_ignored_code) goto differed;
+	default: /* Code. */
+		if(sorter.is_ignored_code) {
+			printf("Report::place: ignored.\n"); break; }
 		if(!new_token(&sorter.segment->code, symbol)) return 0;
 		break;
 	}
-
-differed:
 	/* End the segment? */
 	if(is_differed_cut) printf("----Differered CUT----\n"), sorter.segment = 0;
 	return 1;

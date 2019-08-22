@@ -12,13 +12,13 @@ Paragraph @ @a \,~~
  @depend C89
  lala	lala? <http://foo.com/> */
 
-/** Data. */
+/** Decl. */
 static struct T_(Array) (*const a)(int, int a, int (*a)(const int a));
 
 /** Typedef. */
-typedef A_B_(Foo, Bar) int (*)(int);
+typedef A_B_(Foo, Bar) int (*Typedef)(int);
 
-/** Data. */
+/** Decl. */
 static int T_U_V_(Foo, Bar  ,  Baz)(void) = 0;
 
 /** declare x as array 3 of pointer to function returning pointer to array 5 of
@@ -30,8 +30,9 @@ char (*(*x[3])())[5];
 int (*(*foo)(void ))[3];
 
 
-/** declare x as function (int) returning pointer to function (int) returning
- pointer to function (pointer to function (int) returning int) returning int */
+/** Function declare x as function (int) returning pointer to function (int)
+ returning pointer to function (pointer to function (int) returning int)
+ returning int */
 int (*(*x(const int a))(int ))(int (*)(int )) {
 }
 

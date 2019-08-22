@@ -67,10 +67,10 @@ static int parse(void) {
 	semantic.division = DIV_FUNCTION;
 	printf("parse <%s>.\n", cursor);
 
-start:
+easy:
 	/*!re2c
 	// "typedef anything" is considered a typedef.
-	typedef ignore* statement+ ignore* end {
+	typedef ignore* (statement ignore*)* end {
 		semantic.division = DIV_TYPEDEF;
 		return 1;
 	}
@@ -79,10 +79,11 @@ start:
 		semantic.division = DIV_TAG;
 		return 1;
 	}
-	* { printf("* rule '%c'.\n", yych); goto start; }
+	* { printf("* rule '%c'.\n", yych); goto easy; }
 	end { printf("end.\n"); return 0; }
 	fn { printf("fn.\n"); }
 	*/
+
 	return 1;
 }
 
@@ -105,32 +106,27 @@ static void remove_recursive(char *const buffer,
  been called to eliminate `[]`. Very ad-hoc.
  @return What looks like a type starting at the right. */
 static char *type_from_right(char *const buffer, char *const right) {
-	int is_type = 0, is_expecting_generic = 0, is_parentheses = 0;
+	int is_type = 0;
 	char *left = 0, *ch = right;
 	assert(buffer && right);
 	if(right < buffer) return 0;
+	printf("type_from_right: <%.*s>\n", (int)(right - buffer + 1), buffer);
 	do {
-		if(is_expecting_generic) {
-			is_expecting_generic = 0;
-			if(!strchr("123", *ch)) return 0;
+		printf("ch %c\n", *ch);
+		if(*ch == ')') { /* Generic? Lookbehind. */
+			do { ch--; if(ch <= buffer || *ch == ')') break; }
+				while(*ch != '(');
+			ch--;
+			if(!strchr("123", *ch)) break;
 			is_type = 1;
 			continue;
 		}
-		if(*ch == ')') { /* Generic. */
-			if(is_parentheses) return 0;
-			is_parentheses = 1;
-			continue;
-		}
-		if(*ch == '(') {
-			if(!is_parentheses) break;
-			is_expecting_generic = 1;
-			continue;
-		}
-		if(is_parentheses) { continue; }
 		/* Very lazy; if the thing doesn't look like a tag, id, or operator. */
-		if(!strchr("sx*_", *ch)) { break; }
+		if(!strchr("sx*_", *ch)) break;
 		is_type = 1;
 	} while(left = ch, --ch >= buffer);
+	if(is_type) printf("Yes, it looks like a type <%.*s>.\n",
+		(int)(right - left + 1), left);
 	return is_type ? left : 0;
 }
 
@@ -162,24 +158,15 @@ static void effectively_typedef_fn_ptr(char *const buffer) {
 			operator < middle && *operator != '*' && strchr("x_", *operator);
 			operator++);
 		if(*operator != '*') continue;
-		printf("typedef?: <%.*s> <%.*s>.\n",
+		printf("typedef: <%.*s> <%.*s>.\n",
 			(int)(prefix - ret_type), ret_type,
 			(int)(suffix - prefix + 1), prefix);
-		
+		memset(ret_type, '_', prefix - ret_type + 1);
+		memset(middle, '_', suffix - middle + 1);
+		printf("now:     <%.*s> <%.*s>.\n",
+			(int)(prefix - ret_type), ret_type,
+			(int)(suffix - prefix + 1), prefix);
 	}
-}
-
-/** It is the same class of declaration, just the able to be parsed by regular
- expression. */
-static void make_regex_compatible(void) {
-	char *const buffer = CharArrayGet(&semantic.buffer);
-	assert(buffer);
-	/* Git rid of code. */
-	remove_recursive(buffer, '{', '}', '_');
-	/* "Returning an array of this" and "returning this" are isomorphic. */
-	remove_recursive(buffer, '[', ']', '_');
-	/* Typedef all function pointers. */
-	effectively_typedef_fn_ptr(buffer);
 }
 
 static int check_symbols(int *const checks) {
@@ -216,6 +203,7 @@ check:
  @return Success, otherwise `errno` may (POSIX will) be set. */
 int Semantic(const struct TokenArray *const code) {
 	size_t buffer_size;
+	char *buffer;
 
 	/* `Semantic(0)` should clear out memory and reset. */
 	if(!code) {
@@ -235,10 +223,11 @@ int Semantic(const struct TokenArray *const code) {
 	buffer_size = TokensMarkSize(code);
 	assert(buffer_size);
 	if(!CharArrayBuffer(&semantic.buffer, buffer_size)) return 0;
-	TokensMark(code, CharArrayGet(&semantic.buffer));
+	buffer = CharArrayGet(&semantic.buffer);
+	TokensMark(code, buffer);
 	CharArrayExpand(&semantic.buffer, buffer_size);
-	assert(CharArrayGet(&semantic.buffer)[buffer_size - 1] == '\0');
-	printf("Semantic: %s\n", CharArrayGet(&semantic.buffer));
+	assert(buffer[buffer_size - 1] == '\0');
+	printf("Semantic: %s\n", buffer);
 
 	{ /* Checks whether this makes sense. */
 		int checks = 0;
@@ -248,8 +237,14 @@ int Semantic(const struct TokenArray *const code) {
 			return 1; }
 	}
 
-	make_regex_compatible();
-	printf("-> Now <%s>\n", CharArrayGet(&semantic.buffer));
+	/* Git rid of code. */
+	remove_recursive(buffer, '{', '}', '_');
+	/* "Returning an array of this" and "returning this" are isomorphic. */
+	remove_recursive(buffer, '[', ']', '_');
+	printf("-> Now <%s>\n", buffer);
+	/* Typedef all function pointers. */
+	effectively_typedef_fn_ptr(buffer);
+	printf("-> Now <%s>\n", buffer);
 	parse();
 	return 1;
 }

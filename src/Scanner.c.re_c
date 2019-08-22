@@ -323,8 +323,8 @@ int Scanner(void) {
 	}
 	/* Scans all. */
 	errno = 0;
-	while((scanner.symbol = scan()))
-		ReportPlace(), printf("Scanner: %s.\n", pos());
+	while((scanner.symbol = scan()) && ReportPlace())
+		printf("Scanner: %s.\n", pos());
 	if(errno) goto catch;
 	return 1;
 catch:
