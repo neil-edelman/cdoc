@@ -149,7 +149,7 @@ exit:
 	printf("fn ptr: <%s>\n", CharArrayGet(&semantic.buffer));
 /*!re2c
 	/* Fixme: this is one of the . . . four? ways to define a function? */
-	static? (identifier|ignore)* type ignore* generic ignore* "(" statement* ")" end {
+	static? ignore* ((generic | type) ignore*){2,} "(" statement* ")" end {
 		semantic.division = DIV_FUNCTION;
 		return;
 	}
