@@ -44,8 +44,8 @@ Paragraph @ @a \,~~
 #define A_B_(a, b) CAT(CAT(array, a), b)
 #define A_B_C_(a, b, c) CAT(CAT(CAT(array, a), b), c)
 
-/** Troubles with this line? check to ensure that {ARRAY_TYPE} is a valid type,
- whose definition is placed above {#include "Array.h"}. */
+/** Troubles with this line? check to ensure that `ARRAY_TYPE` is a valid type,
+ whose definition is placed above `#include "Array.h"`. */
 typedef int PT_(Type);
 #define T PT_(Type)
 

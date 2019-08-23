@@ -87,7 +87,7 @@ comment_break = "/" "*"+ "*" "/";
 begin_comment = "/""*";
 end_comment = "*""/";
 cxx_comment = "//" [^\n\x00]*;
-macro = ("#" | "%:");
+macro_start = "#" | "%:";
 // fixme: No trigraph support.
 // char_type = "u8"|"u"|"U"|"L"; <- These get caught in id; don't care.
 oct = "0" [0-7]*;
@@ -180,10 +180,13 @@ scan:
 	// the effort; honestly, it's not going to matter.
 	<macro> begin_doc / [^/] { return fprintf(stderr,
 		"Documentation inside macro;\n%s.\n", pos()), errno = EILSEQ, END; }
+	// Everything is ignored except comments.
+	<macro> (. \ [/])*  { goto scan; }
+	<macro> [/] / [^*]  { goto scan; }
+	<macro> begin_comment :=> macro_comment
 	<code> comment_break { goto reset; } // Like this: /*****/.
 	<code> begin_comment :=> comment
-	<macro> begin_comment :=> macro_comment
-	<code> macro :=> macro
+	<code> macro_start :=> macro
 	<code> "L"? "\"" :=> string
 	<code> "'" :=> character
 	<code> number       { return CONSTANT; }
@@ -232,8 +235,10 @@ scan:
 		"Escape past EOF;\n%s.\n", pos()), errno = EILSEQ, END; }
 	<doc> "_" { return scanner.state = yycem, EM_BEGIN; }
 	<em> "_" { return scanner.state = yycdoc, EM_END; }
+	<em> "`" { goto scan; }
 	<doc> "`" { return scanner.state = yycmath, MATH_BEGIN; }
 	<math> "`" { return scanner.state = yycdoc, MATH_END; }
+	<math> "_" { goto scan; }
 
 	// These are recognised in the documentation as stuff. fixme: s-tags.
 	<doc> "<" absolute_uri ">" { return URL; }

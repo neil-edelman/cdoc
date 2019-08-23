@@ -145,8 +145,9 @@ static int parse(void) {
 		semantic.division = DIV_TAG;
 		return 1;
 	}
+	// int (*c) is detected as fn?
 	// Fixme: this is one of the . . . four? ways to define a function?
-	static? redact* (@name (generic | type_or_void | qualifier) redact*)+
+	static? redact* (@name (generic | type_or_void | qualifier) redact*){2,}
 		"(" @args skip_simple* ")" redact* end {
 		semantic.division = DIV_FUNCTION;
 		printf("parse: <%s> name: <%s> args: <%s>\n", buffer, name, args);
