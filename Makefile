@@ -27,21 +27,23 @@ extra := $(project).xcodeproj
 rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) \
 $(filter $(subst *,%,$2),$d))
 
-java_srcs  := $(call rwildcard, $(src), *.java)
-c_srcs     := $(call rwildcard, $(src), *.c)
-h_srcs     := $(call rwildcard, $(src), *.h)
-c_re_srcs  := $(call rwildcard, $(src), *.c.re)
-c_rec_srcs := $(call rwildcard, $(src), *.c.re_c)
-h_re_srcs  := $(call rwildcard, $(src), *.h.re)
-h_rec_srcs := $(call rwildcard, $(src), *.h.re_c)
-y_srcs     := $(call rwildcard, $(src), *.y)
-c_tests    := $(call rwildcard, $(test), *.c)
-h_tests    := $(call rwildcard, $(test), *.h)
-icons      := $(call rwildcard, $(media), *.ico)
+java_srcs   := $(call rwildcard, $(src), *.java)
+c_srcs      := $(call rwildcard, $(src), *.c)
+h_srcs      := $(call rwildcard, $(src), *.h)
+c_re_srcs   := $(call rwildcard, $(src), *.c.re)
+c_rec_srcs  := $(call rwildcard, $(src), *.c.re_c)
+c_retag_srcs:= $(call rwildcard, $(src), *.c.re_tag)
+h_re_srcs   := $(call rwildcard, $(src), *.h.re)
+h_rec_srcs  := $(call rwildcard, $(src), *.h.re_c)
+y_srcs      := $(call rwildcard, $(src), *.y)
+c_tests     := $(call rwildcard, $(test), *.c)
+h_tests     := $(call rwildcard, $(test), *.h)
+icons       := $(call rwildcard, $(media), *.ico)
 
 # combinations
 all_h      := $(h_srcs) $(h_tests) $(h_re_builds) $(h_rec_builds)
-all_srcs   := $(java_srcs) $(c_srcs) $(c_re_srcs) $(c_rec_srcs) $(y_srcs)
+all_srcs   := $(java_srcs) $(c_srcs) $(c_re_srcs) $(c_rec_srcs) \
+$(c_retag_srcs) $(y_srcs)
 all_tests  := $(c_tests)
 all_icons  := $(icons)
 
@@ -50,12 +52,13 @@ c_objs     := $(patsubst $(src)/%.c, $(build)/%.o, $(c_srcs))
 # must not conflict, eg, foo.c.re and foo.c would go to the same thing
 c_re_builds := $(patsubst $(src)/%.c.re, $(build)/%.c, $(c_re_srcs))
 c_rec_builds := $(patsubst $(src)/%.c.re_c, $(build)/%.c, $(c_rec_srcs))
+c_retag_builds := $(patsubst $(src)/%.c.re_tag, $(build)/%.c, $(c_retag_srcs))
 h_re_builds := $(patsubst $(src)/%.h.re, $(build)/%.h, $(h_re_srcs))
 h_rec_builds := $(patsubst $(src)/%.h.re_c, $(build)/%.h, $(h_rec_srcs))
 c_y_builds := $(patsubst $(src)/%.y, $(build)/%.c, $(y_srcs))
 # together .re/.re_c/.y
 c_other_objs := $(patsubst $(build)/%.c, $(build)/%.o, \
-$(c_re_builds) $(c_rec_builds) $(c_y_builds))
+$(c_re_builds) $(c_rec_builds) $(c_retag_builds) $(c_y_builds))
 test_c_objs := $(patsubst $(test)/%.c, $(build)/$(test)/%.o, $(c_tests))
 html_docs  := $(patsubst $(src)/%.c, $(doc)/%.html, $(c_srcs))
 
@@ -135,6 +138,11 @@ $(c_rec_builds) $(h_rec_builds): $(build)/%: $(src)/%.re_c
 	@$(mkdir) $(build)
 	$(re2c) -c -o $@ $<
 
+$(c_retag_builds): $(build)/%: $(src)/%.re_tag
+	# *.re_tag (tags) build rule
+	@$(mkdir) $(build)
+	$(re2c) -T -o $@ $<
+
 $(c_y_builds): $(build)/%.c: $(src)/%.y # $(lemon)/$(bin)/$(lem)
 	# .y rule
 	@$(mkdir) $(build)
@@ -152,7 +160,7 @@ $(html_docs): $(doc)/%.html: $(src)/%.c $(src)/%.h
 
 clean:
 	-rm -f $(c_objs) $(test_c_objs) $(c_other_objs) $(c_re_builds) \
-$(c_rec_builds) $(h_re_builds) $(h_rec_builds) $(html_docs)
+$(c_rec_builds) $(c_retag_builds) $(h_re_builds) $(h_rec_builds) $(html_docs)
 	-rm -rf $(bin)/$(test)
 
 backup:

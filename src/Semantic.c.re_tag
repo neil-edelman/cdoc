@@ -83,11 +83,14 @@ static struct {
 	struct SizeArray params;
 } semantic;
 
+/*!stags:re2c format = 'const char *@@;'; */
+
 /*!re2c
 re2c:yyfill:enable   = 0;
 re2c:define:YYCTYPE  = char;
 re2c:define:YYCURSOR = cursor;
 re2c:define:YYMARKER = marker;
+re2c:flags:tags      = 1;
 
 // The entire C language has been reduced to these tokens.
 end = "\x00";
@@ -95,30 +98,33 @@ symbol = "*" | "," | "#" | "x" | "1" | "2" | "3" | "s" | "t" | "z" | "v" | "."
 | "=";
 separator = ";";
 recursion = "{" | "}" | "(" | ")" | "[" | "]";
-ignore = "_";
-statement = symbol | recursion | ignore;
-language = statement | separator;
+redact = "_";
 
+skip_simple = symbol | redact;
+skip_complex = skip_simple | recursion;
+skip_multi = skip_complex | separator;
+
+typedef = "t";
+void = "v";
+tag = "s";
+identifier = "x";
+static = "z";
+const = "#" | "x"; // Eg, 42, SEMANTIC_NO.
 qualifier = "x" | "*"; // Eg, __Atomic const * & ->.
 part = "x" | "s" | "t" | "z" | "v"; // Part of an identifier.
-struct_union_or_enum = "s";
-void = "v";
-// Eg, X_(Array)
 generic = "x"
 | "1(" part ")"
 | "2(" part "," part ")"
-| "3(" part "," part "," part ")";
-// Eg, struct X_(Array)
-type = (struct_union_or_enum? ignore* generic) | void;
-typedef = "t";
-const = "#" | "x"; // Eg, 42, SEMANTIC_NO.
-identifier = "x";
-static = "z";
+| "3(" part "," part "," part ")"; // Eg, X_(Array)
+type = tag? redact* generic; // Eg, struct X_(Array)
+type_or_void = type | void;
 */
 
-static void parse(void) {
+static int parse(void) {
 	const char *const buffer = CharArrayGet(&semantic.buffer);
 	const char *cursor = buffer, *marker = cursor;
+	const char *args = 0, *name = 0;
+	size_t *param;
 
 	assert(buffer);
 	printf("parse <%s>.\n", cursor);
@@ -127,27 +133,31 @@ static void parse(void) {
 	// If there is no code, put it in the header.
 	end {
 		semantic.division = DIV_PREAMBLE;
-		return;
+		return 1;
 	}
 	// "typedef anything" is considered a typedef.
-	typedef ignore* (statement ignore*)+ end {
+	typedef redact* skip_complex+ end {
 		semantic.division = DIV_TYPEDEF;
-		return;
+		return 1;
 	}
 	// "something tag [id]" is a tag.
-	statement* struct_union_or_enum ignore* generic? ignore* end {
+	skip_simple* tag generic? redact* end {
 		semantic.division = DIV_TAG;
-		return;
+		return 1;
 	}
 	// Fixme: this is one of the . . . four? ways to define a function?
-	static? ignore* ((generic | type) ignore*){2,} "(" statement* ")" end {
+	static? redact* (@name (generic | type_or_void | qualifier) redact*)+
+		"(" @args skip_simple* ")" redact* end {
 		semantic.division = DIV_FUNCTION;
-		return;
+		printf("parse: <%s> name: <%s> args: <%s>\n", buffer, name, args);
+		if(!(param = SizeArrayNew(&semantic.params))) return 0;
+		*param = (size_t)(name - buffer);
+		return 1;
 	}
 	// All others are general declaration.
 	* {
 		semantic.division = DIV_GENERAL_DECLARATION;
-		return;
+		return 1;
 	}
 */
 }
@@ -235,14 +245,14 @@ int Semantic(const struct TokenArray *const code) {
 			return 1; }
 	}
 
-	/* Git rid of code. */
+	/* Git rid of code. (Shouldn't happen!) */
 	remove_recursive(buffer, '{', '}', '_');
 	/* "Returning an array of this" and "returning this" are isomorphic. */
 	remove_recursive(buffer, '[', ']', '_');
 	printf("Now with the {}[] removed <%s>.\n", buffer);
 	effectively_typedef_fn_ptr(buffer);
 	printf("Now with effective typedef fn ptr: <%s>.\n", buffer);
-	parse();
+	if(!parse()) return 0;
 	printf("-> It has been determined to be %s.\n",
 		divisions[semantic.division]);
 	return 1;
@@ -250,4 +260,11 @@ int Semantic(const struct TokenArray *const code) {
 
 enum Division SemanticDivision(void) {
 	return semantic.division;
+}
+
+void SemanticParams(size_t *const no, const size_t **const array) {
+	if(!no) { if(array) *array = 0; return; }
+	*no = SizeArraySize(&semantic.params);
+	if(!array) return;
+	*array = SizeArrayGet(&semantic.params);
 }

@@ -153,6 +153,29 @@ static int new_token(struct TokenArray *const tokens, const enum Symbol symbol)
 	return 1;
 }
 
+static int semantic(struct Segment *const segment) {
+	size_t no, i, entry;
+	const size_t *array;
+	struct Token *code;
+	if(!segment) return 0;
+	if(!Semantic(&segment->code)) return 0;
+	segment->division = SemanticDivision();
+	printf("semantic: division %s.\n", divisions[segment->division]);
+	SemanticParams(&no, &array);
+	code = TokenArrayGet(&segment->code);
+	for(i = 0; i < no; i++) {
+		entry = array[i];
+		if(entry >= TokenArraySize(&segment->code)) {
+			printf("Segment array index is out-of-range: %lu.\n",
+				(unsigned long)i);
+			continue;
+		};
+		printf("semantic: (%ld) \"%.*s\"\n", (unsigned long)entry,
+			code[entry].length, code[entry].from);
+	}
+	return 1;
+}
+
 
 
 /** This appends the current token based on the state it was last in.
@@ -166,7 +189,7 @@ int ReportPlace(void) {
 		struct Segment *segment;
 		struct Attribute *attribute;
 		unsigned space, newline;
-		int is_attribute_header, is_ignored_code, is_post_block;
+		int is_attribute_header, is_ignored_code, is_semantic;
 	} sorter = { 0, 0, 0, 0, 0, 0, 0 }; /* This holds the sorting state. */
 	/* These symbols require special consideration. */
 	switch(symbol) {
@@ -195,32 +218,28 @@ int ReportPlace(void) {
 	case NEWLINE: sorter.newline++; return 1;
 	case SEMI:
 		if(indent_level != 0) break;
-		if(!Semantic(&sorter.segment->code)) return 0;
-		sorter.segment->division = SemanticDivision();
-		/*sorter.is_ignored_code = 1; <- what?? */
+		if(!sorter.is_semantic && !semantic(sorter.segment)) return 0;
+		sorter.is_semantic = 1;
 		is_differed_cut = 1;
-		sorter.is_post_block = 0;
 		break;
 	case LBRACE:
 		if(indent_level != 1) break;
-		if(sorter.is_post_block) {
+		if(sorter.is_semantic) {
 			fprintf(stderr, "Line %lu: More then one top-level block in this "
 				"segment; previous segment should have been classified as a "
 				"function?\n", (unsigned long)ScannerLine());
-			sorter.is_post_block = 0;
 			sorter.is_ignored_code = 1;
 			if(sorter.segment) sorter.segment->division = DIV_FUNCTION;
 			break;
 		}
-		if(!Semantic(&sorter.segment->code)) return 0;
-		sorter.segment->division = SemanticDivision();
+		if(!semantic(sorter.segment)) return 0;
+		sorter.is_semantic = 1;
 		if(sorter.segment->division == DIV_FUNCTION)
 			sorter.is_ignored_code = 1;
 		break;
 	case RBRACE: /* Functions don't have ';' to end them. */
 		if(indent_level != 0) break;
 		if(sorter.segment->division == DIV_FUNCTION) is_differed_cut = 1;
-		else sorter.is_post_block = 1;
 		break;
 	default: break;
 	}
@@ -232,6 +251,7 @@ int ReportPlace(void) {
 		sorter.space = sorter.newline = 0;
 		sorter.is_ignored_code = 0;
 		assert(!sorter.is_attribute_header);
+		sorter.is_semantic = 0;
 	}
 
 	/* Make a `token` where the context places us. */

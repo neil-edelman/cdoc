@@ -12,31 +12,95 @@ Paragraph @ @a \,~~
  @depend C89
  lala	lala? <http://foo.com/> */
 
+#include <assert.h>
+
+#ifdef CAT
+#undef CAT
+#endif
+#ifdef CAT_
+#undef CAT_
+#endif
+#ifdef PCAT
+#undef PCAT
+#endif
+#ifdef PCAT_
+#undef PCAT_
+#endif
+#ifdef T
+#undef T
+#endif
+#ifdef T_
+#undef T_
+#endif
+#ifdef PT_
+#undef PT_
+#endif
+#define CAT_(x, y) x ## y
+#define CAT(x, y) CAT_(x, y)
+#define PCAT_(x, y) x ## _ ## y
+#define PCAT(x, y) PCAT_(x, y)
+#define T_(thing) CAT(array, thing)
+#define PT_(thing) PCAT(array, PCAT(int, thing))
+#define A_B_(a, b) CAT(CAT(array, a), b)
+#define A_B_C_(a, b, c) CAT(CAT(CAT(array, a), b), c)
+
+/** Troubles with this line? check to ensure that {ARRAY_TYPE} is a valid type,
+ whose definition is placed above {#include "Array.h"}. */
+typedef int PT_(Type);
+#define T PT_(Type)
+
+/* Decl. */
+struct T_(Array) {
+	int i;
+} t, x;
+
 /** Decl. */
-static struct T_(Array) (*const a)(int, int a, int (*a)(const int a));
+static struct T_(Array) (*const a)(int, int a, int (*b)(const int a));
 
 /** Typedef. */
-typedef A_B_(Foo, Bar) int (*Typedef)(int);
+typedef int (*A_B_(Foo, Bar))(int);
 
 /** Decl. */
-static int T_U_V_(Foo, Bar  ,  Baz)(void) = 0;
+static int (*A_B_C_(Foo, Bar  ,  Baz))(void) = 0;
 
 /** declare x as array 3 of pointer to function returning pointer to array 5 of
  char */
-char (*(*x[3])())[5];
+char (*(*y[3])())[5];
 
 /** declare foo as pointer to function (void) returning pointer to array 3 of
  int */
 int (*(*foo)(void ))[3];
 
+/** ? */
+int (*c);
 
 /** Function declare x as function (int) returning pointer to function (int)
  returning pointer to function (pointer to function (int) returning int)
  returning int */
-int (*(*x(const int a))(int ))(int (*)(int )) {
+int (*(*h(const int a))(int ))(int (*)(int )) {
+	(void)a;
+	return 0;
 }
 
+/** Typedef. */
+typedef void (*PT_(ToString))(const T *, char (*const)[12]);
+
+/** Decl. */
+static const PT_(ToString) PT_(to_string) = 0;
+
+/** Typedef. Operates by side-effects on {data} only. */
+typedef void (*PT_(Action))(T *const data);
+
+/** Typedef. Given constant {data}, returns a boolean. */
+typedef int (*PT_(Predicate))(const T *const data);
+
 /****************/
+
+/** Tag */
+struct Scanner;
+
+/** Tag */
+enum Token { END };
 
 /** Returns eof.
  @implements ScannerFn
@@ -66,15 +130,21 @@ static enum Token scan_eof(struct Scanner *const s) { (void)s; return END; }
  @implements ScannerFn
  @allow */
 static enum Token scan_comment(struct Scanner *const s) {
-	assert(s && state_look(s) == COMMENT);
+	goto comment;
 comment:
+	(void)s;
+	return END;
 }
 
 /** Function. */
-T a(int (*ptr)(int a, int (*fn)(void))) /** yo */ {
+T g(int (*ptr)(int a, int (*fn)(void))) /** yo */ {
 	/** @param[a, fn] [] Doesn't do anything. */
-	a = a;
+	return ptr(42, 0);
 }
 
-/** Foo. */
-(foo)];
+int main(void) {
+	arrayFooBarBaz = 0;
+	scan_comment(0);
+	scan_eof(0);
+	return 0;
+}
