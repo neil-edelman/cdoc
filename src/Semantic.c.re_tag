@@ -109,6 +109,7 @@ void = "v";
 tag = "s";
 identifier = "x";
 static = "z";
+ellipses = ".";
 const = "#" | "x"; // Eg, 42, SEMANTIC_NO.
 qualifier = "x" | "*"; // Eg, __Atomic const * & ->.
 part = "x" | "s" | "t" | "z" | "v"; // Part of an identifier.
@@ -148,11 +149,13 @@ static int parse(void) {
 	// int (*c) is detected as fn?
 	// Fixme: this is one of the . . . four? ways to define a function?
 	static? redact* (@name (generic | type_or_void | qualifier) redact*){2,}
-		"(" @args skip_simple* ")" redact* end {
+		"(" redact* @args (( [_*sx]* ("," [_*sx]*)* ",."? ) | void) redact* ")"
+		redact* end {
 		semantic.division = DIV_FUNCTION;
 		printf("parse: <%s> name: <%s> args: <%s>\n", buffer, name, args);
 		if(!(param = SizeArrayNew(&semantic.params))) return 0;
 		*param = (size_t)(name - buffer);
+		cursor = marker = args;
 		return 1;
 	}
 	// All others are general declaration.
