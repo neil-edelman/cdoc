@@ -49,7 +49,7 @@ Paragraph @ @a \,~~
 typedef int PT_(Type);
 #define T PT_(Type)
 
-/* Decl. */
+/* Tag. */
 struct T_(Array) {
 	int i;
 } t, x;

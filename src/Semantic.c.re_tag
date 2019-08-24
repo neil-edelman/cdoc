@@ -9,25 +9,30 @@
 /** `right` is in the string `buffer`. Has assumed <fn:remove_recursive> has
  been called to eliminate `[]`. Very ad-hoc.
  @return What looks like a type starting at the right. */
-static char *type_from_right(char *const buffer, char *const right) {
+static char *type_from_right(const char *const buffer, const char *const right,
+	const int is_eager) {
 	int is_type = 0;
-	char *left = 0, *ch = right;
+	const char *left = 0, *ch = right;
 	assert(buffer && right);
 	if(right < buffer) return 0;
-	do {
+	if(*ch == 'v') is_type = 1, left = ch; /* `void` sans-qualifier. */
+	else do {
+		if(*ch == '_') continue; /* Redacted. */
 		if(*ch == ')') { /* Generic? Lookbehind. */
 			do { ch--; if(ch <= buffer || *ch == ')') break; }
 				while(*ch != '(');
 			ch--;
 			if(!strchr("123", *ch)) break;
 			is_type = 1;
+			if(is_eager) { left = ch; break; }
 			continue;
 		}
 		/* Very lazy; if the thing doesn't look like a tag, id, or operator. */
-		if(!strchr("sxv*_", *ch)) break;
+		if(!strchr("sx*", *ch)) break;
 		is_type = 1;
+		if(is_eager && *ch == 'x') { left = ch; break;}
 	} while(left = ch, --ch >= buffer);
-	return is_type ? left : 0;
+	return is_type ? (char *)left : 0;
 }
 
 /* Make sure to <fn:check_symbols> before using; it assumes parentheses are
@@ -50,7 +55,7 @@ static void effectively_typedef_fn_ptr(char *const buffer) {
 			else if(*prefix == '(') level--;
 		} while(level);
 		/* This has to have a return-type. Will fail on "123". */
-		if(!(ret_type = type_from_right(buffer, prefix - 1))) continue;
+		if(!(ret_type = type_from_right(buffer, prefix - 1, 0))) continue;
 		/* Make sure there's an operator (*) somewhere. */
 		for(operator = prefix + 1;
 			operator < middle && *operator != '*' && strchr("x_", *operator);
@@ -82,6 +87,15 @@ static struct {
 	enum Division division;
 	struct SizeArray params;
 } semantic;
+
+/** @param[name] In `semantic.buffer`.
+ @return Success. */
+static int add_param(const char *const name) {
+	size_t *param;
+	if(!(param = SizeArrayNew(&semantic.params))) return 0;
+	*param = (size_t)(name - CharArrayGet(&semantic.buffer));
+	return 1;
+}
 
 /*!stags:re2c format = 'const char *@@;'; */
 
@@ -122,10 +136,9 @@ type_or_void = type | void;
 */
 
 static int parse(void) {
-	const char *const buffer = CharArrayGet(&semantic.buffer);
+	char *const buffer = CharArrayGet(&semantic.buffer);
 	const char *cursor = buffer, *marker = cursor;
 	const char *args = 0, *name = 0, *one_more = 0;
-	size_t *param;
 
 	assert(buffer);
 /*!re2c
@@ -135,17 +148,16 @@ static int parse(void) {
 		return 1;
 	}
 	// "typedef anything" is considered a typedef.
-	typedef redact* skip_complex+ redact* end {
+	typedef redact* skip_complex+ @name redact* end {
 		semantic.division = DIV_TYPEDEF;
+		if(name && (name = type_from_right(buffer, name - 1, 1))
+			&& !add_param(name)) return 0;
 		return 1;
 	}
 	// "something tag [id]" is a tag.
 	skip_simple* tag @name generic? redact* end {
 		semantic.division = DIV_TAG;
-		if(name && strchr("x123", *name)) {
-			if(!(param = SizeArrayNew(&semantic.params))) return 0;
-			*param = (size_t)(name - buffer);
-		}
+		if(name && strchr("x123", *name) && !add_param(name)) return 0;
 		return 1;
 	}
 	// Fixme: this is one of the . . . four? ways to define a function?
@@ -153,8 +165,7 @@ static int parse(void) {
 		@args "(" ( ([_*sx]+ ("," [_*sx]+)* ",."?) | void ) ")" redact* end {
 		semantic.division = DIV_FUNCTION;
 		printf("parse: <%s> name: <%s> args: <%s>\n", buffer, name, args);
-		if(!(param = SizeArrayNew(&semantic.params))) return 0;
-		*param = (size_t)(name - buffer);
+		if(!add_param(name)) return 0;
 		name = 0; /* For the args. */
 		cursor = marker = args;
 		goto params;
@@ -174,8 +185,7 @@ params:
 	@name "x" { goto params; }
 	")" | ",.)" | @one_more "," {
 		if(!name) goto unable;
-		if(!(param = SizeArrayNew(&semantic.params))) return 0;
-		*param = (size_t)(name - buffer);
+		if(!add_param(name)) return 0;
 		name = 0; /* For next time. */
 		if(one_more) { one_more = 0; goto params;}
 		return 1;
