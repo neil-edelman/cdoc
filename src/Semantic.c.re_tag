@@ -149,14 +149,14 @@ static int parse(void) {
 	// int (*c) is detected as fn?
 	// Fixme: this is one of the . . . four? ways to define a function?
 	static? redact* (@name (generic | type_or_void | qualifier) redact*){2,}
-		"(" redact* @args (( [_*sx]* ("," [_*sx]*)* ",."? ) | void) redact* ")"
-		redact* end {
+		@args "(" ( ([_*sx]+ ("," [_*sx]+)* ",."?) | void ) ")" redact* end {
 		semantic.division = DIV_FUNCTION;
 		printf("parse: <%s> name: <%s> args: <%s>\n", buffer, name, args);
 		if(!(param = SizeArrayNew(&semantic.params))) return 0;
 		*param = (size_t)(name - buffer);
+		name = 0; /* For the args. */
 		cursor = marker = args;
-		return 1;
+		goto params;
 	}
 	// All others are general declaration.
 	* {
@@ -164,6 +164,28 @@ static int parse(void) {
 		return 1;
 	}
 */
+
+	/* The DIV_FUNCTION backtracks here to figure out the arguments. */
+params:
+	printf("__params__ \"%s\"\n", cursor);
+/*!re2c
+	"(v)" { return 1; }
+	"(" / [^v] { goto params; }
+	[_*s]* { goto params; }
+	@name "x" { goto params; }
+	")" | ",.)" | "," {
+		if(!name) goto unable;
+		if(!(param = SizeArrayNew(&semantic.params))) return 0;
+		*param = (size_t)(name - buffer);
+		name = 0; /* For next time. */
+		if(yych == ',') goto params;
+		return 1;
+	}
+	* { goto unable; }
+*/
+unable:
+	fprintf(stderr, "Warning: unable to extract parameter list.\n");
+	return 1;
 }
 
 /** From `buffer` it removes all between `left` and `right` and replaces the

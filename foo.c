@@ -77,8 +77,8 @@ int (*c);
 /** Function declare x as function (int) returning pointer to function (int)
  returning pointer to function (pointer to function (int) returning int)
  returning int */
-int (*(*h(const int a))(int ))(int (*)(int )) {
-	(void)a;
+int (*(*fun1(const int arg1_1))(int ))(int (*)(int )) {
+	(void)arg1_1;
 	return 0;
 }
 
@@ -105,7 +105,9 @@ enum Token { END };
 /** Returns eof.
  @implements ScannerFn
  @allow */
-static enum Token scan_eof(struct Scanner *const s) { (void)s; return END; }
+static enum Token fun2_scan_eof(struct Scanner *const arg1_2, int arg2_2) {
+	(void)arg1_2, (void)arg2_2; return END;
+}
 
 /**
  * Header. That also goes in the header.
@@ -129,22 +131,24 @@ static enum Token scan_eof(struct Scanner *const s) { (void)s; return END; }
 /** Function.
  @implements ScannerFn
  @allow */
-static enum Token scan_comment(struct Scanner *const s) {
+static enum Token fun3_scan_comment(struct Scanner *const arg1_1) {
 	goto comment;
 comment:
-	(void)s;
+	(void)arg1_1;
 	return END;
 }
 
+typedef int Foo;
+
 /** Function. */
-T g(int (*ptr)(int a, int (*fn)(void))) /** yo */ {
+T fun4(int (*arg1_2)(int a, int (*fn)(void)), Foo arg2_2) /** yo */ {
 	/** @param[a, fn] [] Doesn't do anything. */
-	return ptr(42, 0);
+	return arg1_2(arg2_2, 0);
 }
 
 int main(void) {
 	arrayFooBarBaz = 0;
-	scan_comment(0);
-	scan_eof(0);
+	fun3_scan_comment(0);
+	fun2_scan_eof(0, 0);
 	return 0;
 }
