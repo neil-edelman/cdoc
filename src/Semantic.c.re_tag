@@ -24,7 +24,7 @@ static char *type_from_right(char *const buffer, char *const right) {
 			continue;
 		}
 		/* Very lazy; if the thing doesn't look like a tag, id, or operator. */
-		if(!strchr("sx*_", *ch)) break;
+		if(!strchr("sxv*_", *ch)) break;
 		is_type = 1;
 	} while(left = ch, --ch >= buffer);
 	return is_type ? left : 0;
@@ -128,8 +128,6 @@ static int parse(void) {
 	size_t *param;
 
 	assert(buffer);
-	printf("parse <%s>.\n", cursor);
-
 /*!re2c
 	// If there is no code, put it in the header.
 	end {
@@ -137,16 +135,19 @@ static int parse(void) {
 		return 1;
 	}
 	// "typedef anything" is considered a typedef.
-	typedef redact* skip_complex+ end {
+	typedef redact* skip_complex+ redact* end {
 		semantic.division = DIV_TYPEDEF;
 		return 1;
 	}
 	// "something tag [id]" is a tag.
-	skip_simple* tag generic? redact* end {
+	skip_simple* tag @name generic? redact* end {
 		semantic.division = DIV_TAG;
+		if(name && strchr("x123", *name)) {
+			if(!(param = SizeArrayNew(&semantic.params))) return 0;
+			*param = (size_t)(name - buffer);
+		}
 		return 1;
 	}
-	// int (*c) is detected as fn?
 	// Fixme: this is one of the . . . four? ways to define a function?
 	static? redact* (@name (generic | type_or_void | qualifier) redact*){2,}
 		@args "(" ( ([_*sx]+ ("," [_*sx]+)* ",."?) | void ) ")" redact* end {
@@ -164,10 +165,8 @@ static int parse(void) {
 		return 1;
 	}
 */
-
 	/* The DIV_FUNCTION backtracks here to figure out the arguments. */
 params:
-	printf("__params__ \"%s\"\n", cursor);
 /*!re2c
 	"(v)" { return 1; }
 	"(" / [^v] { goto params; }
@@ -203,6 +202,7 @@ static void remove_recursive(char *const buffer,
 	}
 }
 
+/** Checks that `checks`, a string, braces' match up. */
 static int check_symbols(int *const checks) {
 	const char *cursor = CharArrayGet(&semantic.buffer);
 	char *stack;
@@ -284,10 +284,14 @@ int Semantic(const struct TokenArray *const code) {
 	return 1;
 }
 
+/** Analyses of the last string's division. */
 enum Division SemanticDivision(void) {
 	return semantic.division;
 }
 
+/** Analyses of the last string's parameters, which can be anything.
+ @param[no] Pass to get the number of `size_t`'s in the array.
+ @param[array] Pass to get the size_t array. */
 void SemanticParams(size_t *const no, const size_t **const array) {
 	if(!no) { if(array) *array = 0; return; }
 	*no = SizeArraySize(&semantic.params);
