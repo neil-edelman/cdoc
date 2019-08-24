@@ -31,7 +31,7 @@
  -* \<fn:\<function\>\>;
  -* \<tag:\<struct|union|enum\>\> (fixme);
  -* \<typedef:\<typedef\>\> (fixme);
- -* \<data:\<identifier\>\> (fixme);
+ -* \<data:\<identifier\>\> (fixme)(hard?);
  -* \[The link text\](url);
  -* \!\[Caption text\](/path/to/img.jpg);
  -* lists with "\ -* "; lists can be anywhere and don't nest;
