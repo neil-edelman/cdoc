@@ -138,7 +138,7 @@ type_or_void = type | void;
 static int parse(void) {
 	char *const buffer = CharArrayGet(&semantic.buffer);
 	const char *cursor = buffer, *marker = cursor;
-	const char *args = 0, *name = 0, *one_more = 0;
+	const char *args = 0, *label = 0, *one_more = 0;
 
 	assert(buffer);
 /*!re2c
@@ -148,31 +148,41 @@ static int parse(void) {
 		return 1;
 	}
 	// "typedef anything" is considered a typedef.
-	typedef redact* skip_complex+ @name redact* end {
+	typedef redact* skip_complex+ @label redact* end {
 		semantic.division = DIV_TYPEDEF;
-		if(name && (name = type_from_right(buffer, name - 1, 1))
-			&& !add_param(name)) return 0;
+		if(label && (label = type_from_right(buffer, label - 1, 1))
+			&& !add_param(label)) return 0;
 		return 1;
 	}
 	// "something tag [id]" is a tag.
-	skip_simple* tag @name generic? redact* end {
+	skip_simple* tag @label generic? redact* end {
 		semantic.division = DIV_TAG;
-		if(name && strchr("x123", *name) && !add_param(name)) return 0;
+		if(label && strchr("x123", *label) && !add_param(label)) return 0;
 		return 1;
 	}
 	// Fixme: this is one of the . . . four? ways to define a function?
-	static? redact* (@name (generic | type_or_void | qualifier) redact*){2,}
+	static? redact* (@label (generic | type_or_void | qualifier) redact*){2,}
 		@args "(" ( ([_*sx]+ ("," [_*sx]+)* ",."?) | void ) ")" redact* end {
 		semantic.division = DIV_FUNCTION;
-		printf("parse: <%s> name: <%s> args: <%s>\n", buffer, name, args);
-		if(!add_param(name)) return 0;
-		name = 0; /* For the args. */
+		printf("parse: <%s> label: <%s> args: <%s>\n", buffer, label, args);
+		if(!add_param(label)) return 0;
+		label = 0; /* For the args. */
 		cursor = marker = args;
 		goto params;
 	}
-	// All others are general declaration.
+	// All others are general declaration. See if we can extract a label.
 	* {
 		semantic.division = DIV_GENERAL_DECLARATION;
+		/* Start at rightmost '=' or at the end of the string. */
+		if(!(label = strchr(buffer, '='))) label = buffer + strlen(buffer);
+		/* If "=..." (impossible "", caught) doesn't have anything to label. */
+		while(--label >= buffer) {
+			char *maybe = 0;
+			while(label > buffer && strchr("_*,#.", *label)) label--;
+			maybe = type_from_right(buffer, label, 1);
+			if(maybe) { label = maybe; break; }
+		}
+		if(label >= buffer && !add_param(label)) return 0;
 		return 1;
 	}
 */
@@ -182,12 +192,12 @@ params:
 	"(v)" { return 1; }
 	"(" / [^v] { goto params; }
 	[_*s]* { goto params; }
-	@name "x" { goto params; }
+	@label "x" { goto params; }
 	")" | ",.)" | @one_more "," {
-		if(!name) goto unable;
-		if(!add_param(name)) return 0;
-		name = 0; /* For next time. */
-		if(one_more) { one_more = 0; goto params;}
+		if(!label) goto unable;
+		if(!add_param(label)) return 0;
+		label = 0; /* For next time. */
+		if(one_more) { one_more = 0; goto params; }
 		return 1;
 	}
 	* { goto unable; }
