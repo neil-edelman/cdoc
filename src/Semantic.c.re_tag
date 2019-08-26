@@ -89,11 +89,17 @@ static struct {
 } semantic;
 
 /** @param[name] In `semantic.buffer`.
- @return Success. */
-static int add_param(const char *const name) {
+ @param[success] Pointer to success or null; it could be that the label wasn't
+ a name and it will return 1 and `success` false.
+ @return False on error. */
+static int add_param(const char *const label, int *const success) {
 	size_t *param;
+	if(success) *success = 0;
+	if(!label || !strchr("x123", *label))
+		return fprintf(stderr, "Couldn't find anything to label.\n"), 1;
 	if(!(param = SizeArrayNew(&semantic.params))) return 0;
-	*param = (size_t)(name - CharArrayGet(&semantic.buffer));
+	*param = (size_t)(label - CharArrayGet(&semantic.buffer));
+	if(success) *success = 1;
 	return 1;
 }
 
@@ -139,6 +145,7 @@ static int parse(void) {
 	char *const buffer = CharArrayGet(&semantic.buffer);
 	const char *cursor = buffer, *marker = cursor;
 	const char *args = 0, *label = 0, *one_more = 0;
+	int is_success;
 
 	assert(buffer);
 /*!re2c
@@ -150,14 +157,14 @@ static int parse(void) {
 	// "typedef anything" is considered a typedef.
 	typedef redact* skip_complex+ @label redact* end {
 		semantic.division = DIV_TYPEDEF;
-		if(label && (label = type_from_right(buffer, label - 1, 1))
-			&& !add_param(label)) return 0;
+		label = type_from_right(buffer, label - 1, 1);
+		if(!add_param(label, 0)) return 0;
 		return 1;
 	}
 	// "something tag [id]" is a tag.
 	skip_simple* tag @label generic? redact* end {
 		semantic.division = DIV_TAG;
-		if(label && strchr("x123", *label) && !add_param(label)) return 0;
+		if(!add_param(label, 0)) return 0;
 		return 1;
 	}
 	// Fixme: this is one of the . . . four? ways to define a function?
@@ -165,24 +172,25 @@ static int parse(void) {
 		@args "(" ( ([_*sx]+ ("," [_*sx]+)* ",."?) | void ) ")" redact* end {
 		semantic.division = DIV_FUNCTION;
 		printf("parse: <%s> label: <%s> args: <%s>\n", buffer, label, args);
-		if(!add_param(label)) return 0;
+		if(!add_param(label, &is_success)) return 0;
 		label = 0; /* For the args. */
+		if(!is_success) return 0;
 		cursor = marker = args;
 		goto params;
 	}
 	// All others are general declaration. See if we can extract a label.
 	* {
 		semantic.division = DIV_GENERAL_DECLARATION;
-		/* Start at rightmost '=' or at the end of the string. */
+		/* Start at the right of '=' and scan left until something looks like
+		 a label. */
 		if(!(label = strchr(buffer, '='))) label = buffer + strlen(buffer);
-		/* If "=..." (impossible "", caught) doesn't have anything to label. */
 		while(--label >= buffer) {
 			char *maybe = 0;
 			while(label > buffer && strchr("_*,#.", *label)) label--;
 			maybe = type_from_right(buffer, label, 1);
 			if(maybe) { label = maybe; break; }
 		}
-		if(label >= buffer && !add_param(label)) return 0;
+		if(label >= buffer && !add_param(label, 0)) return 0;
 		return 1;
 	}
 */
@@ -194,9 +202,9 @@ params:
 	[_*s]* { goto params; }
 	@label "x" { goto params; }
 	")" | ",.)" | @one_more "," {
-		if(!label) goto unable;
-		if(!add_param(label)) return 0;
+		if(!add_param(label, &is_success)) return 0;
 		label = 0; /* For next time. */
+		if(!is_success) goto unable;
 		if(one_more) { one_more = 0; goto params; }
 		return 1;
 	}
