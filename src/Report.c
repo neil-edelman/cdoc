@@ -225,11 +225,12 @@ int ReportPlace(void) {
 	case LBRACE:
 		if(indent_level != 1) break;
 		if(sorter.is_semantic) {
+			/* Otoh, "int a[] = { 1 }, b[] = { 2 };" is perfectly fine! */
 			fprintf(stderr, "Line %lu: More then one top-level block in this "
 				"segment; previous segment should have been classified as a "
 				"function?\n", (unsigned long)ScannerLine());
-			sorter.is_ignored_code = 1;
-			if(sorter.segment) sorter.segment->division = DIV_FUNCTION;
+			/*sorter.is_ignored_code = 1;
+			if(sorter.segment) sorter.segment->division = DIV_FUNCTION;*/
 			break;
 		}
 		if(!semantic(sorter.segment)) return 0;
