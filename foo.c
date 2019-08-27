@@ -6,10 +6,10 @@ Paragraph @ @a \,~~
  -* is
  -* bah.
 
- Escapes. \\ \` \@ \_ \*  /// \\\`
-
  @title Foo `Bar`
  @depend C89
+ 
+ Escapes. \\ \` \@ \_ \*  /// \\\`
  lala	lala? <http://foo.com/> */
 
 #include <assert.h>

@@ -54,6 +54,16 @@ void TokensMark(const struct TokenArray *const tokens, char *const marks) {
 	assert((size_t)(mark - marks) == TokenArraySize(tokens));
 }
 
+
+static void tokenref_to_string(struct Token *const*pt, char (*const a)[12]) {
+	token_to_string(*pt, a);
+}
+#define ARRAY_NAME TokenRef
+#define ARRAY_TYPE struct Token *
+#define ARRAY_TO_STRING &tokenref_to_string
+#include "Array.h"
+
+
 /** `Attribute` is a specific structure of array of `Token` representing
  each-attributes, "@param ...". */
 struct Attribute {
@@ -83,6 +93,7 @@ static void attributes_(struct AttributeArray *const atts) {
 struct Segment {
 	enum Division division;
 	struct TokenArray doc, code;
+	struct TokenRefArray params;
 	struct AttributeArray attributes;
 };
 static void segment_to_string(const struct Segment *seg, char (*const a)[12]) {
@@ -106,7 +117,7 @@ void Report_(void) {
 	/* Destroy the report. */
 	while((segment = SegmentArrayPop(&report)))
 		TokenArray_(&segment->doc), TokenArray_(&segment->code),
-		attributes_(&segment->attributes);
+		TokenRefArray_(&segment->params), attributes_(&segment->attributes);
 	SegmentArray_(&report);
 	/* Destroy the semantic buffer. */
 	Semantic(0);
@@ -119,6 +130,7 @@ static struct Segment *new_segment(void) {
 	segment->division = DIV_PREAMBLE; /* Default. */
 	TokenArray(&segment->doc);
 	TokenArray(&segment->code);
+	TokenRefArray(&segment->params);
 	AttributeArray(&segment->attributes);
 	return segment;
 }
@@ -157,10 +169,10 @@ static int semantic(struct Segment *const segment) {
 	size_t no, i, entry;
 	const size_t *array;
 	struct Token *code;
+	struct Token **ref;
 	if(!segment) return 0;
 	if(!Semantic(&segment->code)) return 0;
 	segment->division = SemanticDivision();
-	printf("semantic: division %s.\n", divisions[segment->division]);
 	SemanticParams(&no, &array);
 	code = TokenArrayGet(&segment->code);
 	for(i = 0; i < no; i++) {
@@ -170,8 +182,8 @@ static int semantic(struct Segment *const segment) {
 				(unsigned long)i);
 			continue;
 		};
-		printf("semantic: (%ld) \"%.*s\"\n", (unsigned long)entry,
-			code[entry].length, code[entry].from);
+		if(!(ref = TokenRefArrayNew(&segment->params))) return 0;
+		*ref = code + entry;
 	}
 	return 1;
 }
@@ -310,12 +322,28 @@ static const char *pos(const struct Token *const token) {
 	return p;
 }
 
-/** Keeps only the stuff we care about.
- @implements{Predicate<Segment>} */
+/** @implements{Predicate<Segment>} */
 static int keep_segment(const struct Segment *const s) {
-	/* fixme: and not static or containing @allow att. */
-	if(TokenArraySize(&s->doc) || s->division == DIV_FUNCTION) return 1;
+	struct Attribute *a = 0;
+	if(TokenArraySize(&s->doc) || AttributeArraySize(&s->attributes)
+		|| s->division == DIV_FUNCTION) {
+		printf("keep_segment: comments or fn.\n");
+		/* `static` and containing `@allow`. */
+		if(TokenArraySize(&s->code)
+			&& TokenArrayGet(&s->code)->symbol == STATIC) {
+			while((a = AttributeArrayNext(&s->attributes, a))
+				  && a->symbol != ATT_ALLOW);
+			return a ? 1 : 0;
+		}
+		return 1;
+	}
 	return 0;
+}
+
+/** Keeps only the stuff we care about; discards no docs except fn and `static`
+ if not `@allow`. */
+void ReportCull(void) {
+	SegmentArrayKeepIf(&report, &keep_segment);
 }
 
 /** Selects `token` out of `ta` and prints it and returns the next token. */
@@ -577,13 +605,23 @@ static int segment_is_function(const struct Segment *const segment) {
 void ReportDebug(void) {
 	struct Segment *segment = 0;
 	struct Attribute *att = 0;
+	struct Segment {
+		enum Division division;
+		struct TokenArray doc, code;
+		struct TokenRefArray params;
+		struct AttributeArray attributes;
+	};
 	while((segment = SegmentArrayNext(&report, segment))) {
-		printf("Segment(%s):\n\tdoc: %s.\n\tcode: %s.\n",
+		printf("Segment: %s;\n"
+			"code: %s;\n"
+			"params: %s;\n"
+			"doc: %s.\n",
 			divisions[segment->division],
-			TokenArrayToString(&segment->doc),
-			TokenArrayToString(&segment->code));
+			TokenArrayToString(&segment->code),
+			TokenRefArrayToString(&segment->params),
+			TokenArrayToString(&segment->doc));
 		while((att = AttributeArrayNext(&segment->attributes, att)))
-			printf("\t%s{%s} %s.\n", symbols[att->symbol],
+			printf("%s{%s} %s.\n", symbols[att->symbol],
 			TokenArrayToString(&att->header),
 			TokenArrayToString(&att->contents));
 		fputc('\n', stdout);

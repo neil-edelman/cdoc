@@ -17,5 +17,6 @@ void ReportCurrentReset(void);
 void Report_(void);
 void ReportDivision(const enum Division division);
 int ReportPlace(void);
+void ReportCull(void);
 void ReportDebug(void);
 void ReportOut(void);
