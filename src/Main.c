@@ -147,10 +147,10 @@ int main(int argc, char **argv) {
 	if(!Scanner()) goto catch;
 	fputs("\n\n-- Cull --\n", stdout);
 	ReportCull();	
-	fputs("\n\n-- Out --\n", stdout);
-	ReportOut();
 	fputs("\n\n-- Debug --\n", stdout);
 	ReportDebug();
+	fputs("\n\n-- Out --\n", stdout);
+	ReportOut();
 
 	exit_code = EXIT_SUCCESS; goto finally;
 	
