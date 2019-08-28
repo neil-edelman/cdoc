@@ -145,6 +145,8 @@ int main(int argc, char **argv) {
 	 the code. */
 	fputs("\n\n-- In --\n", stdout);
 	if(!Scanner()) goto catch;
+	fputs("\n\n-- Cull --\n", stdout);
+	ReportCull();	
 	fputs("\n\n-- Out --\n", stdout);
 	ReportOut();
 	fputs("\n\n-- Debug --\n", stdout);

@@ -10,7 +10,7 @@ Paragraph @ @a \,~~
  @depend C89
  
  Escapes. \\ \` \@ \_ \*  /// \\\`
- lala	lala? <http://foo.com/> */
+ lala	preformated <http://foo.com/> */
 
 #include <assert.h>
 
@@ -152,3 +152,5 @@ int main(void) {
 	fun2_scan_eof(0, 0);
 	return 0;
 }
+
+/** @title title! */

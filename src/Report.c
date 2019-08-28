@@ -201,7 +201,7 @@ int ReportPlace(void) {
 		struct Segment *segment;
 		struct Attribute *attribute;
 		unsigned space, newline;
-		int is_attribute_header, is_ignored_code, is_semantic;
+		int is_attribute_header, is_ignored_code, is_semantic_set;
 	} sorter = { 0, 0, 0, 0, 0, 0, 0 }; /* This holds the sorting state. */
 	/* These symbols require special consideration. */
 	switch(symbol) {
@@ -229,24 +229,15 @@ int ReportPlace(void) {
 	case SPACE:   sorter.space++; return 1;
 	case NEWLINE: sorter.newline++; return 1;
 	case SEMI:
-		if(indent_level != 0) break;
-		if(!sorter.is_semantic && !semantic(sorter.segment)) return 0;
-		sorter.is_semantic = 1;
+		if(indent_level != 0 || !sorter.segment) break;
+		if(!sorter.is_semantic_set && !semantic(sorter.segment)) return 0;
+		sorter.is_semantic_set = 1;
 		is_differed_cut = 1;
 		break;
 	case LBRACE:
-		if(indent_level != 1) break;
-		if(sorter.is_semantic) {
-			/* Otoh, "int a[] = { 1 }, b[] = { 2 };" is perfectly fine! */
-			fprintf(stderr, "Line %lu: More then one top-level block in this "
-				"segment; previous segment should have been classified as a "
-				"function?\n", (unsigned long)ScannerLine());
-			/*sorter.is_ignored_code = 1;
-			if(sorter.segment) sorter.segment->division = DIV_FUNCTION;*/
-			break;
-		}
+		if(indent_level != 1 || sorter.is_semantic_set) break;
 		if(!semantic(sorter.segment)) return 0;
-		sorter.is_semantic = 1;
+		sorter.is_semantic_set = 1;
 		if(sorter.segment->division == DIV_FUNCTION)
 			sorter.is_ignored_code = 1;
 		break;
@@ -264,7 +255,7 @@ int ReportPlace(void) {
 		sorter.space = sorter.newline = 0;
 		sorter.is_ignored_code = 0;
 		assert(!sorter.is_attribute_header);
-		sorter.is_semantic = 0;
+		sorter.is_semantic_set = 0;
 	}
 
 	/* Make a `token` where the context places us. */
@@ -296,6 +287,7 @@ int ReportPlace(void) {
 		if(!(sorter.attribute = new_attribute(sorter.segment, symbol)))
 			return 0;
 		assert(!sorter.is_attribute_header);
+		sorter.space = sorter.newline = 0; /* Also reset this for attributes. */
 		break;
 	default: /* Code. */
 		if(sorter.is_ignored_code) {
@@ -325,18 +317,21 @@ static const char *pos(const struct Token *const token) {
 /** @implements{Predicate<Segment>} */
 static int keep_segment(const struct Segment *const s) {
 	struct Attribute *a = 0;
+	printf("keep %s: ", TokenArrayToString(&s->code));
 	if(TokenArraySize(&s->doc) || AttributeArraySize(&s->attributes)
 		|| s->division == DIV_FUNCTION) {
-		printf("keep_segment: comments or fn.\n");
 		/* `static` and containing `@allow`. */
 		if(TokenArraySize(&s->code)
 			&& TokenArrayGet(&s->code)->symbol == STATIC) {
 			while((a = AttributeArrayNext(&s->attributes, a))
 				  && a->symbol != ATT_ALLOW);
+			printf("static %s.\n", a ? "allowed" : "erased");
 			return a ? 1 : 0;
 		}
+		printf("normal keep.\n");
 		return 1;
 	}
+	printf("don't have doc, erased.\n");
 	return 0;
 }
 

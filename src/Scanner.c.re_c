@@ -331,8 +331,6 @@ int Scanner(void) {
 	while((scanner.symbol = scan()) && ReportPlace())
 		printf("Scanner: %s.\n", pos());
 	if(errno) goto catch;
-	/* Eliminates the ones we don't care about. */
-	ReportCull();
 	return 1;
 catch:
 	Scanner_();
