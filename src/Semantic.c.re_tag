@@ -180,7 +180,7 @@ static int parse(void) {
 	}
 	// All others are general declaration. See if we can extract a label.
 	* {
-		semantic.division = DIV_GENERAL_DECLARATION;
+		semantic.division = DIV_DATA;
 		/* Start at the right of '=' and scan left until something looks like
 		 a label. */
 		if(!(label = strchr(buffer, '='))) label = buffer + strlen(buffer);
@@ -278,7 +278,7 @@ int Semantic(const struct TokenArray *const code) {
 
 	/* Reset the semantic to the most general state. */
 	CharArrayClear(&semantic.buffer);
-	semantic.division = DIV_GENERAL_DECLARATION;
+	semantic.division = DIV_DATA;
 	SizeArrayClear(&semantic.params);
 
 	/* Make a string from `symbol_marks` and allocate maximum memory. */

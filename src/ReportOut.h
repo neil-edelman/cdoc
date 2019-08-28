@@ -1,13 +1,27 @@
 /** Selects `token` out of `ta` and prints it and returns the next token. */
 typedef const struct Token *(*OutFn)(const struct TokenArray *const ta,
-									 const struct Token *const token);
+	const struct Token *const token);
+
+static struct {
+	int level;
+	int is_space;
+} output;
+
+/*static struct SymbolDetails {
+} symbol_details[] = { SYMBOL(PARAM2_B) };*/
 
 /* @implements <Attribute>Predicate */
 #define OUT(name) static const struct Token *name(const struct TokenArray \
 *const ta, const struct Token *const token)
+
 OUT(lit) {
-	printf("%.*s~", token->length, token->from);
+	printf("%.*s", token->length, token->from);
 	return TokenArrayNext(ta, token);
+}
+OUT(lit_both) {
+	if(output.is_space) fputc(' ', stdout);
+	output.is_space = 1;
+	return lit(ta, token);
 }
 OUT(gen1) {
 	struct Token *const lparen = TokenArrayNext(ta, token),

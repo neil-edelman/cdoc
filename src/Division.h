@@ -6,7 +6,7 @@
 #endif
 
 #define DIVISION(X) X(DIV_PREAMBLE), X(DIV_FUNCTION), X(DIV_TAG), \
-	X(DIV_TYPEDEF), X(DIV_GENERAL_DECLARATION)
+	X(DIV_TYPEDEF), X(DIV_DATA)
 /** Define the divisions of output; these go in separate sections, and follow
  namespaces. */
 enum Division { DIVISION(PARAM) };
