@@ -1,32 +1,50 @@
-/** Selects `token` out of `ta` and prints it and returns the next token. */
-typedef const struct Token *(*OutFn)(const struct TokenArray *const ta,
+/** Selects `token` out of `tokens` and prints it and returns the next token. */
+typedef const struct Token *(*OutFn)(const struct TokenArray *const tokens,
 	const struct Token *const token);
 
 static struct {
 	int level;
-	int is_space;
+	int is_space_before;
+	int is_newline_before;
 } output;
+static void output_reset(void) {
+	output.level = 0;
+	output.is_space_before = output.is_newline_before = 0;
+}
 
-/*static struct SymbolDetails {
-} symbol_details[] = { SYMBOL(PARAM2_B) };*/
+
+
+/* `SYMBOL` is declared in `Scanner.h`. */
+static const int symbol_lspaces[] = { SYMBOL(PARAM5D) };
+static const int symbol_rspaces[] = { SYMBOL(PARAM5E) };
+
+
+static void whitespace(void) {
+	fputc('~', stdout);
+}
+static void whitespace_if_needed(enum Symbol symbol) {
+	if(output.is_space_before && symbol_lspaces[symbol])
+		whitespace();
+	output.is_space_before = symbol_rspaces[symbol];
+}
+
 
 /* @implements <Attribute>Predicate */
 #define OUT(name) static const struct Token *name(const struct TokenArray \
-*const ta, const struct Token *const token)
+*const tokens, const struct Token *const token)
 
-OUT(lit) {
-	printf("%.*s", token->length, token->from);
-	return TokenArrayNext(ta, token);
+OUT(ws) {
+	whitespace();
+	return TokenArrayNext(tokens, token);
 }
-OUT(lit_both) {
-	if(output.is_space) fputc(' ', stdout);
-	output.is_space = 1;
-	return lit(ta, token);
+OUT(lit) {
+	printf("%s%.*s", "~", token->length, token->from);
+	return TokenArrayNext(tokens, token);
 }
 OUT(gen1) {
-	struct Token *const lparen = TokenArrayNext(ta, token),
-	*const param = TokenArrayNext(ta, lparen),
-	*const rparen = TokenArrayNext(ta, param);
+	struct Token *const lparen = TokenArrayNext(tokens, token),
+	*const param = TokenArrayNext(tokens, lparen),
+	*const rparen = TokenArrayNext(tokens, param);
 	const char *a, *type;
 	int type_size;
 	if(!lparen || lparen->symbol != LPAREN || !param || !rparen
@@ -37,17 +55,17 @@ OUT(gen1) {
 	assert(token->length == a + 1 - token->from);
 	printf("<%.*s>%.*s~",
 		   token->length - 1, token->from, param->length, param->from);
-	return TokenArrayNext(ta, rparen);
+	return TokenArrayNext(tokens, rparen);
 	catch:
 	fprintf(stderr, "Expected: generic(id);\n%s.\n", pos(token));
 	return 0;
 }
 OUT(gen2) {
-	struct Token *const lparen = TokenArrayNext(ta, token),
-	*const param1 = TokenArrayNext(ta, lparen),
-	*const comma = TokenArrayNext(ta, param1),
-	*const param2 = TokenArrayNext(ta, comma),
-	*const rparen = TokenArrayNext(ta, param2);
+	struct Token *const lparen = TokenArrayNext(tokens, token),
+	*const param1 = TokenArrayNext(tokens, lparen),
+	*const comma = TokenArrayNext(tokens, param1),
+	*const param2 = TokenArrayNext(tokens, comma),
+	*const rparen = TokenArrayNext(tokens, param2);
 	const char *a, *type1, *type2;
 	int type1_size, type2_size;
 	if(!lparen || lparen->symbol != LPAREN || !param1 || !comma
@@ -62,19 +80,19 @@ OUT(gen2) {
 	assert(token->length == a + 1 - token->from);
 	printf("<%.*s>%.*s<%.*s>%.*s~", type1_size, type1, param1->length,
 		   param1->from, type2_size, type2, param2->length, param2->from);
-	return TokenArrayNext(ta, rparen);
+	return TokenArrayNext(tokens, rparen);
 	catch:
 	fprintf(stderr, "Expected: generic(id,id);\n%s.\n", pos(token));
 	return 0;
 }
 OUT(gen3) {
-	struct Token *const lparen = TokenArrayNext(ta, token),
-	*const param1 = TokenArrayNext(ta, lparen),
-	*const comma1 = TokenArrayNext(ta, param1),
-	*const param2 = TokenArrayNext(ta, comma1),
-	*const comma2 = TokenArrayNext(ta, param2),
-	*const param3 = TokenArrayNext(ta, comma2),
-	*const rparen = TokenArrayNext(ta, param3);
+	struct Token *const lparen = TokenArrayNext(tokens, token),
+	*const param1 = TokenArrayNext(tokens, lparen),
+	*const comma1 = TokenArrayNext(tokens, param1),
+	*const param2 = TokenArrayNext(tokens, comma1),
+	*const comma2 = TokenArrayNext(tokens, param2),
+	*const param3 = TokenArrayNext(tokens, comma2),
+	*const rparen = TokenArrayNext(tokens, param3);
 	const char *a, *type1, *type2, *type3;
 	int type1_size, type2_size, type3_size;
 	if(!lparen || lparen->symbol != LPAREN || !param1 || !comma1
@@ -94,99 +112,114 @@ OUT(gen3) {
 	printf("<%.*s>%.*s<%.*s>%.*s<%.*s>%.*s~", type1_size, type1,
 		   param1->length, param1->from, type2_size, type2, param2->length,
 		   param2->from, type3_size, type3, param3->length, param3->from);
-	return TokenArrayNext(ta, rparen);
+	return TokenArrayNext(tokens, rparen);
 	catch:
-	fprintf(stderr, "Expected: generic(id,id,id);\n%s.\n", pos(token));
+	fprintf(stderr, "Expected: A_B_C_(id,id,id);\n%s.\n", pos(token));
 	return 0;
 }
 OUT(esc_bs) {
 	printf("\\~");
-	return TokenArrayNext(ta, token);
+	return TokenArrayNext(tokens, token);
 }
 OUT(url) {
-	struct Token *const lbr = TokenArrayNext(ta, token),
-	*next = TokenArrayNext(ta, lbr); /* Variable no. */
+	struct Token *const lbr = TokenArrayNext(tokens, token),
+	*next = TokenArrayNext(tokens, lbr); /* Variable no. */
 	if(!lbr || lbr->symbol != LBRACE || !next) goto catch;
 	printf("(");
 	while(next->symbol != RBRACE) {
 		/* We don't care about the symbol's meaning in the url. */
 		printf("%.*s", next->length, next->from);
-		if(!(next = TokenArrayNext(ta, next))) goto catch;
+		if(!(next = TokenArrayNext(tokens, next))) goto catch;
 	}
 	printf(")~");
-	return TokenArrayNext(ta, next);
+	return TokenArrayNext(tokens, next);
 	catch:
-	fprintf(stderr, "Expected: \\url{<cat url>};\n%s.\n", pos(token));
+	fprintf(stderr, "Expected: <url>;\n%s.\n", pos(token));
 	return 0;
 }
 OUT(cite) {
-	struct Token *const lbr = TokenArrayNext(ta, token),
-	*next = TokenArrayNext(ta, lbr); /* Variable no. */
+	struct Token *const lbr = TokenArrayNext(tokens, token),
+	*next = TokenArrayNext(tokens, lbr); /* Variable no. */
 	if(!lbr || lbr->symbol != LBRACE || !next) goto catch;
 	printf("(");
 	while(next->symbol != RBRACE) {
 		printf("%.*s~", next->length, next->from);
-		if(!(next = TokenArrayNext(ta, next))) goto catch;
+		if(!(next = TokenArrayNext(tokens, next))) goto catch;
 	}
 	printf(")[https://scholar.google.ca/scholar?q=");
-	next = TokenArrayNext(ta, lbr);
+	next = TokenArrayNext(tokens, lbr);
 	while(next->symbol != RBRACE) {
 		/* fixme: escape url! */
 		printf("%.*s_", next->length, next->from);
-		if(!(next = TokenArrayNext(ta, next))) goto catch;
+		if(!(next = TokenArrayNext(tokens, next))) goto catch;
 	}
 	printf("]~");
-	return TokenArrayNext(ta, next);
+	return TokenArrayNext(tokens, next);
 	catch:
 	fprintf(stderr, "Expected: \\cite{<source>};\n%s.\n", pos(token));
 	return 0;
 }
-OUT(see) { /* fixme: Have a new field in segment. */
-	printf("(fixme)\\see");
-	return TokenArrayNext(ta, token);
+OUT(see_fn) {
+	printf("(fixme)\\see<fn>");
+	return TokenArrayNext(tokens, token);
+}
+OUT(see_tag) {
+	printf("(fixme)\\see<tag>");
+	return TokenArrayNext(tokens, token);
+}
+OUT(see_typedef) {
+	printf("(fixme)\\see<typedef>");
+	return TokenArrayNext(tokens, token);
+}
+OUT(see_data) {
+	printf("(fixme)\\see<data>");
+	return TokenArrayNext(tokens, token);
 }
 OUT(math) { /* Math and code. */
-	struct Token *next = TokenArrayNext(ta, token);
+	struct Token *next = TokenArrayNext(tokens, token);
 	printf("{code:`");
 	while(next->symbol != MATH_END) {
 		printf("%.*s", next->length, next->from);
-		if(!(next = TokenArrayNext(ta, next))) goto catch;
+		if(!(next = TokenArrayNext(tokens, next))) goto catch;
 	}
 	printf("`:code}");
-	return TokenArrayNext(ta, next);
+	return TokenArrayNext(tokens, next);
 	catch:
 	fprintf(stderr, "Expected: `<math/code>`;\n%s.\n", pos(token));
 	return 0;
 }
 OUT(em) {
-	struct Token *next = TokenArrayNext(ta, token);
+	struct Token *next = TokenArrayNext(tokens, token);
 	printf("{em:`");
 	while(next->symbol != EM_END) {
 		printf("%.*s~", next->length, next->from);
-		if(!(next = TokenArrayNext(ta, next))) goto catch;
+		if(!(next = TokenArrayNext(tokens, next))) goto catch;
 	}
 	printf("`:em}");
-	return TokenArrayNext(ta, next);
+	return TokenArrayNext(tokens, next);
 	catch:
 	fprintf(stderr, "Expected: _<emphasis>_;\n%s.\n", pos(token));
 	return 0;
 }
 OUT(par) {
 	printf("^\n^\n");
-	return TokenArrayNext(ta, token);
+	return TokenArrayNext(tokens, token);
 }
 
-/* `SYMBOL` is declared in `Scanner.h` and `PARAM3_C` is one of the preceding
- functions. */
-static const OutFn symbol_out[] = { SYMBOL(PARAM3_C) };
 
-static void tokens_print(const struct TokenArray *const ta) {
-	const struct Token *token = TokenArrayNext(ta, 0);
+
+/* `SYMBOL` is declared in `Scanner.h`. */
+static const OutFn symbol_outs[] = { SYMBOL(PARAM5C) };
+
+
+
+static void tokens_print(const struct TokenArray *const tokens) {
+	const struct Token *token = TokenArrayNext(tokens, 0);
 	OutFn sym_out;
 	if(!token) return;
-	while((sym_out = symbol_out[token->symbol])
-		  && (token = sym_out(ta, token)));
-	fputc('\n', stdout);
+	while((sym_out = symbol_outs[token->symbol])
+		&& (whitespace_if_needed(token->symbol),
+		token = sym_out(tokens, token)));
 }
 
 /** @implements <Attribute>Action */
@@ -324,6 +357,7 @@ static void preamble_attribute_print(const enum Symbol symbol) {
 		while((attribute = AttributeArrayNext(&segment->attributes, attribute)))
 		{
 			if(attribute->symbol != symbol) continue;
+			
 		}
 	}
 }
@@ -331,9 +365,13 @@ static void preamble_attribute_print(const enum Symbol symbol) {
 /** Outputs a file when given a `SegmentArray`. */
 void ReportOut(void) {
 	/* Print header. */
-	printf("<header:title># ");
-	SegmentArrayIfEach(&report, &segment_is_header, &segment_print_all_title);
-	printf(" #\n\n");
+	if(preamble_attribute_exists(ATT_TITLE)) {
+		printf("<header:title># ");
+		SegmentArrayIfEach(&report, &segment_is_header, &segment_print_all_title);
+		printf(" #\n\n");
+	} else {
+		printf("<no title>\n");
+	}
 	printf("<header:doc>\n");
 	SegmentArrayIfEach(&report, &segment_is_header, &segment_print_doc);
 	/* Print typedefs. */

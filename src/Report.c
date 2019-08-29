@@ -165,6 +165,7 @@ static int new_token(struct TokenArray *const tokens, const enum Symbol symbol)
 	return 1;
 }
 
+/** Wrapper for `Sematic.h`; extracts semantic information from `segment`. */
 static int semantic(struct Segment *const segment) {
 	size_t no, i, entry;
 	const size_t *array;
