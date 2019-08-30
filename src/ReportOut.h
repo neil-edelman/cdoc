@@ -24,7 +24,7 @@ static void whitespace(void) {
 }
 static void whitespace_if_needed(enum Symbol symbol) {
 	if(output.is_space_before && symbol_lspaces[symbol])
-		whitespace();
+		printf("^")/*whitespace()*/;
 	output.is_space_before = symbol_rspaces[symbol];
 }
 
@@ -38,7 +38,7 @@ OUT(ws) {
 	return TokenArrayNext(tokens, token);
 }
 OUT(lit) {
-	printf("%s%.*s", "~", token->length, token->from);
+	printf("%.*s", token->length, token->from);
 	return TokenArrayNext(tokens, token);
 }
 OUT(gen1) {
@@ -53,7 +53,7 @@ OUT(gen1) {
 	if(!(a = strchr(type, '_'))) goto catch;
 	type_size = (int)(a - type);
 	assert(token->length == a + 1 - token->from);
-	printf("<%.*s>%.*s~",
+	printf("<%.*s>%.*s",
 		   token->length - 1, token->from, param->length, param->from);
 	return TokenArrayNext(tokens, rparen);
 	catch:
@@ -78,7 +78,7 @@ OUT(gen2) {
 	if(!(a = strchr(type2, '_'))) goto catch;
 	type2_size = (int)(a - type2);
 	assert(token->length == a + 1 - token->from);
-	printf("<%.*s>%.*s<%.*s>%.*s~", type1_size, type1, param1->length,
+	printf("<%.*s>%.*s<%.*s>%.*s", type1_size, type1, param1->length,
 		   param1->from, type2_size, type2, param2->length, param2->from);
 	return TokenArrayNext(tokens, rparen);
 	catch:
@@ -109,7 +109,7 @@ OUT(gen3) {
 	if(!(a = strchr(type3, '_'))) goto catch;
 	type3_size = (int)(a - type3);
 	assert(token->length == a + 1 - token->from);
-	printf("<%.*s>%.*s<%.*s>%.*s<%.*s>%.*s~", type1_size, type1,
+	printf("<%.*s>%.*s<%.*s>%.*s<%.*s>%.*s", type1_size, type1,
 		   param1->length, param1->from, type2_size, type2, param2->length,
 		   param2->from, type3_size, type3, param3->length, param3->from);
 	return TokenArrayNext(tokens, rparen);
@@ -118,10 +118,11 @@ OUT(gen3) {
 	return 0;
 }
 OUT(esc_bs) {
-	printf("\\~");
+	printf("\\?");
 	return TokenArrayNext(tokens, token);
 }
 OUT(url) {
+	/* fixme */
 	struct Token *const lbr = TokenArrayNext(tokens, token),
 	*next = TokenArrayNext(tokens, lbr); /* Variable no. */
 	if(!lbr || lbr->symbol != LBRACE || !next) goto catch;
@@ -131,7 +132,7 @@ OUT(url) {
 		printf("%.*s", next->length, next->from);
 		if(!(next = TokenArrayNext(tokens, next))) goto catch;
 	}
-	printf(")~");
+	printf(")");
 	return TokenArrayNext(tokens, next);
 	catch:
 	fprintf(stderr, "Expected: <url>;\n%s.\n", pos(token));
@@ -143,7 +144,7 @@ OUT(cite) {
 	if(!lbr || lbr->symbol != LBRACE || !next) goto catch;
 	printf("(");
 	while(next->symbol != RBRACE) {
-		printf("%.*s~", next->length, next->from);
+		printf("%.*s", next->length, next->from);
 		if(!(next = TokenArrayNext(tokens, next))) goto catch;
 	}
 	printf(")[https://scholar.google.ca/scholar?q=");
@@ -153,7 +154,7 @@ OUT(cite) {
 		printf("%.*s_", next->length, next->from);
 		if(!(next = TokenArrayNext(tokens, next))) goto catch;
 	}
-	printf("]~");
+	printf("]");
 	return TokenArrayNext(tokens, next);
 	catch:
 	fprintf(stderr, "Expected: \\cite{<source>};\n%s.\n", pos(token));
@@ -192,7 +193,7 @@ OUT(em) {
 	struct Token *next = TokenArrayNext(tokens, token);
 	printf("{em:`");
 	while(next->symbol != EM_END) {
-		printf("%.*s~", next->length, next->from);
+		printf("%.*s", next->length, next->from);
 		if(!(next = TokenArrayNext(tokens, next))) goto catch;
 	}
 	printf("`:em}");
@@ -351,13 +352,14 @@ static int preamble_attribute_exists(const enum Symbol symbol) {
 
 static void preamble_attribute_print(const enum Symbol symbol) {
 	struct Segment *segment = 0;
+	output_reset();
 	while((segment = SegmentArrayNext(&report, segment))) {
 		struct Attribute *attribute = 0;
 		if(segment->division != DIV_PREAMBLE) continue;
 		while((attribute = AttributeArrayNext(&segment->attributes, attribute)))
 		{
 			if(attribute->symbol != symbol) continue;
-			
+			tokens_print(&attribute->contents);
 		}
 	}
 }
@@ -367,7 +369,8 @@ void ReportOut(void) {
 	/* Print header. */
 	if(preamble_attribute_exists(ATT_TITLE)) {
 		printf("<header:title># ");
-		SegmentArrayIfEach(&report, &segment_is_header, &segment_print_all_title);
+		preamble_attribute_print(ATT_TITLE);
+		/*SegmentArrayIfEach(&report, &segment_is_header, &segment_print_all_title);*/
 		printf(" #\n\n");
 	} else {
 		printf("<no title>\n");
