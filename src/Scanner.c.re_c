@@ -17,6 +17,13 @@
 #include "../src/Array.h"
 
 
+/* Define another {SubstringArray} to point to the {CharArray}. */
+struct Substring { const char *start, *end; };
+#define ARRAY_NAME Substring
+#define ARRAY_TYPE struct Substring
+#include "../src/Array.h"
+
+
 /* This defines `ScanState`; the trailing comma on an `enum` is not proper
  `C90`, hopefully they will fix it. */
 /*!types:re2c*/
@@ -28,6 +35,7 @@ struct Scanner {
 	const char *marker, *ctx_marker, *from, *cursor;
 	/* Weird `c2re` stuff: these fields have to come after when >5? */
 	struct CharArray buffer;
+	struct SubstringArray ;
 	enum ScanState state;
 	enum Symbol symbol;
 	int indent_level;
@@ -48,6 +56,8 @@ static const char *pos(void) {
 	return p;
 }
 
+/*!stags:re2c format = 'const char *@@;'; */
+
 /*!re2c
 re2c:yyfill:enable   = 0;
 re2c:define:YYCTYPE  = char;
@@ -59,6 +69,7 @@ re2c:define:YYGETCONDITION = "scanner.state";
 re2c:define:YYGETCONDITION:naked = 1;
 re2c:define:YYSETCONDITION = "scanner.state = @@;";
 re2c:define:YYSETCONDITION:naked = 1;
+re2c:flags:tags      = 1;
 
 // Eof is marked by null when preparing files for lexing.
 eof = "\x00";
@@ -140,6 +151,7 @@ preformated = "\t" [^*\n\x00]*;
 
 /** Scans. */
 static enum Symbol scan(void) {
+	const char *opening, *closing;
 	scanner.doc_line = scanner.line;
 reset:
 	scanner.from = scanner.cursor;
@@ -242,7 +254,7 @@ scan:
 	<math> "_" { goto scan; }
 
 	// These are recognised in the documentation as stuff. fixme: s-tags.
-	<doc> "<" absolute_uri ">" { return URL; }
+	<doc> "<" @opening absolute_uri @closing ">" { return URL; }
 	<doc> "<" citation ">" { return CITE; }
 	<doc> "<fn:" generic_id ">" { return SEE_FN; }
 	<doc> "<tag:" generic_id ">" { return SEE_TAG; }
