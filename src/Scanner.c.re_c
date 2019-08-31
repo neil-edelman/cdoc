@@ -74,7 +74,7 @@ newline = "\n" | "\r" "\n"?;
 // "@" (at the beginning) for each-block-tag;
 // "<>[]" for embedded things;
 // "\x00" eof.
-word_base = [^ \t\n\v\f\r~*\\`_@<>\[\]\x00];
+word_base = [^ \t\n\v\f\r~*\\`_@<>[\]\x00];
 word_begin = word_base | ">" | "]";
 word_in    = word_begin | "@" | "<" | ">" | "[" | "]";
 word_end   = word_begin | "@" | "<" | "[";
@@ -97,7 +97,7 @@ frc = [0-9]* "." [0-9]+ | [0-9]+ ".";
 exp = 'e' [+-]? [0-9]+;
 flt = (frc exp? | [0-9]+ exp) [fFlL]?;
 number = (oct | dec | hex | flt) [uUlL]*;
-operator = ":" | "..." | "::" | "?" | "+" | "-" | "*" | "/" | "%" | "^"
+operator = ":" | "::" | "?" | "+" | "-" | "*" | "/" | "%" | "^"
 	| "xor" | "&" | "bitand" | "|" | "bitor" | "~" | "compl" | "!" | "not"
 	| "<" | ">" | "==" | "+=" | "-=" | "%=" | "^=" | "xor_eq"
 	| "&=" | "and_eq" | "|=" | "or_eq" | "<<" | ">>" | ">>=" | "<<="
@@ -154,8 +154,9 @@ scan:
 			fprintf(stderr, "Unexpected EOF;\n%s.\n", pos()), errno = EILSEQ;
 		return END;
 	}
-	// Ignore whitespace everywhere.
-	<*> whitespace+ { if(scanner.state == yycdoc) return SPACE; goto reset; }
+	// Return space.
+	<doc, em, math> whitespace+ { return SPACE; }
+	<code> whitespace+ { goto reset; }
 	// Newlines are generally ignored but documentation counts for paragraphs.
 	<*> newline {
 		scanner.line++;
@@ -181,7 +182,7 @@ scan:
 	<macro> begin_doc / [^/] { return fprintf(stderr,
 		"Documentation inside macro;\n%s.\n", pos()), errno = EILSEQ, END; }
 	// Everything is ignored except comments.
-	<macro> (. \ [/])*  { goto scan; }
+	<macro> ([^\x00\n\r] \ [/])+  { goto scan; }
 	<macro> [/] / [^*]  { goto scan; }
 	<macro> begin_comment :=> macro_comment
 	<code> comment_break { goto reset; } // Like this: /*****/.
@@ -209,7 +210,7 @@ scan:
 	<code> ")"          { return RPAREN; }
 	<code> ","          { return COMMA; }
 	<code> ";"          { return SEMI; }
-	<code> "..."        { return ELLIPSES; }
+	<code> "..."        { return ELLIPSIS; }
 	<code> id           { return ID; }
 
 	<code> begin_doc / [^/] { return scanner.state = yycdoc, DOC_BEGIN; }
@@ -274,6 +275,7 @@ scan:
 	<param_item>  id  { return scanner.state = yycparam_more, DOC_ID; }
 	<param_more>  "," { return scanner.state = yycparam_item, DOC_COMMA; }
 	<param_more>  "]" { return scanner.state = yycdoc,        DOC_RIGHT; }
+	<param_item, param_more> whitespace+ { goto reset; }
 	<param_begin, param_item, param_more> * {
 		return fprintf(stderr, "Unrecognised in parameter list;\n%s.\n", pos()),
 		errno = EILSEQ, END; }

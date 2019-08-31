@@ -199,7 +199,7 @@ params:
 /*!re2c
 	"(v)" { return 1; }
 	"(" / [^v] { goto params; }
-	[_*s]* { goto params; }
+	[_*s]+ { goto params; }
 	@label "x" { goto params; }
 	")" | ",.)" | @one_more "," {
 		if(!add_param(label, &is_success)) return 0;
