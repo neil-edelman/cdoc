@@ -57,7 +57,7 @@
 	X(NEWLINE,   '~', &par, 0, 0), \
 	X(NBSP,      '~', 0, 0, 0), \
 	X(NBTHINSP,  '~', 0, 0, 0), \
-	X(ESCAPE,    '~', &esc_bs, 0, 0), \
+	X(ESCAPE,    '~', &escape, 0, 0), \
 	/* Like <http://foo.com/>, <Cite1999>, [Foo](http://foo.com),
 	![Foo](foo.png), <fn:foo>, _etc_. */ \
 	X(URL,         '~', &url, 0, 0), \
@@ -70,9 +70,9 @@
 	X(SEE_DATA,    '~', &see_data, 0, 0), \
 	/* Like `this` or _this_. */ \
 	X(MATH_BEGIN,  '~', &math, 0, 0), \
-	X(MATH_END,    '~', 0, 0, 0), \
+	X(MATH_END,    '~', 0, 0, 0), /* Will never be seen. */ \
 	X(EM_BEGIN,    '~', &em, 0, 0), \
-	X(EM_END,      '~', 0, 0, 0), \
+	X(EM_END,      '~', 0, 0, 0), /* Will never be seen. */ \
 	/* Like @param[a, b, c]. */ \
 	X(DOC_LEFT,    '~', 0, 0, 0), \
 	X(DOC_RIGHT,   '~', 0, 0, 0), \

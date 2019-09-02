@@ -470,7 +470,7 @@ static int T_(ArrayExpand)(struct T_(Array) *const a, const size_t add) {
 	return 1;
 }
 
-/** Iterates though {a} and calls {action} on all the elements. The topology of
+/** Iterates through {a} and calls {action} on all the elements. The topology of
  the list can not change while in this function. That is, don't call
  \see{<T>ArrayNew}, \see{<T>ArrayRemove}, {etc} in {action}.
  @param a, action: If null, does nothing.
@@ -478,14 +478,14 @@ static int T_(ArrayExpand)(struct T_(Array) *const a, const size_t add) {
  @fixme Untested.
  @fixme Sequence interface.
  @allow */
-static void T_(ArrayForEach)(struct T_(Array) *const a,
+static void T_(ArrayEach)(struct T_(Array) *const a,
 	const PT_(Action) action) {
 	T *t, *end;
 	if(!a || !action) return;
 	for(t = a->data, end = t + a->size; t < end; t++) action(t);
 }
 
-/** Iterates though {a} and calls {action} on all the elements for which
+/** Iterates through {a} and calls {action} on all the elements for which
  {predicate} returns true. The topology of the list can not change while in
  this function.
  @param a, predicate, action: If null, does nothing.
@@ -499,6 +499,23 @@ static void T_(ArrayIfEach)(struct T_(Array) *const a,
 	if(!a || !action || !predicate) return;
 	for(t = a->data, end = t + a->size; t < end; t++)
 		if(predicate(t)) action(t);
+}
+
+/** Iterates through {a} and calls {predicate} until it returns true.
+ @param a, predicate: If null, returns null.
+ @return The first {predicate} that returned true, or, if the statement is
+ false on all, null.
+ @order O({size} \times {action})
+ @fixme Untested.
+ @fixme Sequence interface.
+ @allow */
+static T *T_(ArrayAny)(const struct T_(Array) *const a,
+	const PT_(Predicate) predicate) {
+	T *t, *end;
+	if(!a || !predicate) return 0;
+	for(t = a->data, end = t + a->size; t < end; t++)
+		if(predicate(t)) return t;
+	return 0;
 }
 
 /** For all elements of {a}, calls {keep}, and for each element, if the return
@@ -706,8 +723,9 @@ static void PT_(unused_set)(void) {
 	T_(ArrayUpdateNew)(0, 0);
 	T_(ArrayBuffer)(0, 0);
 	T_(ArrayExpand)(0, 0);
-	T_(ArrayForEach)(0, 0);
+	T_(ArrayEach)(0, 0);
 	T_(ArrayIfEach)(0, 0, 0);
+	T_(ArrayAny)(0, 0);
 	T_(ArrayKeepIf)(0, 0);
 	T_(ArrayTrim)(0, 0);
 	T_(ArrayReplace)(0, 0, 0, 0);

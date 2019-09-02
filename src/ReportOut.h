@@ -4,12 +4,14 @@ typedef const struct Token *(*OutFn)(const struct TokenArray *const tokens,
 
 static struct {
 	int level;
-	int is_space_before;
-	int is_newline_before;
+	int is_before;
+	void (*fn)(const char);
 } output;
-static void output_reset(void) {
+static void output_reset(void (*fn)(const char)) {
+	assert(fn);
 	output.level = 0;
-	output.is_space_before = output.is_newline_before = 0;
+	output.is_before = 0;
+	output.fn = fn;
 }
 
 
@@ -19,13 +21,15 @@ static const int symbol_lspaces[] = { SYMBOL(PARAM5D) };
 static const int symbol_rspaces[] = { SYMBOL(PARAM5E) };
 
 
-static void whitespace(void) {
-	fputc('~', stdout);
+static void whitespace(const char debug) {
+	fputc(debug/*' '*/, stdout);
+}
+static void newline(const char debug) {
+	printf("(%c\n\n%c)", debug, debug);
 }
 static void whitespace_if_needed(enum Symbol symbol) {
-	if(output.is_space_before && symbol_lspaces[symbol])
-		printf("^")/*whitespace()*/;
-	output.is_space_before = symbol_rspaces[symbol];
+	if(output.is_before && symbol_lspaces[symbol]) whitespace('^');
+	output.is_before = symbol_rspaces[symbol];
 }
 
 
@@ -34,10 +38,17 @@ static void whitespace_if_needed(enum Symbol symbol) {
 *const tokens, const struct Token *const token)
 
 OUT(ws) {
-	whitespace();
+	assert(tokens && token && token->symbol == SPACE);
+	whitespace('~');
+	return TokenArrayNext(tokens, token);
+}
+OUT(par) {
+	assert(tokens && token && token->symbol == NEWLINE);
+	newline('~');
 	return TokenArrayNext(tokens, token);
 }
 OUT(lit) {
+	assert(tokens && token && token->length > 0);
 	printf("%.*s", token->length, token->from);
 	return TokenArrayNext(tokens, token);
 }
@@ -47,6 +58,7 @@ OUT(gen1) {
 	*const rparen = TokenArrayNext(tokens, param);
 	const char *a, *type;
 	int type_size;
+	assert(tokens && token && token->symbol == ID_ONE_GENERIC);
 	if(!lparen || lparen->symbol != LPAREN || !param || !rparen
 	   || rparen->symbol != RPAREN) goto catch;
 	type = token->from;
@@ -68,6 +80,7 @@ OUT(gen2) {
 	*const rparen = TokenArrayNext(tokens, param2);
 	const char *a, *type1, *type2;
 	int type1_size, type2_size;
+	assert(tokens && token && token->symbol == ID_TWO_GENERICS);
 	if(!lparen || lparen->symbol != LPAREN || !param1 || !comma
 	   || comma->symbol != COMMA || !param2 || !rparen
 	   || rparen->symbol != RPAREN) goto catch;
@@ -95,6 +108,7 @@ OUT(gen3) {
 	*const rparen = TokenArrayNext(tokens, param3);
 	const char *a, *type1, *type2, *type3;
 	int type1_size, type2_size, type3_size;
+	assert(tokens && token && token->symbol == ID_THREE_GENERICS);
 	if(!lparen || lparen->symbol != LPAREN || !param1 || !comma1
 	   || comma1->symbol != COMMA || !param2 || !comma2 ||
 	   comma2->symbol != COMMA || !param3 || !rparen
@@ -117,38 +131,32 @@ OUT(gen3) {
 	fprintf(stderr, "Expected: A_B_C_(id,id,id); %s.\n", pos(token));
 	return 0;
 }
-OUT(esc_bs) {
-	printf("\\?");
+OUT(escape) {
+	assert(tokens && token && token->symbol == ESCAPE && token->length == 2);
+	printf("[\\%c]", token->from[1]);
 	return TokenArrayNext(tokens, token);
 }
 OUT(url) {
-	if(!token || token->symbol != URL || token->has_continuation) goto catch;
+	assert(tokens && token && token->symbol == URL);
 	printf("<%.*s>", token->length, token->from);
 	return TokenArrayNext(tokens, token);
-	catch:
-	fprintf(stderr, "Expected: \"<[url]>\"; %s.\n", pos(token));
-	return 0;
 }
 OUT(cite) {
-	struct Token *const lbr = TokenArrayNext(tokens, token),
-	*next = TokenArrayNext(tokens, lbr); /* Variable no. */
-	if(!lbr || lbr->symbol != LBRACE || !next) goto catch;
-	printf("(");
-	while(next->symbol != RBRACE) {
-		printf("%.*s", next->length, next->from);
-		if(!(next = TokenArrayNext(tokens, next))) goto catch;
+	static char url_encoded[64];
+	size_t source = 0, target = 0;
+	char ch;
+	assert(tokens && token && token->symbol == CITE);
+	while(target < sizeof url_encoded - 4 && source < (size_t)token->length) {
+		ch = token->from[source++];
+		if(!ch) goto catch;
+		url_encoded[target] = ch;
 	}
-	printf(")[https://scholar.google.ca/scholar?q=");
-	next = TokenArrayNext(tokens, lbr);
-	while(next->symbol != RBRACE) {
-		/* fixme: escape url! */
-		printf("%.*s_", next->length, next->from);
-		if(!(next = TokenArrayNext(tokens, next))) goto catch;
-	}
-	printf("]");
-	return TokenArrayNext(tokens, next);
+	url_encoded[target] = '\0';
+	printf("(%.*s)<https://scholar.google.ca/scholar?q=%s>",
+		token->length, token->from, url_encoded);
+	return TokenArrayNext(tokens, token);
 	catch:
-	fprintf(stderr, "Expected: \\cite{<source>}; %s.\n", pos(token));
+	fprintf(stderr, "Expected: <source>; %s.\n", pos(token));
 	return 0;
 }
 OUT(see_fn) {
@@ -193,10 +201,6 @@ OUT(em) {
 	fprintf(stderr, "Expected: _<emphasis>_; %s.\n", pos(token));
 	return 0;
 }
-OUT(par) {
-	printf("^\n^\n");
-	return TokenArrayNext(tokens, token);
-}
 
 
 
@@ -209,6 +213,7 @@ static void tokens_print(const struct TokenArray *const tokens) {
 	const struct Token *token = TokenArrayNext(tokens, 0);
 	OutFn sym_out;
 	if(!token) return;
+	/* fixme: This does not stop on error. */
 	while((sym_out = symbol_outs[token->symbol])
 		&& (whitespace_if_needed(token->symbol),
 		token = sym_out(tokens, token)));
@@ -343,7 +348,7 @@ static int preamble_attribute_exists(const enum Symbol symbol) {
 
 static void preamble_attribute_print(const enum Symbol symbol) {
 	struct Segment *segment = 0;
-	output_reset();
+	output_reset(&whitespace);
 	while((segment = SegmentArrayNext(&report, segment))) {
 		struct Attribute *attribute = 0;
 		if(segment->division != DIV_PREAMBLE) continue;
@@ -355,19 +360,29 @@ static void preamble_attribute_print(const enum Symbol symbol) {
 	}
 }
 
+static void preamble_print(void) {
+	struct Segment *segment = 0;
+	output_reset(&newline);
+	while((segment = SegmentArrayNext(&report, segment))) {
+		if(segment->division != DIV_PREAMBLE) continue;
+		tokens_print(&segment->doc);
+	}
+}
+
 /** Outputs a file when given a `SegmentArray`. */
 void ReportOut(void) {
-	/* Print header. */
+	/* Header. */
 	if(preamble_attribute_exists(ATT_TITLE)) {
 		printf("<header:title># ");
 		preamble_attribute_print(ATT_TITLE);
-		/*SegmentArrayIfEach(&report, &segment_is_header, &segment_print_all_title);*/
 		printf(" #\n\n");
 	} else {
-		printf("<no title>\n");
+		printf("<no title>\n\n");
 	}
-	printf("<header:doc>\n");
-	SegmentArrayIfEach(&report, &segment_is_header, &segment_print_doc);
+	/* Preamble contents. */
+	preamble_print();
+	/*printf("<header:doc>\n");
+	SegmentArrayIfEach(&report, &segment_is_header, &segment_print_doc);*/
 	/* Print typedefs. */
 	printf("\n\n## Typedefs ##\n");
 	/* Print tags. */

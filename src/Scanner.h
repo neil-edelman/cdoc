@@ -11,4 +11,3 @@ const char *ScannerFrom(void);
 const char *ScannerTo(void);
 size_t ScannerLine(void);
 int ScannerIndentLevel(void);
-int ScannerHasContinuation(void);

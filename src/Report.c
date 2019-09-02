@@ -18,7 +18,6 @@ struct Token {
 	enum Symbol symbol;
 	const char *from;
 	int length;
-	int has_continuation;
 	size_t line;
 };
 static void token_to_string(const struct Token *t, char (*const a)[12]) {
@@ -163,7 +162,6 @@ static int new_token(struct TokenArray *const tokens, const enum Symbol symbol)
 	token->symbol = symbol;
 	token->from = from;
 	token->length = (int)(to - from);
-	token->has_continuation = ScannerHasContinuation();
 	token->line = ScannerLine();
 	return 1;
 }
