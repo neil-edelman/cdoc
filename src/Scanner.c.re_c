@@ -61,6 +61,11 @@ static const char *pos(void) {
 
 /*!stags:re2c format = 'const char *@@;'; */
 
+/*!mtags:re2c format = "const char *@@ = 0;"; */
+
+#define YYMTAGP(mtag) printf("***%.5s***", mtag) /*mtag(&mtag, YYCURSOR)*/
+#define YYMTAGN(mtag) printf("!!!%.5s!!!", mtag) /*mtag(&mtag, 0)*/
+
 /*!re2c
 re2c:yyfill:enable   = 0;
 re2c:define:YYCTYPE  = char;
@@ -154,7 +159,7 @@ preformated = "\t" [^*\n\x00]*;
 
 /** Scans. */
 static enum Symbol scan(void) {
-	const char *opening, *closing;
+	const char *link0, *link1, *text0, *text1;
 	/* We still haven't got the last scan's submatches; augment and return. */
 	if(scanner.submatch_index + 1 < SubArraySize(&scanner.submatch))
 		return scanner.submatch_index++, scanner.symbol;
@@ -263,23 +268,23 @@ scan:
 
 	// These are recognised in the documentation as stuff; parse them further
 	// using `submatch`.
-	<doc> "<" @opening absolute_uri @closing ">" {
+	<doc> "<" @link0 absolute_uri @link1 ">" {
 		struct Sub *const sub = SubArrayNew(&scanner.submatch);
 		if(!sub) return END;
-		sub->start = opening, sub->end = closing;
+		sub->start = link0, sub->end = link1;
 		return URL;
 	}
-	<doc> "<" @opening citation @closing ">" {
+	<doc> "<" @link0 citation @link1 ">" {
 		struct Sub *const sub = SubArrayNew(&scanner.submatch);
 		if(!sub) return END;
-		sub->start = opening, sub->end = closing;
+		sub->start = link0, sub->end = link1;
 		return CITE;
 	}
 	<doc> "<fn:" generic_id ">" { return SEE_FN; }
 	<doc> "<tag:" generic_id ">" { return SEE_TAG; }
 	<doc> "<typedef:" generic_id ">" { return SEE_TYPEDEF; }
 	<doc> "<data:" generic_id ">" { return SEE_DATA; }
-	<doc> "[" whitespace* (word whitespace*)+ "](" absolute_uri ")"
+	<doc> "[" whitespace* (#text0 word #text1 whitespace*)+ "](" absolute_uri ")"
 		{ return LINK; }
 	<doc> "![" whitespace* (word whitespace*)+ "](" relative_uri ")"
 		{ return IMAGE; }
