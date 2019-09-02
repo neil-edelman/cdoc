@@ -122,18 +122,9 @@ OUT(esc_bs) {
 	return TokenArrayNext(tokens, token);
 }
 OUT(url) {
-	/* fixme */
-	struct Token *const lbr = TokenArrayNext(tokens, token),
-	*next = TokenArrayNext(tokens, lbr); /* Variable no. */
-	if(!lbr || lbr->symbol != LBRACE || !next) goto catch;
-	printf("(");
-	while(next->symbol != RBRACE) {
-		/* We don't care about the symbol's meaning in the url. */
-		printf("%.*s", next->length, next->from);
-		if(!(next = TokenArrayNext(tokens, next))) goto catch;
-	}
-	printf(")");
-	return TokenArrayNext(tokens, next);
+	if(!token || token->symbol != URL || token->has_continuation) goto catch;
+	printf("<%.*s>", token->length, token->from);
+	return TokenArrayNext(tokens, token);
 	catch:
 	fprintf(stderr, "Expected: <url>;\n%s.\n", pos(token));
 	return 0;
