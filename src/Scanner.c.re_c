@@ -18,14 +18,6 @@
 #include "../src/Array.h"
 
 
-/* Define another {SubstringArray} to point to the {CharArray},
- `[start, end)`. */
-struct Sub { const char *start, *end; };
-#define ARRAY_NAME Sub
-#define ARRAY_TYPE struct Sub
-#include "../src/Array.h"
-
-
 /* This defines `ScanState`; the trailing comma on an `enum` is not proper
  `C90`, hopefully they will fix it. */
 /*!types:re2c*/
@@ -36,9 +28,8 @@ struct Scanner {
 	/* `re2c` variables; these point directly into `buffer`. */
 	const char *marker, *ctx_marker, *from, *cursor;
 	/* Weird `c2re` stuff: these fields have to come after when >5? */
+	const char *stag_a0, *stag_a1, *stag_b0, *stag_b1;
 	struct CharArray buffer;
-	struct SubArray submatch;
-	size_t submatch_index;
 	enum ScanState state;
 	enum Symbol symbol;
 	int indent_level;
@@ -60,11 +51,6 @@ static const char *pos(void) {
 }
 
 /*!stags:re2c format = 'const char *@@;'; */
-
-/*!mtags:re2c format = "const char *@@ = 0;"; */
-
-#define YYMTAGP(mtag) printf("***%.5s***", mtag) /*mtag(&mtag, YYCURSOR)*/
-#define YYMTAGN(mtag) printf("!!!%.5s!!!", mtag) /*mtag(&mtag, 0)*/
 
 /*!re2c
 re2c:yyfill:enable   = 0;
