@@ -57,7 +57,7 @@ OUT(gen1) {
 		   token->length - 1, token->from, param->length, param->from);
 	return TokenArrayNext(tokens, rparen);
 	catch:
-	fprintf(stderr, "Expected: generic(id);\n%s.\n", pos(token));
+	fprintf(stderr, "Expected: generic(id); %s.\n", pos(token));
 	return 0;
 }
 OUT(gen2) {
@@ -82,7 +82,7 @@ OUT(gen2) {
 		   param1->from, type2_size, type2, param2->length, param2->from);
 	return TokenArrayNext(tokens, rparen);
 	catch:
-	fprintf(stderr, "Expected: generic(id,id);\n%s.\n", pos(token));
+	fprintf(stderr, "Expected: generic(id,id); %s.\n", pos(token));
 	return 0;
 }
 OUT(gen3) {
@@ -114,7 +114,7 @@ OUT(gen3) {
 		   param2->from, type3_size, type3, param3->length, param3->from);
 	return TokenArrayNext(tokens, rparen);
 	catch:
-	fprintf(stderr, "Expected: A_B_C_(id,id,id);\n%s.\n", pos(token));
+	fprintf(stderr, "Expected: A_B_C_(id,id,id); %s.\n", pos(token));
 	return 0;
 }
 OUT(esc_bs) {
@@ -126,7 +126,7 @@ OUT(url) {
 	printf("<%.*s>", token->length, token->from);
 	return TokenArrayNext(tokens, token);
 	catch:
-	fprintf(stderr, "Expected: <url>;\n%s.\n", pos(token));
+	fprintf(stderr, "Expected: \"<[url]>\"; %s.\n", pos(token));
 	return 0;
 }
 OUT(cite) {
@@ -148,7 +148,7 @@ OUT(cite) {
 	printf("]");
 	return TokenArrayNext(tokens, next);
 	catch:
-	fprintf(stderr, "Expected: \\cite{<source>};\n%s.\n", pos(token));
+	fprintf(stderr, "Expected: \\cite{<source>}; %s.\n", pos(token));
 	return 0;
 }
 OUT(see_fn) {
@@ -177,7 +177,7 @@ OUT(math) { /* Math and code. */
 	printf("`:code}");
 	return TokenArrayNext(tokens, next);
 	catch:
-	fprintf(stderr, "Expected: `<math/code>`;\n%s.\n", pos(token));
+	fprintf(stderr, "Expected: `<math/code>`; %s.\n", pos(token));
 	return 0;
 }
 OUT(em) {
@@ -190,7 +190,7 @@ OUT(em) {
 	printf("`:em}");
 	return TokenArrayNext(tokens, next);
 	catch:
-	fprintf(stderr, "Expected: _<emphasis>_;\n%s.\n", pos(token));
+	fprintf(stderr, "Expected: _<emphasis>_; %s.\n", pos(token));
 	return 0;
 }
 OUT(par) {
