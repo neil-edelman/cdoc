@@ -368,8 +368,9 @@ static void preamble_print(void) {
 	struct Segment *segment = 0;
 	spaces_reset(&newline);
 	while((segment = SegmentArrayNext(&report, segment))) {
-		printf("<<%s>>\n", segment->name);
+		printf("<<%s>> %s\n", segment->name, divisions[segment->division]);
 		if(segment->division != DIV_PREAMBLE) continue;
+		printf("<<accept>>\n");
 		tokens_print(&segment->doc);
 		spaces_force();
 	}
