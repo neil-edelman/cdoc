@@ -92,6 +92,7 @@ static void attributes_(struct AttributeArray *const atts) {
 /** `Segment` is classified to a section of the document and can have
  documentation including attributes and code. */
 struct Segment {
+	char name[6];
 	enum Division division;
 	struct TokenArray doc, code;
 	struct TokenRefArray params;
@@ -128,6 +129,12 @@ void Report_(void) {
 static struct Segment *new_segment(void) {
 	struct Segment *segment;
 	if(!(segment = SegmentArrayNew(&report))) return 0;
+	{ /* Debug. */
+		char *n;
+		for(n = segment->name; n < segment->name + 6; n++)
+			*n = 'a' + rand() / (RAND_MAX / ('z' - 'a' + 1) + 1);
+		*n = '\0';
+	}
 	segment->division = DIV_PREAMBLE; /* Default. */
 	TokenArray(&segment->doc);
 	TokenArray(&segment->code);

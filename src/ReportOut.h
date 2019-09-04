@@ -6,13 +6,14 @@ static struct {
 	int level;
 	int is_before;
 	void (*fn)(const char);
-} output;
-static void output_reset(void (*fn)(const char)) {
+} spaces;
+static void spaces_reset(void (*fn)(const char)) {
 	assert(fn);
-	output.level = 0;
-	output.is_before = 0;
-	output.fn = fn;
+	spaces.level = 0;
+	spaces.is_before = 0;
+	spaces.fn = fn;
 }
+static void spaces_force(void) { spaces.is_before = 1; }
 
 
 
@@ -28,8 +29,9 @@ static void newline(const char debug) {
 	printf("(%c\n\n%c)", debug, debug);
 }
 static void whitespace_if_needed(enum Symbol symbol) {
-	if(output.is_before && symbol_lspaces[symbol]) whitespace('^');
-	output.is_before = symbol_rspaces[symbol];
+	assert(spaces.fn);
+	if(spaces.is_before && symbol_lspaces[symbol]) spaces.fn('^');
+	spaces.is_before = symbol_rspaces[symbol];
 }
 
 
@@ -319,10 +321,11 @@ void ReportDebug(void) {
 	 size_t line;
 	 };*/
 	while((segment = SegmentArrayNext(&report, segment))) {
-		printf("Segment: %s;\n"
+		printf("Segment %s: %s;\n"
 			   "code: %s;\n"
 			   "params: %s;\n"
 			   "doc: %s.\n",
+			   segment->name,
 			   divisions[segment->division],
 			   TokenArrayToString(&segment->code),
 			   TokenRefArrayToString(&segment->params),
@@ -348,7 +351,7 @@ static int preamble_attribute_exists(const enum Symbol symbol) {
 
 static void preamble_attribute_print(const enum Symbol symbol) {
 	struct Segment *segment = 0;
-	output_reset(&whitespace);
+	spaces_reset(&whitespace);
 	while((segment = SegmentArrayNext(&report, segment))) {
 		struct Attribute *attribute = 0;
 		if(segment->division != DIV_PREAMBLE) continue;
@@ -357,15 +360,18 @@ static void preamble_attribute_print(const enum Symbol symbol) {
 			if(attribute->symbol != symbol) continue;
 			tokens_print(&attribute->contents);
 		}
+		spaces_force();
 	}
 }
 
 static void preamble_print(void) {
 	struct Segment *segment = 0;
-	output_reset(&newline);
+	spaces_reset(&newline);
 	while((segment = SegmentArrayNext(&report, segment))) {
+		printf("<<%s>>\n", segment->name);
 		if(segment->division != DIV_PREAMBLE) continue;
 		tokens_print(&segment->doc);
+		spaces_force();
 	}
 }
 
@@ -373,13 +379,14 @@ static void preamble_print(void) {
 void ReportOut(void) {
 	/* Header. */
 	if(preamble_attribute_exists(ATT_TITLE)) {
-		printf("<header:title># ");
+		printf("<preamble:title># ");
 		preamble_attribute_print(ATT_TITLE);
 		printf(" #\n\n");
 	} else {
 		printf("<no title>\n\n");
 	}
 	/* Preamble contents. */
+	printf("<preamble:contents>");
 	preamble_print();
 	/*printf("<header:doc>\n");
 	SegmentArrayIfEach(&report, &segment_is_header, &segment_print_doc);*/
