@@ -62,8 +62,8 @@
 	![Foo](foo.png), <fn:foo>, _etc_. */ \
 	X(URL,         '~', &url, 1, 1), \
 	X(CITE,        '~', &cite, 1, 1), \
-	X(LINK,        '~', 0, 1, 1), \
-	X(IMAGE,       '~', 0, 1, 1), \
+	X(LINK,        '~', &link, 1, 1), /* fixme */ \
+	X(IMAGE,       '~', 0, 1, 1), /* fixme */ \
 	X(SEE_FN,      '~', &see_fn, 1, 1), \
 	X(SEE_TAG,     '~', &see_tag, 1, 1), \
 	X(SEE_TYPEDEF, '~', &see_typedef, 1, 1), \

@@ -1,6 +1,12 @@
 /** Selects `token` out of `tokens` and prints it and returns the next token. */
-typedef const struct Token *(*OutFn)(const struct TokenArray *const tokens,
-	const struct Token *const token);
+typedef int (*OutFn)(const struct TokenArray *const tokens,
+	const struct Token **const ptoken);
+/* @param[ptoken] Is an [in/out] variable, it should get updated unless the
+ return value is false.
+ @return Success.
+ @implements <Attribute>Predicate */
+#define OUT(name) static int name(const struct TokenArray *const tokens, \
+	const struct Token **ptoken)
 
 static struct {
 	int level;
@@ -35,87 +41,95 @@ static void whitespace_if_needed(enum Symbol symbol) {
 }
 
 
-/* @implements <Attribute>Predicate */
-#define OUT(name) static const struct Token *name(const struct TokenArray \
-*const tokens, const struct Token *const token)
 
 OUT(ws) {
-	assert(tokens && token && token->symbol == SPACE);
+	const struct Token *const space = *ptoken;
+	assert(tokens && space && space->symbol == SPACE);
 	whitespace('~');
-	return TokenArrayNext(tokens, token);
+	*ptoken = TokenArrayNext(tokens, space);
+	return 1;
 }
 OUT(par) {
-	assert(tokens && token && token->symbol == NEWLINE);
+	const struct Token *const t = *ptoken;
+	assert(tokens && t && t->symbol == NEWLINE);
 	newline('~');
-	return TokenArrayNext(tokens, token);
+	*ptoken = TokenArrayNext(tokens, t);
+	return 1;
 }
 OUT(lit) {
-	assert(tokens && token && token->length > 0);
-	printf("%.*s", token->length, token->from);
-	return TokenArrayNext(tokens, token);
+	const struct Token *const t = *ptoken;
+	assert(tokens && t && t->length > 0);
+	printf("%.*s", t->length, t->from);
+	*ptoken = TokenArrayNext(tokens, t);
+	return 1;
 }
 OUT(gen1) {
-	struct Token *const lparen = TokenArrayNext(tokens, token),
-	*const param = TokenArrayNext(tokens, lparen),
-	*const rparen = TokenArrayNext(tokens, param);
+	const struct Token *const t = *ptoken,
+		*const lparen = TokenArrayNext(tokens, t),
+		*const param = TokenArrayNext(tokens, lparen),
+		*const rparen = TokenArrayNext(tokens, param);
 	const char *a, *type;
 	int type_size;
-	assert(tokens && token && token->symbol == ID_ONE_GENERIC);
+	assert(tokens && t && t->symbol == ID_ONE_GENERIC);
 	if(!lparen || lparen->symbol != LPAREN || !param || !rparen
 	   || rparen->symbol != RPAREN) goto catch;
-	type = token->from;
+	type = t->from;
 	if(!(a = strchr(type, '_'))) goto catch;
 	type_size = (int)(a - type);
-	assert(token->length == a + 1 - token->from);
+	assert(t->length == a + 1 - t->from);
 	printf("<%.*s>%.*s",
-		   token->length - 1, token->from, param->length, param->from);
-	return TokenArrayNext(tokens, rparen);
+		t->length - 1, t->from, param->length, param->from);
+	*ptoken = TokenArrayNext(tokens, rparen);
+	return 1;
 	catch:
-	fprintf(stderr, "Expected: generic(id); %s.\n", pos(token));
+	fprintf(stderr, "Expected: generic(id); %s.\n", pos(t));
 	return 0;
 }
 OUT(gen2) {
-	struct Token *const lparen = TokenArrayNext(tokens, token),
-	*const param1 = TokenArrayNext(tokens, lparen),
-	*const comma = TokenArrayNext(tokens, param1),
-	*const param2 = TokenArrayNext(tokens, comma),
-	*const rparen = TokenArrayNext(tokens, param2);
+	const struct Token *const t = *ptoken,
+		*const lparen = TokenArrayNext(tokens, t),
+		*const param1 = TokenArrayNext(tokens, lparen),
+		*const comma = TokenArrayNext(tokens, param1),
+		*const param2 = TokenArrayNext(tokens, comma),
+		*const rparen = TokenArrayNext(tokens, param2);
 	const char *a, *type1, *type2;
 	int type1_size, type2_size;
-	assert(tokens && token && token->symbol == ID_TWO_GENERICS);
+	assert(tokens && t && t->symbol == ID_TWO_GENERICS);
 	if(!lparen || lparen->symbol != LPAREN || !param1 || !comma
-	   || comma->symbol != COMMA || !param2 || !rparen
-	   || rparen->symbol != RPAREN) goto catch;
-	type1 = token->from;
+		|| comma->symbol != COMMA || !param2 || !rparen
+		|| rparen->symbol != RPAREN) goto catch;
+	type1 = t->from;
 	if(!(a = strchr(type1, '_'))) goto catch;
 	type1_size = (int)(a - type1);
 	type2 = a + 1;
 	if(!(a = strchr(type2, '_'))) goto catch;
 	type2_size = (int)(a - type2);
-	assert(token->length == a + 1 - token->from);
+	assert(t->length == a + 1 - t->from);
 	printf("<%.*s>%.*s<%.*s>%.*s", type1_size, type1, param1->length,
 		   param1->from, type2_size, type2, param2->length, param2->from);
-	return TokenArrayNext(tokens, rparen);
+	*ptoken = TokenArrayNext(tokens, rparen);
+	return 1;
 	catch:
-	fprintf(stderr, "Expected: generic(id,id); %s.\n", pos(token));
+	fprintf(stderr, "Expected: generic2(id,id); %s.\n", pos(t));
 	return 0;
 }
 OUT(gen3) {
-	struct Token *const lparen = TokenArrayNext(tokens, token),
-	*const param1 = TokenArrayNext(tokens, lparen),
-	*const comma1 = TokenArrayNext(tokens, param1),
-	*const param2 = TokenArrayNext(tokens, comma1),
-	*const comma2 = TokenArrayNext(tokens, param2),
-	*const param3 = TokenArrayNext(tokens, comma2),
-	*const rparen = TokenArrayNext(tokens, param3);
+	const struct Token *const t = *ptoken,
+		*const lparen = TokenArrayNext(tokens, t),
+		*const param1 = TokenArrayNext(tokens, lparen),
+		*const comma1 = TokenArrayNext(tokens, param1),
+		*const param2 = TokenArrayNext(tokens, comma1),
+		*const comma2 = TokenArrayNext(tokens, param2),
+		*const param3 = TokenArrayNext(tokens, comma2),
+		*const rparen = TokenArrayNext(tokens, param3);
 	const char *a, *type1, *type2, *type3;
 	int type1_size, type2_size, type3_size;
-	assert(tokens && token && token->symbol == ID_THREE_GENERICS);
+	assert(tokens && t && t->symbol == ID_THREE_GENERICS);
 	if(!lparen || lparen->symbol != LPAREN || !param1 || !comma1
 	   || comma1->symbol != COMMA || !param2 || !comma2 ||
 	   comma2->symbol != COMMA || !param3 || !rparen
 	   || rparen->symbol != RPAREN) goto catch;
-	type1 = token->from;
+	type1 = t->from;
 	if(!(a = strchr(type1, '_'))) goto catch;
 	type1_size = (int)(a - type1);
 	type2 = a + 1;
@@ -124,83 +138,120 @@ OUT(gen3) {
 	type3 = a + 1;
 	if(!(a = strchr(type3, '_'))) goto catch;
 	type3_size = (int)(a - type3);
-	assert(token->length == a + 1 - token->from);
+	assert(t->length == a + 1 - t->from);
 	printf("<%.*s>%.*s<%.*s>%.*s<%.*s>%.*s", type1_size, type1,
-		   param1->length, param1->from, type2_size, type2, param2->length,
-		   param2->from, type3_size, type3, param3->length, param3->from);
-	return TokenArrayNext(tokens, rparen);
+		param1->length, param1->from, type2_size, type2, param2->length,
+		param2->from, type3_size, type3, param3->length, param3->from);
+	*ptoken = TokenArrayNext(tokens, rparen);
+	return 1;
 	catch:
-	fprintf(stderr, "Expected: A_B_C_(id,id,id); %s.\n", pos(token));
+	fprintf(stderr, "Expected: A_B_C_(id,id,id); %s.\n", pos(t));
 	return 0;
 }
 OUT(escape) {
-	assert(tokens && token && token->symbol == ESCAPE && token->length == 2);
-	printf("[\\%c]", token->from[1]);
-	return TokenArrayNext(tokens, token);
+	const struct Token *const t = *ptoken;
+	assert(tokens && t && t->symbol == ESCAPE && t->length == 2);
+	printf("[\\%c]", t->from[1]);
+	*ptoken = TokenArrayNext(tokens, t);
+	return 1;
 }
 OUT(url) {
-	assert(tokens && token && token->symbol == URL);
-	printf("<%.*s>", token->length, token->from);
-	return TokenArrayNext(tokens, token);
+	const struct Token *const t = *ptoken;
+	assert(tokens && t && t->symbol == URL);
+	printf("<%.*s>", t->length, t->from);
+	*ptoken = TokenArrayNext(tokens, t);
+	return 1;
 }
 OUT(cite) {
+	const struct Token *const t = *ptoken;
 	static char url_encoded[64];
 	size_t source = 0, target = 0;
 	char ch;
-	assert(tokens && token && token->symbol == CITE);
-	while(target < sizeof url_encoded - 4 && source < (size_t)token->length) {
-		ch = token->from[source++];
+	assert(tokens && t && t->symbol == CITE);
+	while(target < sizeof url_encoded - 4 && source < (size_t)t->length) {
+		ch = t->from[source++];
 		if(!ch) goto catch;
 		url_encoded[target] = ch;
 	}
 	url_encoded[target] = '\0';
 	printf("(%.*s)<https://scholar.google.ca/scholar?q=%s>",
-		token->length, token->from, url_encoded);
-	return TokenArrayNext(tokens, token);
-	catch:
-	fprintf(stderr, "Expected: <source>; %s.\n", pos(token));
+		t->length, t->from, url_encoded);
+	*ptoken = TokenArrayNext(tokens, t);
+	return 1;
+catch:
+	fprintf(stderr, "Expected: <source>; %s.\n", pos(t));
 	return 0;
 }
 OUT(see_fn) {
-	printf("(fixme)\\see<fn>");
-	return TokenArrayNext(tokens, token);
+	const struct Token *const fn = *ptoken;
+	assert(tokens && fn && fn->symbol == SEE_FN);
+	printf("(fixme)<fn:%.*s>", fn->length, fn->from);
+	*ptoken = TokenArrayNext(tokens, fn);
+	return 1;
 }
 OUT(see_tag) {
-	printf("(fixme)\\see<tag>");
-	return TokenArrayNext(tokens, token);
+	const struct Token *const tag = *ptoken;
+	assert(tokens && tag && tag->symbol == SEE_FN);
+	printf("(fixme)<tag:%.*s>", tag->length, tag->from);
+	*ptoken = TokenArrayNext(tokens, tag);
+	return 1;
 }
 OUT(see_typedef) {
-	printf("(fixme)\\see<typedef>");
-	return TokenArrayNext(tokens, token);
+	const struct Token *const def = *ptoken;
+	assert(tokens && def && def->symbol == SEE_FN);
+	printf("(fixme)<typedef:%.*s>", def->length, def->from);
+	*ptoken = TokenArrayNext(tokens, def);
+	return 1;
 }
 OUT(see_data) {
-	printf("(fixme)\\see<data>");
-	return TokenArrayNext(tokens, token);
+	const struct Token *const data = *ptoken;
+	assert(tokens && data && data->symbol == SEE_FN);
+	printf("(fixme)<data:%.*s>", data->length, data->from);
+	*ptoken = TokenArrayNext(tokens, data);
+	return 1;
 }
 OUT(math) { /* Math and code. */
-	struct Token *next = TokenArrayNext(tokens, token);
+	const struct Token *const begin = *ptoken;
+	struct Token *next = TokenArrayNext(tokens, begin);
+	assert(tokens && begin && begin->symbol == MATH_BEGIN);
 	printf("{code:`");
 	while(next->symbol != MATH_END) {
 		printf("%.*s", next->length, next->from);
 		if(!(next = TokenArrayNext(tokens, next))) goto catch;
 	}
 	printf("`:code}");
-	return TokenArrayNext(tokens, next);
-	catch:
-	fprintf(stderr, "Expected: `<math/code>`; %s.\n", pos(token));
+	*ptoken = TokenArrayNext(tokens, next);
+	return 1;
+catch:
+	fprintf(stderr, "Expected: `<math/code>`; %s.\n", pos(begin));
 	return 0;
 }
 OUT(em) {
-	struct Token *next = TokenArrayNext(tokens, token);
+	const struct Token *const begin = *ptoken;
+	struct Token *next = TokenArrayNext(tokens, begin);
+	assert(tokens && begin && begin->symbol == EM_BEGIN);
 	printf("{em:`");
 	while(next->symbol != EM_END) {
 		printf("%.*s", next->length, next->from);
 		if(!(next = TokenArrayNext(tokens, next))) goto catch;
 	}
 	printf("`:em}");
-	return TokenArrayNext(tokens, next);
-	catch:
-	fprintf(stderr, "Expected: _<emphasis>_; %s.\n", pos(token));
+	*ptoken = TokenArrayNext(tokens, next);
+	return 1;
+catch:
+	fprintf(stderr, "Expected: _<emphasis>_; %s.\n", pos(begin));
+	return 0;
+}
+OUT(link) {
+	const struct Token *const t = *ptoken,
+		*const desc = TokenArrayNext(tokens, t);
+	assert(tokens && t && t->symbol == LINK);
+	if(!desc || desc->symbol != LINK) goto catch;
+	printf("[%.*s](%.*s)", desc->length, desc->from, t->length, t->from);
+	*ptoken = TokenArrayNext(tokens, desc);
+	return 1;
+catch:
+	fprintf(stderr, "Expected: `[description](url)`; %s.\n", pos(t));
 	return 0;
 }
 
@@ -216,9 +267,17 @@ static void tokens_print(const struct TokenArray *const tokens) {
 	OutFn sym_out;
 	if(!token) return;
 	/* fixme: This does not stop on error. */
-	while((sym_out = symbol_outs[token->symbol])
-		&& (whitespace_if_needed(token->symbol),
-		token = sym_out(tokens, token)));
+	while(token) {
+		sym_out = symbol_outs[token->symbol];
+		if(!sym_out) {
+			printf("<<%s fn undefined>>", symbols[token->symbol]);
+			token = TokenArrayNext(tokens, token);
+			continue;
+		}
+		assert(sym_out);
+		whitespace_if_needed(token->symbol);
+		if(!sym_out(tokens, &token)) { errno = EILSEQ; return /* fixme */; }
+	}
 }
 
 /** @implements <Attribute>Action */
@@ -368,9 +427,7 @@ static void preamble_print(void) {
 	struct Segment *segment = 0;
 	spaces_reset(&newline);
 	while((segment = SegmentArrayNext(&report, segment))) {
-		printf("<<%s>> %s\n", segment->name, divisions[segment->division]);
 		if(segment->division != DIV_PREAMBLE) continue;
-		printf("<<accept>>\n");
 		tokens_print(&segment->doc);
 		spaces_force();
 	}

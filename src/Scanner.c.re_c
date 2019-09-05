@@ -129,14 +129,15 @@ absolute_uri = uri_scheme uri_authority uri_path uri_query? uri_fragment?;
 relative_uri = uri_scheme? uri_authority? uri_path uri_query? uri_fragment?;
 // Citation format. Not authoritative.
 author = [A-Z][A-Za-z'`-]+; // Fixme: No!!! UTF-8
-etalia = "et" whitespace+ "al" "."?;
-authorsep = ","? whitespace* ("and" | "&" | whitespace) whitespace*;
-closing = ","? whitespace*;
+etalia = "et" whitespace? "al" "."?;
+authorsep = ","? (whitespace? "and" whitespace | whitespace? "&" whitespace?
+| whitespace?);
+closing = ","? whitespace?;
 date = [1-3][0-9][0-9][0-9];
-page = ","? whitespace* (("pp" | "p") "."?)? whitespace*
-	[0-9]+ (whitespace* "-"{1,2} whitespace* [0-9]+)?;
-citation = whitespace* author (authorsep author)*
-	(closing etalia)? closing date page? whitespace*;
+page = ","? whitespace? (("pp" | "p") "."?)? whitespace?
+	[0-9]+ (whitespace? "-"{1,2} whitespace? [0-9]+)?;
+citation = whitespace? author (authorsep author)*
+	(closing etalia)? closing date page?;
 // Lists.
 list = " -* ";
 // Math/code blocks. Added after; very meh.
