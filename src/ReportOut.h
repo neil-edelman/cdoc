@@ -10,16 +10,16 @@ typedef int (*OutFn)(const struct TokenArray *const tokens,
 
 static struct {
 	int level;
-	int is_before;
+	int is_before, is_force;
 	void (*fn)(const char);
 } spaces;
 static void spaces_reset(void (*fn)(const char)) {
 	assert(fn);
 	spaces.level = 0;
-	spaces.is_before = 0;
+	spaces.is_before = spaces.is_force = 0;
 	spaces.fn = fn;
 }
-static void spaces_force(void) { spaces.is_before = 1; }
+static void spaces_force(void) { spaces.is_force = 1; }
 
 
 
@@ -36,7 +36,9 @@ static void newline(const char debug) {
 }
 static void whitespace_if_needed(enum Symbol symbol) {
 	assert(spaces.fn);
-	if(spaces.is_before && symbol_lspaces[symbol]) spaces.fn('^');
+	if(spaces.is_force || (spaces.is_before && symbol_lspaces[symbol]))
+		spaces.fn('^');
+	spaces.is_force = 0;
 	spaces.is_before = symbol_rspaces[symbol];
 }
 
@@ -59,7 +61,7 @@ OUT(par) {
 OUT(lit) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->length > 0);
-	printf("%.*s", t->length, t->from);
+	printf("<lit:%.*s>", t->length, t->from);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -254,6 +256,20 @@ catch:
 	fprintf(stderr, "Expected: `[description](url)`; %s.\n", pos(t));
 	return 0;
 }
+OUT(nbsp) {
+	const struct Token *const t = *ptoken;
+	assert(tokens && t && t->symbol == NBSP);
+	printf("&nbsp;");
+	*ptoken = TokenArrayNext(tokens, t);
+	return 1;
+}
+OUT(nbthinsp) {
+	const struct Token *const t = *ptoken;
+	assert(tokens && t && t->symbol == NBTHINSP);
+	printf("&thinsp;");
+	*ptoken = TokenArrayNext(tokens, t);
+	return 1;
+}
 
 
 
@@ -339,16 +355,6 @@ static void segment_print_all(struct Segment *const segment) {
 	printf("\n\n***\n\n");
 }
 
-/** @implements <Segment>Action */
-static void segment_print_all_title(struct Segment *const segment) {
-	AttributeArrayIfEach(&segment->attributes, &att_is_title, &print_att_contents);
-}
-
-/** @implements <Segment>Predictate */
-static int segment_is_header(const struct Segment *const segment) {
-	return segment->division == DIV_PREAMBLE;
-}
-
 /** @implements <Segment>Predictate */
 static int segment_is_declaration(const struct Segment *const segment) {
 	return segment->division == DIV_TAG || segment->division == DIV_TYPEDEF;
@@ -397,6 +403,13 @@ void ReportDebug(void) {
 	}
 }
 
+static int div_exists(const enum Division division) {
+	struct Segment *segment = 0;
+	while((segment = SegmentArrayNext(&report, segment)))
+		if(segment->division == division) return 1;
+	return 0;
+}
+	
 static int preamble_attribute_exists(const enum Symbol symbol) {
 	struct Segment *segment = 0;
 	while((segment = SegmentArrayNext(&report, segment))) {
@@ -443,20 +456,29 @@ void ReportOut(void) {
 	} else {
 		printf("<no title>\n\n");
 	}
+	if(preamble_attribute_exists(ATT_AUTHOR)) {
+		printf("<preamble:author># ");
+		preamble_attribute_print(ATT_AUTHOR);
+		printf(" #\n\n");
+	} else {
+		printf("<no author>\n\n");
+	}
 	/* Preamble contents. */
 	printf("<preamble:contents>");
 	preamble_print();
-	/*printf("<header:doc>\n");
-	SegmentArrayIfEach(&report, &segment_is_header, &segment_print_doc);*/
+	printf("\n");
 	/* Print typedefs. */
-	printf("\n\n## Typedefs ##\n");
+	if(div_exists(DIV_TYPEDEF)) {
+		printf("## Typedefs ##\n\n");
+		/* fixme! */
+	}
 	/* Print tags. */
-	printf("\n\n## Tags ##\n");
+	/*printf("\n\n## Tags ##\n");*/
 	/* Print general declarations. */
-	printf("\n\n## Declarations ##\n\n");
+	/*printf("\n\n## Declarations ##\n\n");
 	SegmentArrayIfEach(&report, &segment_is_declaration, &segment_print_all);
 	printf("\n\n## Functions ##\n\n");
 	SegmentArrayIfEach(&report, &segment_is_function, &segment_print_code);
 	printf("\n\n## Function Detail ##\n\n");
-	SegmentArrayIfEach(&report, &segment_is_function, &segment_print_all);
+	SegmentArrayIfEach(&report, &segment_is_function, &segment_print_all);*/
 }

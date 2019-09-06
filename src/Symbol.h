@@ -52,36 +52,36 @@
 	comments as far as `C` is concerned. */ \
 	X(DOC_BEGIN, '~', 0, 0, 0), \
 	X(DOC_END,   '~', 0, 0, 0), \
-	X(WORD,      '~', &lit, 1, 1), \
+	X(WORD,      '~', &lit, 0, 0), \
 	X(SPACE,     '~', &ws, 0, 0), \
 	X(NEWLINE,   '~', &par, 0, 0), \
-	X(NBSP,      '~', 0, 0, 0), \
-	X(NBTHINSP,  '~', 0, 0, 0), \
-	X(ESCAPE,    '~', &escape, 1, 1), \
+	X(NBSP,      '~', &nbsp, 0, 0), \
+	X(NBTHINSP,  '~', &nbthinsp, 0, 0), \
+	X(ESCAPE,    '~', &escape, 0, 0), \
 	/* Like <http://foo.com/>, <Cite1999>, [Foo](http://foo.com),
 	![Foo](foo.png), <fn:foo>, _etc_. */ \
-	X(URL,         '~', &url, 1, 1), \
-	X(CITE,        '~', &cite, 1, 1), \
-	X(LINK,        '~', &link, 1, 1), /* fixme */ \
-	X(IMAGE,       '~', 0, 1, 1), /* fixme */ \
-	X(SEE_FN,      '~', &see_fn, 1, 1), \
-	X(SEE_TAG,     '~', &see_tag, 1, 1), \
-	X(SEE_TYPEDEF, '~', &see_typedef, 1, 1), \
-	X(SEE_DATA,    '~', &see_data, 1, 1), \
+	X(URL,         '~', &url, 0, 0), \
+	X(CITE,        '~', &cite, 0, 0), \
+	X(LINK,        '~', &link, 0, 0), \
+	X(IMAGE,       '~', 0, 0, 0), /* fixme */ \
+	X(SEE_FN,      '~', &see_fn, 0, 0), \
+	X(SEE_TAG,     '~', &see_tag, 0, 0), \
+	X(SEE_TYPEDEF, '~', &see_typedef, 0, 0), \
+	X(SEE_DATA,    '~', &see_data, 0, 0), \
 	/* Like `this` or _this_. */ \
-	X(MATH_BEGIN,  '~', &math, 1, 1), \
-	X(MATH_END,    '~', 0, 1, 1), /* Will never be seen. */ \
-	X(EM_BEGIN,    '~', &em, 1, 1), \
-	X(EM_END,      '~', 0, 1, 1), /* Will never be seen. */ \
+	X(MATH_BEGIN,  '~', &math, 0, 0), \
+	X(MATH_END,    '~', 0, 0, 0), /* Will never be seen. */ \
+	X(EM_BEGIN,    '~', &em, 0, 0), \
+	X(EM_END,      '~', 0, 0, 0), /* Will never be seen. */ \
 	/* Like @param[a, b, c]. */ \
 	X(DOC_LEFT,    '~', 0, 0, 0), \
 	X(DOC_RIGHT,   '~', 0, 0, 0), \
 	X(DOC_ID,      '~', &lit, 0, 0), \
-	X(DOC_COMMA,   '~', &lit, 0, 1), \
+	X(DOC_COMMA,   '~', &lit, 0, 0), \
 	/* List items. " -* " */ \
-	X(LIST_ITEM,   '~', 0, 1, 1), \
+	X(LIST_ITEM,   '~', 0, 0, 0), \
 	/* Preformated. */ \
-	X(PREFORMATED, '~', 0, 1, 1)
+	X(PREFORMATED, '~', 0, 0, 0)
 
 enum Symbol { SYMBOL(PARAM5A) };
 static const char *const symbols[] = { SYMBOL(STRINGISE5A) };
