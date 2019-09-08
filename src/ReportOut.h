@@ -10,16 +10,16 @@ typedef int (*OutFn)(const struct TokenArray *const tokens,
 
 static struct {
 	int level;
-	int is_before, is_force;
-	void (*fn)(const char);
-} spaces;
-static void spaces_reset(void (*fn)(const char)) {
-	assert(fn);
-	spaces.level = 0;
-	spaces.is_before = spaces.is_force = 0;
-	spaces.fn = fn;
+	int is_space_before, is_space_force, is_para, is_list;
+	void (*space_fn)(const char);
+} output_state;
+static void state_reset(void (*space_fn)(const char)) {
+	assert(space_fn);
+	output_state.level = 0;
+	output_state.is_space_before = output_state.is_space_force = 0;
+	output_state.space_fn = space_fn;
 }
-static void spaces_force(void) { spaces.is_force = 1; }
+static void state_force_space(void) { output_state.is_space_force = 1; }
 
 
 
@@ -34,12 +34,13 @@ static void whitespace(const char debug) {
 static void newline(const char debug) {
 	printf("(%c\n\n%c)", debug, debug);
 }
-static void whitespace_if_needed(enum Symbol symbol) {
-	assert(spaces.fn);
-	if(spaces.is_force || (spaces.is_before && symbol_lspaces[symbol]))
-		spaces.fn('^');
-	spaces.is_force = 0;
-	spaces.is_before = symbol_rspaces[symbol];
+static void state_whitespace_if_needed(enum Symbol symbol) {
+	assert(output_state.space_fn);
+	if(output_state.is_space_force
+		|| (output_state.is_space_before && symbol_lspaces[symbol]))
+		output_state.space_fn('^');
+	output_state.is_space_force = 0;
+	output_state.is_space_before = symbol_rspaces[symbol];
 }
 
 
@@ -291,7 +292,7 @@ static void tokens_print(const struct TokenArray *const tokens) {
 			continue;
 		}
 		assert(sym_out);
-		whitespace_if_needed(token->symbol);
+		state_whitespace_if_needed(token->symbol);
 		if(!sym_out(tokens, &token)) { errno = EILSEQ; return /* fixme */; }
 	}
 }
@@ -318,7 +319,7 @@ static void print_att_header_contents(struct Attribute *const att) {
 /* @implements <Attribute>Predicate */
 #define ATT_IS(lc, uc) static int att_is_ ## lc \
 (const struct Attribute *const att) { return att->symbol == uc; }
-ATT_IS(title, ATT_TITLE)
+/*ATT_IS(title, ATT_TITLE)*/
 ATT_IS(param, ATT_PARAM)
 ATT_IS(author, ATT_AUTHOR)
 ATT_IS(std, ATT_STD)
@@ -423,7 +424,7 @@ static int preamble_attribute_exists(const enum Symbol symbol) {
 
 static void preamble_attribute_print(const enum Symbol symbol) {
 	struct Segment *segment = 0;
-	spaces_reset(&whitespace);
+	state_reset(&whitespace);
 	while((segment = SegmentArrayNext(&report, segment))) {
 		struct Attribute *attribute = 0;
 		if(segment->division != DIV_PREAMBLE) continue;
@@ -432,17 +433,17 @@ static void preamble_attribute_print(const enum Symbol symbol) {
 			if(attribute->symbol != symbol) continue;
 			tokens_print(&attribute->contents);
 		}
-		spaces_force();
+		state_force_space();
 	}
 }
 
 static void preamble_print(void) {
 	struct Segment *segment = 0;
-	spaces_reset(&newline);
+	state_reset(&newline);
 	while((segment = SegmentArrayNext(&report, segment))) {
 		if(segment->division != DIV_PREAMBLE) continue;
 		tokens_print(&segment->doc);
-		spaces_force();
+		state_force_space();
 	}
 }
 
