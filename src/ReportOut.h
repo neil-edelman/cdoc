@@ -1,3 +1,67 @@
+/* `SYMBOL` is declared in `Scanner.h`. */
+static const int symbol_lspaces[] = { SYMBOL(PARAM5D) };
+static const int symbol_rspaces[] = { SYMBOL(PARAM5E) };
+
+static struct {
+	int level;
+	enum { IN_DEFAUT, IN_PARA, IN_LIST } in;
+	int is_space_before, is_space_forced;
+	void (*space_fn)(const char);
+	const char *para_start, *para_end, *para_sep;
+	/* Should have `list_start`, but it's not clear what lists in the
+	 attributes/titles should look like, so they are constant. */
+} output_state;
+static void state_to_default(void) {
+	switch(output_state.in) {
+	case IN_DEFAUT: return;
+	case IN_PARA: assert(output_state.para_end);
+		printf("%s", output_state.para_end); break;
+	case IN_LIST: printf("</ul>"); break;
+	}
+	output_state.is_space_forced = 1;
+	output_state.in = IN_DEFAUT;
+}
+static void state_to_para(void) {
+	switch(output_state.in) {
+	case IN_DEFAUT: assert(output_state.para_start);
+		printf("%s", output_state.para_start); break;
+	case IN_PARA: return;
+	case IN_LIST: printf("</ul>\n\n%s", output_state.para_start); break;
+	}
+	output_state.in = IN_PARA;
+}
+static void state_from_default(void) {
+	if(output_state.in == IN_DEFAUT) state_to_para();
+}
+static void state_reset(void (*space_fn)(const char),
+	const char *const para_start, const char *const para_end,
+	const char *const para_sep) {
+	assert(space_fn && para_start && para_end && para_sep);
+	state_to_default();
+	output_state.level = 0;
+	output_state.is_space_before = 0;
+	output_state.is_space_forced = 0;
+	output_state.space_fn = space_fn;
+	output_state.para_start = para_start;
+	output_state.para_end   = para_end;
+	output_state.para_sep   = para_sep;
+}
+static void state_whitespace_if_needed(enum Symbol symbol) {
+	assert(output_state.space_fn);
+	if(output_state.is_space_forced
+		|| (output_state.is_space_before && symbol_lspaces[symbol]))
+		output_state.space_fn('^');
+	output_state.is_space_forced = 0;
+	output_state.is_space_before = symbol_rspaces[symbol];
+}
+
+static void whitespace(const char debug) {
+	fputc(debug/*' '*/, stdout);
+}
+static void newline(const char debug) {
+	printf("(%c\n\n%c)", debug, debug);
+}
+
 /** Selects `token` out of `tokens` and prints it and returns the next token. */
 typedef int (*OutFn)(const struct TokenArray *const tokens,
 	const struct Token **const ptoken);
@@ -8,46 +72,10 @@ typedef int (*OutFn)(const struct TokenArray *const tokens,
 #define OUT(name) static int name(const struct TokenArray *const tokens, \
 	const struct Token **ptoken)
 
-static struct {
-	int level;
-	int is_space_before, is_space_force, is_para, is_list;
-	void (*space_fn)(const char);
-} output_state;
-static void state_reset(void (*space_fn)(const char)) {
-	assert(space_fn);
-	output_state.level = 0;
-	output_state.is_space_before = output_state.is_space_force = 0;
-	output_state.space_fn = space_fn;
-}
-static void state_force_space(void) { output_state.is_space_force = 1; }
-
-
-
-/* `SYMBOL` is declared in `Scanner.h`. */
-static const int symbol_lspaces[] = { SYMBOL(PARAM5D) };
-static const int symbol_rspaces[] = { SYMBOL(PARAM5E) };
-
-
-static void whitespace(const char debug) {
-	fputc(debug/*' '*/, stdout);
-}
-static void newline(const char debug) {
-	printf("(%c\n\n%c)", debug, debug);
-}
-static void state_whitespace_if_needed(enum Symbol symbol) {
-	assert(output_state.space_fn);
-	if(output_state.is_space_force
-		|| (output_state.is_space_before && symbol_lspaces[symbol]))
-		output_state.space_fn('^');
-	output_state.is_space_force = 0;
-	output_state.is_space_before = symbol_rspaces[symbol];
-}
-
-
-
 OUT(ws) {
 	const struct Token *const space = *ptoken;
 	assert(tokens && space && space->symbol == SPACE);
+	state_from_default();
 	whitespace('~');
 	*ptoken = TokenArrayNext(tokens, space);
 	return 1;
@@ -55,13 +83,14 @@ OUT(ws) {
 OUT(par) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == NEWLINE);
-	newline('~');
+	state_to_default();
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
 OUT(lit) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->length > 0);
+	state_from_default();
 	printf("<lit:%.*s>", t->length, t->from);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
@@ -80,6 +109,7 @@ OUT(gen1) {
 	if(!(a = strchr(type, '_'))) goto catch;
 	type_size = (int)(a - type);
 	assert(t->length == a + 1 - t->from);
+	state_from_default();
 	printf("<%.*s>%.*s",
 		t->length - 1, t->from, param->length, param->from);
 	*ptoken = TokenArrayNext(tokens, rparen);
@@ -108,6 +138,7 @@ OUT(gen2) {
 	if(!(a = strchr(type2, '_'))) goto catch;
 	type2_size = (int)(a - type2);
 	assert(t->length == a + 1 - t->from);
+	state_from_default();
 	printf("<%.*s>%.*s<%.*s>%.*s", type1_size, type1, param1->length,
 		   param1->from, type2_size, type2, param2->length, param2->from);
 	*ptoken = TokenArrayNext(tokens, rparen);
@@ -142,6 +173,7 @@ OUT(gen3) {
 	if(!(a = strchr(type3, '_'))) goto catch;
 	type3_size = (int)(a - type3);
 	assert(t->length == a + 1 - t->from);
+	state_from_default();
 	printf("<%.*s>%.*s<%.*s>%.*s<%.*s>%.*s", type1_size, type1,
 		param1->length, param1->from, type2_size, type2, param2->length,
 		param2->from, type3_size, type3, param3->length, param3->from);
@@ -154,6 +186,7 @@ OUT(gen3) {
 OUT(escape) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == ESCAPE && t->length == 2);
+	state_from_default();
 	printf("[\\%c]", t->from[1]);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
@@ -161,6 +194,7 @@ OUT(escape) {
 OUT(url) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == URL);
+	state_from_default();
 	printf("<%.*s>", t->length, t->from);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
@@ -177,6 +211,7 @@ OUT(cite) {
 		url_encoded[target] = ch;
 	}
 	url_encoded[target] = '\0';
+	state_from_default();
 	printf("(%.*s)<https://scholar.google.ca/scholar?q=%s>",
 		t->length, t->from, url_encoded);
 	*ptoken = TokenArrayNext(tokens, t);
@@ -188,6 +223,7 @@ catch:
 OUT(see_fn) {
 	const struct Token *const fn = *ptoken;
 	assert(tokens && fn && fn->symbol == SEE_FN);
+	state_from_default();
 	printf("(fixme)<fn:%.*s>", fn->length, fn->from);
 	*ptoken = TokenArrayNext(tokens, fn);
 	return 1;
@@ -195,6 +231,7 @@ OUT(see_fn) {
 OUT(see_tag) {
 	const struct Token *const tag = *ptoken;
 	assert(tokens && tag && tag->symbol == SEE_FN);
+	state_from_default();
 	printf("(fixme)<tag:%.*s>", tag->length, tag->from);
 	*ptoken = TokenArrayNext(tokens, tag);
 	return 1;
@@ -202,6 +239,7 @@ OUT(see_tag) {
 OUT(see_typedef) {
 	const struct Token *const def = *ptoken;
 	assert(tokens && def && def->symbol == SEE_FN);
+	state_from_default();
 	printf("(fixme)<typedef:%.*s>", def->length, def->from);
 	*ptoken = TokenArrayNext(tokens, def);
 	return 1;
@@ -209,6 +247,7 @@ OUT(see_typedef) {
 OUT(see_data) {
 	const struct Token *const data = *ptoken;
 	assert(tokens && data && data->symbol == SEE_FN);
+	state_from_default();
 	printf("(fixme)<data:%.*s>", data->length, data->from);
 	*ptoken = TokenArrayNext(tokens, data);
 	return 1;
@@ -217,12 +256,13 @@ OUT(math) { /* Math and code. */
 	const struct Token *const begin = *ptoken;
 	struct Token *next = TokenArrayNext(tokens, begin);
 	assert(tokens && begin && begin->symbol == MATH_BEGIN);
-	printf("{code:`");
+	state_from_default();
+	printf("<code>");
 	while(next->symbol != MATH_END) {
 		printf("%.*s", next->length, next->from);
 		if(!(next = TokenArrayNext(tokens, next))) goto catch;
 	}
-	printf("`:code}");
+	printf("</code>");
 	*ptoken = TokenArrayNext(tokens, next);
 	return 1;
 catch:
@@ -233,12 +273,13 @@ OUT(em) {
 	const struct Token *const begin = *ptoken;
 	struct Token *next = TokenArrayNext(tokens, begin);
 	assert(tokens && begin && begin->symbol == EM_BEGIN);
-	printf("{em:`");
+	state_from_default();
+	printf("<em>");
 	while(next->symbol != EM_END) {
 		printf("%.*s", next->length, next->from);
 		if(!(next = TokenArrayNext(tokens, next))) goto catch;
 	}
-	printf("`:em}");
+	printf("</em>");
 	*ptoken = TokenArrayNext(tokens, next);
 	return 1;
 catch:
@@ -250,6 +291,7 @@ OUT(link) {
 		*const desc = TokenArrayNext(tokens, t);
 	assert(tokens && t && t->symbol == LINK);
 	if(!desc || desc->symbol != LINK) goto catch;
+	state_from_default();
 	printf("[%.*s](%.*s)", desc->length, desc->from, t->length, t->from);
 	*ptoken = TokenArrayNext(tokens, desc);
 	return 1;
@@ -260,6 +302,7 @@ catch:
 OUT(nbsp) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == NBSP);
+	state_from_default();
 	printf("&nbsp;");
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
@@ -267,6 +310,7 @@ OUT(nbsp) {
 OUT(nbthinsp) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == NBTHINSP);
+	state_from_default();
 	printf("&thinsp;");
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
@@ -298,33 +342,33 @@ static void tokens_print(const struct TokenArray *const tokens) {
 }
 
 /** @implements <Attribute>Action */
-static void print_att_contents(struct Attribute *const att) {
+/*static void print_att_contents(struct Attribute *const att) {
 	tokens_print(&att->contents);
-}
+}*/
 
 /** @implements <Attribute>Action */
-static void print_att_header(struct Attribute *const att) {
+/*static void print_att_header(struct Attribute *const att) {
 	tokens_print(&att->header);
-}
+}*/
 
 /** @implements <Attribute>Action */
-static void print_att_header_contents(struct Attribute *const att) {
+/*static void print_att_header_contents(struct Attribute *const att) {
 	printf("<att:%s # ", symbols[att->symbol]);
 	print_att_header(att);
 	printf(" #\n");
 	print_att_contents(att);
 	printf(">\n");
-}
+}*/
 
 /* @implements <Attribute>Predicate */
 #define ATT_IS(lc, uc) static int att_is_ ## lc \
 (const struct Attribute *const att) { return att->symbol == uc; }
-/*ATT_IS(title, ATT_TITLE)*/
+/*ATT_IS(title, ATT_TITLE)
 ATT_IS(param, ATT_PARAM)
 ATT_IS(author, ATT_AUTHOR)
 ATT_IS(std, ATT_STD)
 ATT_IS(depend, ATT_DEPEND)
-/*ATT_IS(version, ATT_VERSION)
+ATT_IS(version, ATT_VERSION)
  ATT_IS(since, ATT_SINCE)
  ATT_IS(fixme, ATT_FIXME)
  ATT_IS(depricated, ATT_DEPRICATED)
@@ -335,18 +379,18 @@ ATT_IS(depend, ATT_DEPEND)
  ATT_IS(allow, ATT_ALLOW)*/
 
 /** @implements <Segment>Action */
-static void segment_print_doc(struct Segment *const segment) {
+/*static void segment_print_doc(struct Segment *const segment) {
 	tokens_print(&segment->doc);
-}
+}*/
 
 /** @implements <Segment>Action */
-static void segment_print_code(struct Segment *const segment) {
+/*static void segment_print_code(struct Segment *const segment) {
 	tokens_print(&segment->code);
 	printf("\n");
-}
+}*/
 
 /** @implements <Segment>Action */
-static void segment_print_all(struct Segment *const segment) {
+/*static void segment_print_all(struct Segment *const segment) {
 	segment_print_code(segment);
 	segment_print_doc(segment);
 	AttributeArrayIfEach(&segment->attributes, &att_is_author, &print_att_contents);
@@ -354,57 +398,57 @@ static void segment_print_all(struct Segment *const segment) {
 	AttributeArrayIfEach(&segment->attributes, &att_is_depend, &print_att_contents);
 	AttributeArrayIfEach(&segment->attributes, &att_is_param, &print_att_header_contents);
 	printf("\n\n***\n\n");
-}
+}*/
 
 /** @implements <Segment>Predictate */
-static int segment_is_declaration(const struct Segment *const segment) {
+/*static int segment_is_declaration(const struct Segment *const segment) {
 	return segment->division == DIV_TAG || segment->division == DIV_TYPEDEF;
-}
+}*/
 
 /** @implements <Segment>Predictate */
-static int segment_is_function(const struct Segment *const segment) {
+/*static int segment_is_function(const struct Segment *const segment) {
 	return segment->division == DIV_FUNCTION;
-}
+}*/
 
 void ReportDebug(void) {
 	struct Segment *segment = 0;
 	struct Attribute *att = 0;
-	/*struct Segment {
-	 enum Division division;
-	 struct TokenArray doc, code;
-	 struct TokenRefArray params;
-	 struct AttributeArray attributes;
-	 };
-	 struct Attribute {
-	 enum Symbol symbol;
-	 struct TokenArray header;
-	 struct TokenArray contents;
-	 };	
-	 struct Token {
-	 enum Symbol symbol;
-	 const char *from;
-	 int length;
-	 size_t line;
-	 };*/
+	struct Segment {
+	enum Division division;
+		struct TokenArray doc, code;
+		struct TokenRefArray params;
+		struct AttributeArray attributes;
+	};
+	struct Attribute {
+		enum Symbol symbol;
+		struct TokenArray header;
+		struct TokenArray contents;
+	};	
+	struct Token {
+		enum Symbol symbol;
+		const char *from;
+		int length;
+		size_t line;
+	};
 	while((segment = SegmentArrayNext(&report, segment))) {
 		printf("Segment %s: %s;\n"
-			   "code: %s;\n"
-			   "params: %s;\n"
-			   "doc: %s.\n",
-			   segment->name,
-			   divisions[segment->division],
-			   TokenArrayToString(&segment->code),
-			   TokenRefArrayToString(&segment->params),
-			   TokenArrayToString(&segment->doc));
+			"code: %s;\n"
+			"params: %s;\n"
+			"doc: %s.\n",
+			segment->name,
+			divisions[segment->division],
+			TokenArrayToString(&segment->code),
+			TokenRefArrayToString(&segment->params),
+			TokenArrayToString(&segment->doc));
 		while((att = AttributeArrayNext(&segment->attributes, att)))
 			printf("%s{%s} %s.\n", symbols[att->symbol],
-				   TokenArrayToString(&att->header),
-				   TokenArrayToString(&att->contents));
+			TokenArrayToString(&att->header),
+			TokenArrayToString(&att->contents));
 		fputc('\n', stdout);
 	}
 }
 
-static int div_exists(const enum Division division) {
+static int division_exists(const enum Division division) {
 	struct Segment *segment = 0;
 	while((segment = SegmentArrayNext(&report, segment)))
 		if(segment->division == division) return 1;
@@ -424,7 +468,7 @@ static int preamble_attribute_exists(const enum Symbol symbol) {
 
 static void preamble_attribute_print(const enum Symbol symbol) {
 	struct Segment *segment = 0;
-	state_reset(&whitespace);
+	state_reset(&whitespace, "[", "]", ", ");
 	while((segment = SegmentArrayNext(&report, segment))) {
 		struct Attribute *attribute = 0;
 		if(segment->division != DIV_PREAMBLE) continue;
@@ -433,17 +477,17 @@ static void preamble_attribute_print(const enum Symbol symbol) {
 			if(attribute->symbol != symbol) continue;
 			tokens_print(&attribute->contents);
 		}
-		state_force_space();
+		state_to_default();
 	}
 }
 
-static void preamble_print(void) {
+static void preamble_print_content(void) {
 	struct Segment *segment = 0;
-	state_reset(&newline);
+	state_reset(&newline, "<p>", "</p>", "\n\n");
 	while((segment = SegmentArrayNext(&report, segment))) {
 		if(segment->division != DIV_PREAMBLE) continue;
 		tokens_print(&segment->doc);
-		state_force_space();
+		state_to_default();
 	}
 }
 
@@ -466,10 +510,10 @@ void ReportOut(void) {
 	}
 	/* Preamble contents. */
 	printf("<preamble:contents>");
-	preamble_print();
+	preamble_print_content();
 	printf("\n");
 	/* Print typedefs. */
-	if(div_exists(DIV_TYPEDEF)) {
+	if(division_exists(DIV_TYPEDEF)) {
 		printf("## Typedefs ##\n\n");
 		/* fixme! */
 	}
