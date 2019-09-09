@@ -6,7 +6,6 @@ static struct {
 	int level;
 	enum { IN_DEFAUT, IN_PARA, IN_LIST } in;
 	int is_space_before, is_space_forced;
-	void (*space_fn)(const char);
 	const char *para_start, *para_end, *para_sep;
 	/* Should have `list_start`, but it's not clear what lists in the
 	 attributes/titles should look like, so they are constant. */
@@ -33,33 +32,24 @@ static void state_to_para(void) {
 static void state_from_default(void) {
 	if(output_state.in == IN_DEFAUT) state_to_para();
 }
-static void state_reset(void (*space_fn)(const char),
-	const char *const para_start, const char *const para_end,
-	const char *const para_sep) {
-	assert(space_fn && para_start && para_end && para_sep);
+static void state_reset(const char *const para_start,
+	const char *const para_end, const char *const para_sep) {
+	assert(para_start && para_end && para_sep);
 	state_to_default();
 	output_state.level = 0;
 	output_state.is_space_before = 0;
 	output_state.is_space_forced = 0;
-	output_state.space_fn = space_fn;
 	output_state.para_start = para_start;
 	output_state.para_end   = para_end;
 	output_state.para_sep   = para_sep;
 }
 static void state_whitespace_if_needed(enum Symbol symbol) {
-	assert(output_state.space_fn);
+	assert(output_state.para_sep);
 	if(output_state.is_space_forced
 		|| (output_state.is_space_before && symbol_lspaces[symbol]))
-		output_state.space_fn('^');
+		printf("%s", output_state.para_sep);
 	output_state.is_space_forced = 0;
 	output_state.is_space_before = symbol_rspaces[symbol];
-}
-
-static void whitespace(const char debug) {
-	fputc(debug/*' '*/, stdout);
-}
-static void newline(const char debug) {
-	printf("(%c\n\n%c)", debug, debug);
 }
 
 /** Selects `token` out of `tokens` and prints it and returns the next token. */
@@ -76,7 +66,7 @@ OUT(ws) {
 	const struct Token *const space = *ptoken;
 	assert(tokens && space && space->symbol == SPACE);
 	state_from_default();
-	whitespace('~');
+	fputc('~', stdout);
 	*ptoken = TokenArrayNext(tokens, space);
 	return 1;
 }
@@ -468,7 +458,7 @@ static int preamble_attribute_exists(const enum Symbol symbol) {
 
 static void preamble_attribute_print(const enum Symbol symbol) {
 	struct Segment *segment = 0;
-	state_reset(&whitespace, "[", "]", ", ");
+	state_reset("[", "]", ", ");
 	while((segment = SegmentArrayNext(&report, segment))) {
 		struct Attribute *attribute = 0;
 		if(segment->division != DIV_PREAMBLE) continue;
@@ -483,7 +473,7 @@ static void preamble_attribute_print(const enum Symbol symbol) {
 
 static void preamble_print_content(void) {
 	struct Segment *segment = 0;
-	state_reset(&newline, "<p>", "</p>", "\n\n");
+	state_reset("<p>", "</p>", "\n\n");
 	while((segment = SegmentArrayNext(&report, segment))) {
 		if(segment->division != DIV_PREAMBLE) continue;
 		tokens_print(&segment->doc);
