@@ -272,7 +272,8 @@ scan:
 	<doc> "<data:" @sub_a0 generic_id @sub_a1 ">"
 		{ scanner.sub_a0 = sub_a0, scanner.sub_a1 = sub_a1; return SEE_DATA; }
 	// [word word] is really strict because we can't figure out mtags and we
-	// don't want    spaces. It's a hack.
+	// don't want    spaces. It's a hack. Fixme: have `LINK_BEGIN` _etc_ like
+	// `param_begin`.
 	<doc> "[" @sub_b0 word (whitespace word)* @sub_b1 "]("
 		@sub_a0 absolute_uri @sub_a1 ")" {
 		scanner.sub_a0 = sub_a0, scanner.sub_a1 = sub_a1;

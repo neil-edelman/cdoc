@@ -230,7 +230,7 @@ OUT(see_fn) {
 	const struct Token *const fn = *ptoken;
 	assert(tokens && fn && fn->symbol == SEE_FN);
 	state_from_default();
-	printf("(fixme)<fn:%.*s>", fn->length, fn->from);
+	printf("(fixme)<#fn:%.*s>", fn->length, fn->from);
 	*ptoken = TokenArrayNext(tokens, fn);
 	return 1;
 }
@@ -238,7 +238,7 @@ OUT(see_tag) {
 	const struct Token *const tag = *ptoken;
 	assert(tokens && tag && tag->symbol == SEE_FN);
 	state_from_default();
-	printf("(fixme)<tag:%.*s>", tag->length, tag->from);
+	printf("(fixme)<#tag:%.*s>", tag->length, tag->from);
 	*ptoken = TokenArrayNext(tokens, tag);
 	return 1;
 }
@@ -246,7 +246,7 @@ OUT(see_typedef) {
 	const struct Token *const def = *ptoken;
 	assert(tokens && def && def->symbol == SEE_FN);
 	state_from_default();
-	printf("(fixme)<typedef:%.*s>", def->length, def->from);
+	printf("(fixme)<#typedef:%.*s>", def->length, def->from);
 	*ptoken = TokenArrayNext(tokens, def);
 	return 1;
 }
@@ -254,7 +254,7 @@ OUT(see_data) {
 	const struct Token *const data = *ptoken;
 	assert(tokens && data && data->symbol == SEE_FN);
 	state_from_default();
-	printf("(fixme)<data:%.*s>", data->length, data->from);
+	printf("(fixme)<#data:%.*s>", data->length, data->from);
 	*ptoken = TokenArrayNext(tokens, data);
 	return 1;
 }
@@ -332,8 +332,7 @@ OUT(pre) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == PREFORMATTED);
 	state_to_pre();
-	/* fixme: outputs nothing but spaces?? */
-	printf("%*.s", t->length, t->from);
+	printf("<pre:%.*s>", t->length, t->from);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -477,38 +476,84 @@ static int division_exists(const enum Division division) {
 	return 0;
 }
 
-/** Seaches if attribute `symbol` exists within preamble segments.
- @order O(`segments`) */
+static void division_act(const enum Division division,
+	void (*act)(const struct Segment *const segment)) {
+	const struct Segment *segment = 0;
+	assert(act);
+	while((segment = SegmentArrayNext(&report, segment))) {
+		if(segment->division != division) continue;
+		act(segment);
+	}
+}
+
+/** Seaches if attribute `symbol` exists within `segment`.
+ @order O(`attributes`) */
+static int attribute_exists(const struct Segment *const segment,
+	const enum Symbol symbol) {
+	struct Attribute *attribute = 0;
+	assert(segment);
+	while((attribute = AttributeArrayNext(&segment->attributes, attribute)))
+		if(attribute->symbol == symbol) return 1;
+	return 0;
+}
+
+/** Seaches if attribute `symbol` exists within all preamble segments.
+ @order O(`segments` * `attributes`) */
 static int preamble_attribute_exists(const enum Symbol symbol) {
 	struct Segment *segment = 0;
 	while((segment = SegmentArrayNext(&report, segment))) {
-		struct Attribute *attribute = 0;
 		if(segment->division != DIV_PREAMBLE) continue;
-		while((attribute = AttributeArrayNext(&segment->attributes, attribute)))
-			if(attribute->symbol == symbol) return 1;
+		if(attribute_exists(segment, symbol)) return 1;
 	}
 	return 0;
 }
 
-/** For each preamble segment, print all attributes that match `symbol`.
- @order O(`segments`) */
-static void preamble_attribute_print(const enum Symbol symbol) {
-	struct Segment *segment = 0;
-	state_reset("{", "}", ", ");
-	while((segment = SegmentArrayNext(&report, segment))) {
-		struct Attribute *attribute = 0;
-		if(segment->division != DIV_PREAMBLE) continue;
-		while((attribute = AttributeArrayNext(&segment->attributes, attribute)))
-		{
-			if(attribute->symbol != symbol) continue;
-			tokens_print(&attribute->contents);
-		}
+/** For `segment`, print all attributes that match `symbol`.
+ @order O(`attributes`) */
+static void attribute_print(const struct Segment *const segment,
+	const enum Symbol symbol) {
+	struct Attribute *attribute = 0;
+	assert(segment);
+	printf("<attribute %s>", symbols[symbol]);
+	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
+		if(attribute->symbol != symbol) continue;
+		tokens_print(&attribute->contents);
 		state_to_default();
 	}
 }
 
+/** For each preamble segment, print all attributes that match `symbol`.
+ @order O(`segments` * `attributes`) */
+static void preamble_attribute_print(const enum Symbol symbol) {
+	struct Segment *segment = 0;
+	state_reset("{", "}", ", ");
+	while((segment = SegmentArrayNext(&report, segment))) {
+		if(segment->division != DIV_PREAMBLE) continue;
+		attribute_print(segment, symbol);
+		state_to_default();
+	}
+}
+
+/** Prints all a `segment`. */
+static void print_content(const struct Segment *const segment) {
+	state_reset("{", "}", ", ");
+	printf("<general>");
+	tokens_print(&segment->code);
+	state_reset("<p>", "</p>", "\n\n");
+	printf("\n\n");
+	tokens_print(&segment->doc);
+	state_to_default();
+	printf("\n\n");
+	if(attribute_exists(segment, ATT_RETURN)) {
+		state_reset("{", "}", ", ");
+		attribute_print(segment, ATT_RETURN);
+		state_to_default();
+	}
+	printf("</general>\n");
+}
+
 /** Prints preable segment's doc. */
-static void preamble_print_content(void) {
+static void preamble_print_all_content(void) {
 	struct Segment *segment = 0;
 	state_reset("<p>", "</p>", "\n\n");
 	while((segment = SegmentArrayNext(&report, segment))) {
@@ -537,12 +582,12 @@ void ReportOut(void) {
 	}
 	/* Preamble contents. */
 	printf("<preamble:contents>");
-	preamble_print_content();
+	preamble_print_all_content();
 	printf("\n\n");
 	/* Print typedefs. */
 	if(division_exists(DIV_TYPEDEF)) {
 		printf("## Typedefs ##\n\n");
-		/* fixme! */
+		division_act(DIV_TYPEDEF, &print_content);
 	}
 	/* Print tags. */
 	/*printf("\n\n## Tags ##\n");*/
