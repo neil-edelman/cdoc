@@ -79,9 +79,9 @@
 	X(DOC_ID,      '~', &lit, 0, 0), \
 	X(DOC_COMMA,   '~', &lit, 0, 0), \
 	/* List items. " -* " */ \
-	X(LIST_ITEM,   '~', 0, 0, 0), \
-	/* Preformated. */ \
-	X(PREFORMATED, '~', 0, 0, 0)
+	X(LIST_ITEM,   '~', &list, 0, 0), \
+	/* Preformatted. */ \
+	X(PREFORMATTED, '~', &pre, 0, 0)
 
 enum Symbol { SYMBOL(PARAM5A) };
 static const char *const symbols[] = { SYMBOL(STRINGISE5A) };

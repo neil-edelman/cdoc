@@ -1,55 +1,77 @@
+#include "UrlEncode.h"
+
 /* `SYMBOL` is declared in `Scanner.h`. */
 static const int symbol_lspaces[] = { SYMBOL(PARAM5D) };
 static const int symbol_rspaces[] = { SYMBOL(PARAM5E) };
 
 static struct {
 	int level;
-	enum { IN_DEFAUT, IN_PARA, IN_LIST } in;
-	int is_space_before, is_space_forced;
-	const char *para_start, *para_end, *para_sep;
+	enum { IN_DEFAUT, IN_PARA, IN_LIST, IN_PRE } in;
+	int is_sep_before, is_sep_forced;
+	const char *start, *end, *sep;
 	/* Should have `list_start`, but it's not clear what lists in the
 	 attributes/titles should look like, so they are constant. */
-} output_state;
+} ostate = { 0, IN_DEFAUT, 0, 0, "$(", ")$", ";" };
 static void state_to_default(void) {
-	switch(output_state.in) {
+	switch(ostate.in) {
 	case IN_DEFAUT: return;
-	case IN_PARA: assert(output_state.para_end);
-		printf("%s", output_state.para_end); break;
-	case IN_LIST: printf("</ul>"); break;
+	case IN_PARA: printf("%s", ostate.end); break;
+	case IN_LIST: printf("</li>%s</ul>", ostate.sep); break;
+	case IN_PRE: printf("</pre>%s", ostate.sep); break;
 	}
-	output_state.is_space_forced = 1;
-	output_state.in = IN_DEFAUT;
+	ostate.is_sep_forced = 1;
+	ostate.in = IN_DEFAUT;
 }
 static void state_to_para(void) {
-	switch(output_state.in) {
-	case IN_DEFAUT: assert(output_state.para_start);
-		printf("%s", output_state.para_start); break;
+	switch(ostate.in) {
+	case IN_DEFAUT: printf("%s", ostate.start); break;
 	case IN_PARA: return;
-	case IN_LIST: printf("</ul>\n\n%s", output_state.para_start); break;
+	case IN_LIST: printf("</li>%s</ul>%s%s", ostate.sep, ostate.sep,
+		ostate.start); break;
+	case IN_PRE: printf("</pre>%s%s", ostate.sep, ostate.start); break;
 	}
-	output_state.in = IN_PARA;
+	ostate.in = IN_PARA;
+}
+static void state_to_list(void) {
+	switch(ostate.in) {
+	case IN_DEFAUT: printf("<ul>%s<li>", ostate.sep); break;
+	case IN_PARA: printf("%s%s<ul>%s<li>", ostate.end, ostate.sep, ostate.sep);
+		break;
+	case IN_LIST: printf("</li>%s<li>", ostate.sep); return;
+	case IN_PRE: printf("</pre>%s<ul>%s<li>", ostate.sep, ostate.sep);
+	}
+	ostate.in = IN_LIST;
+}
+static void state_to_pre(void) {
+	switch(ostate.in) {
+		case IN_DEFAUT: printf("<pre>"); break;
+		case IN_PARA: printf("%s%s<pre>", ostate.end, ostate.sep); break;
+		case IN_LIST: printf("</li>%s</ul>%s<pre>", ostate.sep, ostate.sep);
+			break;
+		case IN_PRE: printf("\n"); return;
+	}
+	ostate.in = IN_PRE;
 }
 static void state_from_default(void) {
-	if(output_state.in == IN_DEFAUT) state_to_para();
+	if(ostate.in == IN_DEFAUT) state_to_para();
 }
-static void state_reset(const char *const para_start,
-	const char *const para_end, const char *const para_sep) {
-	assert(para_start && para_end && para_sep);
+static void state_reset(const char *const start,
+	const char *const end, const char *const sep) {
+	assert(start && end && sep);
 	state_to_default();
-	output_state.level = 0;
-	output_state.is_space_before = 0;
-	output_state.is_space_forced = 0;
-	output_state.para_start = para_start;
-	output_state.para_end   = para_end;
-	output_state.para_sep   = para_sep;
+	ostate.level = 0;
+	ostate.is_sep_before = 0;
+	ostate.is_sep_forced = 0;
+	ostate.start = start;
+	ostate.end   = end;
+	ostate.sep   = sep;
 }
-static void state_whitespace_if_needed(enum Symbol symbol) {
-	assert(output_state.para_sep);
-	if(output_state.is_space_forced
-		|| (output_state.is_space_before && symbol_lspaces[symbol]))
-		printf("%s", output_state.para_sep);
-	output_state.is_space_forced = 0;
-	output_state.is_space_before = symbol_rspaces[symbol];
+static void state_sep_if_needed(enum Symbol symbol) {
+	if(ostate.is_sep_forced
+		|| (ostate.is_sep_before && symbol_lspaces[symbol]))
+		printf("%s", ostate.sep);
+	ostate.is_sep_forced = 0;
+	ostate.is_sep_before = symbol_rspaces[symbol];
 }
 
 /** Selects `token` out of `tokens` and prints it and returns the next token. */
@@ -66,6 +88,7 @@ OUT(ws) {
 	const struct Token *const space = *ptoken;
 	assert(tokens && space && space->symbol == SPACE);
 	state_from_default();
+	/* fixme: lists have ws at the end; this should go lazily. */
 	fputc('~', stdout);
 	*ptoken = TokenArrayNext(tokens, space);
 	return 1;
@@ -191,23 +214,16 @@ OUT(url) {
 }
 OUT(cite) {
 	const struct Token *const t = *ptoken;
-	static char url_encoded[64];
-	size_t source = 0, target = 0;
-	char ch;
+	const char *const url_encoded = UrlEncode(t->from, t->length);
 	assert(tokens && t && t->symbol == CITE);
-	while(target < sizeof url_encoded - 4 && source < (size_t)t->length) {
-		ch = t->from[source++];
-		if(!ch) goto catch;
-		url_encoded[target] = ch;
-	}
-	url_encoded[target] = '\0';
+	if(!url_encoded) goto catch;
 	state_from_default();
 	printf("(%.*s)<https://scholar.google.ca/scholar?q=%s>",
 		t->length, t->from, url_encoded);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 catch:
-	fprintf(stderr, "Expected: <source>; %s.\n", pos(t));
+	fprintf(stderr, "Expected: <short source>; %s.\n", pos(t));
 	return 0;
 }
 OUT(see_fn) {
@@ -301,7 +317,23 @@ OUT(nbthinsp) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == NBTHINSP);
 	state_from_default();
-	printf("&thinsp;");
+	printf("&#8239;"/*"&thinsp;"<-I think it's breaking.*/);
+	*ptoken = TokenArrayNext(tokens, t);
+	return 1;
+}
+OUT(list) {
+	const struct Token *const t = *ptoken;
+	assert(tokens && t && t->symbol == LIST_ITEM);
+	state_to_list();
+	*ptoken = TokenArrayNext(tokens, t);
+	return 1;
+}
+OUT(pre) {
+	const struct Token *const t = *ptoken;
+	assert(tokens && t && t->symbol == PREFORMATTED);
+	state_to_pre();
+	/* fixme: outputs nothing but spaces?? */
+	printf("%*.s", t->length, t->from);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -317,16 +349,14 @@ static void tokens_print(const struct TokenArray *const tokens) {
 	const struct Token *token = TokenArrayNext(tokens, 0);
 	OutFn sym_out;
 	if(!token) return;
-	/* fixme: This does not stop on error. */
 	while(token) {
 		sym_out = symbol_outs[token->symbol];
 		if(!sym_out) {
-			printf("<<%s fn undefined>>", symbols[token->symbol]);
+			printf("[undefined:%s]", symbols[token->symbol]);
 			token = TokenArrayNext(tokens, token);
 			continue;
 		}
-		assert(sym_out);
-		state_whitespace_if_needed(token->symbol);
+		state_sep_if_needed(token->symbol);
 		if(!sym_out(tokens, &token)) { errno = EILSEQ; return /* fixme */; }
 	}
 }
@@ -438,13 +468,17 @@ void ReportDebug(void) {
 	}
 }
 
+/** Searches if some segment's division is `division`.
+ @order O(`segments`) */
 static int division_exists(const enum Division division) {
 	struct Segment *segment = 0;
 	while((segment = SegmentArrayNext(&report, segment)))
 		if(segment->division == division) return 1;
 	return 0;
 }
-	
+
+/** Seaches if attribute `symbol` exists within preamble segments.
+ @order O(`segments`) */
 static int preamble_attribute_exists(const enum Symbol symbol) {
 	struct Segment *segment = 0;
 	while((segment = SegmentArrayNext(&report, segment))) {
@@ -456,9 +490,11 @@ static int preamble_attribute_exists(const enum Symbol symbol) {
 	return 0;
 }
 
+/** For each preamble segment, print all attributes that match `symbol`.
+ @order O(`segments`) */
 static void preamble_attribute_print(const enum Symbol symbol) {
 	struct Segment *segment = 0;
-	state_reset("[", "]", ", ");
+	state_reset("{", "}", ", ");
 	while((segment = SegmentArrayNext(&report, segment))) {
 		struct Attribute *attribute = 0;
 		if(segment->division != DIV_PREAMBLE) continue;
@@ -471,6 +507,7 @@ static void preamble_attribute_print(const enum Symbol symbol) {
 	}
 }
 
+/** Prints preable segment's doc. */
 static void preamble_print_content(void) {
 	struct Segment *segment = 0;
 	state_reset("<p>", "</p>", "\n\n");
@@ -481,7 +518,7 @@ static void preamble_print_content(void) {
 	}
 }
 
-/** Outputs a file when given a `SegmentArray`. */
+/** Outputs a file. */
 void ReportOut(void) {
 	/* Header. */
 	if(preamble_attribute_exists(ATT_TITLE)) {

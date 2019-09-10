@@ -141,7 +141,7 @@ citation = whitespace? author (authorsep author)*
 // Lists.
 list = " -* ";
 // Math/code blocks. Added after; very meh.
-preformated = "\t" [^*\n\x00]*;
+preformatted = "\t" [^*\n\x00]*;
 */
 
 /** Scans. */
@@ -287,7 +287,7 @@ scan:
 	}
 	<doc> "~" { return NBSP; }
 	<doc> list { return LIST_ITEM; }
-	<doc> preformated { return PREFORMATED; }
+	<doc> preformatted { return PREFORMATTED; }
 
 	// These are tags.
 	<doc> "@title"      { return ATT_TITLE; }
