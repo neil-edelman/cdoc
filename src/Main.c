@@ -6,45 +6,46 @@
  stripped-down, simplified, sort-of version of `Markup` then is used in
  `Doxygen`, with the intent of making it (much) stricter and simpler, and also
  suitable for sharing and compiling. This does not do any compiling, just very
- basic text-parsing, including the macro `A_B_(Foo,Bar) -> <A>Foo<B>Bar`
- (fixme).
+ basic text-parsing, including the macro `A_B_(Foo,Bar) -> <A>Foo<B>Bar`.
  
  Documentation commands are { "/" "*" "*"+ } and are ended with { "*"+ "/" },
  but not { "/" "*"+ "*" "/" }; one can still use this as a code break. You can
  have an asterisk at the front, like Kernel comments, or asterisks all over
  like some crazy ASCII art, (unfortunately, this causes problems with lists
- being started with "*", so start them with "-".) All documentation goes at
+ being started with "*", so start them with " -* ".) All documentation goes at
  most two lines above what it documents or it's appended to the header.
- Multiple documentation on the same command is appended. Everything that's not
- a function is considered a declaration for the purpose of the parser (fixme).
- Two hard returns is a paragraph.
- 
- "\\" escapes whatever comes after, with one exception "\\," inserts a  and
- backslash-end-comment is nonsense and will not compile. When two or more
- definitions are present in a single statement, the first one is used. Embedded
- inline in the documentation,
- 
+ Multiple documentation on the same command is appended. Two hard returns is a
+ paragraph. One can document typedefs, tags (struct, enum, union,) data, and
+ functions; everything else is automatically inserted into the preamble.
+
+ "\\" escapes whatever comes after, with one exception "\\," inserts a slim
+ no-breaking space and backslash-end-comment is nonsense and will not compile.
+ When two or more definitions are present in a single statement, the first one
+ is used.
+
+ Embedded inline in the documentation,
+
  -* \_ _emphasised_;
  -* \` `code/math`;
  -* \<url\>;
  -* \<Source, 1999, pp. 1-2\>;
  -* \<fn:\<function\>\>;
- -* \<tag:\<struct|union|enum\>\> (fixme);
- -* \<typedef:\<typedef\>\> (fixme);
- -* \<data:\<identifier\>\> (fixme)(hard?);
+ -* \<tag:\<struct|union|enum\>\>;
+ -* \<typedef:\<typedef\>\>;
+ -* \<data:\<identifier\>\>;
  -* \[The link text\](url);
  -* \!\[Caption text\](/path/to/img.jpg);
  -* lists with "\ -* "; lists can be anywhere and don't nest;
- -* a tab causes all the line after to be preformatted;
+ -* a tab causes all the line after to be preformatted, (except '*' ends, for
+    checking if the comment is ended);
  -* \~ non-breaking space;
  -* \\, non-breaking thin space (U+202F HTML &#8239; for working with units.)
- 
- Each-block-tags separate the documentation until the next paragraph (fixme) or
- until the
- next each-block-tag, and specify a specific documentation structure.
+
+ Each-block-tags separate the documentation until the next paragraph or until
+ the next each-block-tag, and specify a specific documentation structure.
  Each-block-tags that overlap are concatenated in the file order. Not all of
  these are applicable for all segments of text. These are:
- 
+
  -* \@title;
  -* \@param[<param1>[, ...]];
  -* \@author;
@@ -59,7 +60,7 @@
  -* \@order;
  -* and \@allow, the latter being to allow `static` functions in the
     documentation.
- 
+
  Things that are not planned for inclusion,
  
  -* headers;
@@ -81,10 +82,10 @@
  -* '\\param c1' or '\@param a' -- this probably is the most departure from
     normal documentation generators, but it's confusing having the text and the
     variable be indistinguishable;
- -* \!\[Caption text\](/path/to/img.jpg "Image title");
- -* \[The link text\](http://example.net/ "Link title");
+ -* Titles with \!\[Caption text\](/path/to/img.jpg "Image title");
+ -* Titles with \[The link text\](http://example.net/ "Link title");
  -* instead of \\struct, \\union, \\enum, \\var, \\typedef, just insert the
-    documentation comment above the thing; use \<decl:<thing>\> to reference;
+    documentation comment above the thing; use \<data:<thing>\> to reference;
  -* \\def;
  -* instead of \\fn, just insert the documentation comment above the function;
     use \<fn:\<function\>\> to reference.

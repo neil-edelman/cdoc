@@ -580,6 +580,7 @@ void ReportOut(void) {
 	} else {
 		printf("<no author>\n\n");
 	}
+	/* fixme: Anchors for things. */
 	/* Preamble contents. */
 	printf("<preamble:contents>");
 	preamble_print_all_content();
@@ -599,10 +600,13 @@ void ReportOut(void) {
 		printf("## Data Declarations ##\n\n");
 		division_act(DIV_DATA, &print_content);
 	}
+	/* Print functions. */
+	if(division_exists(DIV_FUNCTION)) {
+		printf("## Functions ##\n\n");
+		printf("## Function Detail ##\n\n");
+	}
+	fputc('\n', stdout);
 /*
-	SegmentArrayIfEach(&report, &segment_is_declaration, &segment_print_all);
-	printf("\n\n## Functions ##\n\n");
 	SegmentArrayIfEach(&report, &segment_is_function, &segment_print_code);
-	printf("\n\n## Function Detail ##\n\n");
 	SegmentArrayIfEach(&report, &segment_is_function, &segment_print_all);*/
 }
