@@ -105,23 +105,19 @@
  "Note that unlike standard Markdown, doxygen leaves the following untouched.
  A `cool' word in a `nice' sentence."
 
- Fixme:
-
- -* Old-style function definitions are not supported.
- -* @depend in functions should automatically be placed in header.
- -* Warnings about un-documented variables, either like `this` or \@param[this].
-
  @title Main.c
  @author Neil
  @version 2019-06
  @std C89
  @depend [re2c](http://re2c.org/)
- @fixme Different doc comments need new paragraphs.
- @fixme `void A_BI_(Create, Thing)(void)` -> `<A>Create<BI>Thing(void)`.
+ @fixme Old-style function definitions are not supported.
+ @fixme \@depend in functions should automatically be placed in header.
+ @fixme Warnings about un-documented variables, `this` or \@param[this].
+ @fixme Authors can only be ASCII.
  @fixme Trigraph support, (haha.)
  @fixme Old-style function support.
- @bug `re2c` appends a comma at the end of the enumeration list, not
- compliant with C90. */
+ @bug `re2c` appends a comma at the end of the enumeration list, not compliant
+ with C90. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */

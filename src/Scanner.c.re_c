@@ -136,8 +136,7 @@ closing = ","? whitespace?;
 date = [1-3][0-9][0-9][0-9];
 page = ","? whitespace? (("pp" | "p") "."?)? whitespace?
 	[0-9]+ (whitespace? "-"{1,2} whitespace? [0-9]+)?;
-citation = whitespace? author (authorsep author)*
-	(closing etalia)? closing date page?;
+citation = author (authorsep author)* (closing etalia)? closing date page?;
 // Lists.
 list = " -* ";
 // Math/code blocks. Added after; very meh.
@@ -274,13 +273,13 @@ scan:
 	// [word word] is really strict because we can't figure out mtags and we
 	// don't want    spaces. It's a hack. Fixme: have `LINK_BEGIN` _etc_ like
 	// `param_begin`.
-	<doc> "[" @sub_b0 word (whitespace word)* @sub_b1 "]("
+	<doc> "[" @sub_b0 word (whitespace? word)* @sub_b1 "]("
 		@sub_a0 absolute_uri @sub_a1 ")" {
 		scanner.sub_a0 = sub_a0, scanner.sub_a1 = sub_a1;
 		scanner.sub_b0 = sub_b0, scanner.sub_b1 = sub_b1;
 		return LINK;
 	}
-	<doc> "![" @sub_b0 word (whitespace word)* @sub_b1 "]("
+	<doc> "![" @sub_b0 word (whitespace? word)* @sub_b1 "]("
 		@sub_a0 relative_uri @sub_a1 ")" {
 		scanner.sub_a0 = sub_a0, scanner.sub_a1 = sub_a1;
 		scanner.sub_b0 = sub_b0, scanner.sub_b1 = sub_b1;
