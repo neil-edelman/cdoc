@@ -590,9 +590,16 @@ void ReportOut(void) {
 		division_act(DIV_TYPEDEF, &print_content);
 	}
 	/* Print tags. */
-	/*printf("\n\n## Tags ##\n");*/
+	if(division_exists(DIV_TAG)) {
+		printf("## Tags ##\n\n");
+		division_act(DIV_TAG, &print_content);
+	}
 	/* Print general declarations. */
-	/*printf("\n\n## Declarations ##\n\n");
+	if(division_exists(DIV_DATA)) {
+		printf("## Data Declarations ##\n\n");
+		division_act(DIV_DATA, &print_content);
+	}
+/*
 	SegmentArrayIfEach(&report, &segment_is_declaration, &segment_print_all);
 	printf("\n\n## Functions ##\n\n");
 	SegmentArrayIfEach(&report, &segment_is_function, &segment_print_code);
