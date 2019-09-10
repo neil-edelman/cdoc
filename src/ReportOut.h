@@ -17,7 +17,7 @@ static void state_to_default(void) {
 	case IN_DEFAUT: return;
 	case IN_PARA: printf("%s", ostate.end); break;
 	case IN_LIST: printf("</li>%s</ul>", ostate.sep); break;
-	case IN_PRE: printf("</pre>%s", ostate.sep); break;
+	case IN_PRE: printf("</pre>", ostate.sep); break;
 	}
 	ostate.is_sep_forced = 1;
 	ostate.in = IN_DEFAUT;
@@ -538,7 +538,7 @@ void ReportOut(void) {
 	/* Preamble contents. */
 	printf("<preamble:contents>");
 	preamble_print_content();
-	printf("\n");
+	printf("\n\n");
 	/* Print typedefs. */
 	if(division_exists(DIV_TYPEDEF)) {
 		printf("## Typedefs ##\n\n");
