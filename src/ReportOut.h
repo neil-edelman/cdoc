@@ -534,8 +534,9 @@ static void preamble_attribute_print(const enum Symbol symbol) {
 	}
 }
 
-/** Prints all a `segment`. */
-static void print_content(const struct Segment *const segment) {
+/** Prints all a `segment`.
+ @implements division_act */
+static void print_all(const struct Segment *const segment) {
 	state_reset("{", "}", ", ");
 	printf("<general>");
 	tokens_print(&segment->code);
@@ -550,6 +551,16 @@ static void print_content(const struct Segment *const segment) {
 		state_to_default();
 	}
 	printf("</general>\n");
+}
+
+/** Prints only the code of a `segment`.
+ @implements division_act */
+static void print_code(const struct Segment *const segment) {
+	state_reset("{", "}", ", ");
+	printf("<code>");
+	tokens_print(&segment->code);
+	state_to_default();
+	printf("\n\n");
 }
 
 /** Prints preable segment's doc. */
@@ -588,22 +599,24 @@ void ReportOut(void) {
 	/* Print typedefs. */
 	if(division_exists(DIV_TYPEDEF)) {
 		printf("## Typedefs ##\n\n");
-		division_act(DIV_TYPEDEF, &print_content);
+		division_act(DIV_TYPEDEF, &print_all);
 	}
 	/* Print tags. */
 	if(division_exists(DIV_TAG)) {
 		printf("## Tags ##\n\n");
-		division_act(DIV_TAG, &print_content);
+		division_act(DIV_TAG, &print_all);
 	}
 	/* Print general declarations. */
 	if(division_exists(DIV_DATA)) {
 		printf("## Data Declarations ##\n\n");
-		division_act(DIV_DATA, &print_content);
+		division_act(DIV_DATA, &print_all);
 	}
 	/* Print functions. */
 	if(division_exists(DIV_FUNCTION)) {
 		printf("## Functions ##\n\n");
+		division_act(DIV_FUNCTION, &print_code);
 		printf("## Function Detail ##\n\n");
+		division_act(DIV_FUNCTION, &print_all);
 	}
 	fputc('\n', stdout);
 /*
