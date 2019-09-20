@@ -344,19 +344,32 @@ static const OutFn symbol_outs[] = { SYMBOL(PARAM5C) };
 
 
 
-static void tokens_print(const struct TokenArray *const tokens) {
+/** @param[highlights] Must be sorted if not null, creates an emphasis on those
+ words. */
+static void tokens_print(const struct TokenArray *const tokens,
+	const struct TokenRefArray *const highlights) {
 	const struct Token *token = TokenArrayNext(tokens, 0);
+	struct Token **highlight = TokenRefArrayNext(highlights, 0);
 	OutFn sym_out;
+	int is_highlight;
 	if(!token) return;
 	while(token) {
+		if(highlight && *highlight == token) {
+			is_highlight = 1;
+			highlight = TokenRefArrayNext(highlights, highlight);
+		} else {
+			is_highlight = 0;
+		}
 		sym_out = symbol_outs[token->symbol];
 		if(!sym_out) {
-			printf("[undefined:%s]", symbols[token->symbol]);
+			printf("[undefined token: %s]", symbols[token->symbol]);
 			token = TokenArrayNext(tokens, token);
 			continue;
 		}
 		state_sep_if_needed(token->symbol);
+		if(is_highlight) printf("<em>");
 		if(!sym_out(tokens, &token)) { errno = EILSEQ; return /* fixme */; }
+		if(is_highlight) printf("</em>");
 	}
 }
 
@@ -517,7 +530,7 @@ static void attribute_print(const struct Segment *const segment,
 	printf("<attribute %s>", symbols[symbol]);
 	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
 		if(attribute->symbol != symbol) continue;
-		tokens_print(&attribute->contents);
+		tokens_print(&attribute->contents, 0);
 		state_to_default();
 	}
 }
@@ -534,23 +547,40 @@ static void preamble_attribute_print(const enum Symbol symbol) {
 	}
 }
 
+static void print_attribute_maybe(const struct Segment *const segment,
+	const enum Symbol symbol) {
+	assert(segment && symbol);
+	if(attribute_exists(segment, symbol)) {
+		printf("\n\n");
+		state_reset("{", "}", ", ");
+		attribute_print(segment, symbol);
+		state_to_default();
+	}
+}
+
 /** Prints all a `segment`.
  @implements division_act */
 static void print_all(const struct Segment *const segment) {
 	state_reset("{", "}", ", ");
-	printf("<general>");
-	tokens_print(&segment->code);
+	printf("<general>\n");
+	tokens_print(&segment->code, &segment->params);
 	state_reset("<p>", "</p>", "\n\n");
 	printf("\n\n");
-	tokens_print(&segment->doc);
+	tokens_print(&segment->doc, 0);
 	state_to_default();
-	printf("\n\n");
-	if(attribute_exists(segment, ATT_RETURN)) {
-		state_reset("{", "}", ", ");
-		attribute_print(segment, ATT_RETURN);
-		state_to_default();
-	}
-	printf("</general>\n");
+	/* fixme: No ATT_TITLE. */
+	print_attribute_maybe(segment, ATT_PARAM); /* fixme */
+	print_attribute_maybe(segment, ATT_RETURN);
+	print_attribute_maybe(segment, ATT_IMPLEMENTS);
+	print_attribute_maybe(segment, ATT_THROWS);
+	print_attribute_maybe(segment, ATT_ORDER);
+	print_attribute_maybe(segment, ATT_AUTHOR);
+	print_attribute_maybe(segment, ATT_STD);
+	print_attribute_maybe(segment, ATT_DEPEND);
+	print_attribute_maybe(segment, ATT_VERSION);
+	print_attribute_maybe(segment, ATT_FIXME);
+	print_attribute_maybe(segment, ATT_ALLOW); /* fixme */
+	printf("\n</general>\n\n");
 }
 
 /** Prints only the code of a `segment`.
@@ -558,7 +588,7 @@ static void print_all(const struct Segment *const segment) {
 static void print_code(const struct Segment *const segment) {
 	state_reset("{", "}", ", ");
 	printf("<code>");
-	tokens_print(&segment->code);
+	tokens_print(&segment->code, 0);
 	state_to_default();
 	printf("\n\n");
 }
@@ -569,7 +599,7 @@ static void preamble_print_all_content(void) {
 	state_reset("<p>", "</p>", "\n\n");
 	while((segment = SegmentArrayNext(&report, segment))) {
 		if(segment->division != DIV_PREAMBLE) continue;
-		tokens_print(&segment->doc);
+		tokens_print(&segment->doc, 0);
 		state_to_default();
 	}
 }

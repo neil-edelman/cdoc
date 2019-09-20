@@ -103,6 +103,7 @@ struct Scanner;
 enum Token { END };
 
 /** Returns eof.
+ @return END.
  @implements ScannerFn
  @allow */
 static enum Token fun2_scan_eof(struct Scanner *const arg1_2, int arg2_2) {
