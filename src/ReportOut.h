@@ -510,6 +510,29 @@ static int attribute_exists(const struct Segment *const segment,
 	return 0;
 }
 
+/** Seaches all `tokens` for `token`. */
+static int search_token(const struct TokenArray *const tokens,
+	const struct Token *const token) {
+	const struct Token *t = 0;
+	while((t = TokenArrayNext(tokens, t)))
+		if(!token_compare(token, t)) return 1;
+	return 0;
+}
+
+/** Seaches if attribute `symbol` exists within `segment` whose header contains
+ `header`.
+ @order O(`attributes`) */
+static int attribute_header_exists(const struct Segment *const segment,
+	const enum Symbol symbol, const struct Token *const header) {
+	struct Attribute *attribute = 0;
+	assert(segment);
+	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
+		if(attribute->symbol != symbol) continue;
+		if(search_token(&attribute->header, header)) return 1;
+	}
+	return 0;
+}
+
 /** Seaches if attribute `symbol` exists within all preamble segments.
  @order O(`segments` * `attributes`) */
 static int preamble_attribute_exists(const enum Symbol symbol) {
@@ -530,6 +553,29 @@ static void attribute_print(const struct Segment *const segment,
 	printf("<attribute %s>", symbols[symbol]);
 	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
 		if(attribute->symbol != symbol) continue;
+		printf("[");
+		tokens_print(&attribute->header, 0);
+		printf("]");
+		tokens_print(&attribute->contents, 0);
+		state_to_default();
+	}
+}
+/** For `segment`, print all attributes that match `symbol` whose header
+ contains `header`.
+ @order O(`attributes`) */
+static void attribute_header_print(const struct Segment *const segment,
+	const enum Symbol symbol, const struct Token *const header) {
+	struct Attribute *attribute = 0;
+	char a[12];
+	assert(segment && header);
+	token_to_string(header, &a);
+	printf("<attribute %s:%s>", symbols[symbol], a);
+	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
+		if(attribute->symbol != symbol
+			|| !search_token(&attribute->header, header)) continue;
+		printf("[");
+		tokens_print(&attribute->header, 0);
+		printf("]");
 		tokens_print(&attribute->contents, 0);
 		state_to_default();
 	}
@@ -550,17 +596,28 @@ static void preamble_attribute_print(const enum Symbol symbol) {
 static void print_attribute_maybe(const struct Segment *const segment,
 	const enum Symbol symbol) {
 	assert(segment && symbol);
-	if(attribute_exists(segment, symbol)) {
-		printf("\n\n");
-		state_reset("{", "}", ", ");
-		attribute_print(segment, symbol);
-		state_to_default();
-	}
+	if(!attribute_exists(segment, symbol)) return;
+	printf("\n\n");
+	state_reset("{", "}", ", ");
+	attribute_print(segment, symbol);
+	state_to_default();
+}
+
+static void print_attribute_header_maybe(const struct Segment *const segment,
+	const enum Symbol symbol, const struct Token *header) {
+	assert(segment && symbol);
+	if(!attribute_header_exists(segment, symbol, header)) return;
+	printf("\n\n");
+	state_reset("{", "}", ", ");
+	attribute_header_print(segment, symbol, header);
+	state_to_default();
 }
 
 /** Prints all a `segment`.
  @implements division_act */
 static void print_all(const struct Segment *const segment) {
+	/* This is the title, the rest are params. */
+	struct Token **param = TokenRefArrayNext(&segment->params, 0);
 	state_reset("{", "}", ", ");
 	printf("<general>\n");
 	tokens_print(&segment->code, &segment->params);
@@ -569,7 +626,8 @@ static void print_all(const struct Segment *const segment) {
 	tokens_print(&segment->doc, 0);
 	state_to_default();
 	/* fixme: No ATT_TITLE. */
-	print_attribute_maybe(segment, ATT_PARAM); /* fixme */
+	while((param = TokenRefArrayNext(&segment->params, param)))
+		print_attribute_header_maybe(segment, ATT_PARAM, *param);
 	print_attribute_maybe(segment, ATT_RETURN);
 	print_attribute_maybe(segment, ATT_IMPLEMENTS);
 	print_attribute_maybe(segment, ATT_THROWS);

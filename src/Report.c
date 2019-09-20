@@ -32,6 +32,11 @@ static void token_to_string(const struct Token *t, char (*const a)[12]) {
 		(*a)[sizeof *a - 1] = '\0';
 	}
 }
+static int token_compare(const struct Token *const a,
+	const struct Token *const b) {
+	if(a->length != b->length) return *a->from - *b->from;
+	return strncmp(a->from, b->from, a->length);
+}
 #define ARRAY_NAME Token
 #define ARRAY_TYPE struct Token
 #define ARRAY_TO_STRING &token_to_string
