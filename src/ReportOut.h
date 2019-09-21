@@ -373,75 +373,6 @@ static void tokens_print(const struct TokenArray *const tokens,
 	}
 }
 
-/** @implements <Attribute>Action */
-/*static void print_att_contents(struct Attribute *const att) {
-	tokens_print(&att->contents);
-}*/
-
-/** @implements <Attribute>Action */
-/*static void print_att_header(struct Attribute *const att) {
-	tokens_print(&att->header);
-}*/
-
-/** @implements <Attribute>Action */
-/*static void print_att_header_contents(struct Attribute *const att) {
-	printf("<att:%s # ", symbols[att->symbol]);
-	print_att_header(att);
-	printf(" #\n");
-	print_att_contents(att);
-	printf(">\n");
-}*/
-
-/* @implements <Attribute>Predicate */
-#define ATT_IS(lc, uc) static int att_is_ ## lc \
-(const struct Attribute *const att) { return att->symbol == uc; }
-/*ATT_IS(title, ATT_TITLE)
-ATT_IS(param, ATT_PARAM)
-ATT_IS(author, ATT_AUTHOR)
-ATT_IS(std, ATT_STD)
-ATT_IS(depend, ATT_DEPEND)
-ATT_IS(version, ATT_VERSION)
- ATT_IS(since, ATT_SINCE)
- ATT_IS(fixme, ATT_FIXME)
- ATT_IS(depricated, ATT_DEPRICATED)
- ATT_IS(return, ATT_RETURN)
- ATT_IS(throws, ATT_THROWS)
- ATT_IS(implements, ATT_IMPLEMENTS)
- ATT_IS(order, ATT_ORDER)
- ATT_IS(allow, ATT_ALLOW)*/
-
-/** @implements <Segment>Action */
-/*static void segment_print_doc(struct Segment *const segment) {
-	tokens_print(&segment->doc);
-}*/
-
-/** @implements <Segment>Action */
-/*static void segment_print_code(struct Segment *const segment) {
-	tokens_print(&segment->code);
-	printf("\n");
-}*/
-
-/** @implements <Segment>Action */
-/*static void segment_print_all(struct Segment *const segment) {
-	segment_print_code(segment);
-	segment_print_doc(segment);
-	AttributeArrayIfEach(&segment->attributes, &att_is_author, &print_att_contents);
-	AttributeArrayIfEach(&segment->attributes, &att_is_std, &print_att_contents);
-	AttributeArrayIfEach(&segment->attributes, &att_is_depend, &print_att_contents);
-	AttributeArrayIfEach(&segment->attributes, &att_is_param, &print_att_header_contents);
-	printf("\n\n***\n\n");
-}*/
-
-/** @implements <Segment>Predictate */
-/*static int segment_is_declaration(const struct Segment *const segment) {
-	return segment->division == DIV_TAG || segment->division == DIV_TYPEDEF;
-}*/
-
-/** @implements <Segment>Predictate */
-/*static int segment_is_function(const struct Segment *const segment) {
-	return segment->division == DIV_FUNCTION;
-}*/
-
 void ReportDebug(void) {
 	struct Segment *segment = 0;
 	struct Attribute *att = 0;
@@ -473,7 +404,7 @@ void ReportDebug(void) {
 			TokenRefArrayToString(&segment->params),
 			TokenArrayToString(&segment->doc));
 		while((att = AttributeArrayNext(&segment->attributes, att)))
-			printf("%s{%s} %s.\n", symbols[att->symbol],
+			printf("%s{%s} %s.\n", symbols[att->token.symbol],
 			TokenArrayToString(&att->header),
 			TokenArrayToString(&att->contents));
 		fputc('\n', stdout);
@@ -501,12 +432,13 @@ static void division_act(const enum Division division,
 
 /** Seaches if attribute `symbol` exists within `segment`.
  @order O(`attributes`) */
-static int attribute_exists(const struct Segment *const segment,
+static int attribute_content_exists(const struct Segment *const segment,
 	const enum Symbol symbol) {
 	struct Attribute *attribute = 0;
 	assert(segment);
 	while((attribute = AttributeArrayNext(&segment->attributes, attribute)))
-		if(attribute->symbol == symbol) return 1;
+		if(attribute->token.symbol == symbol
+		&& TokenArraySize(&attribute->contents)) return 1;
 	return 0;
 }
 
@@ -527,7 +459,7 @@ static int attribute_header_exists(const struct Segment *const segment,
 	struct Attribute *attribute = 0;
 	assert(segment);
 	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
-		if(attribute->symbol != symbol) continue;
+		if(attribute->token.symbol != symbol) continue;
 		if(search_token(&attribute->header, header)) return 1;
 	}
 	return 0;
@@ -539,7 +471,7 @@ static int preamble_attribute_exists(const enum Symbol symbol) {
 	struct Segment *segment = 0;
 	while((segment = SegmentArrayNext(&report, segment))) {
 		if(segment->division != DIV_PREAMBLE) continue;
-		if(attribute_exists(segment, symbol)) return 1;
+		if(attribute_content_exists(segment, symbol)) return 1;
 	}
 	return 0;
 }
@@ -552,7 +484,7 @@ static void attribute_print(const struct Segment *const segment,
 	assert(segment);
 	printf("<attribute %s>", symbols[symbol]);
 	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
-		if(attribute->symbol != symbol) continue;
+		if(attribute->token.symbol != symbol) continue;
 		printf("[");
 		tokens_print(&attribute->header, 0);
 		printf("]");
@@ -571,7 +503,7 @@ static void attribute_header_print(const struct Segment *const segment,
 	token_to_string(header, &a);
 	printf("<attribute %s:%s>", symbols[symbol], a);
 	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
-		if(attribute->symbol != symbol
+		if(attribute->token.symbol != symbol
 			|| !search_token(&attribute->header, header)) continue;
 		printf("[");
 		tokens_print(&attribute->header, 0);
@@ -596,7 +528,7 @@ static void preamble_attribute_print(const enum Symbol symbol) {
 static void print_attribute_maybe(const struct Segment *const segment,
 	const enum Symbol symbol) {
 	assert(segment && symbol);
-	if(!attribute_exists(segment, symbol)) return;
+	if(!attribute_content_exists(segment, symbol)) return;
 	printf("\n\n");
 	state_reset("{", "}", ", ");
 	attribute_print(segment, symbol);
@@ -613,16 +545,25 @@ static void print_attribute_header_maybe(const struct Segment *const segment,
 	state_to_default();
 }
 
+/** Prints only the code of a `segment`.
+ @implements division_act */
+static void print_code(const struct Segment *const segment) {
+	state_reset("{", "}", ", ");
+	printf("<print code>");
+	tokens_print(&segment->code, &segment->params);
+	state_to_default();
+	printf("\n\n");
+}
+
 /** Prints all a `segment`.
  @implements division_act */
 static void print_all(const struct Segment *const segment) {
 	/* This is the title, the rest are params. */
 	struct Token **param = TokenRefArrayNext(&segment->params, 0);
-	state_reset("{", "}", ", ");
-	printf("<general>\n");
-	tokens_print(&segment->code, &segment->params);
+	printf("<%s %s: %s>\n", divisions[segment->division], segment->name,
+		TokenRefArrayToString(&segment->params));
+	print_code(segment);
 	state_reset("<p>", "</p>", "\n\n");
-	printf("\n\n");
 	tokens_print(&segment->doc, 0);
 	state_to_default();
 	/* fixme: No ATT_TITLE. */
@@ -638,17 +579,7 @@ static void print_all(const struct Segment *const segment) {
 	print_attribute_maybe(segment, ATT_VERSION);
 	print_attribute_maybe(segment, ATT_FIXME);
 	print_attribute_maybe(segment, ATT_ALLOW); /* fixme */
-	printf("\n</general>\n\n");
-}
-
-/** Prints only the code of a `segment`.
- @implements division_act */
-static void print_code(const struct Segment *const segment) {
-	state_reset("{", "}", ", ");
-	printf("<code>");
-	tokens_print(&segment->code, 0);
-	state_to_default();
-	printf("\n\n");
+	printf("\n</%s>\n\n", segment->name);
 }
 
 /** Prints preable segment's doc. */
@@ -707,7 +638,4 @@ void ReportOut(void) {
 		division_act(DIV_FUNCTION, &print_all);
 	}
 	fputc('\n', stdout);
-/*
-	SegmentArrayIfEach(&report, &segment_is_function, &segment_print_code);
-	SegmentArrayIfEach(&report, &segment_is_function, &segment_print_all);*/
 }

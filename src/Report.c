@@ -73,13 +73,13 @@ static void tokenref_to_string(struct Token *const*pt, char (*const a)[12]) {
 /** `Attribute` is a specific structure of array of `Token` representing
  each-attributes, "@param ...". */
 struct Attribute {
-	enum Symbol symbol;
+	struct Token token;
 	struct TokenArray header;
 	struct TokenArray contents;
 };
 static void attribute_to_string(const struct Attribute *t, char (*const a)[12])
 {
-	strncpy(*a, symbols[t->symbol], sizeof *a - 1);
+	strncpy(*a, symbols[t->token.symbol], sizeof *a - 1);
 	(*a)[sizeof *a - 1] = '\0';
 }
 #define ARRAY_NAME Attribute
@@ -93,6 +93,7 @@ static void attributes_(struct AttributeArray *const atts) {
 		TokenArray_(&a->header), TokenArray_(&a->contents);
 	AttributeArray_(atts);
 }
+
 
 /** `Segment` is classified to a section of the document and can have
  documentation including attributes and code. */
@@ -148,6 +149,20 @@ static struct Segment *new_segment(void) {
 	return segment;
 }
 
+/** Initialises `token` with `symbol` and the most recent scanner location.
+ @return Success.
+ @throws[EILSEQ] The token cannot be represented as an `int` offset. */
+static int init_token(struct Token *const token, const enum Symbol symbol) {
+	const char *const from = ScannerFrom(), *const to = ScannerTo();
+	assert(token && from && from <= to);
+	if(from + INT_MAX < to) return errno = EILSEQ, 0;
+	token->symbol = symbol;
+	token->from = from;
+	token->length = (int)(to - from);
+	token->line = ScannerLine();
+	return 1;
+}
+
 /** @return A new `Attribute` on `segment` with `symbol`, (should be a
  attribute symbol.) Null on error. */
 static struct Attribute *new_attribute(struct Segment *const
@@ -155,7 +170,7 @@ static struct Attribute *new_attribute(struct Segment *const
 	struct Attribute *att;
 	assert(segment);
 	if(!(att = AttributeArrayNew(&segment->attributes))) return 0;
-	att->symbol = symbol;
+	init_token(&att->token, symbol);
 	TokenArray(&att->header);
 	TokenArray(&att->contents);
 	return att;
@@ -167,15 +182,7 @@ static struct Attribute *new_attribute(struct Segment *const
 static int new_token(struct TokenArray *const tokens, const enum Symbol symbol)
 {
 	struct Token *token;
-	const char *const from = ScannerFrom(), *const to = ScannerTo();
-	assert(tokens && from && from <= to);
-	if(from + INT_MAX < to) return errno = EILSEQ, 0;
-	if(!(token = TokenArrayNew(tokens))) return 0;
-	token->symbol = symbol;
-	token->from = from;
-	token->length = (int)(to - from);
-	token->line = ScannerLine();
-	return 1;
+	return !!(token = TokenArrayNew(tokens)) && init_token(token, symbol);
 }
 
 /** Wrapper for `Sematic.h`; extracts semantic information from `segment`. */
@@ -338,7 +345,7 @@ static int keep_segment(const struct Segment *const s) {
 		if(TokenArraySize(&s->code)
 			&& TokenArrayGet(&s->code)->symbol == STATIC) {
 			while((a = AttributeArrayNext(&s->attributes, a))
-				  && a->symbol != ATT_ALLOW);
+				  && a->token.symbol != ATT_ALLOW);
 			printf("static %s.\n", a ? "allowed" : "erased");
 			return a ? 1 : 0;
 		}
@@ -355,4 +362,5 @@ void ReportCull(void) {
 	SegmentArrayKeepIf(&report, &keep_segment);
 }
 
+#include "ReportWarning.h"
 #include "ReportOut.h"

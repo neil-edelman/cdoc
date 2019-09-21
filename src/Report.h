@@ -19,4 +19,5 @@ void ReportDivision(const enum Division division);
 int ReportPlace(void);
 void ReportCull(void);
 void ReportDebug(void);
+void ReportWarn(void);
 void ReportOut(void);
