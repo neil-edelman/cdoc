@@ -328,13 +328,32 @@ int ReportPlace(void) {
 /** Prints line info in a static buffer, (to be printed?) */
 static const char *pos(const struct Token *const token) {
 	static char p[128];
-	const int max_size = 32,
-		is_truncated = token->length > max_size ? 1 : 0,
-		len = is_truncated ? max_size : token->length;
-	assert(token);
-	sprintf(p, "Line %lu, %s \"%.*s\"", (unsigned long)token->line,
-		symbols[token->symbol], len, token->from);
+	if(!token) {
+		sprintf(p, "<Unknown position>");
+	} else {
+		const int max_size = 32,
+			is_truncated = token->length > max_size ? 1 : 0,
+			len = is_truncated ? max_size : token->length;
+		sprintf(p, "Line %lu, %s \"%.*s\"", (unsigned long)token->line,
+				symbols[token->symbol], len, token->from);
+	}
 	return p;
+}
+
+/** @return If the `code` is static. */
+static int is_static(const struct TokenArray *const code) {
+	const size_t code_size = TokenArraySize(code);
+	const struct Token *const tokens = TokenArrayGet(code);
+	assert(code);
+	/* `main` is static, so hack it; we can't really do this because it's
+	 general, but it works 99%. */
+	return (code_size >= 1 && tokens[0].symbol == STATIC)
+		|| (code_size >= 3
+		&& tokens[0].symbol == ID && tokens[0].length == 3
+		&& tokens[1].symbol == ID && tokens[1].length == 4
+		&& tokens[2].symbol == LPAREN
+		&& !strncmp(tokens[0].from, "int", 3)
+		&& !strncmp(tokens[1].from, "main", 4));
 }
 
 /** @implements{Predicate<Segment>} */
@@ -344,8 +363,7 @@ static int keep_segment(const struct Segment *const s) {
 	if(TokenArraySize(&s->doc) || AttributeArraySize(&s->attributes)
 		|| s->division == DIV_FUNCTION) {
 		/* `static` and containing `@allow`. */
-		if(TokenArraySize(&s->code)
-			&& TokenArrayGet(&s->code)->symbol == STATIC) {
+		if(is_static(&s->code)) {
 			while((a = AttributeArrayNext(&s->attributes, a))
 				  && a->token.symbol != ATT_ALLOW);
 			printf("static %s.\n", a ? "allowed" : "erased");

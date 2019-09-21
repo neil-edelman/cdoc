@@ -85,17 +85,50 @@ static int match_attribute_contents(const struct Token *const match,
 	return 0;
 }
 
-static void warn_segment(const struct Segment *const segment) {
-	/*const size_t doc_size = TokenArraySize(&segment->doc),
-		code_size = TokenArraySize(&segment->code);*/
+static void unused_attribute(const struct AttributeArray *const attributes,
+	const enum Symbol symbol) {
 	struct Attribute *attribute = 0;
+	assert(attributes && symbol);
+	while((attribute = AttributeArrayNext(attributes, attribute))) {
+		if(attribute->token.symbol != symbol) continue;
+		fprintf(stderr, "%s: attribute not used.\n", pos(&attribute->token));
+	}
+}
+
+static void warn_segment(const struct Segment *const segment) {
+	const size_t doc_size = TokenArraySize(&segment->doc),
+		code_size = TokenArraySize(&segment->code),
+		attribute_size = AttributeArraySize(&segment->attributes);
+	struct Attribute *attribute;
 	struct Token **param;
+	const struct Token *const fallback = TokenRefArraySize(&segment->params)
+		? *TokenRefArrayGet(&segment->params) : code_size
+		? TokenArrayGet(&segment->code) : doc_size
+		? TokenArrayGet(&segment->doc) : attribute_size
+		? &AttributeArrayGet(&segment->attributes)->token : 0;
+	assert(segment);
 	/* Check for empty (or full, as the case may be) attributes. */
+	attribute = 0;
 	while((attribute = AttributeArrayNext(&segment->attributes, attribute)))
-		if(!attribute_okay(attribute))
-		fprintf(stderr, "%s: attribute not okay.\n", pos(&attribute->token));
+		if(!attribute_okay(attribute)) fprintf(stderr,
+		"%s: attribute not used correctly.\n", pos(&attribute->token));
+	/* Check for different things depending on the division. */
 	switch(segment->division) {
 	case DIV_FUNCTION:
+		/* Check for code. This one will never be triggered unless one fiddles
+		 with the parser. */
+		if(!code_size)
+			fprintf(stderr, "%s: function with no code?\n", pos(fallback));
+		/* Check for public methods without documentation. */
+		if(!doc_size && !attribute_size && !is_static(&segment->code))
+			fprintf(stderr, "%s: no documentation.\n", pos(fallback));
+		/* No function title? */
+		if(TokenRefArraySize(&segment->params) < 1) fprintf(stderr,
+			"%s: unable to extract function name.\n", pos(fallback));
+		/* Unused in function. */
+		unused_attribute(&segment->attributes, ATT_TITLE);
+		if(!is_static(&segment->code))
+			unused_attribute(&segment->attributes, ATT_ALLOW);
 		/* Check for extraneous params. */
 		attribute = 0;
 		while((attribute = AttributeArrayNext(&segment->attributes, attribute)))
@@ -114,13 +147,57 @@ static void warn_segment(const struct Segment *const segment) {
 			&& !match_attribute_contents(*param, &segment->attributes,
 			ATT_RETURN)) fprintf(stderr,
 			"%s: parameter may be undocumented.\n", pos(*param));
+		break;
 	case DIV_PREAMBLE:
+		/* Should not have params. */
+		if(TokenRefArraySize(&segment->params)) fprintf(stderr,
+			"%s: params useless in preamble.\n", pos(fallback));
+		/* Unused in preamble. */
+		unused_attribute(&segment->attributes, ATT_RETURN);
+		unused_attribute(&segment->attributes, ATT_THROWS);
+		unused_attribute(&segment->attributes, ATT_IMPLEMENTS);
+		unused_attribute(&segment->attributes, ATT_ALLOW);
+		break;
 	case DIV_TAG:
+		/* Should have one. */
+		if(TokenRefArraySize(&segment->params) != 1) fprintf(stderr,
+			"%s: unable to extract one tag name.\n", pos(fallback));
+		/* Unused in tags. */
+		unused_attribute(&segment->attributes, ATT_TITLE);
+		unused_attribute(&segment->attributes, ATT_RETURN);
+		unused_attribute(&segment->attributes, ATT_THROWS);
+		unused_attribute(&segment->attributes, ATT_IMPLEMENTS);
+		unused_attribute(&segment->attributes, ATT_ORDER);
+		if(!is_static(&segment->code))
+			unused_attribute(&segment->attributes, ATT_ALLOW);
+		break;
 	case DIV_TYPEDEF:
+		/* Should have one. */
+		if(TokenRefArraySize(&segment->params) != 1) fprintf(stderr,
+			"%s: unable to extract one typedef name.\n", pos(fallback));
+		/* Unused in typedefs. */
+		unused_attribute(&segment->attributes, ATT_TITLE);
+		unused_attribute(&segment->attributes, ATT_PARAM);
+		unused_attribute(&segment->attributes, ATT_RETURN);
+		unused_attribute(&segment->attributes, ATT_THROWS);
+		unused_attribute(&segment->attributes, ATT_IMPLEMENTS);
+		unused_attribute(&segment->attributes, ATT_ORDER);
+		unused_attribute(&segment->attributes, ATT_ALLOW);
+		break;
 	case DIV_DATA:
-		/* It's nothing. */
-		if(!TokenArraySize(&segment->doc)
-			&& !AttributeArraySize(&segment->attributes)) return;
+		/* Should have one. */
+		if(TokenRefArraySize(&segment->params) != 1) fprintf(stderr,
+			"%s: unable to extract one data name.\n", pos(fallback));
+		/* Unused in data. */
+		unused_attribute(&segment->attributes, ATT_TITLE);
+		unused_attribute(&segment->attributes, ATT_PARAM);
+		unused_attribute(&segment->attributes, ATT_RETURN);
+		unused_attribute(&segment->attributes, ATT_THROWS);
+		unused_attribute(&segment->attributes, ATT_IMPLEMENTS);
+		unused_attribute(&segment->attributes, ATT_ORDER);
+		if(!is_static(&segment->code))
+			unused_attribute(&segment->attributes, ATT_ALLOW);
+		break;
 	}
 }
 
