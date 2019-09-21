@@ -105,6 +105,7 @@ enum Token { END };
 /** Returns eof.
  @param[arg1_2] Arg 1/2.
  @param[arg2_2] Arg 2/2.
+ @fixme
  @return END.
  @implements ScannerFn
  @allow */

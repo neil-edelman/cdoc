@@ -128,7 +128,7 @@ OUT(gen1) {
 	*ptoken = TokenArrayNext(tokens, rparen);
 	return 1;
 	catch:
-	fprintf(stderr, "Expected: generic(id); %s.\n", pos(t));
+	fprintf(stderr, "%s: expected generic(id).\n", pos(t));
 	return 0;
 }
 OUT(gen2) {
@@ -157,7 +157,7 @@ OUT(gen2) {
 	*ptoken = TokenArrayNext(tokens, rparen);
 	return 1;
 	catch:
-	fprintf(stderr, "Expected: generic2(id,id); %s.\n", pos(t));
+	fprintf(stderr, "%s: expected generic2(id,id).\n", pos(t));
 	return 0;
 }
 OUT(gen3) {
@@ -193,7 +193,7 @@ OUT(gen3) {
 	*ptoken = TokenArrayNext(tokens, rparen);
 	return 1;
 	catch:
-	fprintf(stderr, "Expected: A_B_C_(id,id,id); %s.\n", pos(t));
+	fprintf(stderr, "%s: expected A_B_C_(id,id,id).\n", pos(t));
 	return 0;
 }
 OUT(escape) {
@@ -223,7 +223,7 @@ OUT(cite) {
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 catch:
-	fprintf(stderr, "Expected: <short source>; %s.\n", pos(t));
+	fprintf(stderr, "%s: expected <short source>.\n", pos(t));
 	return 0;
 }
 OUT(see_fn) {
@@ -272,7 +272,7 @@ OUT(math) { /* Math and code. */
 	*ptoken = TokenArrayNext(tokens, next);
 	return 1;
 catch:
-	fprintf(stderr, "Expected: `<math/code>`; %s.\n", pos(begin));
+	fprintf(stderr, "%s: expected `<math/code>`.\n", pos(begin));
 	return 0;
 }
 OUT(em) {
@@ -289,7 +289,7 @@ OUT(em) {
 	*ptoken = TokenArrayNext(tokens, next);
 	return 1;
 catch:
-	fprintf(stderr, "Expected: _<emphasis>_; %s.\n", pos(begin));
+	fprintf(stderr, "%s: expected _<emphasis>_.\n", pos(begin));
 	return 0;
 }
 OUT(link) {
@@ -302,7 +302,7 @@ OUT(link) {
 	*ptoken = TokenArrayNext(tokens, desc);
 	return 1;
 catch:
-	fprintf(stderr, "Expected: `[description](url)`; %s.\n", pos(t));
+	fprintf(stderr, "%s: expected `[description](url)`.\n", pos(t));
 	return 0;
 }
 OUT(nbsp) {

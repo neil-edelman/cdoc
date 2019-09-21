@@ -29,6 +29,19 @@ static int attribute_okay(const struct Attribute *const attribute) {
 	}
 }
 
+static int match_function_params(const struct Token *const match,
+	const struct TokenRefArray *const params) {
+	struct Token **param = TokenRefArrayNext(params, 0); /* The name. */
+	char a[12];
+	token_to_string(match, &a);
+	printf("Trying to find %s in %s.\n", a, TokenRefArrayToString(params));
+	while((param = TokenRefArrayNext(params, param)))
+		if(!token_compare(match, *param))
+		{ char b[12]; token_to_string(*param, &b);
+			return printf("->found %s %s\n", a, b), 1; }
+	return 0;
+}
+
 static void warn_segment(const struct Segment *const segment) {
 	const size_t doc_size = TokenArraySize(&segment->doc),
 		code_size = TokenArraySize(&segment->code);
@@ -39,7 +52,16 @@ static void warn_segment(const struct Segment *const segment) {
 		fprintf(stderr, "%s: attribute not okay.\n", pos(&attribute->token));
 	switch(segment->division) {
 	case DIV_FUNCTION:
-			
+		/* Check for extraneous params. */
+		attribute = 0;
+		while((attribute = AttributeArrayNext(&segment->attributes, attribute)))
+		{
+			struct Token *match = 0;
+			if(attribute->token.symbol != ATT_PARAM) continue;
+			while((match = TokenArrayNext(&attribute->header, match)))
+				if(!match_function_params(match, &segment->params))
+				fprintf(stderr, "%s: extraneous variable.\n", pos(match));
+		}
 	case DIV_PREAMBLE:
 	case DIV_TAG:
 	case DIV_TYPEDEF:

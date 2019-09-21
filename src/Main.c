@@ -111,7 +111,8 @@
  @std C89
  @depend [re2c](http://re2c.org/)
  @fixme Old-style function definitions are not supported.
- @fixme \@depend in functions should automatically be placed in header.
+ @fixme \@depend, \@author, ect. in functions should automatically be placed in
+ header.
  @fixme Warnings about un-documented variables, `this` or \@param[this].
  @fixme Authors can only be ASCII.
  @fixme Trigraph support, (haha.)

@@ -44,8 +44,7 @@ static const char *pos(void) {
 		is_truncated = (scanner.from + max_size < scanner.cursor) ? 1 : 0,
 		len = is_truncated ? max_size : (int)(scanner.cursor - scanner.from);
 	assert(scanner.from <= scanner.cursor);
-	sprintf(p, "line %lu, indent %d, %s: \"%.*s\"",
-		(unsigned long)scanner.line, scanner.indent_level,
+	sprintf(p, "Line %lu, %s \"%.*s\"", (unsigned long)scanner.line,
 		symbols[scanner.symbol], len, scanner.from);
 	return p;
 }
@@ -161,12 +160,12 @@ reset:
 scan:
 /*!re2c
 	// Oops, don't know how to deal with that.
-	<*> * { return fprintf(stderr, "Unknown;\n%s.\n", pos()),
+	<*> * { return fprintf(stderr, "%s: unknown.\n", pos()),
 		errno = EILSEQ, END; }
 	// Everything stops at EOF.
 	<*> "\x00" {
 		if(scanner.state != yyccode || scanner.indent_level)
-			fprintf(stderr, "Unexpected EOF;\n%s.\n", pos()), errno = EILSEQ;
+			fprintf(stderr, "%s: unexpected EOF.\n", pos()), errno = EILSEQ;
 		return END;
 	}
 	// Return space.
@@ -177,7 +176,7 @@ scan:
 		scanner.line++;
 		if(scanner.state == yycdoc) return NEWLINE;
 		else if(scanner.state == yycstring || scanner.state == yyccharacter)
-			return fprintf(stderr, "String syntax;\n%s.\n", pos()),
+			return fprintf(stderr, "%s: string syntax.\n", pos()),
 			errno = EILSEQ, END;
 		else if(scanner.state == yycmacro) scanner.state = yyccode;
 		goto reset;
@@ -195,7 +194,7 @@ scan:
 	// With flattening the `ScanState` stack, this is not actually worth
 	// the effort; honestly, it's not going to matter.
 	<macro> begin_doc / [^/] { return fprintf(stderr,
-		"Documentation inside macro;\n%s.\n", pos()), errno = EILSEQ, END; }
+		"%s: documentation inside macro.\n", pos()), errno = EILSEQ, END; }
 	// Everything is ignored except comments.
 	<macro> ([^\x00\n\r] \ [/])+  { goto scan; }
 	<macro> [/] / [^*]  { goto scan; }
@@ -236,10 +235,10 @@ scan:
 		goto reset;
 	}
 	<doc, math, em, param_item, param_more> "\\*""/" { return
-		fprintf(stderr, "Escape past end of documentation;\n%s.\n", pos()),
+		fprintf(stderr, "%s: escape past end of documentation.\n", pos()),
 		errno = EILSEQ, END; }
 	<math, em, param_item, param_more> end_doc { return
-		fprintf(stderr, "Unexpected end of documentation;\n%s.\n", pos()),
+		fprintf(stderr, "%s: unexpected end of documentation.\n", pos()),
 		errno = EILSEQ, END; }
 	<doc> end_doc { return scanner.state = yyccode, DOC_END; }
 
@@ -248,7 +247,7 @@ scan:
 	<doc, math, em> "\\," { return NBTHINSP; }
 	<doc, math, em> "\\*" / [^/] { return ESCAPE; }
 	<doc, math, em> "\\\x00" { return fprintf(stderr,
-		"Escape past EOF;\n%s.\n", pos()), errno = EILSEQ, END; }
+		"%s: escape past EOF.\n", pos()), errno = EILSEQ, END; }
 	<doc> "_" { return scanner.state = yycem, EM_BEGIN; }
 	<em> "_" { return scanner.state = yycdoc, EM_END; }
 	<em> "`" { goto scan; }
@@ -310,7 +309,7 @@ scan:
 	<param_more>  "]" { return scanner.state = yycdoc,        DOC_RIGHT; }
 	<param_item, param_more> whitespace+ { goto reset; }
 	<param_begin, param_item, param_more> * {
-		return fprintf(stderr, "Unrecognised in parameter list;\n%s.\n", pos()),
+		return fprintf(stderr, "%s: not allowed in parameter list.\n", pos()),
 		errno = EILSEQ, END; }
 */
 }
@@ -365,7 +364,7 @@ int Scanner(void) {
 	/* Scans all. */
 	errno = 0;
 	while((scanner.symbol = scan()) && ReportPlace())
-		printf("Scanner: %s.\n", pos());
+		printf("%s.\n", pos());
 	if(errno) goto catch;
 	return 1;
 catch:

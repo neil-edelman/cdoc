@@ -24,6 +24,7 @@ static void token_to_string(const struct Token *t, char (*const a)[12]) {
 	switch(t->symbol) {
 	case WORD: { int len = t->length >= 9 ? 9 : t->length;
 		sprintf(*a, "<%.*s>", len, t->from); break; }
+	case DOC_ID:
 	case ID: { int len = t->length >= 8 ? 8 : t->length;
 		sprintf(*a, "ID:%.*s", len, t->from); break; }
 	case SPACE: { (*a)[0] = '~', (*a)[1] = '\0'; break; }
@@ -32,10 +33,11 @@ static void token_to_string(const struct Token *t, char (*const a)[12]) {
 		(*a)[sizeof *a - 1] = '\0';
 	}
 }
+/** Compares the _contents_ of the tokens. */
 static int token_compare(const struct Token *const a,
 	const struct Token *const b) {
-	if(a->length != b->length) return *a->from - *b->from;
-	return strncmp(a->from, b->from, a->length);
+	return strncmp(a->from, b->from,
+		a->length > b->length ? a->length : b->length);
 }
 #define ARRAY_NAME Token
 #define ARRAY_TYPE struct Token
@@ -330,7 +332,7 @@ static const char *pos(const struct Token *const token) {
 		is_truncated = token->length > max_size ? 1 : 0,
 		len = is_truncated ? max_size : token->length;
 	assert(token);
-	sprintf(p, "line %lu, %s: \"%.*s\"", (unsigned long)token->line,
+	sprintf(p, "Line %lu, %s \"%.*s\"", (unsigned long)token->line,
 		symbols[token->symbol], len, token->from);
 	return p;
 }
