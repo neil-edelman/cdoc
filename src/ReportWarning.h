@@ -60,22 +60,15 @@ static int match_param_attributes(const struct Token *const match,
 static int match_tokens(const struct Token *const match,
 	const struct TokenArray *const tokens) {
 	struct Token *t0 = 0, *t1, *t2;
-	char a[12];
 	assert(match && tokens);
-	token_to_string(match, &a);
-	printf("Searching %s in %s.\n", a, TokenArrayToString(tokens));
 	while((t0 = TokenArrayNext(tokens, t0))) {
-		printf("%s\n", symbols[t0->symbol]);
 		if(t0->symbol != MATH_BEGIN) continue;
-		printf("...`...\n");
 		if(!(t1 = TokenArrayNext(tokens, t0))) break;
-		printf("...`%s...\n", symbols[t1->symbol]);
-		if(t1->symbol != WORD) { /*t0 = t1;*/ continue; }
+		if(t1->symbol != WORD) { t0 = t1; continue; }
 		if(!(t2 = TokenArrayNext(tokens, t1))) break;
 		/* Sic.; could have "``". */
-		if(t2->symbol != MATH_END) { /*t0 = t1;*/ continue; }
-		printf("`%.*s`\n", t1->length, t1->from);
-		if(!token_compare(match, t1)) {printf("found\n");return 1;}
+		if(t2->symbol != MATH_END) { t0 = t1; continue; }
+		if(!token_compare(match, t1)) return 1;
 	}
 	return 0;
 }
@@ -87,8 +80,7 @@ static int match_attribute_contents(const struct Token *const match,
 	assert(match && attributes && symbol);
 	while((attribute = AttributeArrayNext(attributes, attribute))) {
 		if(attribute->token.symbol != symbol) continue;
-		printf("match_param...\n");
-		if(match_tokens(match, &attribute->contents)) { printf("it did!\n"); return 1;}
+		if(match_tokens(match, &attribute->contents)) return 1;
 	}
 	return 0;
 }
