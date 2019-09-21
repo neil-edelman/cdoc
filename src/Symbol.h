@@ -69,8 +69,8 @@
 	X(SEE_TYPEDEF, '~', &see_typedef, 0, 0), \
 	X(SEE_DATA,    '~', &see_data, 0, 0), \
 	/* Like `this` or _this_. */ \
-	X(MATH_BEGIN,  '~', &math, 0, 0), \
-	X(MATH_END,    '~', 0, 0, 0), /* Will never be seen. */ \
+	X(MATH_BEGIN,  '~', &math_begin, 0, 0), \
+	X(MATH_END,    '~', &math_end, 0, 0), \
 	X(EM_BEGIN,    '~', &em, 0, 0), \
 	X(EM_END,      '~', 0, 0, 0), /* Will never be seen. */ \
 	/* Like @param[a, b, c]. */ \

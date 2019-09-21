@@ -145,7 +145,7 @@ comment:
 
 typedef int Foo;
 
-/** Function. */
+/** Function `arg1_2` and `arg2_2 wtf really  omg  `. */
 T fun4(int (*arg1_2)(int a, int (*fn)(void)), Foo arg2_2) /** yo */ {
 	/** @param[a, fn] [] Doesn't do anything. */
 	return arg1_2(arg2_2, 0);

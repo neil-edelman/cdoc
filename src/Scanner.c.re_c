@@ -78,12 +78,14 @@ newline = "\n" | "\r" "\n"?;
 // "@" (at the beginning) for each-block-tag;
 // "<>[]" for embedded things;
 // "\x00" eof.
+// Words in math/code mode have a more lax interpretation.
 word_base = [^ \t\n\v\f\r~*\\`_@<>[\]\x00];
 word_begin = word_base | ">" | "]";
 word_in    = word_begin | "@" | "<" | ">" | "[" | "]";
 word_end   = word_begin | "@" | "<" | "[";
 word = word_base | (word_begin word_in* word_end)
 	| "*" | "@" | "<" | ">" | "[" | "]";
+word_math = (word_base | [~_@<>[\]] )+ | "*";
 begin_doc = "/""*"+;
 end_doc = "*"+"/";
 art = whitespace* "*"? newline " *";
@@ -242,7 +244,8 @@ scan:
 		errno = EILSEQ, END; }
 	<doc> end_doc { return scanner.state = yyccode, DOC_END; }
 
-	<doc, math, em> word { return WORD; }
+	<doc, em> word { return WORD; }
+	<math> word_math { return WORD; }
 	<doc, math, em> "\\"[^*,\x00] { return ESCAPE; }
 	<doc, math, em> "\\," { return NBTHINSP; }
 	<doc, math, em> "\\*" / [^/] { return ESCAPE; }
@@ -253,7 +256,6 @@ scan:
 	<em> "`" { goto scan; }
 	<doc> "`" { return scanner.state = yycmath, MATH_BEGIN; }
 	<math> "`" { return scanner.state = yycdoc, MATH_END; }
-	<math> "_" { goto scan; }
 
 	// These are recognised in the documentation as stuff; parse them further
 	// using `submatch`.

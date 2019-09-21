@@ -258,22 +258,21 @@ OUT(see_data) {
 	*ptoken = TokenArrayNext(tokens, data);
 	return 1;
 }
-OUT(math) { /* Math and code. */
-	const struct Token *const begin = *ptoken;
-	struct Token *next = TokenArrayNext(tokens, begin);
-	assert(tokens && begin && begin->symbol == MATH_BEGIN);
+OUT(math_begin) { /* Math and code. */
+	const struct Token *const t = *ptoken;
+	assert(tokens && t && t->symbol == MATH_BEGIN);
 	state_from_default();
 	printf("<code>");
-	while(next->symbol != MATH_END) {
-		printf("%.*s", next->length, next->from);
-		if(!(next = TokenArrayNext(tokens, next))) goto catch;
-	}
-	printf("</code>");
-	*ptoken = TokenArrayNext(tokens, next);
+	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
-catch:
-	fprintf(stderr, "%s: expected `<math/code>`.\n", pos(begin));
-	return 0;
+}
+OUT(math_end) {
+	const struct Token *const t = *ptoken;
+	assert(tokens && t && t->symbol == MATH_END);
+	state_from_default();
+	printf("</code>");
+	*ptoken = TokenArrayNext(tokens, t);
+	return 1;
 }
 OUT(em) {
 	const struct Token *const begin = *ptoken;
