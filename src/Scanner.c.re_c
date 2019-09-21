@@ -78,14 +78,15 @@ newline = "\n" | "\r" "\n"?;
 // "@" (at the beginning) for each-block-tag;
 // "<>[]" for embedded things;
 // "\x00" eof.
-// Words in math/code mode have a more lax interpretation.
+// Words in math/code and em mode have a more lax interpretation.
 word_base = [^ \t\n\v\f\r~*\\`_@<>[\]\x00];
 word_begin = word_base | ">" | "]";
 word_in    = word_begin | "@" | "<" | ">" | "[" | "]";
 word_end   = word_begin | "@" | "<" | "[";
 word = word_base | (word_begin word_in* word_end)
 	| "*" | "@" | "<" | ">" | "[" | "]";
-word_math = (word_base | [~_@<>[\]] )+ | "*";
+word_math  = (word_base | [~_@<>[\]] )+ | "*";
+word_em    = (word_base | [~`@<>[\]] )+ | "*";
 begin_doc = "/""*"+;
 end_doc = "*"+"/";
 art = whitespace* "*"? newline " *";
@@ -244,8 +245,9 @@ scan:
 		errno = EILSEQ, END; }
 	<doc> end_doc { return scanner.state = yyccode, DOC_END; }
 
-	<doc, em> word { return WORD; }
+	<doc>  word      { return WORD; }
 	<math> word_math { return WORD; }
+	<em>   word_em   { return WORD; }
 	<doc, math, em> "\\"[^*,\x00] { return ESCAPE; }
 	<doc, math, em> "\\," { return NBTHINSP; }
 	<doc, math, em> "\\*" / [^/] { return ESCAPE; }
@@ -253,7 +255,6 @@ scan:
 		"%s: escape past EOF.\n", pos()), errno = EILSEQ, END; }
 	<doc> "_" { return scanner.state = yycem, EM_BEGIN; }
 	<em> "_" { return scanner.state = yycdoc, EM_END; }
-	<em> "`" { goto scan; }
 	<doc> "`" { return scanner.state = yycmath, MATH_BEGIN; }
 	<math> "`" { return scanner.state = yycdoc, MATH_END; }
 

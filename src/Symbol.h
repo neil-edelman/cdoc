@@ -71,8 +71,8 @@
 	/* Like `this` or _this_. */ \
 	X(MATH_BEGIN,  '~', &math_begin, 0, 0), \
 	X(MATH_END,    '~', &math_end, 0, 0), \
-	X(EM_BEGIN,    '~', &em, 0, 0), \
-	X(EM_END,      '~', 0, 0, 0), /* Will never be seen. */ \
+	X(EM_BEGIN,    '~', &em_begin, 0, 0), \
+	X(EM_END,      '~', &em_end, 0, 0), \
 	/* Like @param[a, b, c]. */ \
 	X(DOC_LEFT,    '~', 0, 0, 0), \
 	X(DOC_RIGHT,   '~', 0, 0, 0), \
