@@ -76,7 +76,8 @@ int (*c);
 
 /** Function declare x as function (int) returning pointer to function (int)
  returning pointer to function (pointer to function (int) returning int)
- returning int */
+ returning int
+ @param[arg1_1] Yes. */
 int (*(*fun1(const int arg1_1))(int ))(int (*)(int )) {
 	(void)arg1_1;
 	return 0;

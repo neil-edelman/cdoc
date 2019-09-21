@@ -29,20 +29,38 @@ static int attribute_okay(const struct Attribute *const attribute) {
 	}
 }
 
+/** Seaches for `match` in the `params` supplied by the parser. */
 static int match_function_params(const struct Token *const match,
 	const struct TokenRefArray *const params) {
 	struct Token **param = TokenRefArrayNext(params, 0); /* The name. */
 	char a[12];
+	assert(match && params);
 	token_to_string(match, &a);
 	while((param = TokenRefArrayNext(params, param)))
 		if(!token_compare(match, *param)) return 1;
 	return 0;
 }
 
-static void warn_segment(const struct Segment *const segment) {
-	const size_t doc_size = TokenArraySize(&segment->doc),
-		code_size = TokenArraySize(&segment->code);
+/** Seaches for `match` in the param header of `attributes`
+ (eg, `@param[here, var]`) of the documentation. */
+static int match_param_attributes(const struct Token *const match,
+	const struct AttributeArray *const attributes) {
 	struct Attribute *attribute = 0;
+	assert(match && attributes);
+	while((attribute = AttributeArrayNext(attributes, attribute))) {
+		struct Token *param = 0;
+		if(attribute->token.symbol != ATT_PARAM) continue;
+		while((param = TokenArrayNext(&attribute->header, param)))
+			if(!token_compare(match, param)) return 1;
+	}
+	return 0;
+}
+
+static void warn_segment(const struct Segment *const segment) {
+	/*const size_t doc_size = TokenArraySize(&segment->doc),
+		code_size = TokenArraySize(&segment->code);*/
+	struct Attribute *attribute = 0;
+	struct Token **param;
 	/* Check for empty (or full, as the case may be) attributes. */
 	while((attribute = AttributeArrayNext(&segment->attributes, attribute)))
 		if(!attribute_okay(attribute))
@@ -60,7 +78,13 @@ static void warn_segment(const struct Segment *const segment) {
 				fprintf(stderr, "%s: extraneous variable.\n", pos(match));
 		}
 		/* Check for params that are undocumented. */
-			
+		param = TokenRefArrayNext(&segment->params, 0);
+		while((param = TokenRefArrayNext(&segment->params, param))) {
+			/* fixme: also check the doc and return. */
+			if(!match_param_attributes(*param, &segment->attributes))
+				fprintf(stderr, "%s: variable may be undocumented.\n",
+				pos(*param));
+		}
 	case DIV_PREAMBLE:
 	case DIV_TAG:
 	case DIV_TYPEDEF:
