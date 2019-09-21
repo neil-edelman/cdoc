@@ -34,11 +34,8 @@ static int match_function_params(const struct Token *const match,
 	struct Token **param = TokenRefArrayNext(params, 0); /* The name. */
 	char a[12];
 	token_to_string(match, &a);
-	printf("Trying to find %s in %s.\n", a, TokenRefArrayToString(params));
 	while((param = TokenRefArrayNext(params, param)))
-		if(!token_compare(match, *param))
-		{ char b[12]; token_to_string(*param, &b);
-			return printf("->found %s %s\n", a, b), 1; }
+		if(!token_compare(match, *param)) return 1;
 	return 0;
 }
 
@@ -62,6 +59,8 @@ static void warn_segment(const struct Segment *const segment) {
 				if(!match_function_params(match, &segment->params))
 				fprintf(stderr, "%s: extraneous variable.\n", pos(match));
 		}
+		/* Check for params that are undocumented. */
+			
 	case DIV_PREAMBLE:
 	case DIV_TAG:
 	case DIV_TYPEDEF:
