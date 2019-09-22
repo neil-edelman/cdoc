@@ -20,4 +20,4 @@ int ReportPlace(void);
 void ReportCull(void);
 void ReportDebug(void);
 void ReportWarn(void);
-void ReportOut(void);
+int ReportOut(void);

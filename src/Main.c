@@ -123,7 +123,6 @@
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
 #include <string.h> /* strcmp */
-#include <errno.h> /* errno */
 #include "Scanner.h"
 #include "Report.h"
 #include "Semantic.h"
@@ -131,6 +130,7 @@
 /** @param[argc, argv] If "debug", `freopens` a path that is on my computer. */
 int main(int argc, char **argv) {
 	int exit_code = EXIT_FAILURE;
+	char *reason = 0;
 
 	/* https://stackoverflow.com/questions/10293387/piping-into-application-run-under-xcode/13658537 */
 	if (argc == 2 && strcmp(argv[1], "debug") == 0 ) {
@@ -143,7 +143,7 @@ int main(int argc, char **argv) {
 	/* `parser` is the thing that tells us which division it is by looking at
 	 the code. */
 	fputs("\n\n-- In --\n", stdout);
-	if(!Scanner()) goto catch;
+	if(!Scanner()) { reason = "scanner"; goto catch; }
 	fputs("\n\n-- Warn --\n", stdout);
 	ReportWarn();
 	fputs("\n\n-- Cull --\n", stdout);
@@ -151,13 +151,12 @@ int main(int argc, char **argv) {
 	fputs("\n\n-- Debug --\n", stdout);
 	ReportDebug();
 	fputs("\n\n-- Out --\n", stdout);
-	ReportOut();
-	if(errno) goto catch; /* `ReportOut` sets `errno` in very rare cases. */
+	if(!ReportOut()) { reason = "output"; goto catch; }
 
 	exit_code = EXIT_SUCCESS; goto finally;
 	
 catch:
-	perror("scanner");
+	perror(reason);
 	
 finally:
 	Report_();

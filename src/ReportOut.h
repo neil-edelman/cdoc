@@ -577,9 +577,12 @@ static void preamble_print_all_content(void) {
 	}
 }
 
-/** Outputs a file.
- @throws[EILSEQ] Sequence error; to detect, test errno. */
-void ReportOut(void) {
+/** Outputs a report.
+ @throws[EILSEQ] Sequence error.
+ @return Success. */
+int ReportOut(void) {
+	/* We set `errno` here so that we don't have to test it each time. */
+	errno = 0;
 	/* Header. */
 	if(preamble_attribute_exists(ATT_TITLE)) {
 		printf("<preamble:title># ");
@@ -623,4 +626,5 @@ void ReportOut(void) {
 		division_act(DIV_FUNCTION, &print_all);
 	}
 	fputc('\n', stdout);
+	return errno ? 0 : 1;
 }
