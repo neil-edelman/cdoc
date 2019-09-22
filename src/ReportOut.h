@@ -343,14 +343,16 @@ static const OutFn symbol_outs[] = { SYMBOL(PARAM5C) };
 
 
 /** @param[highlights] Must be sorted if not null, creates an emphasis on those
- words. */
-static void tokens_print(const struct TokenArray *const tokens,
+ words.
+ @throws[EILSEQ] Sequence error.
+ @return Success. Generally ignored; detect if error. */
+static int tokens_print(const struct TokenArray *const tokens,
 	const struct TokenRefArray *const highlights) {
 	const struct Token *token = TokenArrayNext(tokens, 0);
 	struct Token **highlight = TokenRefArrayNext(highlights, 0);
 	OutFn sym_out;
 	int is_highlight;
-	if(!token) return;
+	if(!token) return 1; /* Nothing to do. */
 	while(token) {
 		if(highlight && *highlight == token) {
 			is_highlight = 1;
@@ -366,31 +368,15 @@ static void tokens_print(const struct TokenArray *const tokens,
 		}
 		state_sep_if_needed(token->symbol);
 		if(is_highlight) printf("<em>");
-		if(!sym_out(tokens, &token)) { errno = EILSEQ; return /* fixme */; }
+		if(!sym_out(tokens, &token)) { errno = EILSEQ; return 0; }
 		if(is_highlight) printf("</em>");
 	}
+	return 1;
 }
 
 void ReportDebug(void) {
 	struct Segment *segment = 0;
 	struct Attribute *att = 0;
-	struct Segment {
-	enum Division division;
-		struct TokenArray doc, code;
-		struct TokenRefArray params;
-		struct AttributeArray attributes;
-	};
-	struct Attribute {
-		enum Symbol symbol;
-		struct TokenArray header;
-		struct TokenArray contents;
-	};	
-	struct Token {
-		enum Symbol symbol;
-		const char *from;
-		int length;
-		size_t line;
-	};
 	while((segment = SegmentArrayNext(&report, segment))) {
 		printf("Segment %s: %s;\n"
 			"code: %s;\n"
@@ -591,7 +577,8 @@ static void preamble_print_all_content(void) {
 	}
 }
 
-/** Outputs a file. */
+/** Outputs a file.
+ @throws[EILSEQ] Sequence error; to detect, test errno. */
 void ReportOut(void) {
 	/* Header. */
 	if(preamble_attribute_exists(ATT_TITLE)) {

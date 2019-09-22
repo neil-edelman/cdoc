@@ -205,4 +205,5 @@ void ReportWarn(void) {
 	struct Segment *segment = 0;
 	while((segment = SegmentArrayNext(&report, segment)))
 		warn_segment(segment);
+	/* fixme: warn if segments with the same data have the same name? */
 }

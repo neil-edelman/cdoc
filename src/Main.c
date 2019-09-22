@@ -123,6 +123,7 @@
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
 #include <string.h> /* strcmp */
+#include <errno.h> /* errno */
 #include "Scanner.h"
 #include "Report.h"
 #include "Semantic.h"
@@ -151,6 +152,7 @@ int main(int argc, char **argv) {
 	ReportDebug();
 	fputs("\n\n-- Out --\n", stdout);
 	ReportOut();
+	if(errno) goto catch; /* `ReportOut` sets `errno` in very rare cases. */
 
 	exit_code = EXIT_SUCCESS; goto finally;
 	
