@@ -44,8 +44,8 @@ static const char *pos(void) {
 		is_truncated = (scanner.from + max_size < scanner.cursor) ? 1 : 0,
 		len = is_truncated ? max_size : (int)(scanner.cursor - scanner.from);
 	assert(scanner.from <= scanner.cursor);
-	sprintf(p, "Line %lu, %s \"%.*s\"", (unsigned long)scanner.line,
-		symbols[scanner.symbol], len, scanner.from);
+	sprintf(p, "Line %lu, %s \"%.*s\" state %d", (unsigned long)scanner.line,
+		symbols[scanner.symbol], len, scanner.from, scanner.state);
 	return p;
 }
 
@@ -87,7 +87,7 @@ word = word_base | (word_begin word_in* word_end)
 	| "*" | "@" | "<" | ">" | "[" | "]";
 word_math  = (word_base | [~_@<>[\]] )+ | "*";
 word_em    = (word_base | [~`@<>[\]] )+ | "*";
-begin_doc = "/""*"+;
+begin_doc = "/""*""*"+;
 end_doc = "*"+"/";
 art = whitespace* "*"? newline " *";
 comment_break = "/" "*"+ "*" "/";

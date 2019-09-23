@@ -93,7 +93,7 @@
  "Unlike standard Markdown and Github Flavored Markdown doxygen will not touch
  internal underscores or stars or tildes, so the following will appear as-is:
  a_nice_identifier
- Furthermore, a * or _ only starts an emphasis if
+ Furthermore, a * or \_ only starts an emphasis if
  it is followed by an alphanumerical character, and
  it is preceded by a space, newline, or one the following characters <{([,:;
  An emphasis or a strikethrough ends if
@@ -117,8 +117,8 @@
  @fixme Authors can only be ASCII.
  @fixme Trigraph support, (haha.)
  @fixme Old-style function support.
- @bug `re2c` appends a comma at the end of the enumeration list, not compliant
- with C90. */
+ @fixme `re2c` appends a comma at the end of the enumeration list, not
+ compliant with C90. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
@@ -140,13 +140,9 @@ int main(int argc, char **argv) {
 		freopen(test_file_path, "r", stdin);
 	}
 
-	/* `parser` is the thing that tells us which division it is by looking at
-	 the code. */
 	if(!Scanner()) { reason = "scanner"; goto catch; }
 	ReportWarn();
 	ReportCull();
-	/*fputs("-- Debug --\n", stdout);
-	ReportDebug();*/
 	if(!ReportOut()) { reason = "output"; goto catch; }
 
 	exit_code = EXIT_SUCCESS; goto finally;
