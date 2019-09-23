@@ -29,6 +29,7 @@ static int attribute_okay(const struct Attribute *const attribute) {
 	}
 }
 
+#if 0
 /** Searches for `match` in the `params` supplied by the parser. */
 static int match_function_params(const struct Token *const match,
 	const struct TokenRefArray *const params) {
@@ -40,6 +41,7 @@ static int match_function_params(const struct Token *const match,
 		if(!token_compare(match, *param)) return 1;
 	return 0;
 }
+#endif
 
 /** Searches for `match` in the param header of `attributes`
  (eg, `@param[here, var]`) of the documentation. */
@@ -100,9 +102,10 @@ static void warn_segment(const struct Segment *const segment) {
 		code_size = TokenArraySize(&segment->code),
 		attribute_size = AttributeArraySize(&segment->attributes);
 	struct Attribute *attribute;
-	struct Token **param;
-	const struct Token *const fallback = TokenRefArraySize(&segment->params)
-		? *TokenRefArrayGet(&segment->params) : code_size
+	const size_t *code_param;
+	const struct Token *const fallback = SizeArraySize(&segment->code_params)
+		? TokenArrayGet(&segment->code)
+		+ SizeArrayGet(&segment->code_params)[0] : code_size
 		? TokenArrayGet(&segment->code) : doc_size
 		? TokenArrayGet(&segment->doc) : attribute_size
 		? &AttributeArrayGet(&segment->attributes)->token : 0;
@@ -123,7 +126,7 @@ static void warn_segment(const struct Segment *const segment) {
 		if(!doc_size && !attribute_size && !is_static(&segment->code))
 			fprintf(stderr, "%s: no documentation.\n", pos(fallback));
 		/* No function title? */
-		if(TokenRefArraySize(&segment->params) < 1) fprintf(stderr,
+		if(SizeArraySize(&segment->code_params) < 1) fprintf(stderr,
 			"%s: unable to extract function name.\n", pos(fallback));
 		/* Unused in function. */
 		unused_attribute(&segment->attributes, ATT_TITLE);
@@ -132,25 +135,29 @@ static void warn_segment(const struct Segment *const segment) {
 		/* Check for extraneous params. */
 		attribute = 0;
 		while((attribute = AttributeArrayNext(&segment->attributes, attribute)))
-		{
+		/*{
 			struct Token *match = 0;
 			if(attribute->token.symbol != ATT_PARAM) continue;
 			while((match = TokenArrayNext(&attribute->header, match)))
 				if(!match_function_params(match, &segment->params))
 				fprintf(stderr, "%s: extraneous parameter.\n", pos(match));
-		}
+		}*/
 		/* Check for params that are undocumented. */
-		param = TokenRefArrayNext(&segment->params, 0);
-		while((param = TokenRefArrayNext(&segment->params, param)))
-			if(!match_param_attributes(*param, &segment->attributes)
-			&& !match_tokens(*param, &segment->doc)
-			&& !match_attribute_contents(*param, &segment->attributes,
-			ATT_RETURN)) fprintf(stderr,
-			"%s: parameter may be undocumented.\n", pos(*param));
+		code_param = SizeArrayNext(&segment->code_params, 0);
+		while((code_param = SizeArrayNext(&segment->code_params, code_param))) {
+			const struct Token *param = TokenArrayGet(&segment->code)
+				+ *code_param;
+			assert(*code_param <= TokenArraySize(&segment->code));
+			if(!match_param_attributes(param, &segment->attributes)
+				&& !match_tokens(param, &segment->doc)
+				&& !match_attribute_contents(param, &segment->attributes,
+				ATT_RETURN)) fprintf(stderr,
+				"%s: parameter may be undocumented.\n", pos(param));
+		}
 		break;
 	case DIV_PREAMBLE:
 		/* Should not have params. */
-		if(TokenRefArraySize(&segment->params)) fprintf(stderr,
+		if(SizeArraySize(&segment->code_params)) fprintf(stderr,
 			"%s: params useless in preamble.\n", pos(fallback));
 		/* Unused in preamble. */
 		unused_attribute(&segment->attributes, ATT_RETURN);
@@ -160,7 +167,7 @@ static void warn_segment(const struct Segment *const segment) {
 		break;
 	case DIV_TAG:
 		/* Should have one. */
-		if(TokenRefArraySize(&segment->params) != 1) fprintf(stderr,
+		if(SizeArraySize(&segment->code_params) != 1) fprintf(stderr,
 			"%s: unable to extract one tag name.\n", pos(fallback));
 		/* Unused in tags. */
 		unused_attribute(&segment->attributes, ATT_TITLE);
@@ -173,7 +180,7 @@ static void warn_segment(const struct Segment *const segment) {
 		break;
 	case DIV_TYPEDEF:
 		/* Should have one. */
-		if(TokenRefArraySize(&segment->params) != 1) fprintf(stderr,
+		if(SizeArraySize(&segment->code_params) != 1) fprintf(stderr,
 			"%s: unable to extract one typedef name.\n", pos(fallback));
 		/* Unused in typedefs. */
 		unused_attribute(&segment->attributes, ATT_TITLE);
@@ -186,7 +193,7 @@ static void warn_segment(const struct Segment *const segment) {
 		break;
 	case DIV_DATA:
 		/* Should have one. */
-		if(TokenRefArraySize(&segment->params) != 1) fprintf(stderr,
+		if(SizeArraySize(&segment->code_params) != 1) fprintf(stderr,
 			"%s: unable to extract one data name.\n", pos(fallback));
 		/* Unused in data. */
 		unused_attribute(&segment->attributes, ATT_TITLE);

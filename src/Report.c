@@ -63,12 +63,20 @@ void TokensMark(const struct TokenArray *const tokens, char *const marks) {
 }
 
 
-static void tokenref_to_string(struct Token *const*pt, char (*const a)[12]) {
+/*static void tokenref_to_string(struct Token *const*pt, char (*const a)[12]) {
 	token_to_string(*pt, a);
 }
 #define ARRAY_NAME TokenRef
 #define ARRAY_TYPE struct Token *
 #define ARRAY_TO_STRING &tokenref_to_string
+#include "Array.h"*/
+
+static void size_to_string(const size_t *const n, char (*const a)[12]) {
+	sprintf(*a, "%.1lu", (unsigned long)n);
+}
+#define ARRAY_NAME Size
+#define ARRAY_TYPE size_t
+#define ARRAY_TO_STRING &size_to_string
 #include "Array.h"
 
 
@@ -103,7 +111,7 @@ struct Segment {
 	char name[6];
 	enum Division division;
 	struct TokenArray doc, code;
-	struct TokenRefArray params;
+	struct SizeArray code_params;
 	struct AttributeArray attributes;
 };
 static void segment_to_string(const struct Segment *seg, char (*const a)[12]) {
@@ -114,6 +122,22 @@ static void segment_to_string(const struct Segment *seg, char (*const a)[12]) {
 #define ARRAY_TYPE struct Segment
 #define ARRAY_TO_STRING &segment_to_string
 #include "../src/Array.h"
+static const struct Token *param_no(const struct Segment *const segment,
+	const size_t param) {
+	size_t *pidx;
+	assert(segment);
+	if(param >= SizeArraySize(&segment->code_params)) return 0;
+	pidx = SizeArrayGet(&segment->code_params) + param;
+	if(*pidx >= TokenArraySize(&segment->code)) {
+		char a[12];
+		segment_to_string(segment, &a);
+		fprintf(stderr, "%s: param index %lu is greater then code size.\n",
+			a, (unsigned long)TokenArraySize(&segment->code));
+		return 0;
+	}
+	return TokenArrayGet(&segment->code) + *pidx;
+}
+
 
 /** Top-level static document. */
 static struct SegmentArray report;
@@ -127,7 +151,7 @@ void Report_(void) {
 	/* Destroy the report. */
 	while((segment = SegmentArrayPop(&report)))
 		TokenArray_(&segment->doc), TokenArray_(&segment->code),
-		TokenRefArray_(&segment->params), attributes_(&segment->attributes);
+		SizeArray_(&segment->code_params), attributes_(&segment->attributes);
 	SegmentArray_(&report);
 	/* Destroy the semantic buffer. */
 	Semantic(0);
@@ -146,7 +170,7 @@ static struct Segment *new_segment(void) {
 	segment->division = DIV_PREAMBLE; /* Default. */
 	TokenArray(&segment->doc);
 	TokenArray(&segment->code);
-	TokenRefArray(&segment->params);
+	SizeArray(&segment->code_params);
 	AttributeArray(&segment->attributes);
 	return segment;
 }
@@ -187,30 +211,18 @@ static int new_token(struct TokenArray *const tokens, const enum Symbol symbol)
 	return !!(token = TokenArrayNew(tokens)) && init_token(token, symbol);
 }
 
-/** Wrapper for `Sematic.h`; extracts semantic information from `segment`. */
+/** Wrapper for `Semantic.h`; extracts semantic information from `segment`. */
 static int semantic(struct Segment *const segment) {
-	size_t no, i, entry;
-	const size_t *array;
-	struct Token *code;
-	struct Token **ref;
+	size_t no, i;
+	const size_t *source;
+	size_t *dest;
 	if(!segment) return 0;
 	if(!Semantic(&segment->code)) return 0;
 	segment->division = SemanticDivision();
-	SemanticParams(&no, &array);
-	code = TokenArrayGet(&segment->code);
-	for(i = 0; i < no; i++) {
-		entry = array[i];
-		if(entry >= TokenArraySize(&segment->code)) {
-			char a[12];
-			segment_to_string(segment, &a);
-			fprintf(stderr,
-				"Semantic: Segment %s array index is out-of-range: %lu.\n",
-				a, (unsigned long)i);
-			continue;
-		};
-		if(!(ref = TokenRefArrayNew(&segment->params))) return 0;
-		*ref = code + entry;
-	}
+	/* Copy `Semantic` size array to this size array. */
+	SemanticParams(&no, &source);
+	if(!(dest = SizeArrayBuffer(&segment->code_params, no))) return 0;
+	for(i = 0; i < no; i++) dest[i] = source[i];
 	return 1;
 }
 

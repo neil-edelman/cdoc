@@ -365,16 +365,16 @@ static const struct Token *token_print(const struct TokenArray *const tokens,
  words.
  @throws[EILSEQ] Sequence error. Must detect with `errno`. */
 static void tokens_print(const struct TokenArray *const tokens,
-	const struct TokenRefArray *const highlights) {
-	const struct Token *token = TokenArrayNext(tokens, 0);
-	struct Token **highlight = TokenRefArrayNext(highlights, 0);
+	const struct SizeArray *const highlights) {
+	const struct Token *const first = TokenArrayNext(tokens, 0), *token = first;
+	size_t *highlight = SizeArrayNext(highlights, 0);
 	int is_highlight;
 	assert(tokens);
 	if(!token) return;
 	while(token) {
-		if(highlight && *highlight == token) {
+		if(highlight && *highlight == (size_t)(token - first)) {
 			is_highlight = 1;
-			highlight = TokenRefArrayNext(highlights, highlight);
+			highlight = SizeArrayNext(highlights, highlight);
 		} else {
 			is_highlight = 0;
 		}
@@ -396,7 +396,7 @@ void ReportDebug(void) {
 			segment->name,
 			divisions[segment->division],
 			TokenArrayToString(&segment->code),
-			TokenRefArrayToString(&segment->params),
+			SizeArrayToString(&segment->code_params),
 			TokenArrayToString(&segment->doc));
 		while((att = AttributeArrayNext(&segment->attributes, att)))
 			printf("%s{%s} %s.\n", symbols[att->token.symbol],
@@ -437,12 +437,12 @@ static int attribute_content_exists(const struct Segment *const segment,
 	return 0;
 }
 
-/** Seaches all `tokens` for `token`. */
-static int search_token(const struct TokenArray *const tokens,
+/** Seaches all `tokens` for `token` and returns it. */
+static const struct Token *search_token(const struct TokenArray *const tokens,
 	const struct Token *const token) {
 	const struct Token *t = 0;
 	while((t = TokenArrayNext(tokens, t)))
-		if(!token_compare(token, t)) return 1;
+		if(!token_compare(token, t)) return t;
 	return 0;
 }
 
@@ -545,7 +545,7 @@ static void print_attribute_header_maybe(const struct Segment *const segment,
 static void print_code(const struct Segment *const segment) {
 	state_reset("{", "}", ", ");
 	printf("<print code>");
-	tokens_print(&segment->code, &segment->params);
+	tokens_print(&segment->code, &segment->code_params);
 	state_to_default();
 	printf("\n\n");
 }
@@ -553,36 +553,23 @@ static void print_code(const struct Segment *const segment) {
 /** Prints all a `segment`.
  @implements division_act */
 static void print_all(const struct Segment *const segment) {
+	const struct Token *param;
+	size_t no;
 	/* This is the title, the rest are params. */
-	struct Token **param = TokenRefArrayNext(&segment->params, 0);
-	printf("<%s %s: %s><h2>", divisions[segment->division], segment->name,
-		TokenRefArrayToString(&segment->params));
-	/* The title is the first param. */
-	if(TokenRefArraySize(&segment->params)) {
-		struct Token *token = *TokenRefArrayGet(&segment->params);
-		char a[12];
-		token_to_string(token, &a);
-		printf("[[print_all: code:%s ",
-			TokenArrayToString(&segment->code));
-		{
-			const struct TokenArray *ts = &segment->code;
-			const struct Token *t = 0;
-			while((t = TokenArrayNext(ts, t))
-				&& (printf("%p/", (void *)t), t != token));
-			printf("]]\n");
-			assert(t);
-		}
-		token_print(&segment->code, token);
+	printf("<%s %s><h2>", divisions[segment->division], segment->name);
+	/* The title is generally the first param. */
+	if((param = param_no(segment, 0))) {
+		token_print(&segment->code, param);
 	} else {
-		printf("No Params");
+		printf("no params");
 	}
 	printf("</h2>\n");
 	print_code(segment);
 	state_reset("<p>", "</p>", "\n\n");
 	tokens_print(&segment->doc, 0);
 	state_to_default();
-	while((param = TokenRefArrayNext(&segment->params, param)))
-		print_attribute_header_maybe(segment, ATT_PARAM, *param);
+	/*for(no = 1; (param = param_no(segment, no)); no++);
+		print_attribute_header_maybe(segment, ATT_PARAM, param); fixme*/
 	print_attribute_maybe(segment, ATT_RETURN);
 	print_attribute_maybe(segment, ATT_IMPLEMENTS);
 	print_attribute_maybe(segment, ATT_THROWS);
