@@ -163,8 +163,9 @@ reset:
 scan:
 /*!re2c
 	// Oops, don't know how to deal with that.
-	<*> * { return fprintf(stderr, "%s: unknown.\n", pos()),
+	<*> * { return fprintf(stderr, "%s: unexpected state.\n", pos()),
 		errno = EILSEQ, END; }
+	<comment, macro_comment, string, character> * { goto scan; }
 	// Everything stops at EOF.
 	<*> "\x00" {
 		if(scanner.state != yyccode || scanner.indent_level)
