@@ -568,8 +568,8 @@ static void print_all(const struct Segment *const segment) {
 	state_reset("<p>", "</p>", "\n\n");
 	tokens_print(&segment->doc, 0);
 	state_to_default();
-	/*for(no = 1; (param = param_no(segment, no)); no++);
-		print_attribute_header_maybe(segment, ATT_PARAM, param); fixme*/
+	for(no = 1; (param = param_no(segment, no)); no++)
+		print_attribute_header_maybe(segment, ATT_PARAM, param);
 	print_attribute_maybe(segment, ATT_RETURN);
 	print_attribute_maybe(segment, ATT_IMPLEMENTS);
 	print_attribute_maybe(segment, ATT_THROWS);

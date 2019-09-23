@@ -29,19 +29,16 @@ static int attribute_okay(const struct Attribute *const attribute) {
 	}
 }
 
-#if 0
 /** Searches for `match` in the `params` supplied by the parser. */
 static int match_function_params(const struct Token *const match,
-	const struct TokenRefArray *const params) {
-	struct Token **param = TokenRefArrayNext(params, 0); /* The name. */
-	char a[12];
-	assert(match && params);
-	token_to_string(match, &a);
-	while((param = TokenRefArrayNext(params, param)))
-		if(!token_compare(match, *param)) return 1;
+	const struct Segment *const segment) {
+	size_t no = 0;
+	const struct Token *param;
+	assert(match && segment);
+	while((param = param_no(segment, no++)))
+		if(!token_compare(match, param)) return 1;
 	return 0;
 }
-#endif
 
 /** Searches for `match` in the param header of `attributes`
  (eg, `@param[here, var]`) of the documentation. */
@@ -135,13 +132,13 @@ static void warn_segment(const struct Segment *const segment) {
 		/* Check for extraneous params. */
 		attribute = 0;
 		while((attribute = AttributeArrayNext(&segment->attributes, attribute)))
-		/*{
+		{
 			struct Token *match = 0;
 			if(attribute->token.symbol != ATT_PARAM) continue;
 			while((match = TokenArrayNext(&attribute->header, match)))
-				if(!match_function_params(match, &segment->params))
+				if(!match_function_params(match, segment))
 				fprintf(stderr, "%s: extraneous parameter.\n", pos(match));
-		}*/
+		}
 		/* Check for params that are undocumented. */
 		code_param = SizeArrayNext(&segment->code_params, 0);
 		while((code_param = SizeArrayNext(&segment->code_params, code_param))) {

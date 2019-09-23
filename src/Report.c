@@ -63,16 +63,8 @@ void TokensMark(const struct TokenArray *const tokens, char *const marks) {
 }
 
 
-/*static void tokenref_to_string(struct Token *const*pt, char (*const a)[12]) {
-	token_to_string(*pt, a);
-}
-#define ARRAY_NAME TokenRef
-#define ARRAY_TYPE struct Token *
-#define ARRAY_TO_STRING &tokenref_to_string
-#include "Array.h"*/
-
 static void size_to_string(const size_t *const n, char (*const a)[12]) {
-	sprintf(*a, "%.1lu", (unsigned long)n);
+	sprintf(*a, "%lu", (unsigned long)*n % 1000000000lu);
 }
 #define ARRAY_NAME Size
 #define ARRAY_TYPE size_t
@@ -126,7 +118,7 @@ static const struct Token *param_no(const struct Segment *const segment,
 	const size_t param) {
 	size_t *pidx;
 	assert(segment);
-	if(param >= SizeArraySize(&segment->code_params)) return 0;
+	if(param >= SizeArraySize(&segment->code_params)) {printf("(pn: oob %lu)", param);return 0;}
 	pidx = SizeArrayGet(&segment->code_params) + param;
 	if(*pidx >= TokenArraySize(&segment->code)) {
 		char a[12];
@@ -223,6 +215,9 @@ static int semantic(struct Segment *const segment) {
 	SemanticParams(&no, &source);
 	if(!(dest = SizeArrayBuffer(&segment->code_params, no))) return 0;
 	for(i = 0; i < no; i++) dest[i] = source[i];
+	SizeArrayExpand(&segment->code_params, no);
+	printf("Now segment.code_params = %s\n",
+		SizeArrayToString(&segment->code_params));
 	return 1;
 }
 
