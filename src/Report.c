@@ -118,8 +118,9 @@ static const struct Token *param_no(const struct Segment *const segment,
 	const size_t param) {
 	size_t *pidx;
 	assert(segment);
-	if(param >= SizeArraySize(&segment->code_params)) {printf("(pn: oob %lu)", param);return 0;}
+	if(param >= SizeArraySize(&segment->code_params)) return 0;
 	pidx = SizeArrayGet(&segment->code_params) + param;
+	/* This is really careful. */
 	if(*pidx >= TokenArraySize(&segment->code)) {
 		char a[12];
 		segment_to_string(segment, &a);
@@ -211,13 +212,12 @@ static int semantic(struct Segment *const segment) {
 	if(!segment) return 0;
 	if(!Semantic(&segment->code)) return 0;
 	segment->division = SemanticDivision();
-	/* Copy `Semantic` size array to this size array. */
+	/* Copy `Semantic` size array to this size array,
+	 (not the same, local scope; kind of a hack.) */
 	SemanticParams(&no, &source);
 	if(!(dest = SizeArrayBuffer(&segment->code_params, no))) return 0;
 	for(i = 0; i < no; i++) dest[i] = source[i];
 	SizeArrayExpand(&segment->code_params, no);
-	printf("Now segment.code_params = %s\n",
-		SizeArrayToString(&segment->code_params));
 	return 1;
 }
 
