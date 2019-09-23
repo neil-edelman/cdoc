@@ -201,8 +201,11 @@ static int semantic(struct Segment *const segment) {
 	for(i = 0; i < no; i++) {
 		entry = array[i];
 		if(entry >= TokenArraySize(&segment->code)) {
-			printf("Segment array index is out-of-range: %lu.\n",
-				(unsigned long)i);
+			char a[12];
+			segment_to_string(segment, &a);
+			fprintf(stderr,
+				"Semantic: Segment %s array index is out-of-range: %lu.\n",
+				a, (unsigned long)i);
 			continue;
 		};
 		if(!(ref = TokenRefArrayNew(&segment->params))) return 0;
@@ -230,9 +233,8 @@ int ReportPlace(void) {
 	switch(symbol) {
 	case DOC_BEGIN: /* Multiple doc comments. */
 		sorter.attribute = 0;
-		if(!sorter.segment) return 1;
-		if(!TokenArraySize(&sorter.segment->code)) sorter.segment = 0,
-			printf("----CUT in preamble----\n");
+		if(sorter.segment && !TokenArraySize(&sorter.segment->code))
+			sorter.segment = 0;
 		return 1;
 	case DOC_END: return 1; /* Doesn't actually do something. */
 	case DOC_LEFT: /* Should only happen in @foo[]. */
@@ -313,13 +315,12 @@ int ReportPlace(void) {
 		sorter.space = sorter.newline = 0; /* Also reset this for attributes. */
 		break;
 	default: /* Code. */
-		if(sorter.is_ignored_code) {
-			printf("Report::place: ignored.\n"); break; }
+		if(sorter.is_ignored_code) break;
 		if(!new_token(&sorter.segment->code, symbol)) return 0;
 		break;
 	}
 	/* End the segment? */
-	if(is_differed_cut) printf("----Differered CUT----\n"), sorter.segment = 0;
+	if(is_differed_cut) sorter.segment = 0;
 	return 1;
 }
 
@@ -359,20 +360,16 @@ static int is_static(const struct TokenArray *const code) {
 /** @implements{Predicate<Segment>} */
 static int keep_segment(const struct Segment *const s) {
 	struct Attribute *a = 0;
-	printf("keep %s: ", TokenArrayToString(&s->code));
 	if(TokenArraySize(&s->doc) || AttributeArraySize(&s->attributes)
 		|| s->division == DIV_FUNCTION) {
 		/* `static` and containing `@allow`. */
 		if(is_static(&s->code)) {
 			while((a = AttributeArrayNext(&s->attributes, a))
 				  && a->token.symbol != ATT_ALLOW);
-			printf("static %s.\n", a ? "allowed" : "erased");
 			return a ? 1 : 0;
 		}
-		printf("normal keep.\n");
 		return 1;
 	}
-	printf("don't have doc, erased.\n");
 	return 0;
 }
 

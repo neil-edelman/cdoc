@@ -127,8 +127,8 @@ OUT(gen1) {
 		t->length - 1, t->from, param->length, param->from);
 	*ptoken = TokenArrayNext(tokens, rparen);
 	return 1;
-	catch:
-	fprintf(stderr, "%s: expected generic(id).\n", pos(t));
+catch:
+	fprintf(stderr, "%s: expected generic(id) %s.\n", pos(t), TokenArrayToString(tokens));
 	return 0;
 }
 OUT(gen2) {
@@ -156,7 +156,7 @@ OUT(gen2) {
 		   param1->from, type2_size, type2, param2->length, param2->from);
 	*ptoken = TokenArrayNext(tokens, rparen);
 	return 1;
-	catch:
+catch:
 	fprintf(stderr, "%s: expected generic2(id,id).\n", pos(t));
 	return 0;
 }
@@ -192,7 +192,7 @@ OUT(gen3) {
 		param2->from, type3_size, type3, param3->length, param3->from);
 	*ptoken = TokenArrayNext(tokens, rparen);
 	return 1;
-	catch:
+catch:
 	fprintf(stderr, "%s: expected A_B_C_(id,id,id).\n", pos(t));
 	return 0;
 }
@@ -342,17 +342,35 @@ static const OutFn symbol_outs[] = { SYMBOL(PARAM5C) };
 
 
 
+/** Prints one [multi-]token sequence.
+ @throws[EILSEQ] Sequence error. Must detect with `errno`.
+ @return The next token. */
+static const struct Token *token_print(const struct TokenArray *const tokens,
+	const struct Token *token) {
+	const OutFn sym_out = symbol_outs[token->symbol];
+	assert(tokens && token);
+	if(!sym_out) return printf("[undefined token: %s]", symbols[token->symbol]),
+		TokenArrayNext(tokens, token);
+	{
+		const struct TokenArray *ts = tokens;
+		const struct Token *t = 0;
+		while((t = TokenArrayNext(ts, t)) && t != token);
+		assert(t);
+	}
+	if(!sym_out(tokens, &token)) { errno = EILSEQ; return 0; }
+	return token;
+}
+
 /** @param[highlights] Must be sorted if not null, creates an emphasis on those
  words.
- @throws[EILSEQ] Sequence error.
- @return Success. Generally ignored; detect if error. */
-static int tokens_print(const struct TokenArray *const tokens,
+ @throws[EILSEQ] Sequence error. Must detect with `errno`. */
+static void tokens_print(const struct TokenArray *const tokens,
 	const struct TokenRefArray *const highlights) {
 	const struct Token *token = TokenArrayNext(tokens, 0);
 	struct Token **highlight = TokenRefArrayNext(highlights, 0);
-	OutFn sym_out;
 	int is_highlight;
-	if(!token) return 1; /* Nothing to do. */
+	assert(tokens);
+	if(!token) return;
 	while(token) {
 		if(highlight && *highlight == token) {
 			is_highlight = 1;
@@ -360,18 +378,11 @@ static int tokens_print(const struct TokenArray *const tokens,
 		} else {
 			is_highlight = 0;
 		}
-		sym_out = symbol_outs[token->symbol];
-		if(!sym_out) {
-			printf("[undefined token: %s]", symbols[token->symbol]);
-			token = TokenArrayNext(tokens, token);
-			continue;
-		}
 		state_sep_if_needed(token->symbol);
 		if(is_highlight) printf("<em>");
-		if(!sym_out(tokens, &token)) { errno = EILSEQ; return 0; }
+		token = token_print(tokens, token);
 		if(is_highlight) printf("</em>");
 	}
-	return 1;
 }
 
 void ReportDebug(void) {
@@ -544,13 +555,32 @@ static void print_code(const struct Segment *const segment) {
 static void print_all(const struct Segment *const segment) {
 	/* This is the title, the rest are params. */
 	struct Token **param = TokenRefArrayNext(&segment->params, 0);
-	printf("<%s %s: %s>\n", divisions[segment->division], segment->name,
+	printf("<%s %s: %s><h2>", divisions[segment->division], segment->name,
 		TokenRefArrayToString(&segment->params));
+	/* The title is the first param. */
+	if(TokenRefArraySize(&segment->params)) {
+		struct Token *token = *TokenRefArrayGet(&segment->params);
+		char a[12];
+		token_to_string(token, &a);
+		printf("[[print_all: code:%s ",
+			TokenArrayToString(&segment->code));
+		{
+			const struct TokenArray *ts = &segment->code;
+			const struct Token *t = 0;
+			while((t = TokenArrayNext(ts, t))
+				&& (printf("%p/", (void *)t), t != token));
+			printf("]]\n");
+			assert(t);
+		}
+		token_print(&segment->code, token);
+	} else {
+		printf("No Params");
+	}
+	printf("</h2>\n");
 	print_code(segment);
 	state_reset("<p>", "</p>", "\n\n");
 	tokens_print(&segment->doc, 0);
 	state_to_default();
-	/* fixme: No ATT_TITLE. */
 	while((param = TokenRefArrayNext(&segment->params, param)))
 		print_attribute_header_maybe(segment, ATT_PARAM, *param);
 	print_attribute_maybe(segment, ATT_RETURN);

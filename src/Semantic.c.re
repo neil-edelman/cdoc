@@ -61,14 +61,8 @@ static void effectively_typedef_fn_ptr(char *const buffer) {
 			operator < middle && *operator != '*' && strchr("x_", *operator);
 			operator++);
 		if(*operator != '*') continue;
-		printf("typedef: <%.*s> <%.*s>.\n",
-			(int)(prefix - ret_type), ret_type,
-			(int)(suffix - prefix + 1), prefix);
 		memset(ret_type, '_', prefix - ret_type + 1);
 		memset(middle, '_', suffix - middle + 1);
-		printf("now:     <%.*s> <%.*s>.\n",
-			(int)(prefix - ret_type), ret_type,
-			(int)(suffix - prefix + 1), prefix);
 	}
 }
 
@@ -171,7 +165,6 @@ static int parse(void) {
 	static? redact* (@label (generic | type_or_void | qualifier) redact*){2,}
 		@args "(" ( ([_*sx]+ ("," [_*sx]+)* ",."?) | void ) ")" redact* end {
 		semantic.division = DIV_FUNCTION;
-		printf("parse: <%s> label: <%s> args: <%s>\n", buffer, label, args);
 		if(!add_param(label, &is_success)) return 0;
 		label = 0; /* For the args. */
 		if(!is_success) return 0;
@@ -235,7 +228,6 @@ static int check_symbols(int *const checks) {
 	const char *cursor = CharArrayGet(&semantic.buffer);
 	char *stack;
 	assert(checks && cursor);
-	printf("check_symbols: buffer %s.\n", cursor);
 	CharArrayClear(&semantic.work);
 	*checks = 1;
 check:
@@ -289,26 +281,22 @@ int Semantic(const struct TokenArray *const code) {
 	TokensMark(code, buffer);
 	CharArrayExpand(&semantic.buffer, buffer_size);
 	assert(buffer[buffer_size - 1] == '\0');
-	printf("Semantic: %s\n", buffer);
 
 	{ /* Checks whether this makes sense. */
 		int checks = 0;
 		if(!check_symbols(&checks)) return 0;
-		if(!checks) { fprintf(stderr,
-			"Classifying unknown statement as a general declaration.\n");
-			return 1; }
+		/* Classifying unknown statement as a general declaration. */
+		if(!checks) return 1;
 	}
 
 	/* Git rid of code. (Shouldn't happen!) */
 	remove_recursive(buffer, '{', '}', '_');
 	/* "Returning an array of this" and "returning this" are isomorphic. */
 	remove_recursive(buffer, '[', ']', '_');
-	printf("Now with the {}[] removed <%s>.\n", buffer);
+	/* Now with the {}[] removed. */
 	effectively_typedef_fn_ptr(buffer);
-	printf("Now with effective typedef fn ptr: <%s>.\n", buffer);
 	if(!parse()) return 0;
-	printf("-> It has been determined to be %s.\n",
-		divisions[semantic.division]);
+	/* It has been determined to be `divisions[semantic.division]`. */
 	return 1;
 }
 

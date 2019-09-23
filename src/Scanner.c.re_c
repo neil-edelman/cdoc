@@ -367,7 +367,7 @@ int Scanner(void) {
 	/* Scans all. */
 	errno = 0;
 	while((scanner.symbol = scan()) && ReportPlace())
-		printf("%s.\n", pos());
+		/*printf("%s.\n", pos()) <- spam! */;
 	if(errno) goto catch;
 	return 1;
 catch:
