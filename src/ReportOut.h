@@ -74,6 +74,24 @@ static void state_sep_if_needed(enum Symbol symbol) {
 	ostate.is_sep_before = symbol_rspaces[symbol];
 }
 
+static void encode(int length, const char *from) {
+	assert(length >= 0 && from);
+	while(length) {
+		switch(*from) {
+			case '<': fputs("&lt;", stdout); break;
+			case '>': fputs("&gt;", stdout); break; 
+			case '&': fputs("&amp;", stdout); break;
+			case '\0': fprintf(stderr, "Encoded null.\n"); return;
+			default: fputc(*from, stdout); break;
+		}
+		from++, length--;
+	}
+}
+
+/* Some `OutFn` need this. */
+static const struct Token *token_print(const struct TokenArray *const tokens,
+	const struct Token *token);
+
 /** Selects `token` out of `tokens` and prints it and returns the next token. */
 typedef int (*OutFn)(const struct TokenArray *const tokens,
 	const struct Token **const ptoken);
@@ -102,21 +120,10 @@ OUT(par) {
 }
 OUT(lit) {
 	const struct Token *const t = *ptoken;
-	const char *from = t->from;
-	int length = t->length;
 	assert(tokens && t && t->length > 0 && t->from);
 	state_from_default();
 	/*printf("`%.*s'", t->length, t->from);*/
-	while(length) {
-		switch(*from) {
-			case '<': fputs("&lt;", stdout); break;
-			case '>': fputs("&gt;", stdout); break; 
-			case '&': fputs("&amp;", stdout); break;
-			case '\0': return fprintf(stderr, "Encoded null.\n"), 0;
-			default: fputc(*from, stdout); break;
-		}
-		from++, length--;
-	}
+	encode(t->length, t->from);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -308,14 +315,18 @@ OUT(em_end) {
 	return 1;
 }
 OUT(link) {
-	const struct Token *const t = *ptoken,
-		*const desc = TokenArrayNext(tokens, t);
+	const struct Token *const t = *ptoken, *text, *turl;
 	assert(tokens && t && t->symbol == LINK_START);
-	if(!desc || desc->symbol != LINK_START) goto catch;
 	state_from_default();
-	printf("<a href = \"%.*s\">%.*s</a>",
-		t->length, t->from, desc->length, desc->from);
-	*ptoken = TokenArrayNext(tokens, desc);
+	for(turl = TokenArrayNext(tokens, t);;turl = TokenArrayNext(tokens, turl)) {
+		if(!turl) goto catch;
+		if(turl->symbol == URL) break;
+	}
+	printf("<a href = \"%.*s\">", turl->length, turl->from);
+	for(text = TokenArrayNext(tokens, t); text->symbol != URL; )
+		if(!(text = token_print(tokens, text))) goto catch;
+	printf("</a>");
+	*ptoken = TokenArrayNext(tokens, turl);
 	return 1;
 catch:
 	fprintf(stderr, "%s: expected `[description](url)`.\n", pos(t));

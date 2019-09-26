@@ -4,9 +4,9 @@ text
 
 Paragraph @ @a \,~~
 
- -* This
- -* is
- -* bah.
+ \* This
+ \* is
+ \* bah.
 
  @title Foo `Bar`
  @depend C89

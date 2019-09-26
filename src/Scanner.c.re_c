@@ -142,13 +142,14 @@ id = [a-zA-Z_][a-zA-Z_0-9]*;
 generic_id = (("<" [A-Z]+ ">")? id)+;
 // <https://tools.ietf.org/html/rfc3986#appendix-B> and also
 // " \t\n\v\f\r*<>&\x00" disallowed because then it crashes / escapes comment.
-uri_scheme = ([^:/?# \t\n\v\f\r*<>&\x00]+ ":");
-uri_authority = ("//" [^/?# \t\n\v\f\r*<>&\x00]*);
-uri_path = [^?# \t\n\v\f\r*<>&\x00]*;
+uri_scheme = [^:/?# \t\n\v\f\r*<>&\x00]+ ":";
+uri_authority = "//" [^/?# \t\n\v\f\r*<>&\x00]*;
+uri_path = [^?# \t\n\v\f\r*<>&\x00]+;
 uri_query = ("?" [^# \t\n\v\f\r*<>&\x00]*);
 uri_fragment = ("#" [^ \t\n\v\f\r*<>&\x00]*);
 //absolute_uri = uri_scheme uri_authority uri_path uri_query? uri_fragment?;
 uri = uri_scheme? uri_authority? uri_path uri_query? uri_fragment?;
+// fixme: now That2000 is detected as a uri :[
 // Citation format. Not authoritative.
 author = [A-Z][A-Za-z'`-]+; // Fixme: No!!! UTF-8
 etalia = "et" whitespace? "al" "."?;
@@ -321,7 +322,8 @@ scan:
 	<anchor>  word_anchor { return WORD; }
 	<anchor>  whitespace+ { return SPACE; }
 	<anchor>  whitespace* "](" @sub0 uri @sub1 ")"
-		{ return scanner.state = yycdoc, URL; }
+		{ scanner.sub0 = sub0, scanner.sub1 = sub1;
+		return scanner.state = yycdoc, URL; }
 */
 }
 
