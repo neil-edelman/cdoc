@@ -310,8 +310,8 @@ OUT(em_end) {
 OUT(link) {
 	const struct Token *const t = *ptoken,
 		*const desc = TokenArrayNext(tokens, t);
-	assert(tokens && t && t->symbol == LINK);
-	if(!desc || desc->symbol != LINK) goto catch;
+	assert(tokens && t && t->symbol == LINK_START);
+	if(!desc || desc->symbol != LINK_START) goto catch;
 	state_from_default();
 	printf("<a href = \"%.*s\">%.*s</a>",
 		t->length, t->from, desc->length, desc->from);

@@ -28,7 +28,7 @@ struct Scanner {
 	/* `re2c` variables; these point directly into `buffer`. */
 	const char *marker, *ctx_marker, *from, *cursor;
 	/* Weird `c2re` stuff: these fields have to come after when >5? */
-	const char *sub_a0, *sub_a1, *sub_b0, *sub_b1;
+	const char *sub0, *sub1;
 	struct CharArray buffer;
 	enum ScanState state;
 	enum Symbol symbol;
@@ -76,6 +76,20 @@ newline = "\n" | "\r" "\n"?;
 // newline
 // ~*\\`_@<>[\]!
 
+//						" \t\v\f"	"\n\r"	~	*	\\	`	_	@	<>	[]	!
+// yyccharacter,		<A>			<B>
+// yyccomment,			<A>
+// yycmacro_comment,	<A>
+// yycstring,			<A>			<B>
+// yycdoc,
+// yycem,
+// yycmath,
+// yyccode,
+// yycmacro,						<B>
+// yycparam_item,
+// yycparam_more,
+// yycparam_begin,
+
 // Words can be composed of anything except:
 // " \t\n\v\f\r" whitespace and newline;
 // "~" non-breaking space;
@@ -86,14 +100,13 @@ newline = "\n" | "\r" "\n"?;
 // "<>[]" for embedded things;
 // "\x00" eof.
 // Words in math/code and em mode have a more lax interpretation.
-word_base = [^ \t\n\v\f\r~*\\`_@<>[\]\x00];
-word_begin = word_base | ">" | "]";
-word_in    = word_begin | "@" | "<" | ">" | "[" | "]";
-word_end   = word_begin | "@" | "<" | "[";
-word = word_base | (word_begin word_in* word_end)
-	| "*" | "@" | "<" | ">" | "[" | "]";
-word_math  = (word_base | [~_@<>[\]] )+ | "*";
-word_em    = (word_base | [~`@<>[\]] )+ | "*";
+word_base = [^ \t\n\v\f\r_`~*\\@<>[\]\x00];
+word_single_anchor = "*" | "\\" | "@" | "<" | ">";
+word_single = word_single_anchor | "[" | "]";
+word        = word_base+ | word_single;
+word_math   = (word_base | [_@<>[\]] )+ | word_single;
+word_em     = (word_base | [`@<>[\]] )+ | word_single;
+word_anchor = (word_base | [_`@<>] )+ | word_single_anchor;
 begin_doc = "/""*""*"+;
 end_doc = "*"+"/";
 art = whitespace* "*"? newline " *";
@@ -134,8 +147,8 @@ uri_authority = ("//" [^/?# \t\n\v\f\r*<>&\x00]*);
 uri_path = [^?# \t\n\v\f\r*<>&\x00]*;
 uri_query = ("?" [^# \t\n\v\f\r*<>&\x00]*);
 uri_fragment = ("#" [^ \t\n\v\f\r*<>&\x00]*);
-absolute_uri = uri_scheme uri_authority uri_path uri_query? uri_fragment?;
-relative_uri = uri_scheme? uri_authority? uri_path uri_query? uri_fragment?;
+//absolute_uri = uri_scheme uri_authority uri_path uri_query? uri_fragment?;
+uri = uri_scheme? uri_authority? uri_path uri_query? uri_fragment?;
 // Citation format. Not authoritative.
 author = [A-Z][A-Za-z'`-]+; // Fixme: No!!! UTF-8
 etalia = "et" whitespace? "al" "."?;
@@ -147,23 +160,15 @@ page = ","? whitespace? (("pp" | "p") "."?)? whitespace?
 	[0-9]+ (whitespace? "-"{1,2} whitespace? [0-9]+)?;
 citation = author (authorsep author)* (closing etalia)? closing date page?;
 // Lists.
-list = " -* ";
+list = " \\* ";
 // Math/code blocks. Added after; very meh.
 preformatted = "\t" [^*\n\x00]*;
 */
 
 /** Scans. */
 static enum Symbol scan(void) {
-	const char *sub_a0, *sub_a1, *sub_b0, *sub_b1;
-	/* We still haven't got the last scan's submatches; shift and return. */
-	if(scanner.sub_b0) {
-		assert(scanner.sub_b1 && scanner.symbol != END);
-		scanner.sub_a0 = scanner.sub_b0;
-		scanner.sub_a1 = scanner.sub_b1;
-		scanner.sub_b0 = scanner.sub_b1 = 0;
-		return scanner.symbol;
-	}
-	scanner.sub_a0 = scanner.sub_a1 = 0;
+	const char *sub0, *sub1;
+	scanner.sub0 = scanner.sub1 = 0;
 	scanner.doc_line = scanner.line;
 reset:
 	scanner.from = scanner.cursor;
@@ -185,7 +190,8 @@ scan:
 	// Newlines are generally ignored but documentation counts for paragraphs.
 	<*> newline {
 		scanner.line++;
-		if(scanner.state == yycdoc) return NEWLINE;
+		if(scanner.state == yycdoc || scanner.state == yycanchor)
+			return NEWLINE;
 		else if(scanner.state == yycstring || scanner.state == yyccharacter)
 			return fprintf(stderr, "%s: string syntax.\n", pos()),
 			errno = EILSEQ, END;
@@ -256,45 +262,33 @@ scan:
 	<doc>  word      { return WORD; }
 	<math> word_math { return WORD; }
 	<em>   word_em   { return WORD; }
-	<doc, math, em> "\\"[^*,\x00] { return ESCAPE; }
-	<doc, math, em> "\\," { return NBTHINSP; }
-	<doc, math, em> "\\*" / [^/] { return ESCAPE; }
-	<doc, math, em> "\\\x00" { return fprintf(stderr,
-		"%s: escape past EOF.\n", pos()), errno = EILSEQ, END; }
+	<doc, math, em, anchor> "\\" ("~" | "\\" | "`" | "_" | "@" | "<" | ">" |
+		"[" | "]" | "!") { return ESCAPE; }
+	<doc, math, em, anchor> "\\*" / [^/] { return ESCAPE; }
+	<doc, math, em, anchor> "\\," { return NBTHINSP; }
 	<doc> "_" { return scanner.state = yycem, EM_BEGIN; }
 	<em> "_" { return scanner.state = yycdoc, EM_END; }
 	<doc> "`" { return scanner.state = yycmath, MATH_BEGIN; }
 	<math> "`" { return scanner.state = yycdoc, MATH_END; }
 
 	// These are recognised in the documentation as stuff; parse them further
-	// using `submatch`.
-	<doc> "<" @sub_a0 absolute_uri @sub_a1 ">"
-		{ scanner.sub_a0 = sub_a0, scanner.sub_a1 = sub_a1; return URL; }
-	<doc> "<" @sub_a0 citation @sub_a1 ">"
-		{ scanner.sub_a0 = sub_a0, scanner.sub_a1 = sub_a1; return CITE; }
-	<doc> "<fn:" @sub_a0 generic_id @sub_a1 ">"
-		{ scanner.sub_a0 = sub_a0, scanner.sub_a1 = sub_a1; return SEE_FN; }
-	<doc> "<tag:" @sub_a0 generic_id @sub_a1 ">"
-		{ scanner.sub_a0 = sub_a0, scanner.sub_a1 = sub_a1; return SEE_TAG; }
-	<doc> "<typedef:" @sub_a0 generic_id @sub_a1 ">"
-		{ scanner.sub_a0 = sub_a0, scanner.sub_a1 = sub_a1; return SEE_TYPEDEF;}
-	<doc> "<data:" @sub_a0 generic_id @sub_a1 ">"
-		{ scanner.sub_a0 = sub_a0, scanner.sub_a1 = sub_a1; return SEE_DATA; }
-	// [word word] is really strict because we can't figure out mtags and we
-	// don't want    spaces. It's a hack. Fixme: have `LINK_BEGIN` _etc_ like
-	// `param_begin`.
-	<doc> "[" @sub_b0 word (whitespace? word)* @sub_b1 "]("
-		@sub_a0 absolute_uri @sub_a1 ")" {
-		scanner.sub_a0 = sub_a0, scanner.sub_a1 = sub_a1;
-		scanner.sub_b0 = sub_b0, scanner.sub_b1 = sub_b1;
-		return LINK;
-	}
-	<doc> "![" @sub_b0 word (whitespace? word)* @sub_b1 "]("
-		@sub_a0 relative_uri @sub_a1 ")" {
-		scanner.sub_a0 = sub_a0, scanner.sub_a1 = sub_a1;
-		scanner.sub_b0 = sub_b0, scanner.sub_b1 = sub_b1;
-		return IMAGE;
-	}
+	// using `sub`.
+	<doc> "<" @sub0 uri @sub1 ">"
+		{ scanner.sub0 = sub0, scanner.sub1 = sub1; return URL; }
+	<doc> "<" @sub0 citation @sub1 ">"
+		{ scanner.sub0 = sub0, scanner.sub1 = sub1; return CITE; }
+	<doc> "<fn:" @sub0 generic_id @sub1 ">"
+		{ scanner.sub0 = sub0, scanner.sub1 = sub1; return SEE_FN; }
+	<doc> "<tag:" @sub0 generic_id @sub1 ">"
+		{ scanner.sub0 = sub0, scanner.sub1 = sub1; return SEE_TAG; }
+	<doc> "<typedef:" @sub0 generic_id @sub1 ">"
+		{ scanner.sub0 = sub0, scanner.sub1 = sub1; return SEE_TYPEDEF;}
+	<doc> "<data:" @sub0 generic_id @sub1 ">"
+		{ scanner.sub0 = sub0, scanner.sub1 = sub1; return SEE_DATA; }
+	<doc> "[" whitespace* / (word whitespace* | newline)* "](" uri ")"
+		{ return scanner.state = yycanchor, LINK_START; }
+	<doc> "![" whitespace* / (word whitespace* | newline)* "](" uri ")"
+		{ return scanner.state = yycanchor, IMAGE_START; }
 	<doc> "~" { return NBSP; }
 	<doc> list { return LIST_ITEM; }
 	<doc> preformatted { return PREFORMATTED; }
@@ -322,13 +316,19 @@ scan:
 	<param_begin, param_item, param_more> * {
 		return fprintf(stderr, "%s: not allowed in parameter list.\n", pos()),
 		errno = EILSEQ, END; }
+
+	// Link/image text. Ended by `URL`.
+	<anchor>  word_anchor { return WORD; }
+	<anchor>  whitespace+ { return SPACE; }
+	<anchor>  whitespace* "](" @sub0 uri @sub1 ")"
+		{ return scanner.state = yycdoc, URL; }
 */
 }
 
 /** Unloads scanner from memory. */
 void Scanner_(void) {
 	scanner.marker = scanner.ctx_marker = scanner.from = scanner.cursor = 0;
-	scanner.sub_a0 = scanner.sub_a1 = scanner.sub_b0 = scanner.sub_b1 = 0;
+	scanner.sub0 = scanner.sub1 = 0;
 	CharArray_(&scanner.buffer);
 	scanner.state = yyccode; /* Generated by `re2c`. */
 	scanner.symbol = END;
@@ -375,7 +375,7 @@ int Scanner(void) {
 	/* Scans all. */
 	errno = 0;
 	while((scanner.symbol = scan()) && ReportPlace())
-		/*printf("%s.\n", pos()) <- spam! */;
+		fprintf(stderr, "%s.\n", pos()) /* <- spam! */;
 	if(errno) goto catch;
 	return 1;
 catch:
@@ -387,15 +387,15 @@ enum Symbol ScannerSymbol(void) { return scanner.symbol; }
 /** @throws[EILSEQ] When the scanner hasn't been called.
  @throws[malloc] Couldn't get memory. */
 const char *ScannerFrom(void) {
-	if(scanner.sub_a0) return assert(scanner.sub_a0 < scanner.sub_a1),
-		scanner.sub_a0;
+	if(scanner.sub0) return assert(scanner.sub0 < scanner.sub1),
+		scanner.sub0;
 	else if(scanner.from) return assert(scanner.from < scanner.cursor),
 		scanner.from;
 	errno = EILSEQ;
 	return 0;
 }
 const char *ScannerTo(void) {
-	if(scanner.sub_a1) return scanner.sub_a1;
+	if(scanner.sub1) return scanner.sub1;
 	else if(scanner.cursor) return scanner.cursor;
 	errno = EILSEQ;
 	return 0;
