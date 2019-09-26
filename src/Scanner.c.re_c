@@ -69,6 +69,13 @@ eof = "\x00";
 whitespace = [ \t\v\f];
 newline = "\n" | "\r" "\n"?;
 
+// For every state, the following must be defined:
+// [ \t\v\f\n\r~*\\`_@<>[\]!\x00] or everything else.
+// eof
+// whitespace
+// newline
+// ~*\\`_@<>[\]!
+
 // Words can be composed of anything except:
 // " \t\n\v\f\r" whitespace and newline;
 // "~" non-breaking space;

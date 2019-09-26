@@ -12,82 +12,82 @@
  but not { "/" "*"+ "*" "/" }; one can still use this as a code break. You can
  have an asterisk at the front, like Kernel comments, or asterisks all over
  like some crazy ASCII art, (unfortunately, this causes problems with lists
- being started with "*", so start them with " -* ".) All documentation goes at
- most two lines above what it documents or it's appended to the header.
+ being started with "*", so start them with { " -" "* " }.) All documentation
+ goes at most two lines above what it documents or it's appended to the header.
  Multiple documentation on the same command is appended. Two hard returns is a
  paragraph. One can document typedefs, tags (struct, enum, union,) data, and
  functions; everything else is automatically inserted into the preamble.
 
- "\\" escapes whatever comes after, with one exception "\\," inserts a slim
- no-breaking space and backslash-end-comment is nonsense and will not compile.
- When two or more definitions are present in a single statement, the first one
- is used.
+ (fixme) "\\" escapes whatever comes after, with one exception "\\," inserts a
+ slim no-breaking space and backslash-end-comment is nonsense and will not
+ compile. When two or more definitions are present in a single statement, the
+ first one is used.
 
  Embedded inline in the documentation,
 
- -* \_ _emphasised_;
- -* \` `code/math`;
- -* \<url\>;
- -* \<Source, 1999, pp. 1-2\>;
- -* \<fn:\<function\>\>;
- -* \<tag:\<struct|union|enum\>\>;
- -* \<typedef:\<typedef\>\>;
- -* \<data:\<identifier\>\>;
- -* \[The link text\](url);
- -* \!\[Caption text\](/path/to/img.jpg);
- -* lists with "\ -* "; lists can be anywhere and don't nest;
- -* a tab causes all the line after to be preformatted, (except '*' ends, for
-    checking if the comment is ended);
- -* \~ non-breaking space;
- -* \\, non-breaking thin space (U+202F HTML &#8239; for working with units.)
+ \* \_ _emphasised_;
+ \* \` `code/math`;
+ \* \<url\>;
+ \* \<Source, 1999, pp. 1-2\>;
+ \* \<fn:\<function\>\>;
+ \* \<tag:\<struct|union|enum\>\>;
+ \* \<typedef:\<typedef\>\>;
+ \* \<data:\<identifier\>\>;
+ \* \[The link text\](url);
+ \* \!\[Caption text\](/path/to/img.jpg);
+ \* lists with " \\* "; lists can be anywhere and don't nest;
+ \* a tab causes all the line after to be preformatted, (except '*' ends, for
+	checking if the comment is ended); fixme?
+ \* \~ non-breaking space;
+ \* \\, non-breaking thin space (U+202F HTML &#8239; for working with units.)
 
  Each-block-tags separate the documentation until the next paragraph or until
  the next each-block-tag, and specify a specific documentation structure.
  Each-block-tags that overlap are concatenated in the file order. Not all of
  these are applicable for all segments of text. These are:
 
- -* \@title;
- -* \@param[<param1>[, ...]];
- -* \@author;
- -* \@std (remove fixme);
- -* \@depend;
- -* \@version[<version>];
- -* \@fixme (remove fixme);
- -* \@bug (fixme);
- -* \@return;
- -* \@throws[<exception1>[, ...]];
- -* \@implements;
- -* \@order;
- -* and \@allow, the latter being to allow `static` functions in the
-    documentation.
+ \* \@title;
+ \* \@param[<param1>[, ...]];
+ \* \@author;
+ \* \@std (remove fixme);
+ \* \@depend;
+ \* \@version[<version>];
+ \* \@fixme (remove fixme);
+ \* \@bug (fixme);
+ \* \@return;
+ \* \@throws[<exception1>[, ...]];
+ \* \@implements;
+ \* \@order;
+ \* and \@allow, the latter being to allow `static` functions in the
+	documentation.
 
  Things that are not planned for inclusion,
  
- -* headers;
- -* block quotes "> ";
- -* lists with "*", "+", numbered, or multi-level;
- -* horizontal rules;
- -* emphasis by *, **, \_\_;
- -* strikethrough;
- -* code spans by \`\`, _etc_;
- -* table of contents;
- -* tables;
- -* fenced code blocks;
- -* HTML blocks;
- -* '/ * !', '/ / /', '/ / !';
- -* \\brief;
- -* '/ * ! <', '/ * * <', '/ / ! <', '/ / / <': not needed; automatically
+ \* headers;
+ \* block quotes "> ";
+ \* lists with "*", "+", numbered, or multi-level;
+ \* horizontal rules;
+ \* emphasis by *, **, \_\_;
+ \* strikethrough;
+ \* code spans by \`\`, _etc_;
+ \* table of contents;
+ \* tables;
+ \* fenced code blocks;
+ \* HTML blocks;
+ \* '/ * !', '/ / /', '/ / !';
+ \* \\brief;
+ \* '/ * ! <', '/ * * <', '/ / ! <', '/ / / <': not needed; automatically
     concatenates;
- -* [in], [out];
- -* '\\param c1' or '\@param a' -- this probably is the most departure from
+ \* [in], [out];
+ \* '\\param c1' or '\@param a' -- this probably is the most departure from
     normal documentation generators, but it's confusing having the text and the
     variable be indistinguishable;
- -* Titles with \!\[Caption text\](/path/to/img.jpg "Image title");
- -* Titles with \[The link text\](http://example.net/ "Link title");
- -* instead of \\struct, \\union, \\enum, \\var, \\typedef, just insert the
+ \* Titles with \!\[Caption text\](/path/to/img.jpg "Image title");
+ \* Titles with \[The link text\](http://example.net/ "Link title");
+ \* instead of \\struct, \\union, \\enum, \\var, \\typedef, just insert the
     documentation comment above the thing; use \<data:<thing>\> to reference;
- -* \\def;
- -* instead of \\fn, just insert the documentation comment above the function;
+ \* \\def;
+ \* instead of \\fn, just insert the documentation comment above the function;
     use \<fn:\<function\>\> to reference.
  
  "Unlike standard Markdown and Github Flavored Markdown doxygen will not touch
