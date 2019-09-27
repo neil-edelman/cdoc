@@ -7,20 +7,18 @@ static const int symbol_rspaces[] = { SYMBOL(PARAM5E) };
 static struct {
 	int level;
 	enum { IN_DEFAUT, IN_PARA, IN_LIST, IN_PRE } in;
-	int is_sep_before, is_sep_forced;
+	int is_sep_before, is_sep_forced, is_space;
 	const char *start, *end, *sep;
-	/* Should have `list_start`, but it's not clear what lists in the
-	 attributes/titles should look like, so they are constant. */
-} ostate = { 0, IN_DEFAUT, 0, 0, "{", "}", ", " };
+} ostate = { 0, IN_DEFAUT, 0, 0, 0, "{", "}", ", " };
 static void state_to_default(void) {
 	switch(ostate.in) {
 	case IN_DEFAUT: return;
 	case IN_PARA: printf("%s", ostate.end); break;
 	case IN_LIST: printf("</li>%s</ul>", ostate.sep); break;
-	case IN_PRE: printf("</pre>", ostate.sep); break;
+	case IN_PRE: printf("</pre>"/*, ostate.sep*/); break;
 	}
-	ostate.is_sep_forced = 1;
 	ostate.in = IN_DEFAUT;
+	ostate.is_sep_forced = 1;
 }
 static void state_to_para(void) {
 	switch(ostate.in) {
@@ -44,16 +42,20 @@ static void state_to_list(void) {
 }
 static void state_to_pre(void) {
 	switch(ostate.in) {
-		case IN_DEFAUT: printf("<pre>"); break;
-		case IN_PARA: printf("%s%s<pre>", ostate.end, ostate.sep); break;
-		case IN_LIST: printf("</li>%s</ul>%s<pre>", ostate.sep, ostate.sep);
-			break;
-		case IN_PRE: printf("\n"); return;
+	case IN_DEFAUT: printf("<pre>"); break;
+	case IN_PARA: printf("%s%s<pre>", ostate.end, ostate.sep); break;
+	case IN_LIST: printf("</li>%s</ul>%s<pre>", ostate.sep, ostate.sep); break;
+	case IN_PRE: printf("\n"); return;
 	}
 	ostate.in = IN_PRE;
 }
 static void state_from_default(void) {
-	if(ostate.in == IN_DEFAUT) state_to_para();
+	switch(ostate.in) {
+	case IN_DEFAUT: state_to_para(); break;
+	case IN_PARA: if(ostate.is_space) fputc(' ', stdout), ostate.is_space = 0;
+		break;
+	default: break;
+	}
 }
 static void state_reset(const char *const start,
 	const char *const end, const char *const sep) {
@@ -106,8 +108,7 @@ OUT(ws) {
 	const struct Token *const space = *ptoken;
 	assert(tokens && space && space->symbol == SPACE);
 	state_from_default();
-	/* fixme: lists have ws at the end; this should go lazily. */
-	fputc('~', stdout);
+	ostate.is_space = 1;
 	*ptoken = TokenArrayNext(tokens, space);
 	return 1;
 }
