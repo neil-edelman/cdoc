@@ -52,9 +52,10 @@
  \* `\@depend`: dependancy;
  \* `\@fixme`: something doesn't work as expected;
  \* `\@return`: normal function return;
- \* `\@throws[<exception1>[, ...]]`: exceptional function return; perhaps
-    a null pointer and `errno`, it's `C`, so `\@throws` is a very loose term;
- \* `\@implements`: again, `C` doesn't have the concept of implement, but we
+ \* `\@throws[<exception1>[, ...]]`: exceptional function return; `C` doesn't
+    have native exceptions, so `@throws` means whatever one desires; perhaps a
+    null pointer or false is returned and `errno` is set to this `exception1`;
+ \* `\@implements`: `C` doesn't have the concept of implement, but we
     would say that a function having a prototype of
     `(int (*)(const void *, const void *))` implements `bsearch` and `qsort`;
  \* `\@order`: comments about the run-time or space;
