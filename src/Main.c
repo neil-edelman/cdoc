@@ -2,108 +2,97 @@
  [MIT License](https://opensource.org/licenses/MIT).
 
  This is a context-sensitive lexer intended to process parts of a `C`
- compilation unit and extract documentation. This documentation is an even more
- stripped-down, simplified, sort-of version of `Markup` then is used in
- `Doxygen`, with the intent of making it (much) stricter and simpler, and also
- suitable for sharing and compiling. This does not do any compiling, just very
- basic text-parsing, including the macro `A_B_(Foo,Bar) -> <A>Foo<B>Bar`.
+ compilation unit and extract documentation. This does not do any compiling,
+ just very basic text-parsing.
  
- Documentation commands are { "/" "*" "*"+ } and are ended with { "*"+ "/" },
- but not { "/" "*"+ "*" "/" }; one can still use this as a code break. You can
- have an asterisk at the front, like Kernel comments, or asterisks all over
- like some crazy ASCII art, (unfortunately, this causes problems with lists
- being started with "*", so start them with { " -" "* " }.) All documentation
- goes at most two lines above what it documents or it's appended to the header.
- Multiple documentation on the same command is appended. Two hard returns is a
+ Documentation commands are `/``**[+]` and are ended with `*[+]/`, but not
+ `/``*[+]*``/`; one can still use this as a code break. You can have an
+ asterisk at the front, like Kernel comments, or asterisks all over like some
+ crazy ASCII art.  All documentation goes at most two lines above what it
+ documents or it's appended to the header. Multiple documentation on the same
+ command is appended, including in the command. Two hard returns is a
  paragraph. One can document typedefs, tags (struct, enum, union,) data, and
- functions; everything else is automatically inserted into the preamble.
+ functions; everything else is automatically inserted into the preamble. The
+ macro `A_B_(Foo,Bar)` is transformed into `<A>Foo<B>Bar`.
 
- "\\" escapes , with one exception "\\," inserts a
- slim no-breaking space and backslash-end-comment is nonsense and will not
- compile. When two or more definitions are present in a single statement, the
- first one is used.
+ This supports a stripped-down version of `Markdown` that is much stricter and
+ simpler to parse. Embedded inline in the documentation,
 
- Embedded inline in the documentation,
-
- \* \_ _emphasised_;
- \* \` `code/math`;
- \* \<url\>;
- \* \<Source, 1999, pp. 1-2\>;
- \* \<fn:\<function\>\>;
- \* \<tag:\<struct|union|enum\>\>;
- \* \<typedef:\<typedef\>\>;
- \* \<data:\<identifier\>\>;
- \* \[The link text\](url);
- \* \!\[Caption text\](/path/to/img.jpg);
- \* lists with " \\* "; lists can be anywhere and don't nest;
- \* a tab causes all the line after to be preformatted, (except '*' ends, for
-    checking if the comment is ended); fixme?
+ \* `\\` escapes these `\*\_\`\~\!\\\@\<\>\[\]` but one only needs it when
+    ambiguous;
+ \* since we want our state to be as simple as possible and since Kernel
+    comments can have `*`, this causes problems with lists being started with
+    the same thing; start lists with `{ \\* }`; these are simple, can be
+    anywhere and don't nest;
+ \* `\\>` causes all the line after `\\>` to be pre-formatted, (except `*`
+    ends, for checking if the comment is ended); fixme;
+ \* `\\,` non-breaking thin space (U+202F HTML &#8239; for working with units);
  \* \~ non-breaking space;
- \* \\, non-breaking thin space (U+202F HTML &#8239; for working with units.)
+ \* \_emphasised\_: _emphasised_;
+ \* \`code/math\`: `code/math`;
+ \* `\<url\>`: supports absolute URIs; relative URIs must have a slash or a dot
+    to distinguish it;
+ \* `\<Source, 1999, pp. 1-2\>`: citation;
+ \* `\<fn:\<function\>\>`: function reference;
+ \* `\<tag:\<struct|union|enum\>\>`: tag reference;
+ \* `\<typedef:\<typedef\>\>`: typedef reference;
+ \* `\<data:\<identifier\>\>`: data reference;
+ \* `\[The link text\](url)`: link;
+ \* `\!\[Caption text\](url.image)`: image; fixme.
 
  Each-block-tags separate the documentation until the next paragraph or until
  the next each-block-tag, and specify a specific documentation structure.
  Each-block-tags that overlap are concatenated in the file order. Not all of
  these are applicable for all segments of text. These are:
 
- \* \@title;
- \* \@param[<param1>[, ...]];
- \* \@author;
- \* \@std (remove fixme);
- \* \@depend;
- \* \@version[<version>];
- \* \@fixme (remove fixme);
- \* \@bug (fixme);
- \* \@return;
- \* \@throws[<exception1>[, ...]];
- \* \@implements;
- \* \@order;
- \* and \@allow, the latter being to allow `static` functions in the
-    documentation.
+ \* `\@title`: only makes sense for preamble; multiple are concatenated;
+ \* `\@param[<param1>[, ...]]`: parameters;
+ \* `\@author`;
+ \* `\@std`: standard, eg, `\@std GNU-C99`;
+ \* `\@depend`: dependancy;
+ \* `\@version`: boring, will be removed;
+ \* `\@fixme`: something doesn't work as expected;
+ \* `\@return`: normal function return;
+ \* `\@throws[<exception1>[, ...]]`: exceptional function return; perhaps
+    a null pointer and `errno`, it's `C`, so `\@throws` is a very loose term;
+ \* `\@implements`: again, `C` doesn't have the concept of implement, but we
+    would say that a function having a prototype of
+    `(int (*)(const void *, const void *))` implements `bsearch` and `qsort`;
+ \* `\@order`: comments about the run-time or space;
+ \* and `\@allow`, the latter being to allow `static` functions or data in the
+    documentation, which are usually culled.
 
- Things that are not planned for inclusion,
- 
- \* headers;
- \* block quotes "> ";
- \* lists with "*", "+", numbered, or multi-level;
- \* horizontal rules;
- \* emphasis by *, **, \_\_;
- \* strikethrough;
- \* code spans by \`\`, _etc_;
- \* table of contents;
- \* tables;
- \* fenced code blocks;
- \* HTML blocks;
- \* '/ * !', '/ / /', '/ / !';
- \* \\brief;
- \* '/ * ! <', '/ * * <', '/ / ! <', '/ / / <': not needed; automatically
+ Differences in `Markdown` from `Doxygen`,
+
+ \* no headers;
+ \* no block quotes `> `, instead, this is pre-formatted; no four-spaces;
+ \* no lists with `*`, `+`, numbered, or multi-level;
+ \* no horizontal rules;
+ \* no emphasis by `*`, `**`, `\_\_`, bold;
+ \* no strikethrough;
+ \* no code spans by `\`\``, _etc_;
+ \* no table of contents;
+ \* no tables;
+ \* no fenced code blocks;
+ \* no HTML blocks;
+ \* no `/``*!`, `///`, `//!`;
+ \* no `\\brief`;
+ \* `/``*!<`, `/``**<`, `//!<`, `///<`: not needed; automatically
     concatenates;
- \* [in], [out];
- \* '\\param c1' or '\@param a' -- this probably is the most departure from
+ \* no `[in]`, `[out]`, one should be able to tell from `const`;
+ \* no `\\param c1` or `\@param a` -- this probably is the most departure from
     normal documentation generators, but it's confusing having the text and the
-    variable be indistinguishable;
- \* Titles with \!\[Caption text\](/path/to/img.jpg "Image title");
- \* Titles with \[The link text\](http://example.net/ "Link title");
- \* instead of \\struct, \\union, \\enum, \\var, \\typedef, just insert the
-    documentation comment above the thing; use \<data:<thing>\> to reference;
- \* \\def;
- \* instead of \\fn, just insert the documentation comment above the function;
-    use \<fn:\<function\>\> to reference.
- 
- "Unlike standard Markdown and Github Flavored Markdown doxygen will not touch
- internal underscores or stars or tildes, so the following will appear as-is:
- a_nice_identifier
- Furthermore, a * or \_ only starts an emphasis if
- it is followed by an alphanumerical character, and
- it is preceded by a space, newline, or one the following characters <{([,:;
- An emphasis or a strikethrough ends if
- it is not followed by an alphanumerical character, and
- it is not preceded by a space, newline, or one the
- following characters ({[<=+-\@
- Lastly, the span of the emphasis or strikethrough is limited to a single
- paragraph."
- "Note that unlike standard Markdown, doxygen leaves the following untouched.
- A `cool' word in a `nice' sentence."
+    variable be indistinguishable and complicates the state;
+ \* no titles with `\!\[Caption text\](/path/to/img.jpg "Image title")` HTML4;
+ \* no titles with `\[The link text\](http://example.net/ "Link title")` HTML4;
+ \* instead of `\\struct`, `\\union`, `\\enum`, `\\var`, `\\typedef`, just
+    insert the documentation comment above the thing; use `\<data:<thing>\>` to
+    reference;
+ \* `\\def`: no documenting macros;
+ \* instead of `\\fn`, just insert the documentation comment above the
+    function; use `\<fn:\<function\>\>` to reference;
+ \* internal underscores are emphasis except in math/code mode;
+ \* A `cool' word in a `nice' sentence must be escaped.
 
  @title Main.c
  @author Neil
@@ -113,7 +102,6 @@
  @fixme Old-style function definitions are not supported.
  @fixme \@depend, \@author, ect. in functions should automatically be placed in
  header.
- @fixme Warnings about un-documented variables, `this` or \@param[this].
  @fixme Authors can only be ASCII.
  @fixme Trigraph support, (haha.)
  @fixme Old-style function support.

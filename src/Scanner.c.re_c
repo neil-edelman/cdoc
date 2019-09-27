@@ -69,37 +69,17 @@ eof = "\x00";
 whitespace = [ \t\v\f];
 newline = "\n" | "\r" "\n"?;
 
-// For every state, the following must be defined:
-// [ \t\v\f\n\r~*\\`_@<>[\]!\x00] or everything else.
-// eof
-// whitespace
-// newline
-// ~*\\`_@<>[\]!
-
-//						" \t\v\f"	"\n\r"	~	*	\\	`	_	@	<>	[]	!
-// yyccharacter,		<A>			<B>
-// yyccomment,			<A>
-// yycmacro_comment,	<A>
-// yycstring,			<A>			<B>
-// yycdoc,
-// yycem,
-// yycmath,
-// yyccode,
-// yycmacro,						<B>
-// yycparam_item,
-// yycparam_more,
-// yycparam_begin,
-
 // Words can be composed of anything except:
 // " \t\n\v\f\r" whitespace and newline;
-// "~" non-breaking space;
 // "*" potential end-of-comment;
+// "`" or "_" math/em;
+// "~" non-breaking space;
+// "!" image start;
 // "\\" escape;
-// "`" or "_" (at the beginning or end) for em;
-// "@" (at the beginning) for each-block-tag;
+// "@" for each-block-tag;
 // "<>[]" for embedded things;
 // "\x00" eof.
-// Words in math/code and em mode have a more lax interpretation.
+// Words in math/code, em, and inside brackets do not nest.
 word_base = [^ \t\n\v\f\r*_`~!\\@<>[\]\x00];
 escape_asterisk = "*";
 escape_lone = "_" | "`" | "~";
@@ -115,6 +95,8 @@ word_inside = (word_base | [_`@<>] )+ | escape_inside;
 begin_doc = "/""*""*"+;
 end_doc = "*"+"/";
 art = whitespace* "*"? newline " *";
+all_inside = word_inside | whitespace | newline | art [^/[\]\x00]
+	| "\\" escape_except_asterisk | "\\*" [^/[\]\x00] | "\\,";
 comment_break = "/" "*"+ "*" "/";
 begin_comment = "/""*";
 end_comment = "*""/";
@@ -151,13 +133,13 @@ uri_scheme = [^:/?# \t\n\v\f\r*<>&\x00]+ ":";
 uri_authority = "//" [^/?# \t\n\v\f\r*<>&\x00]*;
 uri_path = [^?# \t\n\v\f\r*<>&\x00]+;
 uri_path_with_slash = ([^?# \t\n\v\f\r*<>&\x00]* "/")+;
+uri_path_with_dot = ([^?# \t\n\v\f\r*<>&\x00]* ".")+;
 uri_query = ("?" [^# \t\n\v\f\r*<>&\x00]*);
 uri_fragment = ("#" [^ \t\n\v\f\r*<>&\x00]*);
 absolute_uri = uri_scheme uri_authority uri_path uri_query? uri_fragment?;
-relative_uri = uri_scheme? uri_authority? uri_path_with_slash
-	uri_query? uri_fragment?;
+relative_uri = uri_scheme? uri_authority?
+	(uri_path_with_slash | uri_path_with_dot) uri_query? uri_fragment?;
 uri = absolute_uri | relative_uri;
-// fixme: now That2000 is detected as a uri :[
 // Citation format. Not authoritative.
 author = [A-Z][A-Za-z'`-]+; // Fixme: No!!! UTF-8
 etalia = "et" whitespace? "al" "."?;
@@ -171,7 +153,7 @@ citation = author (authorsep author)* (closing etalia)? closing date page?;
 // Lists.
 list = " \\* ";
 // Math/code blocks. Added after; very meh. fixme: Create an environment.
-preformatted = "\\\"" [^*\n\x00]*;
+preformatted = "\\>" [^*\n\x00]*;
 */
 
 /** Scans. */
@@ -260,10 +242,10 @@ scan:
 		if(scanner.state == yycdoc) return NEWLINE;
 		goto reset;
 	}
-	<doc, math, em, param_item, param_more> "\\*""/" { return
+	<doc, math, em, param_item, param_more, anchor> "\\*""/" { return
 		fprintf(stderr, "%s: escape past end of documentation.\n", pos()),
 		errno = EILSEQ, END; }
-	<math, em, param_item, param_more> end_doc { return
+	<math, em, param_item, param_more, anchor> end_doc { return
 		fprintf(stderr, "%s: unexpected end of documentation.\n", pos()),
 		errno = EILSEQ, END; }
 	<doc> end_doc { return scanner.state = yyccode, DOC_END; }
@@ -278,6 +260,9 @@ scan:
 	<em> "_" { return scanner.state = yycdoc, EM_END; }
 	<doc> "`" { return scanner.state = yycmath, MATH_BEGIN; }
 	<math> "`" { return scanner.state = yycdoc, MATH_END; }
+	<doc> "~" { return NBSP; }
+	<doc> list { return LIST_ITEM; }
+	<doc> preformatted { return PREFORMATTED; } // fixme: have an environment.
 
 	// These are recognised in the documentation as stuff; parse them further
 	// using `sub`.
@@ -293,13 +278,10 @@ scan:
 		{ scanner.sub0 = sub0, scanner.sub1 = sub1; return SEE_TYPEDEF;}
 	<doc> "<data:" @sub0 generic_id @sub1 ">"
 		{ scanner.sub0 = sub0, scanner.sub1 = sub1; return SEE_DATA; }
-	<doc> "[" whitespace* / (word whitespace* | newline)* "](" uri ")"
+	<doc> "[" whitespace* / all_inside* "](" uri ")"
 		{ return scanner.state = yycanchor, LINK_START; }
-	<doc> "![" whitespace* / (word whitespace* | newline)* "](" uri ")"
+	<doc> "![" whitespace* / all_inside* "](" uri ")"
 		{ return scanner.state = yycanchor, IMAGE_START; }
-	<doc> "~" { return NBSP; }
-	<doc> list { return LIST_ITEM; }
-	<doc> preformatted { return PREFORMATTED; }
 
 	// These are tags.
 	<doc> "@title"      { return ATT_TITLE; }
