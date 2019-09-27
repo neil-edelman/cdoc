@@ -608,7 +608,6 @@ static void print_all(const struct Segment *const segment) {
 	print_attribute_maybe(segment, ATT_AUTHOR);
 	print_attribute_maybe(segment, ATT_STD);
 	print_attribute_maybe(segment, ATT_DEPEND);
-	print_attribute_maybe(segment, ATT_VERSION);
 	print_attribute_maybe(segment, ATT_FIXME);
 	print_attribute_maybe(segment, ATT_ALLOW); /* fixme */
 	printf("\n</%s>\n\n", segment->name);

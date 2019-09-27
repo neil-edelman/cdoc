@@ -19,7 +19,6 @@ static int attribute_okay(const struct Attribute *const attribute) {
 		case ATT_AUTHOR:
 		case ATT_STD:
 		case ATT_DEPEND:
-		case ATT_VERSION:
 		case ATT_FIXME:
 		case ATT_RETURN:
 		case ATT_IMPLEMENTS:

@@ -41,7 +41,6 @@
 	X(ATT_AUTHOR,     '@', 0, 0, 0), \
 	X(ATT_STD,        '@', 0, 0, 0), \
 	X(ATT_DEPEND,     '@', 0, 0, 0), \
-	X(ATT_VERSION,    '@', 0, 0, 0), \
 	X(ATT_FIXME,      '@', 0, 0, 0), \
 	X(ATT_RETURN,     '@', 0, 0, 0), \
 	X(ATT_THROWS,     '@', 0, 0, 0), \

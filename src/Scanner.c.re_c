@@ -289,7 +289,6 @@ scan:
 	<doc> "@author"     { return ATT_AUTHOR; }
 	<doc> "@std"        { return ATT_STD; }
 	<doc> "@depend"     { return ATT_DEPEND; }
-	<doc> "@version"    { return ATT_VERSION; }
 	<doc> "@fixme"      { return ATT_FIXME; }
 	<doc> "@return"     { return ATT_RETURN; }
 	<doc> "@throws"     { return scanner.state = yycparam_begin, ATT_THROWS; }

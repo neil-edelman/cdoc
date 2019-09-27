@@ -50,7 +50,6 @@
  \* `\@author`;
  \* `\@std`: standard, eg, `\@std GNU-C99`;
  \* `\@depend`: dependancy;
- \* `\@version`: boring, will be removed;
  \* `\@fixme`: something doesn't work as expected;
  \* `\@return`: normal function return;
  \* `\@throws[<exception1>[, ...]]`: exceptional function return; perhaps
