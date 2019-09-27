@@ -142,7 +142,7 @@ OUT(gen1) {
 	type_size = (int)(a - type);
 	assert(t->length == a + 1 - t->from);
 	state_from_default();
-	printf("<%.*s>%.*s",
+	printf("&lt;%.*s&gt;%.*s",
 		t->length - 1, t->from, param->length, param->from);
 	*ptoken = TokenArrayNext(tokens, rparen);
 	return 1;
@@ -171,8 +171,9 @@ OUT(gen2) {
 	type2_size = (int)(a - type2);
 	assert(t->length == a + 1 - t->from);
 	state_from_default();
-	printf("<%.*s>%.*s<%.*s>%.*s", type1_size, type1, param1->length,
-		   param1->from, type2_size, type2, param2->length, param2->from);
+	printf("&lt;%.*s&gt;%.*s&lt;%.*s&gt;%.*s", type1_size, type1,
+		param1->length, param1->from, type2_size, type2, param2->length,
+		param2->from);
 	*ptoken = TokenArrayNext(tokens, rparen);
 	return 1;
 catch:
@@ -206,9 +207,10 @@ OUT(gen3) {
 	type3_size = (int)(a - type3);
 	assert(t->length == a + 1 - t->from);
 	state_from_default();
-	printf("<%.*s>%.*s<%.*s>%.*s<%.*s>%.*s", type1_size, type1,
-		param1->length, param1->from, type2_size, type2, param2->length,
-		param2->from, type3_size, type3, param3->length, param3->from);
+	printf("&lt;%.*s&gt;%.*s&lt;%.*s&gt;%.*s&lt;%.*s&gt;%.*s",
+		type1_size, type1, param1->length, param1->from, type2_size, type2,
+		param2->length, param2->from, type3_size, type3,
+		param3->length, param3->from);
 	*ptoken = TokenArrayNext(tokens, rparen);
 	return 1;
 catch:
@@ -219,7 +221,8 @@ OUT(escape) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == ESCAPE && t->length == 2);
 	state_from_default();
-	printf("%c", t->from[1]);
+	encode(1, t->from + 1);
+	/*printf("%c", t->from[1]);*/
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -227,8 +230,9 @@ OUT(url) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == URL);
 	state_from_default();
-	printf("<a href = \"%.*s\">%.*s</a>",
-		t->length, t->from, t->length, t->from);
+	printf("<a href = \"%.*s\">", t->length, t->from);
+	encode(t->length, t->from);
+	printf("</a>");
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -238,8 +242,10 @@ OUT(cite) {
 	assert(tokens && t && t->symbol == CITE);
 	if(!url_encoded) goto catch;
 	state_from_default();
-	printf("<a href = \"https://scholar.google.ca/scholar?q=%s\">%.*s</a>",
-		url_encoded, t->length, t->from);
+	printf("<a href = \"https://scholar.google.ca/scholar?q=%s\">",
+		url_encoded);
+	encode(t->length, t->from);
+	printf("</a>");
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 catch:
@@ -359,7 +365,7 @@ OUT(pre) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == PREFORMATTED);
 	state_to_pre();
-	printf("%.*s", t->length, t->from);
+	encode(t->length, t->from);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }

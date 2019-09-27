@@ -18,7 +18,7 @@
  paragraph. One can document typedefs, tags (struct, enum, union,) data, and
  functions; everything else is automatically inserted into the preamble.
 
- (fixme) "\\" escapes whatever comes after, with one exception "\\," inserts a
+ "\\" escapes , with one exception "\\," inserts a
  slim no-breaking space and backslash-end-comment is nonsense and will not
  compile. When two or more definitions are present in a single statement, the
  first one is used.

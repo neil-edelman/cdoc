@@ -1,6 +1,6 @@
 /** [This is
 text
-](http://yo.c) Header. Yo <http://foo.org/> [MIT](https://mit.edu/)
+&&](http://yo.c) Header. Yo <http://foo.org/> [MIT](https://mit.edu/)
 
 Paragraph @ @a \,~~
 
@@ -122,7 +122,7 @@ static enum Token fun2_scan_eof(struct Scanner *const arg1_2, int arg2_2) {
  *
  * This is a
  * kernel-style comment.
- * <http://www.`@.com>
+ * <http://www.`@.com/index.html>
  * <Yo2019> ?<>&!
  * <fn:a>
  *

@@ -100,13 +100,18 @@ newline = "\n" | "\r" "\n"?;
 // "<>[]" for embedded things;
 // "\x00" eof.
 // Words in math/code and em mode have a more lax interpretation.
-word_base = [^ \t\n\v\f\r_`~*\\@<>[\]\x00];
-word_single_anchor = "*" | "\\" | "@" | "<" | ">";
-word_single = word_single_anchor | "[" | "]";
-word        = word_base+ | word_single;
-word_math   = (word_base | [_@<>[\]] )+ | word_single;
-word_em     = (word_base | [`@<>[\]] )+ | word_single;
-word_anchor = (word_base | [_`@<>] )+ | word_single_anchor;
+word_base = [^ \t\n\v\f\r*_`~!\\@<>[\]\x00];
+escape_asterisk = "*";
+escape_lone = "_" | "`" | "~";
+escape_multi = "!" | "\\" | "@" | "<" | ">";
+escape_brackets = "[" | "]";
+escape_except_asterisk = escape_lone | escape_multi | escape_brackets;
+escape_inside = escape_asterisk | escape_lone | escape_multi;
+escape_outside = escape_asterisk | escape_multi | escape_brackets;
+word        = word_base+ | escape_outside;
+word_math   = (word_base | [_@<>[\]] )+ | escape_outside;
+word_em     = (word_base | [`@<>[\]] )+ | escape_outside;
+word_anchor = (word_base | [_`@<>] )+ | escape_inside;
 begin_doc = "/""*""*"+;
 end_doc = "*"+"/";
 art = whitespace* "*"? newline " *";
@@ -145,10 +150,13 @@ generic_id = (("<" [A-Z]+ ">")? id)+;
 uri_scheme = [^:/?# \t\n\v\f\r*<>&\x00]+ ":";
 uri_authority = "//" [^/?# \t\n\v\f\r*<>&\x00]*;
 uri_path = [^?# \t\n\v\f\r*<>&\x00]+;
+uri_path_with_slash = ([^?# \t\n\v\f\r*<>&\x00]* "/")+;
 uri_query = ("?" [^# \t\n\v\f\r*<>&\x00]*);
 uri_fragment = ("#" [^ \t\n\v\f\r*<>&\x00]*);
-//absolute_uri = uri_scheme uri_authority uri_path uri_query? uri_fragment?;
-uri = uri_scheme? uri_authority? uri_path uri_query? uri_fragment?;
+absolute_uri = uri_scheme uri_authority uri_path uri_query? uri_fragment?;
+relative_uri = uri_scheme? uri_authority? uri_path_with_slash
+	uri_query? uri_fragment?;
+uri = absolute_uri | relative_uri;
 // fixme: now That2000 is detected as a uri :[
 // Citation format. Not authoritative.
 author = [A-Z][A-Za-z'`-]+; // Fixme: No!!! UTF-8
@@ -263,8 +271,7 @@ scan:
 	<doc>  word      { return WORD; }
 	<math> word_math { return WORD; }
 	<em>   word_em   { return WORD; }
-	<doc, math, em, anchor> "\\" ("~" | "\\" | "`" | "_" | "@" | "<" | ">" |
-		"[" | "]" | "!") { return ESCAPE; }
+	<doc, math, em, anchor> "\\" escape_except_asterisk { return ESCAPE; }
 	<doc, math, em, anchor> "\\*" / [^/] { return ESCAPE; }
 	<doc, math, em, anchor> "\\," { return NBTHINSP; }
 	<doc> "_" { return scanner.state = yycem, EM_BEGIN; }
