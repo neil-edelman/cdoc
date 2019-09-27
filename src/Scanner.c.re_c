@@ -170,7 +170,7 @@ page = ","? whitespace? (("pp" | "p") "."?)? whitespace?
 citation = author (authorsep author)* (closing etalia)? closing date page?;
 // Lists.
 list = " \\* ";
-// Math/code blocks. Added after; very meh. Create an environment.
+// Math/code blocks. Added after; very meh. fixme: Create an environment.
 preformatted = "\\\"" [^*\n\x00]*;
 */
 
