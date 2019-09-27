@@ -105,13 +105,13 @@ escape_asterisk = "*";
 escape_lone = "_" | "`" | "~";
 escape_multi = "!" | "\\" | "@" | "<" | ">";
 escape_brackets = "[" | "]";
-escape_except_asterisk = escape_lone | escape_multi | escape_brackets;
-escape_inside = escape_asterisk | escape_lone | escape_multi;
+escape_except_asterisk = escape_multi | escape_lone | escape_brackets;
+escape_inside = escape_asterisk | escape_multi | escape_lone;
 escape_outside = escape_asterisk | escape_multi | escape_brackets;
 word        = word_base+ | escape_outside;
 word_math   = (word_base | [_@<>[\]] )+ | escape_outside;
 word_em     = (word_base | [`@<>[\]] )+ | escape_outside;
-word_anchor = (word_base | [_`@<>] )+ | escape_inside;
+word_inside = (word_base | [_`@<>] )+ | escape_inside;
 begin_doc = "/""*""*"+;
 end_doc = "*"+"/";
 art = whitespace* "*"? newline " *";
@@ -170,10 +170,8 @@ page = ","? whitespace? (("pp" | "p") "."?)? whitespace?
 citation = author (authorsep author)* (closing etalia)? closing date page?;
 // Lists.
 list = " \\* ";
-// Math/code blocks. Added after; very meh.
-// fixme: no. That's afwful. Do something that uses the set escapes.
-// Like ! \! \' \" @ etc.
-preformatted = "\t" [^*\n\x00]*;
+// Math/code blocks. Added after; very meh. Create an environment.
+preformatted = "\\\"" [^*\n\x00]*;
 */
 
 /** Scans. */
@@ -328,7 +326,7 @@ scan:
 		errno = EILSEQ, END; }
 
 	// Link/image text. Ended by `URL`.
-	<anchor>  word_anchor { return WORD; }
+	<anchor>  word_inside { return WORD; }
 	<anchor>  whitespace+ { return SPACE; }
 	<anchor>  whitespace* "](" @sub0 uri @sub1 ")"
 		{ scanner.sub0 = sub0, scanner.sub1 = sub1;
