@@ -37,7 +37,7 @@
  \* \!\[Caption text\](/path/to/img.jpg);
  \* lists with " \\* "; lists can be anywhere and don't nest;
  \* a tab causes all the line after to be preformatted, (except '*' ends, for
-	checking if the comment is ended); fixme?
+    checking if the comment is ended); fixme?
  \* \~ non-breaking space;
  \* \\, non-breaking thin space (U+202F HTML &#8239; for working with units.)
 
@@ -59,7 +59,7 @@
  \* \@implements;
  \* \@order;
  \* and \@allow, the latter being to allow `static` functions in the
-	documentation.
+    documentation.
 
  Things that are not planned for inclusion,
  
