@@ -171,6 +171,8 @@ citation = author (authorsep author)* (closing etalia)? closing date page?;
 // Lists.
 list = " \\* ";
 // Math/code blocks. Added after; very meh.
+// fixme: no. That's afwful. Do something that uses the set escapes.
+// Like ! \! \' \" @ etc.
 preformatted = "\t" [^*\n\x00]*;
 */
 
