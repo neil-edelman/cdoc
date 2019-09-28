@@ -441,8 +441,21 @@ void ReportDebug(void) {
 	}
 }
 
-/** Searches if some segment's division is `division`.
- @order O(`segments`) */
+/* Lambdas would be nice! */
+
+/** @return If there exist an `attribute_symbol` with content within
+ `segment`. */
+static int segment_attribute_exists(const struct Segment *const segment,
+	const enum Symbol attribute_symbol) {
+	struct Attribute *attribute = 0;
+	assert(segment);
+	while((attribute = AttributeArrayNext(&segment->attributes, attribute)))
+		if(attribute->token.symbol == attribute_symbol
+		   && TokenArraySize(&attribute->contents)) return 1;
+	return 0;
+}
+
+/** @return Is `division` in the report? */
 static int division_exists(const enum Division division) {
 	struct Segment *segment = 0;
 	while((segment = SegmentArrayNext(&report, segment)))
@@ -450,6 +463,18 @@ static int division_exists(const enum Division division) {
 	return 0;
 }
 
+/** @return Is `division` and `attribute_symbol` in the report? */
+static int division_attribute_exists(const enum Division division,
+	const enum Symbol attribute_symbol) {
+	struct Segment *segment = 0;
+	while((segment = SegmentArrayNext(&report, segment))) {
+		if(segment->division != division) continue;
+		if(segment_attribute_exists(segment, attribute_symbol)) return 1;
+	}
+	return 0;
+}
+
+/** `act` on all `division`. */
 static void division_act(const enum Division division,
 	void (*act)(const struct Segment *const segment)) {
 	const struct Segment *segment = 0;
@@ -460,20 +485,9 @@ static void division_act(const enum Division division,
 	}
 }
 
-/** Seaches if attribute `symbol` exists within `segment`.
- @order O(`attributes`) */
-static int attribute_content_exists(const struct Segment *const segment,
-	const enum Symbol symbol) {
-	struct Attribute *attribute = 0;
-	assert(segment);
-	while((attribute = AttributeArrayNext(&segment->attributes, attribute)))
-		if(attribute->token.symbol == symbol
-		&& TokenArraySize(&attribute->contents)) return 1;
-	return 0;
-}
 
-/** Seaches all `tokens` for `token` and returns it. */
-static const struct Token *search_token(const struct TokenArray *const tokens,
+/** @return The first token in `tokens` that matches `token`. */
+static const struct Token *any_token(const struct TokenArray *const tokens,
 	const struct Token *const token) {
 	const struct Token *t = 0;
 	while((t = TokenArrayNext(tokens, t)))
@@ -484,25 +498,13 @@ static const struct Token *search_token(const struct TokenArray *const tokens,
 /** Seaches if attribute `symbol` exists within `segment` whose header contains
  `header`.
  @order O(`attributes`) */
-static int attribute_header_exists(const struct Segment *const segment,
+static int segment_attribute_header_exists(const struct Segment *const segment,
 	const enum Symbol symbol, const struct Token *const header) {
 	struct Attribute *attribute = 0;
 	assert(segment);
 	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
 		if(attribute->token.symbol != symbol) continue;
-		if(search_token(&attribute->header, header)) return 1;
-	}
-	return 0;
-}
-
-/** Seaches if attribute `symbol` exists within all `division` segments.
- @order O(`segments` * `attributes`) */
-static int div_attribute_exists(const enum Division flags,
-	const enum Symbol symbol) {
-	struct Segment *segment = 0;
-	while((segment = SegmentArrayNext(&report, segment))) {
-		if(!(flags & segment->division)) continue;
-		if(attribute_content_exists(segment, symbol)) return 1;
+		if(any_token(&attribute->header, header)) return 1;
 	}
 	return 0;
 }
@@ -515,7 +517,6 @@ static void attribute_print(const struct Segment *const segment,
 	assert(segment);
 	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
 		if(attribute->token.symbol != symbol) continue;
-		/*tokens_print(&attribute->header, 0);*/
 		tokens_print(&attribute->contents, 0);
 		state_to_default();
 	}
@@ -531,7 +532,7 @@ static void attribute_header_print(const struct Segment *const segment,
 	token_to_string(header, &a);
 	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
 		if(attribute->token.symbol != symbol
-			|| !search_token(&attribute->header, header)) continue;
+			|| !any_token(&attribute->header, header)) continue;
 		printf("[");
 		tokens_print(&attribute->header, 0);
 		printf("]");
@@ -542,7 +543,7 @@ static void attribute_header_print(const struct Segment *const segment,
 
 /** For each `division` segment, print all attributes that match `symbol`.
  @order O(`segments` * `attributes`) */
-static void div_attribute_print(const enum Division division,
+static void division_attribute_print(const enum Division division,
 	const enum Symbol symbol) {
 	struct Segment *segment = 0;
 	state_reset("", "", ", ");
@@ -556,7 +557,7 @@ static void div_attribute_print(const enum Division division,
 static void print_attribute_maybe(const struct Segment *const segment,
 	const enum Symbol symbol) {
 	assert(segment && symbol);
-	if(!attribute_content_exists(segment, symbol)) return;
+	if(!segment_attribute_exists(segment, symbol)) return;
 	printf("\n\n");
 	state_reset("{", "}", ", ");
 	attribute_print(segment, symbol);
@@ -566,7 +567,7 @@ static void print_attribute_maybe(const struct Segment *const segment,
 static void print_attribute_header_maybe(const struct Segment *const segment,
 	const enum Symbol symbol, const struct Token *header) {
 	assert(segment && symbol);
-	if(!attribute_header_exists(segment, symbol, header)) return;
+	if(!segment_attribute_header_exists(segment, symbol, header)) return;
 	printf("\n\n");
 	state_reset("{", "}", ", ");
 	attribute_header_print(segment, symbol, header);
@@ -585,7 +586,7 @@ static void print_code(const struct Segment *const segment) {
 
 /** Prints all a `segment`.
  @implements division_act */
-static void print_all(const struct Segment *const segment) {
+static void segment_print_all(const struct Segment *const segment) {
 	const struct Token *param;
 	size_t no;
 	/* The title is generally the first param. Only sigle-words. */
@@ -664,73 +665,75 @@ int ReportOut(void) {
 		"\t}\n"
 		"</style>\n"
 		"<title>");
-	if(div_attribute_exists(DIV_PREAMBLE, ATT_TITLE)) {
-		div_attribute_print(DIV_PREAMBLE, ATT_TITLE);
+	if(division_attribute_exists(DIV_PREAMBLE, ATT_TITLE)) {
+		division_attribute_print(DIV_PREAMBLE, ATT_TITLE);
 	} else {
 		printf("Untitled");
 	}
 	printf("</title>\n"
 		"</head>\n\n\n"
 		"<body>\n\n");
-	if(div_attribute_exists(DIV_PREAMBLE, ATT_TITLE)) {
+	if(division_attribute_exists(DIV_PREAMBLE, ATT_TITLE)) {
 		printf("<h1>");
-		div_attribute_print(DIV_PREAMBLE, ATT_TITLE);
+		division_attribute_print(DIV_PREAMBLE, ATT_TITLE);
 		printf("</h1>\n\n");
 	}
-	if(div_attribute_exists(DIV_PREAMBLE, ATT_AUTHOR)) {
+	if(division_attribute_exists(DIV_PREAMBLE, ATT_AUTHOR)) {
 		printf("<p>");
-		div_attribute_print(DIV_PREAMBLE, ATT_AUTHOR);
+		division_attribute_print(DIV_PREAMBLE, ATT_AUTHOR);
 		printf("</p>\n\n");
 	}
 	printf("<ul>\n");
 	/* fixme: license! */
-	printf("\t<li><a href = \"#.%s\">Preamble</li>\n",
+	if(division_attribute_exists(DIV_PREAMBLE, ATT_LICENSE)) {
+	}
+	printf("\t<li><a href = \"#%s:\">Preamble</li>\n",
 		division_strings[DIV_PREAMBLE]);
 	if(division_exists(DIV_TYPEDEF))
-		printf("\t<li><a href = \"#.%s\">Typedef Aliases</a></li>\n",
+		printf("\t<li><a href = \"#%s:\">Typedef Aliases</a></li>\n",
 		division_strings[DIV_TYPEDEF]);
 	if(division_exists(DIV_TAG))
-		printf("\t<li><a href = \"#.%s\">Struct, Union, and Enum Definitions"
+		printf("\t<li><a href = \"#%s:\">Struct, Union, and Enum Definitions"
 		"</a></li>\n", division_strings[DIV_TAG]);
 	if(division_exists(DIV_DATA))
-		printf("\t<li><a href = \"#.%s\">Data Declarations</a></li>\n",
+		printf("\t<li><a href = \"#%s:\">Data Declarations</a></li>\n",
 		division_strings[DIV_DATA]);
 	if(division_exists(DIV_FUNCTION))
-		printf("\t<li><a href = \"#.summary\">Function Summary</a></li>\n"
+		printf("\t<li><a href = \"#summary:\">Function Summary</a></li>\n"
 		"\t<li><a href = \"#.%s\">Function Details</a></li>\n",
 		division_strings[DIV_FUNCTION]);
-	printf("</ul>\n\n<a name = \".%s\"><!-- --></a>\n\n",
+	printf("</ul>\n\n<a name = \"%s:\"><!-- --></a>\n\n",
 		division_strings[DIV_PREAMBLE]);
 	/* Preamble contents. */
 	preamble_print_all_content();
 	printf("\n\n");
 	/* Print typedefs. */
 	if(division_exists(DIV_TYPEDEF)) {
-		printf("<a name = \".%s\"><!-- --></a>"
+		printf("<a name = \"%s:\"><!-- --></a>"
 			"<h2>Typedef Aliases</h2>\n\n", division_strings[DIV_TYPEDEF]);
-		division_act(DIV_TYPEDEF, &print_all);
+		division_act(DIV_TYPEDEF, &segment_print_all);
 	}
 	/* Print tags. */
 	if(division_exists(DIV_TAG)) {
-		printf("<a name = \".%s\"><!-- --></a>"
+		printf("<a name = \"%s:\"><!-- --></a>"
 			"<h2>Struct, Union, and Enum Definitions</h2>\n\n",
 			division_strings[DIV_TAG]);
-		division_act(DIV_TAG, &print_all);
+		division_act(DIV_TAG, &segment_print_all);
 	}
 	/* Print general declarations. */
 	if(division_exists(DIV_DATA)) {
-		printf("<a name = \".%s\"><!-- --></a>"
+		printf("<a name = \"%s:\"><!-- --></a>"
 			"<h2>Data Delcarations</h2>\n\n", division_strings[DIV_DATA]);
-		division_act(DIV_DATA, &print_all);
+		division_act(DIV_DATA, &segment_print_all);
 	}
 	/* Print functions. */
 	if(division_exists(DIV_FUNCTION)) {
-		printf("<a name = \".summary\"><!-- --></a>"
+		printf("<a name = \"summary:\"><!-- --></a>"
 			"<h2>Function Summary</h2>\n\n");
 		division_act(DIV_FUNCTION, &print_code);
-		printf("<a name = \".%s\"><!-- --></a>"
+		printf("<a name = \"%s:\"><!-- --></a>"
 			"<h2>Function Details</h2>\n\n", division_strings[DIV_FUNCTION]);
-		division_act(DIV_FUNCTION, &print_all);
+		division_act(DIV_FUNCTION, &segment_print_all);
 	}
 	printf("\n"
 		"</body>\n"
