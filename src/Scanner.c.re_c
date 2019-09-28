@@ -243,7 +243,7 @@ scan:
 	<doc, math, em, param_item, param_more, anchor> "\\*""/" { return
 		fprintf(stderr, "%s: escape past end of documentation.\n", pos()),
 		errno = EILSEQ, END; }
-	<math, em, param_item, param_more, anchor> end_doc { return
+	<math, em, param_item, param_more, anchor, pre> end_doc { return
 		fprintf(stderr, "%s: unexpected end of documentation.\n", pos()),
 		errno = EILSEQ, END; }
 	<doc> end_doc { return scanner.state = yyccode, DOC_END; }
@@ -260,9 +260,18 @@ scan:
 	<math> "`" { return scanner.state = yycdoc, MATH_END; }
 	<doc> "~" { return NBSP; }
 	<doc> list { return LIST_ITEM; }
-	// fixme: dirty hack; how to get * on end? probably more complex.
-	<doc> "\\>" " "? @sub0 ( [^*\n\r\x00]* ("*" [^*/\n\r\x00])? )* @sub1
-		{ scanner.sub0 = sub0, scanner.sub1 = sub1; return PREFORMATTED; }
+	<doc> "\\\"" " "? / [^\n\r\x00] { scanner.state = yycpre; goto reset; }
+	<doc> "\\\"" " "? [\n\r\x00] { return
+		fprintf(stderr, "%s: preformatted cannot be empty.\n", pos()),
+		errno = EILSEQ, END; }
+	<pre> [^*\n\r\x00]+ / [\n\r\x00]
+		{ return scanner.state = yycdoc, PREFORMATTED; }
+	<pre> [^*\n\r\x00]+ / "*" { goto scan; }
+	<pre> "*"+ / [^/\n\r\x00] { goto scan; }
+	<pre> "*"+ / [\n\r] { return scanner.state = yycdoc, PREFORMATTED; }
+
+	//@sub0 ( [^*\n\r\x00]* ("*" [^*/\n\r\x00])? )* @sub1
+	//	{ scanner.sub0 = sub0, scanner.sub1 = sub1; return PREFORMATTED; }
 
 	// These are recognised in the documentation as stuff; parse them further
 	// using `sub`.
