@@ -11,7 +11,7 @@ Paragraph @ @a \,~~
  @title Foo `Bar`
  @depend C89
  
- Escapes. \\ \` \@ \_ \*  /// \\\`
+ Escapes. \\ \` \@ \_ \`
  lala \" preformated <http://foo.com/>*
  \"  
  \"pre***

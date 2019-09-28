@@ -33,9 +33,13 @@ static void state_to_para(void) {
 static void state_to_list(void) {
 	switch(ostate.in) {
 	case IN_DEFAUT: printf("<ul>%s<li>", ostate.sep); break;
-	case IN_PARA: printf("%s%s<ul>%s<li>", ostate.end, ostate.sep, ostate.sep);
+	case IN_PARA:
+		printf("%s%s<ul>%s<li>", ostate.end, ostate.sep, ostate.sep);
 		break;
-	case IN_LIST: printf("</li>%s<li>", ostate.sep); return;
+	case IN_LIST:
+		printf("</li>%s<li>", ostate.sep);
+		ostate.is_lazy_space = 0; /* Don't want lazy spaces between <li>. */
+		return;
 	case IN_PRE: printf("</pre>%s<ul>%s<li>", ostate.sep, ostate.sep);
 	}
 	ostate.in = IN_LIST;
@@ -52,7 +56,9 @@ static void state_to_pre(void) {
 static void state_from_default(void) {
 	switch(ostate.in) {
 	case IN_DEFAUT: state_to_para(); break;
-	case IN_PARA: if(ostate.is_lazy_space) { fputc(' ', stdout);
+	case IN_PARA:
+	case IN_LIST:
+		if(ostate.is_lazy_space) { fputc(' ', stdout);
 			ostate.is_lazy_space = 0; } break;
 	default: break;
 	}
@@ -64,6 +70,7 @@ static void state_reset(const char *const start,
 	ostate.level = 0;
 	ostate.is_sep_before = 0;
 	ostate.is_sep_forced = 0;
+	ostate.is_lazy_space = 0;
 	ostate.start = start;
 	ostate.end   = end;
 	ostate.sep   = sep;
