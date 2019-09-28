@@ -15,7 +15,7 @@ static void state_to_default(void) {
 	case IN_DEFAUT: return;
 	case IN_PARA: printf("%s", ostate.end); break;
 	case IN_LIST: printf("</li>%s</ul>", ostate.sep); break;
-	case IN_PRE: printf("</pre>"/*, ostate.sep*/); break;
+	case IN_PRE: printf("</pre>"); break;
 	}
 	ostate.in = IN_DEFAUT;
 	ostate.is_sep_forced = 1;
@@ -418,11 +418,10 @@ void ReportDebug(void) {
 	struct Segment *segment = 0;
 	struct Attribute *att = 0;
 	while((segment = SegmentArrayNext(&report, segment))) {
-		printf("Segment %s: %s;\n"
+		printf("Segment division %s:\n"
 			"code: %s;\n"
 			"params: %s;\n"
 			"doc: %s.\n",
-			segment->name,
 			divisions[segment->division],
 			TokenArrayToString(&segment->code),
 			SizeArrayToString(&segment->code_params),
@@ -606,7 +605,6 @@ static void print_all(const struct Segment *const segment) {
 	print_attribute_maybe(segment, ATT_DEPEND);
 	print_attribute_maybe(segment, ATT_FIXME);
 	print_attribute_maybe(segment, ATT_ALLOW); /* fixme */
-	printf("\n***/%s***\n\n", segment->name);
 }
 
 /** Prints preable segment's doc. */
@@ -628,6 +626,7 @@ static void preamble_print_all_content(void) {
 int ReportOut(void) {
 	/* We set `errno` here so that we don't have to test it each time. */
 	errno = 0;
+	/* fixme: how to set utf-8? */
 	printf("<!doctype html public \"-//W3C//DTD HTML 4.01//EN\" "
 		"\"http://www.w3.org/TR/html4/strict.dtd\">\n\n"
 		"<html>\n\n"
@@ -669,9 +668,9 @@ int ReportOut(void) {
 		printf("</h1>\n\n");
 	}
 	if(preamble_attribute_exists(ATT_AUTHOR)) {
-		printf("<h2>");
+		printf("<p>");
 		preamble_attribute_print(ATT_AUTHOR);
-		printf("</h2>\n\n");
+		printf("</p>\n\n");
 	}
 	printf("<ul>\n"
 		"\t<li><a href = \"#_preamble\">Preamble</li>\n");

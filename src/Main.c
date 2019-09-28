@@ -5,8 +5,8 @@
  compilation unit and extract documentation. This does not do any compiling,
  just very basic text-parsing.
  
- Documentation commands are `/``**[+]` and are ended with `*[+]/`, but not
- `/``*[+]*``/`; one can still use this as a code break. You can have an
+ Documentation commands are `/``**…` and are ended with `*…/`, but not
+ `/``*…*``/`; one can still use this as a code break. You can have an
  asterisk at the front, like Kernel comments, or asterisks all over like some
  crazy ASCII art.  All documentation goes at most two lines above what it
  documents or it's appended to the header. Multiple documentation on the same
@@ -22,7 +22,8 @@
     ambiguous;
  \* start lists with `[ ]\\*[ ]` and end with a new paragraph; these are
     simple, can be anywhere and don't nest;
- \* `\\" [?]` causes all the line after to be pre-formatted;
+ \* `\\"` (and optionally a space) causes all the line after to be
+    pre-formatted;
  \* `\\,` non-breaking thin space (U+202F HTML &#8239; for working with units);
  \* `\~` non-breaking space;
  \* \_emphasised\_: _emphasised_;
