@@ -263,7 +263,7 @@ OUT(see_fn) {
 	const struct Token *const fn = *ptoken;
 	assert(tokens && fn && fn->symbol == SEE_FN);
 	state_from_default();
-	printf("<a href = \"#%s:%.*s\">%.*s</a>", division_string[DIV_FUNCTION],
+	printf("<a href = \"#%s:%.*s\">%.*s</a>", division_strings[DIV_FUNCTION],
 		fn->length, fn->from, fn->length, fn->from);
 	*ptoken = TokenArrayNext(tokens, fn);
 	return 1;
@@ -272,7 +272,7 @@ OUT(see_tag) {
 	const struct Token *const tag = *ptoken;
 	assert(tokens && tag && tag->symbol == SEE_TAG);
 	state_from_default();
-	printf("<a href = \"#%s:%.*s\">%.*s</a>", division_string[DIV_TAG],
+	printf("<a href = \"#%s:%.*s\">%.*s</a>", division_strings[DIV_TAG],
 		tag->length, tag->from, tag->length, tag->from);
 	*ptoken = TokenArrayNext(tokens, tag);
 	return 1;
@@ -281,7 +281,7 @@ OUT(see_typedef) {
 	const struct Token *const def = *ptoken;
 	assert(tokens && def && def->symbol == SEE_TYPEDEF);
 	state_from_default();
-	printf("<a href = \"#%s:%.*s\">%.*s</a>", division_string[DIV_TYPEDEF],
+	printf("<a href = \"#%s:%.*s\">%.*s</a>", division_strings[DIV_TYPEDEF],
 		def->length, def->from, def->length, def->from);
 	*ptoken = TokenArrayNext(tokens, def);
 	return 1;
@@ -290,7 +290,7 @@ OUT(see_data) {
 	const struct Token *const data = *ptoken;
 	assert(tokens && data && data->symbol == SEE_DATA);
 	state_from_default();
-	printf("<a href = \"#%s:%.*s\">%.*s</a>", division_string[DIV_DATA],
+	printf("<a href = \"#%s:%.*s\">%.*s</a>", division_strings[DIV_DATA],
 		data->length, data->from, data->length, data->from);
 	*ptoken = TokenArrayNext(tokens, data);
 	return 1;
@@ -589,9 +589,9 @@ static void print_all(const struct Segment *const segment) {
 	/* The title is generally the first param. Only sigle-words. */
 	if((param = param_no(segment, 0))) {
 		state_reset("", "", "???");
-		printf("<a name = \"");
+		printf("<a name = \"%s:", division_strings[segment->division]);
 		token_print(&segment->code, param);
-		printf("\"><!-- --></a>");
+		printf("\"><!-- --></a>\n");
 		state_reset("<h3>", "</h3>", "???");
 		token_print(&segment->code, param);
 		state_to_default();
@@ -680,46 +680,52 @@ int ReportOut(void) {
 		printf("</p>\n\n");
 	}
 	printf("<ul>\n"
-		"\t<li><a href = \"#_preamble\">Preamble</li>\n");
+		"\t<li><a href = \"#.%s\">Preamble</li>\n",
+		division_strings[DIV_PREAMBLE]);
 	if(division_exists(DIV_TYPEDEF))
-		printf("\t<li><a href = \"#_typedefs\">Typedef Aliases</a></li>\n");
+		printf("\t<li><a href = \"#.%s\">Typedef Aliases</a></li>\n",
+		division_strings[DIV_TYPEDEF]);
 	if(division_exists(DIV_TAG))
-		printf("\t<li><a href = \"#_tags\">Struct, Union, and Enum Definitions"
-		"</a></li>\n");
+		printf("\t<li><a href = \"#.%s\">Struct, Union, and Enum Definitions"
+		"</a></li>\n", division_strings[DIV_TAG]);
 	if(division_exists(DIV_DATA))
-		printf("\t<li><a href = \"#_data\">Data Declarations</a></li>\n");
+		printf("\t<li><a href = \"#.%s\">Data Declarations</a></li>\n",
+		division_strings[DIV_DATA]);
 	if(division_exists(DIV_FUNCTION))
-		printf("\t<li><a href = \"#_summary\">Function Summary</a></li>\n"
-		"\t<li><a href = \"#_detail\">Function Details</a></li>\n");
-	printf("</ul>\n\n<a name = \"_preamble\"><!-- --></a>\n\n");
+		printf("\t<li><a href = \"#.summary\">Function Summary</a></li>\n"
+		"\t<li><a href = \"#.%s\">Function Details</a></li>\n",
+		division_strings[DIV_FUNCTION]);
+	printf("</ul>\n\n<a name = \".%s\"><!-- --></a>\n\n",
+		division_strings[DIV_PREAMBLE]);
 	/* Preamble contents. */
 	preamble_print_all_content();
 	printf("\n\n");
 	/* Print typedefs. */
 	if(division_exists(DIV_TYPEDEF)) {
-		printf("<a name = \"_typedefs\"><!-- --></a>"
-			"<h2>Typedef Aliases</h2>\n\n");
+		printf("<a name = \".%s\"><!-- --></a>"
+			"<h2>Typedef Aliases</h2>\n\n", division_strings[DIV_TYPEDEF]);
 		division_act(DIV_TYPEDEF, &print_all);
 	}
 	/* Print tags. */
 	if(division_exists(DIV_TAG)) {
-		printf("<a name = \"_tags\"><!-- --></a>"
-			"<h2>Struct, Union, and Enum Definitions</h2>\n\n");
+		printf("<a name = \".%s\"><!-- --></a>"
+			"<h2>Struct, Union, and Enum Definitions</h2>\n\n",
+			division_strings[DIV_TAG]);
 		division_act(DIV_TAG, &print_all);
 	}
 	/* Print general declarations. */
 	if(division_exists(DIV_DATA)) {
-		printf("<a name = \"_data\"><!-- --></a>"
-			"<h2>Data Delcarations</h2>\n\n");
+		printf("<a name = \".%s\"><!-- --></a>"
+			"<h2>Data Delcarations</h2>\n\n", division_strings[DIV_DATA]);
 		division_act(DIV_DATA, &print_all);
 	}
 	/* Print functions. */
 	if(division_exists(DIV_FUNCTION)) {
-		printf("<a name = \"_summary\"><!-- --></a>"
+		printf("<a name = \".summary\"><!-- --></a>"
 			"<h2>Function Summary</h2>\n\n");
 		division_act(DIV_FUNCTION, &print_code);
-		printf("<a name = \"_detail\"><!-- --></a>"
-			"<h2>Function Details</h2>\n\n");
+		printf("<a name = \".%s\"><!-- --></a>"
+			"<h2>Function Details</h2>\n\n", division_strings[DIV_FUNCTION]);
 		division_act(DIV_FUNCTION, &print_all);
 	}
 	printf("\n"

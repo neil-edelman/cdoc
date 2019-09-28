@@ -12,7 +12,7 @@
 /** Define the divisions of output; these go in separate sections, and follow
  namespaces. */
 enum Division { DIVISION(PARAM2A) };
-static const char *const division_string[] = { DIVISION(PARAM2B) };
+static const char *const division_strings[] = { DIVISION(PARAM2B) };
 static const char *const divisions[] = { DIVISION(STRINGISE2A) };
 
 #endif /* !div --> */
