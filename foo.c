@@ -12,7 +12,7 @@ Paragraph @ @a \,~~
  @depend C89
  
  Escapes. \\ \` \@ \_ \*  /// \\\`
- lala \"preformated <http://foo.com/> */
+ lala \>preformated <http://foo.com/>**/
 
 #include <assert.h>
 

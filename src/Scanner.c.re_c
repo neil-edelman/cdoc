@@ -152,8 +152,6 @@ page = ","? whitespace? (("pp" | "p") "."?)? whitespace?
 citation = author (authorsep author)* (closing etalia)? closing date page?;
 // Lists.
 list = " \\* ";
-// Math/code blocks. Added after; very meh. fixme: Create an environment.
-preformatted = "\\>" [^*\n\x00]*;
 */
 
 /** Scans. */
@@ -262,7 +260,9 @@ scan:
 	<math> "`" { return scanner.state = yycdoc, MATH_END; }
 	<doc> "~" { return NBSP; }
 	<doc> list { return LIST_ITEM; }
-	<doc> preformatted { return PREFORMATTED; } // fixme: have an environment.
+	// fixme: dirty hack; how to get * on end? probably more complex.
+	<doc> "\\>" " "? @sub0 ( [^*\n\r\x00]* ("*" [^*/\n\r\x00])? )* @sub1
+		{ scanner.sub0 = sub0, scanner.sub1 = sub1; return PREFORMATTED; }
 
 	// These are recognised in the documentation as stuff; parse them further
 	// using `sub`.
@@ -365,7 +365,7 @@ int Scanner(void) {
 	/* Scans all. */
 	errno = 0;
 	while((scanner.symbol = scan()) && ReportPlace())
-		fprintf(stderr, "%s.\n", pos()) /* <- spam! */;
+		/* fprintf(stderr, "%s.\n", pos()) <- spam! */;
 	if(errno) goto catch;
 	return 1;
 catch:

@@ -7,7 +7,7 @@ static const int symbol_rspaces[] = { SYMBOL(PARAM5E) };
 static struct {
 	int level;
 	enum { IN_DEFAUT, IN_PARA, IN_LIST, IN_PRE } in;
-	int is_sep_before, is_sep_forced, is_space;
+	int is_sep_before, is_sep_forced, is_lazy_space;
 	const char *start, *end, *sep;
 } ostate = { 0, IN_DEFAUT, 0, 0, 0, "{", "}", ", " };
 static void state_to_default(void) {
@@ -52,8 +52,8 @@ static void state_to_pre(void) {
 static void state_from_default(void) {
 	switch(ostate.in) {
 	case IN_DEFAUT: state_to_para(); break;
-	case IN_PARA: if(ostate.is_space) fputc(' ', stdout), ostate.is_space = 0;
-		break;
+	case IN_PARA: if(ostate.is_lazy_space) { fputc(' ', stdout);
+			ostate.is_lazy_space = 0; } break;
 	default: break;
 	}
 }
@@ -107,8 +107,7 @@ typedef int (*OutFn)(const struct TokenArray *const tokens,
 OUT(ws) {
 	const struct Token *const space = *ptoken;
 	assert(tokens && space && space->symbol == SPACE);
-	state_from_default();
-	ostate.is_space = 1;
+	ostate.is_lazy_space = 1;
 	*ptoken = TokenArrayNext(tokens, space);
 	return 1;
 }
