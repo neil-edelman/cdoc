@@ -295,6 +295,7 @@ scan:
 	<doc> "@implements" { return ATT_IMPLEMENTS; }
 	<doc> "@order"      { return ATT_ORDER; }
 	<doc> "@allow"      { return ATT_ALLOW; }
+	// fixme: @license?
 
 	// Parameter lists.
 	<param_begin> "[" { return scanner.state = yycparam_item, DOC_LEFT; }
