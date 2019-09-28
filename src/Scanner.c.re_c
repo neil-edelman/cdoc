@@ -264,14 +264,10 @@ scan:
 	<doc> "\\\"" " "? [\n\r\x00] { return
 		fprintf(stderr, "%s: preformatted cannot be empty.\n", pos()),
 		errno = EILSEQ, END; }
-	<pre> [^*\n\r\x00]+ / [\n\r\x00]
+	<pre> [^*\n\r\x00]+ | "*"+ / [\n\r\x00]
 		{ return scanner.state = yycdoc, PREFORMATTED; }
 	<pre> [^*\n\r\x00]+ / "*" { goto scan; }
 	<pre> "*"+ / [^/\n\r\x00] { goto scan; }
-	<pre> "*"+ / [\n\r] { return scanner.state = yycdoc, PREFORMATTED; }
-
-	//@sub0 ( [^*\n\r\x00]* ("*" [^*/\n\r\x00])? )* @sub1
-	//	{ scanner.sub0 = sub0, scanner.sub1 = sub1; return PREFORMATTED; }
 
 	// These are recognised in the documentation as stuff; parse them further
 	// using `sub`.
@@ -304,7 +300,7 @@ scan:
 	<doc> "@implements" { return ATT_IMPLEMENTS; }
 	<doc> "@order"      { return ATT_ORDER; }
 	<doc> "@allow"      { return ATT_ALLOW; }
-	// fixme: @license?
+	// fixme: @license? @since?
 
 	// Parameter lists.
 	<param_begin> "[" { return scanner.state = yycparam_item, DOC_LEFT; }

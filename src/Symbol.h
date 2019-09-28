@@ -1,9 +1,7 @@
 #ifndef SYMBOL_H /* <-- !sym */
 #define SYMBOL_H
 
-#ifndef PARAM5A
 #include "XMacro.h"
-#endif
 
 /* Define `Symbols` -- these are the numerical values given to a section of
  text. The format is
@@ -35,7 +33,7 @@
 	X(ELLIPSIS,   '.', &lit, 1, 1), \
 	X(ASSIGNMENT, '=', &lit, 1, 1), \
 	/* Each-block-tags; 2nd is '@' because we want them to have special
-	meaning. Non-printable, so it doesn't matter about the last few. */ \
+	 meaning. Non-printable, so it doesn't matter about the last few. */ \
 	X(ATT_TITLE,      '@', 0, 0, 0), \
 	X(ATT_PARAM,      '@', 0, 0, 0), \
 	X(ATT_AUTHOR,     '@', 0, 0, 0), \
@@ -48,7 +46,7 @@
 	X(ATT_ORDER,      '@', 0, 0, 0), \
 	X(ATT_ALLOW,      '@', 0, 0, 0), \
 	/* Documentation syntax; 2nd is '~' because it's documentation, it's just
-	comments as far as `C` is concerned. */ \
+	 comments as far as `C` is concerned. */ \
 	X(DOC_BEGIN, '~', 0, 0, 0), \
 	X(DOC_END,   '~', 0, 0, 0), \
 	X(WORD,      '~', &lit, 0, 0), \
@@ -58,7 +56,7 @@
 	X(NBTHINSP,  '~', &nbthinsp, 0, 0), \
 	X(ESCAPE,    '~', &escape, 0, 0), \
 	/* Like <http://foo.com/>, <Cite1999>, [Foo](http://foo.com),
-	![Foo](foo.png), <fn:foo>, _etc_. */ \
+	 ![Foo](foo.png), <fn:foo>, _etc_. */ \
 	X(URL,         '~', &url, 0, 0), \
 	X(CITE,        '~', &cite, 0, 0), \
 	X(LINK_START,  '~', &link, 0, 0), \
@@ -77,7 +75,7 @@
 	X(DOC_RIGHT,   '~', 0, 0, 0), \
 	X(DOC_ID,      '~', &lit, 0, 0), \
 	X(DOC_COMMA,   '~', &lit, 0, 0), \
-	/* List items. " -* " */ \
+	/* List items. */ \
 	X(LIST_ITEM,   '~', &list, 0, 0), \
 	/* Preformatted. */ \
 	X(PREFORMATTED, '~', &pre, 0, 0)

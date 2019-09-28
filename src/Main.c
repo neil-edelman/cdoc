@@ -15,26 +15,23 @@
  functions; everything else is automatically inserted into the preamble. The
  macro `A_B_(Foo,Bar)` is transformed into `<A>Foo<B>Bar`.
 
- This supports a stripped-down version of `Markdown` that is much stricter and
- simpler to parse. Embedded inline in the documentation,
+ This supports a stripped-down version of `Markdown` that is much stricter.
+ Embedded inline in the documentation,
 
- \* `\\` escapes these `\*\_\`\~\!\\\@\<\>\[\]` but one only needs it when
+ \* `\\` escapes these `\*\_\`\~\!\\\@\<\>\[\]` but one only needed when
     ambiguous;
- \* since we want our state to be as simple as possible and since Kernel
-    comments can have `*`, this causes problems with lists being started with
-    the same thing; start lists with `{ \\* }`; these are simple, can be
-    anywhere and don't nest;
- \* `\\>` causes all the line after `\\>` to be pre-formatted, (except `*`
-    ends, for checking if the comment is ended); fixme;
+ \* start lists with `[ ]\\*[ ]` and end with a new paragraph; these are
+    simple, can be anywhere and don't nest;
+ \* `\\" [?]` causes all the line after to be pre-formatted;
  \* `\\,` non-breaking thin space (U+202F HTML &#8239; for working with units);
- \* \~ non-breaking space;
+ \* `\~` non-breaking space;
  \* \_emphasised\_: _emphasised_;
  \* \`code/math\`: `code/math`;
  \* `\<url\>`: supports absolute URIs; relative URIs must have a slash or a dot
     to distinguish it;
  \* `\<Source, 1999, pp. 1-2\>`: citation;
  \* `\<fn:\<function\>\>`: function reference;
- \* `\<tag:\<struct|union|enum\>\>`: tag reference;
+ \* `\<tag:\<tag\>\>`: struct, union, or enum (tag) reference;
  \* `\<typedef:\<typedef\>\>`: typedef reference;
  \* `\<data:\<identifier\>\>`: data reference;
  \* `\[The link text\](url)`: link;
@@ -62,10 +59,13 @@
  \* and `\@allow`, the latter being to allow `static` functions or data in the
     documentation, which are usually culled.
 
- Differences in `Markdown` from `Doxygen`,
+ Strict regular expressions that are much easier to parse have limited state
+ and thus no notion of contextual position; as a result, tokens can be
+ anywhere. Differences in `Markdown` from `Doxygen`,
 
  \* no headers;
- \* no block quotes `> `, instead, this is pre-formatted; no four-spaces;
+ \* no block-quotes `> `;
+ \* no four spaces or tab; use `\\"` for preformatted;
  \* no lists with `*`, `+`, numbered, or multi-level;
  \* no horizontal rules;
  \* no emphasis by `*`, `**`, `\_\_`, bold;
@@ -77,8 +77,7 @@
  \* no HTML blocks;
  \* no `/``*!`, `///`, `//!`;
  \* no `\\brief`;
- \* `/``*!<`, `/``**<`, `//!<`, `///<`: not needed; automatically
-    concatenates;
+ \* `/``*!<`, `/``**<`, `//!<`, `///<`: not needed; automatically concatenates;
  \* no `[in]`, `[out]`, one should be able to tell from `const`;
  \* no `\\param c1` or `\@param a` -- this probably is the most departure from
     normal documentation generators, but it's confusing having the text and the

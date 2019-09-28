@@ -380,6 +380,18 @@ static int keep_segment(const struct Segment *const s) {
 	return 0;
 }
 
+/** Provides a default token for `segment` to print. */
+static const struct Token *segment_fallback(const struct Segment *const segment)
+{
+	assert(segment);
+	return SizeArraySize(&segment->code_params)
+		? TokenArrayGet(&segment->code) + SizeArrayGet(&segment->code_params)[0]
+		: TokenArraySize(&segment->code) ? TokenArrayGet(&segment->code)
+		: TokenArraySize(&segment->doc) ? TokenArrayGet(&segment->doc)
+		: AttributeArraySize(&segment->attributes)
+		? &AttributeArrayGet(&segment->attributes)->token : 0;
+}
+
 /** Keeps only the stuff we care about; discards no docs except fn and `static`
  if not `@allow`. */
 void ReportCull(void) {

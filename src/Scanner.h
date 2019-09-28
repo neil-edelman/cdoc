@@ -1,8 +1,5 @@
 #include <stddef.h> /* size_t */
-
-#ifndef SYMBOL_H
 #include "Symbol.h" /* enum Symbol */
-#endif
 
 void Scanner_(void);
 int Scanner(void);

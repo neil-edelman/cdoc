@@ -1,15 +1,18 @@
 #ifndef DIVISION_H /* <-- !div */
 #define DIVISION_H
 
-#ifndef PARAM
 #include "XMacro.h"
-#endif
 
-#define DIVISION(X) X(DIV_PREAMBLE), X(DIV_FUNCTION), X(DIV_TAG), \
-	X(DIV_TYPEDEF), X(DIV_DATA)
+#define DIVISION(X) \
+	X(DIV_PREAMBLE, "preamble"), \
+	X(DIV_FUNCTION, "fn"), \
+	X(DIV_TAG,      "tag"), \
+	X(DIV_TYPEDEF,  "typedef"), \
+	X(DIV_DATA,     "data")
 /** Define the divisions of output; these go in separate sections, and follow
  namespaces. */
-enum Division { DIVISION(PARAM) };
-static const char *const divisions[] = { DIVISION(STRINGISE) };
+enum Division { DIVISION(PARAM2A) };
+static const char *const division_string[] = { DIVISION(PARAM2B) };
+static const char *const divisions[] = { DIVISION(STRINGISE2A) };
 
 #endif /* !div --> */

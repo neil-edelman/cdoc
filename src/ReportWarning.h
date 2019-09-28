@@ -94,17 +94,9 @@ static void unused_attribute(const struct AttributeArray *const attributes,
 }
 
 static void warn_segment(const struct Segment *const segment) {
-	const size_t doc_size = TokenArraySize(&segment->doc),
-		code_size = TokenArraySize(&segment->code),
-		attribute_size = AttributeArraySize(&segment->attributes);
 	struct Attribute *attribute;
 	const size_t *code_param;
-	const struct Token *const fallback = SizeArraySize(&segment->code_params)
-		? TokenArrayGet(&segment->code)
-		+ SizeArrayGet(&segment->code_params)[0] : code_size
-		? TokenArrayGet(&segment->code) : doc_size
-		? TokenArrayGet(&segment->doc) : attribute_size
-		? &AttributeArrayGet(&segment->attributes)->token : 0;
+	const struct Token *const fallback = segment_fallback(segment);
 	assert(segment);
 	/* Check for empty (or full, as the case may be) attributes. */
 	attribute = 0;
@@ -116,10 +108,12 @@ static void warn_segment(const struct Segment *const segment) {
 	case DIV_FUNCTION:
 		/* Check for code. This one will never be triggered unless one fiddles
 		 with the parser. */
-		if(!code_size)
+		if(!TokenArraySize(&segment->code))
 			fprintf(stderr, "%s: function with no code?\n", pos(fallback));
 		/* Check for public methods without documentation. */
-		if(!doc_size && !attribute_size && !is_static(&segment->code))
+		if(!TokenArraySize(&segment->doc)
+			&& !AttributeArraySize(&segment->attributes)
+			&& !is_static(&segment->code))
 			fprintf(stderr, "%s: no documentation.\n", pos(fallback));
 		/* No function title? */
 		if(SizeArraySize(&segment->code_params) < 1) fprintf(stderr,

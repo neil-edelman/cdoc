@@ -256,34 +256,34 @@ OUT(see_fn) {
 	const struct Token *const fn = *ptoken;
 	assert(tokens && fn && fn->symbol == SEE_FN);
 	state_from_default();
-	printf("<a href = \"#fn:%.*s\">%.*s</a>",
+	printf("<a href = \"#%s:%.*s\">%.*s</a>", division_string[DIV_FUNCTION],
 		fn->length, fn->from, fn->length, fn->from);
 	*ptoken = TokenArrayNext(tokens, fn);
 	return 1;
 }
 OUT(see_tag) {
 	const struct Token *const tag = *ptoken;
-	assert(tokens && tag && tag->symbol == SEE_FN);
+	assert(tokens && tag && tag->symbol == SEE_TAG);
 	state_from_default();
-	printf("<a href = \"#tag:%.*s\">%.*s</a>",
+	printf("<a href = \"#%s:%.*s\">%.*s</a>", division_string[DIV_TAG],
 		tag->length, tag->from, tag->length, tag->from);
 	*ptoken = TokenArrayNext(tokens, tag);
 	return 1;
 }
 OUT(see_typedef) {
 	const struct Token *const def = *ptoken;
-	assert(tokens && def && def->symbol == SEE_FN);
+	assert(tokens && def && def->symbol == SEE_TYPEDEF);
 	state_from_default();
-	printf("<a href = \"#typedef:%.*s\">%.*s</a>",
+	printf("<a href = \"#%s:%.*s\">%.*s</a>", division_string[DIV_TYPEDEF],
 		def->length, def->from, def->length, def->from);
 	*ptoken = TokenArrayNext(tokens, def);
 	return 1;
 }
 OUT(see_data) {
 	const struct Token *const data = *ptoken;
-	assert(tokens && data && data->symbol == SEE_FN);
+	assert(tokens && data && data->symbol == SEE_DATA);
 	state_from_default();
-	printf("<a href = \"#data:%.*s\">%.*s</a>",
+	printf("<a href = \"#%s:%.*s\">%.*s</a>", division_string[DIV_DATA],
 		data->length, data->from, data->length, data->from);
 	*ptoken = TokenArrayNext(tokens, data);
 	return 1;
@@ -384,14 +384,8 @@ static const struct Token *token_print(const struct TokenArray *const tokens,
 	const struct Token *token) {
 	const OutFn sym_out = symbol_outs[token->symbol];
 	assert(tokens && token);
-	if(!sym_out) return printf("[undefined token: %s]", symbols[token->symbol]),
-		TokenArrayNext(tokens, token);
-	{
-		const struct TokenArray *ts = tokens;
-		const struct Token *t = 0;
-		while((t = TokenArrayNext(ts, t)) && t != token);
-		assert(t);
-	}
+	if(!sym_out) return fprintf(stderr, "%s: symbol output undefined.\n",
+		pos(token)), TokenArrayNext(tokens, token);
 	if(!sym_out(tokens, &token)) { errno = EILSEQ; return 0; }
 	return token;
 }
@@ -586,15 +580,17 @@ static void print_code(const struct Segment *const segment) {
 static void print_all(const struct Segment *const segment) {
 	const struct Token *param;
 	size_t no;
-	/* This is the title, the rest are params. */
-	printf("***%s %s***<h3>", divisions[segment->division], segment->name);
-	/* The title is generally the first param. */
+	/* The title is generally the first param. Only sigle-words. */
 	if((param = param_no(segment, 0))) {
+		state_reset("", "", "???");
+		printf("<a name = \"");
 		token_print(&segment->code, param);
-	} else {
-		printf("no params");
+		printf("\"><!-- --></a>");
+		state_reset("<h3>", "</h3>", "???");
+		token_print(&segment->code, param);
+		state_to_default();
+		printf("\n\n");
 	}
-	printf("</h3>\n");
 	print_code(segment);
 	state_reset("<p>", "</p>", "\n\n");
 	tokens_print(&segment->doc, 0);
@@ -623,6 +619,7 @@ static void preamble_print_all_content(void) {
 		state_to_default();
 	}
 	printf("\n\nAlso print attributes.\n\n");
+	/* fixme: also print fn attributes for @since @std @depend, _etc_. */
 }
 
 /** Outputs a report.
@@ -713,10 +710,10 @@ int ReportOut(void) {
 	/* Print functions. */
 	if(division_exists(DIV_FUNCTION)) {
 		printf("<a name = \"_summary\"><!-- --></a>"
-			   "<h2>Function Summary</h2>\n\n");
+			"<h2>Function Summary</h2>\n\n");
 		division_act(DIV_FUNCTION, &print_code);
 		printf("<a name = \"_detail\"><!-- --></a>"
-			   "<h2>Function Details</h2>\n\n");
+			"<h2>Function Details</h2>\n\n");
 		division_act(DIV_FUNCTION, &print_all);
 	}
 	printf("\n"
