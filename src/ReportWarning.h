@@ -208,5 +208,7 @@ void ReportWarn(void) {
 	struct Segment *segment = 0;
 	while((segment = SegmentArrayNext(&report, segment)))
 		warn_segment(segment);
-	/* fixme: warn if segments with the same data have the same name? */
+	/* fixme: warn if segments with the same data have the same name? meh. */
+	/* fixme: warn if text elements have undifined references (to fn, typedef,
+	 data.) */
 }
