@@ -677,17 +677,17 @@ int ReportOut(void) {
 		printf("</h2>\n\n");
 	}
 	printf("<ul>\n"
-		"\t<li><a href = \"#_preamble\">preamble</li>\n");
+		"\t<li><a href = \"#_preamble\">Preamble</li>\n");
 	if(division_exists(DIV_TYPEDEF))
-		printf("\t<li><a href = \"#_typedefs\">typedef aliases</a></li>\n");
+		printf("\t<li><a href = \"#_typedefs\">Typedef Aliases</a></li>\n");
 	if(division_exists(DIV_TAG))
-		printf("\t<li><a href = \"#_tags\">struct, union, and enum definitions"
+		printf("\t<li><a href = \"#_tags\">Struct, Union, and Enum Definitions"
 		"</a></li>\n");
 	if(division_exists(DIV_DATA))
-		printf("\t<li><a href = \"#_data\">data declarations</a></li>\n");
+		printf("\t<li><a href = \"#_data\">Data Declarations</a></li>\n");
 	if(division_exists(DIV_FUNCTION))
-		printf("\t<li><a href = \"#_summary\">function summary</a></li>\n"
-		"\t<li><a href = \"#_detail\">function details</a></li>\n");
+		printf("\t<li><a href = \"#_summary\">Function Summary</a></li>\n"
+		"\t<li><a href = \"#_detail\">Function Details</a></li>\n");
 	printf("</ul>\n\n<a name = \"_preamble\"><!-- --></a>\n\n");
 	/* Preamble contents. */
 	preamble_print_all_content();
@@ -695,7 +695,7 @@ int ReportOut(void) {
 	/* Print typedefs. */
 	if(division_exists(DIV_TYPEDEF)) {
 		printf("<a name = \"_typedefs\"><!-- --></a>"
-			"<h2>Typedef Definitions</h2>\n\n");
+			"<h2>Typedef Aliases</h2>\n\n");
 		division_act(DIV_TYPEDEF, &print_all);
 	}
 	/* Print tags. */
@@ -716,7 +716,7 @@ int ReportOut(void) {
 			   "<h2>Function Summary</h2>\n\n");
 		division_act(DIV_FUNCTION, &print_code);
 		printf("<a name = \"_detail\"><!-- --></a>"
-			   "<h2>Function Detail</h2>\n\n");
+			   "<h2>Function Details</h2>\n\n");
 		division_act(DIV_FUNCTION, &print_all);
 	}
 	printf("\n"
