@@ -587,14 +587,14 @@ static void print_all(const struct Segment *const segment) {
 	const struct Token *param;
 	size_t no;
 	/* This is the title, the rest are params. */
-	printf("<%s %s><h2>", divisions[segment->division], segment->name);
+	printf("***%s %s***<h3>", divisions[segment->division], segment->name);
 	/* The title is generally the first param. */
 	if((param = param_no(segment, 0))) {
 		token_print(&segment->code, param);
 	} else {
 		printf("no params");
 	}
-	printf("</h2>\n");
+	printf("</h3>\n");
 	print_code(segment);
 	state_reset("<p>", "</p>", "\n\n");
 	tokens_print(&segment->doc, 0);
@@ -610,7 +610,7 @@ static void print_all(const struct Segment *const segment) {
 	print_attribute_maybe(segment, ATT_DEPEND);
 	print_attribute_maybe(segment, ATT_FIXME);
 	print_attribute_maybe(segment, ATT_ALLOW); /* fixme */
-	printf("\n</%s>\n\n", segment->name);
+	printf("\n***/%s***\n\n", segment->name);
 }
 
 /** Prints preable segment's doc. */
@@ -679,7 +679,7 @@ int ReportOut(void) {
 	printf("<ul>\n"
 		"\t<li><a href = \"#_preamble\">preamble</li>\n");
 	if(division_exists(DIV_TYPEDEF))
-		printf("\t<li><a href = \"#_typedefs\">typedef definitions</a></li>\n");
+		printf("\t<li><a href = \"#_typedefs\">typedef aliases</a></li>\n");
 	if(division_exists(DIV_TAG))
 		printf("\t<li><a href = \"#_tags\">struct, union, and enum definitions"
 		"</a></li>\n");
