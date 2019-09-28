@@ -497,11 +497,11 @@ static int attribute_header_exists(const struct Segment *const segment,
 
 /** Seaches if attribute `symbol` exists within all `division` segments.
  @order O(`segments` * `attributes`) */
-static int div_attribute_exists(const enum Division division,
+static int div_attribute_exists(const enum Division flags,
 	const enum Symbol symbol) {
 	struct Segment *segment = 0;
 	while((segment = SegmentArrayNext(&report, segment))) {
-		if(segment->division != division) continue;
+		if(!(flags & segment->division)) continue;
 		if(attribute_content_exists(segment, symbol)) return 1;
 	}
 	return 0;

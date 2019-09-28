@@ -195,6 +195,8 @@ static void warn_segment(const struct Segment *const segment) {
 		if(!is_static(&segment->code))
 			unused_attribute(&segment->attributes, ATT_ALLOW);
 		break;
+	default:
+		assert((fprintf(stderr, "Can not happen.\n"), 0));
 	}
 }
 
