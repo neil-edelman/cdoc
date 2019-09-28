@@ -106,7 +106,8 @@
  @fixme Trigraph support, (haha.)
  @fixme Old-style function support.
  @fixme `re2c` appends a comma at the end of the enumeration list, not
- compliant with C90. */
+ compliant with C90.
+ @fixme Hide const on params when it can not affect function calls. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */

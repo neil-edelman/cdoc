@@ -495,12 +495,13 @@ static int attribute_header_exists(const struct Segment *const segment,
 	return 0;
 }
 
-/** Seaches if attribute `symbol` exists within all preamble segments.
+/** Seaches if attribute `symbol` exists within all `division` segments.
  @order O(`segments` * `attributes`) */
-static int preamble_attribute_exists(const enum Symbol symbol) {
+static int div_attribute_exists(const enum Division division,
+	const enum Symbol symbol) {
 	struct Segment *segment = 0;
 	while((segment = SegmentArrayNext(&report, segment))) {
-		if(segment->division != DIV_PREAMBLE) continue;
+		if(segment->division != division) continue;
 		if(attribute_content_exists(segment, symbol)) return 1;
 	}
 	return 0;
@@ -539,13 +540,14 @@ static void attribute_header_print(const struct Segment *const segment,
 	}
 }
 
-/** For each preamble segment, print all attributes that match `symbol`.
+/** For each `division` segment, print all attributes that match `symbol`.
  @order O(`segments` * `attributes`) */
-static void preamble_attribute_print(const enum Symbol symbol) {
+static void div_attribute_print(const enum Division division,
+	const enum Symbol symbol) {
 	struct Segment *segment = 0;
 	state_reset("", "", ", ");
 	while((segment = SegmentArrayNext(&report, segment))) {
-		if(segment->division != DIV_PREAMBLE) continue;
+		if(segment->division != division) continue;
 		attribute_print(segment, symbol);
 		state_to_default();
 	}
@@ -574,11 +576,11 @@ static void print_attribute_header_maybe(const struct Segment *const segment,
 /** Prints only the code of a `segment`.
  @implements division_act */
 static void print_code(const struct Segment *const segment) {
-	state_reset("{", "}", ", ");
-	printf("<print code>");
+	state_reset("", "", "&nbsp;");
+	printf("<!-- code --><pre>");
 	tokens_print(&segment->code, &segment->code_params);
 	state_to_default();
-	printf("\n\n");
+	printf("</pre>\n\n");
 }
 
 /** Prints all a `segment`.
@@ -611,6 +613,7 @@ static void print_all(const struct Segment *const segment) {
 	print_attribute_maybe(segment, ATT_STD);
 	print_attribute_maybe(segment, ATT_DEPEND);
 	print_attribute_maybe(segment, ATT_FIXME);
+	print_attribute_maybe(segment, ATT_LICENSE);
 	print_attribute_maybe(segment, ATT_ALLOW); /* fixme */
 }
 
@@ -631,7 +634,7 @@ static void preamble_print_all_content(void) {
  @throws[EILSEQ] Sequence error.
  @return Success. */
 int ReportOut(void) {
-	/* We set `errno` here so that we don't have to test it each time. */
+	/* We set `errno` here so that we don't have to test output each time. */
 	errno = 0;
 	/* fixme: how to set utf-8? */
 	printf("<!doctype html public \"-//W3C//DTD HTML 4.01//EN\" "
@@ -661,26 +664,27 @@ int ReportOut(void) {
 		"\t}\n"
 		"</style>\n"
 		"<title>");
-	if(preamble_attribute_exists(ATT_TITLE)) {
-		preamble_attribute_print(ATT_TITLE);
+	if(div_attribute_exists(DIV_PREAMBLE, ATT_TITLE)) {
+		div_attribute_print(DIV_PREAMBLE, ATT_TITLE);
 	} else {
 		printf("Untitled");
 	}
 	printf("</title>\n"
 		"</head>\n\n\n"
 		"<body>\n\n");
-	if(preamble_attribute_exists(ATT_TITLE)) {
+	if(div_attribute_exists(DIV_PREAMBLE, ATT_TITLE)) {
 		printf("<h1>");
-		preamble_attribute_print(ATT_TITLE);
+		div_attribute_print(DIV_PREAMBLE, ATT_TITLE);
 		printf("</h1>\n\n");
 	}
-	if(preamble_attribute_exists(ATT_AUTHOR)) {
+	if(div_attribute_exists(DIV_PREAMBLE, ATT_AUTHOR)) {
 		printf("<p>");
-		preamble_attribute_print(ATT_AUTHOR);
+		div_attribute_print(DIV_PREAMBLE, ATT_AUTHOR);
 		printf("</p>\n\n");
 	}
-	printf("<ul>\n"
-		"\t<li><a href = \"#.%s\">Preamble</li>\n",
+	printf("<ul>\n");
+	/* fixme: license! */
+	printf("\t<li><a href = \"#.%s\">Preamble</li>\n",
 		division_strings[DIV_PREAMBLE]);
 	if(division_exists(DIV_TYPEDEF))
 		printf("\t<li><a href = \"#.%s\">Typedef Aliases</a></li>\n",

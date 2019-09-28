@@ -300,7 +300,8 @@ scan:
 	<doc> "@implements" { return ATT_IMPLEMENTS; }
 	<doc> "@order"      { return ATT_ORDER; }
 	<doc> "@allow"      { return ATT_ALLOW; }
-	// fixme: @license? @since?
+	<doc> "@license"    { return ATT_LICENSE; }
+	// fixme: have date_begin @since[], @updated[], maybe updated is bad.
 
 	// Parameter lists.
 	<param_begin> "[" { return scanner.state = yycparam_item, DOC_LEFT; }
