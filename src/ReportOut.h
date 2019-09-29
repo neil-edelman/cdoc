@@ -673,6 +673,8 @@ int ReportOut(void) {
 		"\"http://www.w3.org/TR/html4/strict.dtd\">\n\n"
 		"<html>\n\n"
 		"<head>\n"
+		"<meta http-equiv = \"Content-Type\""
+		" content = \"text/html;charset=UTF-8\">\n"
 		"<!-- Steal these colour values from JavaDocs. -->\n"
 		"<style type = \"text/css\">\n"
 		"\ta:link,  a:visited { color: #4a6782; }\n"
@@ -681,11 +683,11 @@ int ReportOut(void) {
 		"\ttr:nth-child(even) { background: #dee3e9; }\n"
 		"\tdiv {\n"
 		"\t\tmargin:  4px 0;\n"
-		"\t\tpadding: 0 4px 4px 4px;\n"
-		"\t}\n"
+		"\t\tpadding: 0 4px 4px 4px;\n");
+	printf("\t}\n"
 		"\ttable      { width: 100%%; }\n"
-		"\ttd         { padding: 4px; }\n");
-	printf("\th3, h1 {\n"
+		"\ttd         { padding: 4px; }\n"
+		"\th3, h1 {\n"
 		"\t\tcolor: #2c4557;\n"
 		"\t\tbackground-color: #dee3e9;\n"
 		"\t\tpadding:          4px;\n"
@@ -716,11 +718,9 @@ int ReportOut(void) {
 	}
 
 	printf("<ul>\n");
-	if(division_attribute_exists(DIV_PREAMBLE, ATT_LICENSE))
-		printf("\t<li><a href = \"#license:\">License</a></li>\n");
+	printf("\t<li><a href = \"#summary:\">Summary</a></li>\n");
 	printf("\t<li><a href = \"#%s:\">Preamble</li>\n",
 		division_strings[DIV_PREAMBLE]);
-	/*printf("\t<li><a href = \"#summary:\">Summary</a></li>\n");*/
 	if(division_exists(DIV_TYPEDEF))
 		printf("\t<li><a href = \"#%s:\">Typedef Aliases</a></li>\n",
 		division_strings[DIV_TYPEDEF]);
@@ -728,56 +728,87 @@ int ReportOut(void) {
 		printf("\t<li><a href = \"#%s:\">Struct, Union, and Enum Definitions"
 		"</a></li>\n", division_strings[DIV_TAG]);
 	if(division_exists(DIV_DATA))
-		printf("\t<li><a href = \"#%s:\">Data Declarations</a></li>\n",
+		printf("\t<li><a href = \"#%s:\">Data Definitions</a></li>\n",
 		division_strings[DIV_DATA]);
 	if(division_exists(DIV_FUNCTION))
-		printf("\t<li><a href = \"#summary:\">Function Summary</a></li>\n"
-		"\t<li><a href = \"#%s:\">Function Details</a></li>\n",
+		printf( "\t<li><a href = \"#%s:\">Function Definitions</a></li>\n",
 		division_strings[DIV_FUNCTION]);
+	if(division_attribute_exists(DIV_PREAMBLE, ATT_LICENSE))
+		printf("\t<li><a href = \"#license:\">License</a></li>\n");
 	printf("</ul>\n\n");
 
-	/* License. */
-	if(division_attribute_exists(DIV_PREAMBLE, ATT_LICENSE)) {
-		printf("<a name = \"license:\"><!-- --></a>\n"
-			"<h2>License</h2>\n\n");
-		reset_state("<p>", "</p>", "\n\n");
-		division_attribute_act(DIV_PREAMBLE, ATT_LICENSE, &print_tokens);
-		state_to_default();
-		printf("\n\n");
-	}
-
-	/* Preamble contents. */
-	printf("<a name = \"%s:\"><!-- --></a>\n"
-		"<h2>Preamble</h2>\n\n",
-		division_strings[DIV_PREAMBLE]);
-	preamble_print_all_content();
-	printf("\n\n");
-	/* Print typedefs. */
+	/* Print summary. */
+	printf("<a name = \"summary:\"><!-- --></a>\n"
+		   "<h2>Summary</h2>\n\n");
+	reset_state("", "", " ");
 	if(division_exists(DIV_TYPEDEF)) {
-		printf("<a name = \"%s:\"><!-- --></a>\n"
-			"<h2>Typedef Aliases</h2>\n\n", division_strings[DIV_TYPEDEF]);
-		division_act(DIV_TYPEDEF, &segment_print_all);
+		const struct Segment *segment = 0;
+		printf("<table>\n\n"
+			"<tr><th>Typedef Alias</th><th>Full</th></tr>\n\n");
+		while((segment = SegmentArrayNext(&report, segment))) {
+			size_t *idxs;
+			struct Token *params;
+			if(segment->division != DIV_TYPEDEF
+				|| !SizeArraySize(&segment->code_params)) continue;
+			idxs = SizeArrayGet(&segment->code_params);
+			params = TokenArrayGet(&segment->code);
+			assert(idxs[0] < TokenArraySize(&segment->code));
+			printf("<tr><td><a href = \"#%s:", division_strings[DIV_TYPEDEF]);
+			print_token(&segment->code, params + idxs[0]);
+			printf("\">");
+			print_token(&segment->code, params + idxs[0]);
+			printf("</a></td><td>");
+			/* fixme: typedef should not be there. */
+			print_tokens(&segment->code);
+			printf("</td></tr>\n\n");
+		}
+		printf("</table>\n\n");
 	}
-	/* Print tags. */
 	if(division_exists(DIV_TAG)) {
-		printf("<a name = \"%s:\"><!-- --></a>\n"
-			"<h2>Struct, Union, and Enum Definitions</h2>\n\n",
-			division_strings[DIV_TAG]);
-		division_act(DIV_TAG, &segment_print_all);
+		const struct Segment *segment = 0;
+		printf("<table>\n\n"
+			"<tr><th>Struct, Union, or Enum</th></tr>\n\n");
+		while((segment = SegmentArrayNext(&report, segment))) {
+			size_t *idxs;
+			struct Token *params;
+			if(segment->division != DIV_TAG
+				|| !SizeArraySize(&segment->code_params)) continue;
+			idxs = SizeArrayGet(&segment->code_params);
+			params = TokenArrayGet(&segment->code);
+			assert(idxs[0] < TokenArraySize(&segment->code));
+			/* fixme: tag type? */
+			printf("<tr><td><a href = \"#%s:", division_strings[DIV_TAG]);
+			print_token(&segment->code, params + idxs[0]);
+			printf("\">");
+			print_token(&segment->code, params + idxs[0]);
+			printf("</a></td></tr>\n\n");
+		}
+		printf("</table>\n\n");
 	}
-	/* Print general declarations. */
 	if(division_exists(DIV_DATA)) {
-		printf("<a name = \"%s:\"><!-- --></a>\n"
-			"<h2>Data Delcarations</h2>\n\n", division_strings[DIV_DATA]);
-		division_act(DIV_DATA, &segment_print_all);
+		const struct Segment *segment = 0;
+		printf("<table>\n\n"
+			"<tr><th>General Declarations</th></tr>\n\n");
+		while((segment = SegmentArrayNext(&report, segment))) {
+			size_t *idxs;
+			struct Token *params;
+			if(segment->division != DIV_DATA
+			   || !SizeArraySize(&segment->code_params)) continue;
+			idxs = SizeArrayGet(&segment->code_params);
+			params = TokenArrayGet(&segment->code);
+			assert(idxs[0] < TokenArraySize(&segment->code));
+			/* fixme: data type? */
+			printf("<tr><td><a href = \"#%s:", division_strings[DIV_DATA]);
+			print_token(&segment->code, params + idxs[0]);
+			printf("\">");
+			print_token(&segment->code, params + idxs[0]);
+			printf("</a></td></tr>\n\n");
+		}
+		printf("</table>\n\n");
 	}
-	/* Print functions. */
 	if(division_exists(DIV_FUNCTION)) {
 		const struct Segment *segment = 0;
-		reset_state("", "", "");
-		printf("<a name = \"summary:\"><!-- --></a>\n"
-			"<h2>Function Summary</h2>\n\n"
-			"<table>\n\n"
+		printf("<table>\n\n"
 			"<tr><th>Return Type</th><th>Function Name</th>"
 			"<th>Argument List</th></tr>\n\n");
 		while((segment = SegmentArrayNext(&report, segment))) {
@@ -789,6 +820,7 @@ int ReportOut(void) {
 			params = TokenArrayGet(&segment->code);
 			paramn = TokenArraySize(&segment->code);
 			assert(idxs[0] < paramn);
+			/* fixme: hard! */
 			printf("<tr><td>donno</td><td><a href = \"#%s:",
 				division_strings[DIV_FUNCTION]);
 			print_token(&segment->code, params + idxs[0]);
@@ -803,12 +835,51 @@ int ReportOut(void) {
 			printf("</td></tr>\n\n");
 		}
 		printf("</table>\n\n");
-		printf("<a name = \"%s:\"><!-- --></a>\n"
-			"<h2>Function Details</h2>\n\n", division_strings[DIV_FUNCTION]);
+	}
+	
+	/* Preamble contents. */
+	printf("<a name = \"%s:\"><!-- --></a>\n"
+		"<h2>Preamble</h2>\n\n",
+		division_strings[DIV_PREAMBLE]);
+	preamble_print_all_content();
+	printf("\n\n");
+
+	/* Print typedefs. */
+	if(division_exists(DIV_TYPEDEF)) {
+		printf("<a name = \"%s:\"><!-- --></a>"
+			"<h2>Typedef Aliases</h2>\n\n", division_strings[DIV_TYPEDEF]);
+		division_act(DIV_TYPEDEF, &segment_print_all);
+	}
+	/* Print tags. */
+	if(division_exists(DIV_TAG)) {
+		printf("<a name = \"%s:\"><!-- --></a>"
+			"<h2>Struct, Union, and Enum Definitions</h2>\n\n",
+			division_strings[DIV_TAG]);
+		division_act(DIV_TAG, &segment_print_all);
+	}
+	/* Print general declarations. */
+	if(division_exists(DIV_DATA)) {
+		printf("<a name = \"%s:\"><!-- --></a>"
+			"<h2>General Definitions</h2>\n\n", division_strings[DIV_DATA]);
+		division_act(DIV_DATA, &segment_print_all);
+	}
+	/* Print functions. */
+	if(division_exists(DIV_FUNCTION)) {
+		printf("<a name = \"%s:\"><!-- --></a>"
+			"<h2>Function Definitions</h2>\n\n",
+			division_strings[DIV_FUNCTION]);
 		division_act(DIV_FUNCTION, &segment_print_all);
 	}
-	printf("\n"
-		"</body>\n"
+	/* License. */
+	if(division_attribute_exists(DIV_PREAMBLE, ATT_LICENSE)) {
+		printf("<a name = \"license:\"><!-- --></a>\n"
+			"<h2>License</h2>\n\n");
+		reset_state("<p>", "</p>", "\n\n");
+		division_attribute_act(DIV_PREAMBLE, ATT_LICENSE, &print_tokens);
+		state_to_default();
+		printf("\n\n");
+	}
+	printf("</body>\n"
 		"</html>\n");
 	return errno ? 0 : 1;
 }
