@@ -22,9 +22,10 @@ static int attribute_okay(const struct Attribute *const attribute) {
 		case ATT_FIXME:
 		case ATT_RETURN:
 		case ATT_IMPLEMENTS:
-		case ATT_ORDER: return attribute_use(attribute, 0, 1);
+		case ATT_ORDER:
+		case ATT_LICENSE: return attribute_use(attribute, 0, 1);
 		case ATT_ALLOW: return attribute_use(attribute, 0, 0); /* Or full. */
-		default: return 0;
+		default: assert((fprintf(stderr, "Not recognised.\n"), 0)); return 0;
 	}
 }
 

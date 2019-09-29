@@ -1,4 +1,4 @@
-/** 2019 Neil Edelman, distributed under the terms of the
+/** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
  This is a context-sensitive lexer intended to process parts of a `C`
@@ -107,7 +107,8 @@
  @fixme Old-style function support.
  @fixme `re2c` appends a comma at the end of the enumeration list, not
  compliant with C90.
- @fixme Hide const on params when it can not affect function calls. */
+ @fixme Hide const on params when it can not affect function calls.
+ @fixme Prototypes and fuctions are the same thing. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
@@ -130,6 +131,7 @@ int main(int argc, char **argv) {
 	}
 
 	if(!Scanner()) { reason = "scanner"; goto catch; }
+	ReportDebug();
 	ReportWarn();
 	ReportCull();
 	if(!ReportOut()) { reason = "output"; goto catch; }

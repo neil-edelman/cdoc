@@ -1,4 +1,7 @@
-/** Divides up the code into divisions based on `symbol_marks` in `Symbol.h`. */
+/** @license 2019 Neil Edelman, distributed under the terms of the
+ [MIT License](https://opensource.org/licenses/MIT).
+
+ Divides up the code into divisions based on `symbol_marks` in `Symbol.h`. */
 
 #include <stdio.h>
 #include <string.h>

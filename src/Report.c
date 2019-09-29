@@ -1,4 +1,4 @@
-/** 2019 Neil Edelman, distributed under the terms of the
+/** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
  Organises tokens into sections, each section can have some documentation,
@@ -231,7 +231,7 @@ int ReportPlace(void) {
 	} sorter = { 0, 0, 0, 0, 0, 0, 0 }; /* This holds the sorting state. */
 	/* These symbols require special consideration. */
 	switch(symbol) {
-	case DOC_BEGIN: /* Multiple doc comments. */
+	case DOC_BEGIN: /* (Multiple?) doc comments. */
 		sorter.attribute = 0;
 		if(sorter.segment && !TokenArraySize(&sorter.segment->code))
 			sorter.segment = 0;
@@ -281,6 +281,7 @@ int ReportPlace(void) {
 		sorter.is_ignored_code = 0;
 		assert(!sorter.is_attribute_header);
 		sorter.is_semantic_set = 0;
+		fprintf(stderr, "ReportPlace: new segment.\n");
 	}
 
 	/* Make a `token` where the context places us. */

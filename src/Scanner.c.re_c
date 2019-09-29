@@ -1,4 +1,4 @@
-/** 2019 Neil Edelman, distributed under the terms of the
+/** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT). */
 
 #include <stdio.h>  /* printf sprintf */
@@ -302,6 +302,8 @@ scan:
 	<doc> "@allow"      { return ATT_ALLOW; }
 	<doc> "@license"    { return ATT_LICENSE; }
 	// fixme: have date_begin @since[], @updated[], maybe updated is bad.
+	// Why not just have it updated now?
+	// Check if now is in the future.
 
 	// Parameter lists.
 	<param_begin> "[" { return scanner.state = yycparam_item, DOC_LEFT; }
@@ -372,7 +374,7 @@ int Scanner(void) {
 	/* Scans all. */
 	errno = 0;
 	while((scanner.symbol = scan()) && ReportPlace())
-		/* fprintf(stderr, "%s.\n", pos()) <- spam! */;
+		fprintf(stderr, "%s.\n", pos()) /* <- spam! */;
 	if(errno) goto catch;
 	return 1;
 catch:
