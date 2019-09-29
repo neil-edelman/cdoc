@@ -154,6 +154,7 @@ static void warn_segment(const struct Segment *const segment) {
 		unused_attribute(&segment->attributes, ATT_RETURN);
 		unused_attribute(&segment->attributes, ATT_THROWS);
 		unused_attribute(&segment->attributes, ATT_IMPLEMENTS);
+		unused_attribute(&segment->attributes, ATT_ORDER);
 		unused_attribute(&segment->attributes, ATT_ALLOW);
 		break;
 	case DIV_TAG:

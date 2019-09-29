@@ -1,8 +1,9 @@
 #include "UrlEncode.h"
 
 /* `SYMBOL` is declared in `Scanner.h`. */
-static const int symbol_lspaces[] = { SYMBOL(PARAM5D) };
-static const int symbol_rspaces[] = { SYMBOL(PARAM5E) };
+static const int symbol_lspaces[] = { SYMBOL(PARAM6D) };
+static const int symbol_rspaces[] = { SYMBOL(PARAM6E) };
+static const char *symbol_attribute_titles[] = { SYMBOL(PARAM6F) };
 
 static struct {
 	int level;
@@ -380,7 +381,7 @@ OUT(pre) {
 
 
 /* `SYMBOL` is declared in `Scanner.h`. */
-static const OutFn symbol_outs[] = { SYMBOL(PARAM5C) };
+static const OutFn symbol_outs[] = { SYMBOL(PARAM6C) };
 
 
 
@@ -620,7 +621,8 @@ static void print_code(const struct Segment *const segment) {
 static void segment_print_all(const struct Segment *const segment) {
 	const struct Token *param;
 	size_t no;
-	/* The title is generally the first param. Only sigle-words. */
+	assert(segment);
+	/* The title is generally the first param. Only single-words. */
 	if((param = param_no(segment, 0))) {
 		reset_state("", "", "???");
 		printf("<a name = \"%s:", division_strings[segment->division]);
@@ -630,23 +632,28 @@ static void segment_print_all(const struct Segment *const segment) {
 		print_token(&segment->code, param);
 		state_to_default();
 		printf("\n\n");
+		print_code(segment);
 	}
-	print_code(segment);
 	reset_state("<p>", "</p>", "\n\n");
 	print_tokens(&segment->doc);
 	state_to_default();
-	for(no = 1; (param = param_no(segment, no)); no++)
-		print_attribute_header_maybe(segment, ATT_PARAM, param);
-	print_attribute_maybe(segment, ATT_RETURN);
-	print_attribute_maybe(segment, ATT_IMPLEMENTS);
-	print_attribute_maybe(segment, ATT_THROWS);
-	print_attribute_maybe(segment, ATT_ORDER);
+	if(segment->division == DIV_PREAMBLE) {
+		/*fixme: print_attributes_header(segment, ATT_PARAM);*/
+	} else if(segment->division == DIV_FUNCTION) {
+		for(no = 1; (param = param_no(segment, no)); no++)
+			print_attribute_header_maybe(segment, ATT_PARAM, param);
+		print_attribute_maybe(segment, ATT_RETURN);
+		print_attribute_maybe(segment, ATT_IMPLEMENTS);
+		print_attribute_maybe(segment, ATT_THROWS);
+		print_attribute_maybe(segment, ATT_ORDER);
+	} else if(segment->division == DIV_TAG) {
+		/*fixme: print_attributes_header(segment, ATT_PARAM);*/
+	}
 	print_attribute_maybe(segment, ATT_AUTHOR);
 	print_attribute_maybe(segment, ATT_STD);
 	print_attribute_maybe(segment, ATT_DEPEND);
 	print_attribute_maybe(segment, ATT_FIXME);
 	print_attribute_maybe(segment, ATT_LICENSE);
-	print_attribute_maybe(segment, ATT_ALLOW); /* fixme */
 }
 
 /** Prints preable segment's doc. */
@@ -666,6 +673,12 @@ static void preamble_print_all_content(void) {
  @throws[EILSEQ] Sequence error.
  @return Success. */
 int ReportOut(void) {
+	const int is_preamble = division_exists(DIV_PREAMBLE),
+		is_function = division_exists(DIV_FUNCTION),
+		is_tag = division_exists(DIV_TAG),
+		is_typedef = division_exists(DIV_TYPEDEF),
+		is_data = division_exists(DIV_DATA),
+		is_license = division_attribute_exists(DIV_PREAMBLE, ATT_LICENSE);
 	/* We set `errno` here so that we don't have to test output each time. */
 	errno = 0;
 	/* fixme: how to set utf-8? */
@@ -717,31 +730,34 @@ int ReportOut(void) {
 		printf("</p>\n\n");
 	}
 
+	if(!is_preamble && !is_function && !is_tag && !is_typedef && !is_data
+		&& !is_license) { printf("<p>No documentation.</p>\n\n"); goto closing;}
+
 	printf("<ul>\n");
-	printf("\t<li><a href = \"#summary:\">Summary</a></li>\n");
-	printf("\t<li><a href = \"#%s:\">Preamble</li>\n",
+	if(is_typedef || is_tag || is_data || is_function)
+		printf("\t<li><a href = \"#summary:\">Summary</a></li>\n");
+	if(is_preamble) printf("\t<li><a href = \"#%s:\">Preamble</li>\n",
 		division_strings[DIV_PREAMBLE]);
-	if(division_exists(DIV_TYPEDEF))
-		printf("\t<li><a href = \"#%s:\">Typedef Aliases</a></li>\n",
+	if(is_typedef) printf("\t<li><a href = \"#%s:\">Typedef Aliases</a></li>\n",
 		division_strings[DIV_TYPEDEF]);
-	if(division_exists(DIV_TAG))
+	if(is_tag)
 		printf("\t<li><a href = \"#%s:\">Struct, Union, and Enum Definitions"
 		"</a></li>\n", division_strings[DIV_TAG]);
-	if(division_exists(DIV_DATA))
-		printf("\t<li><a href = \"#%s:\">Data Definitions</a></li>\n",
+	if(is_data) printf("\t<li><a href = \"#%s:\">Data Definitions</a></li>\n",
 		division_strings[DIV_DATA]);
-	if(division_exists(DIV_FUNCTION))
+	if(is_function)
 		printf( "\t<li><a href = \"#%s:\">Function Definitions</a></li>\n",
 		division_strings[DIV_FUNCTION]);
-	if(division_attribute_exists(DIV_PREAMBLE, ATT_LICENSE))
-		printf("\t<li><a href = \"#license:\">License</a></li>\n");
+	if(is_license) printf("\t<li><a href = \"#license:\">License</a></li>\n");
 	printf("</ul>\n\n");
 
 	/* Print summary. */
-	printf("<a name = \"summary:\"><!-- --></a>\n"
-		   "<h2>Summary</h2>\n\n");
+	if(is_typedef || is_tag || is_data || is_function)
+		printf("<a name = \"summary:\"><!-- --></a>\n"
+		"<h2>Summary</h2>\n\n");
 	reset_state("", "", " ");
-	if(division_exists(DIV_TYPEDEF)) {
+
+	if(is_typedef) {
 		const struct Segment *segment = 0;
 		printf("<table>\n\n"
 			"<tr><th>Typedef Alias</th><th>Full</th></tr>\n\n");
@@ -764,7 +780,7 @@ int ReportOut(void) {
 		}
 		printf("</table>\n\n");
 	}
-	if(division_exists(DIV_TAG)) {
+	if(is_tag) {
 		const struct Segment *segment = 0;
 		printf("<table>\n\n"
 			"<tr><th>Struct, Union, or Enum</th></tr>\n\n");
@@ -785,7 +801,7 @@ int ReportOut(void) {
 		}
 		printf("</table>\n\n");
 	}
-	if(division_exists(DIV_DATA)) {
+	if(is_data) {
 		const struct Segment *segment = 0;
 		printf("<table>\n\n"
 			"<tr><th>General Declarations</th></tr>\n\n");
@@ -806,7 +822,7 @@ int ReportOut(void) {
 		}
 		printf("</table>\n\n");
 	}
-	if(division_exists(DIV_FUNCTION)) {
+	if(is_function) {
 		const struct Segment *segment = 0;
 		printf("<table>\n\n"
 			"<tr><th>Return Type</th><th>Function Name</th>"
@@ -838,40 +854,42 @@ int ReportOut(void) {
 	}
 	
 	/* Preamble contents. */
-	printf("<a name = \"%s:\"><!-- --></a>\n"
-		"<h2>Preamble</h2>\n\n",
-		division_strings[DIV_PREAMBLE]);
-	preamble_print_all_content();
-	printf("\n\n");
+	if(is_preamble) {
+		printf("<a name = \"%s:\"><!-- --></a>\n"
+			"<h2>Preamble</h2>\n\n",
+			division_strings[DIV_PREAMBLE]);
+		preamble_print_all_content();
+		printf("\n\n");
+	}
 
 	/* Print typedefs. */
-	if(division_exists(DIV_TYPEDEF)) {
+	if(is_typedef) {
 		printf("<a name = \"%s:\"><!-- --></a>"
 			"<h2>Typedef Aliases</h2>\n\n", division_strings[DIV_TYPEDEF]);
 		division_act(DIV_TYPEDEF, &segment_print_all);
 	}
 	/* Print tags. */
-	if(division_exists(DIV_TAG)) {
+	if(is_tag) {
 		printf("<a name = \"%s:\"><!-- --></a>"
 			"<h2>Struct, Union, and Enum Definitions</h2>\n\n",
 			division_strings[DIV_TAG]);
 		division_act(DIV_TAG, &segment_print_all);
 	}
 	/* Print general declarations. */
-	if(division_exists(DIV_DATA)) {
+	if(is_data) {
 		printf("<a name = \"%s:\"><!-- --></a>"
 			"<h2>General Definitions</h2>\n\n", division_strings[DIV_DATA]);
 		division_act(DIV_DATA, &segment_print_all);
 	}
 	/* Print functions. */
-	if(division_exists(DIV_FUNCTION)) {
+	if(is_function) {
 		printf("<a name = \"%s:\"><!-- --></a>"
 			"<h2>Function Definitions</h2>\n\n",
 			division_strings[DIV_FUNCTION]);
 		division_act(DIV_FUNCTION, &segment_print_all);
 	}
 	/* License. */
-	if(division_attribute_exists(DIV_PREAMBLE, ATT_LICENSE)) {
+	if(is_license) {
 		printf("<a name = \"license:\"><!-- --></a>\n"
 			"<h2>License</h2>\n\n");
 		reset_state("<p>", "</p>", "\n\n");
@@ -879,6 +897,8 @@ int ReportOut(void) {
 		state_to_default();
 		printf("\n\n");
 	}
+
+closing:
 	printf("</body>\n"
 		"</html>\n");
 	return errno ? 0 : 1;
