@@ -720,6 +720,7 @@ int ReportOut(void) {
 		printf("\t<li><a href = \"#license:\">License</a></li>\n");
 	printf("\t<li><a href = \"#%s:\">Preamble</li>\n",
 		division_strings[DIV_PREAMBLE]);
+	/*printf("\t<li><a href = \"#summary:\">Summary</a></li>\n");*/
 	if(division_exists(DIV_TYPEDEF))
 		printf("\t<li><a href = \"#%s:\">Typedef Aliases</a></li>\n",
 		division_strings[DIV_TYPEDEF]);
@@ -772,9 +773,36 @@ int ReportOut(void) {
 	}
 	/* Print functions. */
 	if(division_exists(DIV_FUNCTION)) {
+		const struct Segment *segment = 0;
+		reset_state("", "", "");
 		printf("<a name = \"summary:\"><!-- --></a>\n"
-			"<h2>Function Summary</h2>\n\n");
-		division_act(DIV_FUNCTION, &print_code);
+			"<h2>Function Summary</h2>\n\n"
+			"<table>\n\n"
+			"<tr><th>Return Type</th><th>Function Name</th>"
+			"<th>Argument List</th></tr>\n\n");
+		while((segment = SegmentArrayNext(&report, segment))) {
+			size_t *idxs, idxn, idx, paramn;
+			struct Token *params;
+			if(segment->division != DIV_FUNCTION
+				|| !(idxn = SizeArraySize(&segment->code_params))) continue;
+			idxs = SizeArrayGet(&segment->code_params);
+			params = TokenArrayGet(&segment->code);
+			paramn = TokenArraySize(&segment->code);
+			assert(idxs[0] < paramn);
+			printf("<tr><td>donno</td><td><a href = \"#%s:",
+				division_strings[DIV_FUNCTION]);
+			print_token(&segment->code, params + idxs[0]);
+			printf("\">");
+			print_token(&segment->code, params + idxs[0]);
+			printf("</a></td><td>");
+			for(idx = 1; idx < idxn; idx++) {
+				assert(idxs[idx] < paramn);
+				if(idx > 1) printf(", ");
+				print_token(&segment->code, params + idxs[idx]);
+			}
+			printf("</td></tr>\n\n");
+		}
+		printf("</table>\n\n");
 		printf("<a name = \"%s:\"><!-- --></a>\n"
 			"<h2>Function Details</h2>\n\n", division_strings[DIV_FUNCTION]);
 		division_act(DIV_FUNCTION, &segment_print_all);
