@@ -94,6 +94,7 @@ static void unused_attribute(const struct AttributeArray *const attributes,
 	}
 }
 
+/** @fixme Should be like Report. */
 static void warn_segment(const struct Segment *const segment) {
 	struct Attribute *attribute;
 	const size_t *code_param;

@@ -1,90 +1,96 @@
 #include "UrlEncode.h"
 
 /* `SYMBOL` is declared in `Scanner.h`. */
-static const int symbol_lspaces[] = { SYMBOL(PARAM6D) };
-static const int symbol_rspaces[] = { SYMBOL(PARAM6E) };
+static const int symbol_before_sep[] = { SYMBOL(PARAM6D) };
+static const int symbol_after_sep[]  = { SYMBOL(PARAM6E) };
 static const char *symbol_attribute_titles[] = { SYMBOL(PARAM6F) };
 
+static const struct ModeText {
+	const char *name, *begin_list, *begin_item, *sep_word, *end_item, *sep_item,
+		*end_list;
+} mode_simple = { "simple", "", "", " ", "", "", "" },
+	mode_title = { "title", "<title>", "", " ", "", ", ", "</title>\n" },
+	mode_h1  = { "h1",      "<h1>",     "", " ", "", ", ", "</h1>\n\n" },
+	mode_h3  = { "h3",      "<h3>",     "", " ", "", ", ", "</h3>\n\n" },
+	mode_p   = { "para", "<div>", "<p>", " ", "</p>\n\n", "", "</div>\n\n" },
+	mode_ul  = { "ul",   "<ul>\n", "\t<li>", " ", "</li>\n", "", "</ul>\n\n" },
+	mode_dl  = { "dl",   "<dl>\n", "\t<dd>", " ", "</dd>\n", "", "</dl>\n\n" },
+	mode_code= { "code",    "<code>",   "", "&nbsp;", "", ", ", "</code>"},
+	mode_pre = { "pre",     "<pre>", "", "", "", "\n", "</pre>" };
+
 static struct {
-	int level;
-	enum { IN_DEFAUT, IN_PARA, IN_LIST, IN_PRE } in;
-	int is_sep_before, is_sep_forced, is_lazy_space;
-	const char *start, *end, *sep;
-} ostate = { 0, IN_DEFAUT, 0, 0, 0, "{", "}", ", " };
-static void state_to_default(void) {
-	switch(ostate.in) {
-	case IN_DEFAUT: return;
-	case IN_PARA: printf("%s", ostate.end); break;
-	case IN_LIST: printf("</li>%s</ul>", ostate.sep); break;
-	case IN_PRE: printf("</pre>"); break;
+	const struct ModeText *text;
+	enum { IN_CLEAR, IN_LIST, IN_LIST_LAZY, IN_ITEM, IN_ITEM_LAZY } in;
+	int is_before_sep;
+} mode = { &mode_simple, IN_CLEAR, 0 };
+
+/** Change the mode to clear. */
+static void flush_mode(void) {
+	printf("<!-- flush %s -->", mode.text->name);
+	switch(mode.in) {
+		case IN_CLEAR: break;
+		case IN_ITEM:
+		case IN_ITEM_LAZY: fputs(mode.text->end_item, stdout);
+		case IN_LIST:
+		case IN_LIST_LAZY: fputs(mode.text->end_list, stdout);
 	}
-	ostate.in = IN_DEFAUT;
-	ostate.is_sep_forced = 1;
-}
-static void state_to_para(void) {
-	switch(ostate.in) {
-	case IN_DEFAUT: printf("%s", ostate.start); break;
-	case IN_PARA: return;
-	case IN_LIST: printf("</li>%s</ul>%s%s", ostate.sep, ostate.sep,
-		ostate.start); break;
-	case IN_PRE: printf("</pre>%s%s", ostate.sep, ostate.start); break;
-	}
-	ostate.in = IN_PARA;
-}
-static void state_to_list(void) {
-	switch(ostate.in) {
-	case IN_DEFAUT: printf("<ul>%s<li>", ostate.sep); break;
-	case IN_PARA:
-		printf("%s%s<ul>%s<li>", ostate.end, ostate.sep, ostate.sep);
-		break;
-	case IN_LIST:
-		printf("</li>%s<li>", ostate.sep);
-		ostate.is_lazy_space = 0; /* Don't want lazy spaces between <li>. */
-		return;
-	case IN_PRE: printf("</pre>%s<ul>%s<li>", ostate.sep, ostate.sep);
-	}
-	ostate.in = IN_LIST;
-}
-static void state_to_pre(void) {
-	switch(ostate.in) {
-	case IN_DEFAUT: printf("<pre>"); break;
-	case IN_PARA: printf("%s%s<pre>", ostate.end, ostate.sep); break;
-	case IN_LIST: printf("</li>%s</ul>%s<pre>", ostate.sep, ostate.sep); break;
-	case IN_PRE: printf("\n"); return;
-	}
-	ostate.in = IN_PRE;
-}
-static void state_from_default(void) {
-	switch(ostate.in) {
-	case IN_DEFAUT: state_to_para(); break;
-	case IN_PARA:
-	case IN_LIST:
-		if(ostate.is_lazy_space) { fputc(' ', stdout);
-			ostate.is_lazy_space = 0; } break;
-	default: break;
-	}
-}
-static void reset_state(const char *const start,
-	const char *const end, const char *const sep) {
-	assert(start && end && sep);
-	state_to_default();
-	ostate.level = 0;
-	ostate.is_sep_before = 0;
-	ostate.is_sep_forced = 0;
-	ostate.is_lazy_space = 0;
-	ostate.start = start;
-	ostate.end   = end;
-	ostate.sep   = sep;
-}
-static void state_sep_if_needed(enum Symbol symbol) {
-	if(ostate.is_sep_forced
-		|| (ostate.is_sep_before && symbol_lspaces[symbol]))
-		printf("%s", ostate.sep);
-	ostate.is_sep_forced = 0;
-	ostate.is_sep_before = symbol_rspaces[symbol];
+	mode.in = IN_CLEAR;
+	mode.is_before_sep = 0;
 }
 
-static void encode(int length, const char *from) {
+/** Change to another output `text_state`. */
+static void change_mode(const struct ModeText *const text) {
+	assert(text);
+	if(mode.text != text) {
+		const char *const prev_text_name = mode.text->name;
+		flush_mode();
+		mode.text = text;
+		printf("<!-- %s becomes %s -->", prev_text_name, mode.text->name);
+	} else if(mode.in == IN_ITEM || mode.in == IN_ITEM_LAZY) {
+		fputs(mode.text->end_list, stdout);
+		mode.in = IN_LIST_LAZY;
+		mode.is_before_sep = 0;
+	}
+	return;
+}
+
+/** Right before we print. */
+static void mode_ready(const enum Symbol symbol) {
+	switch(mode.in) {
+	case IN_CLEAR: fputs(mode.text->begin_list, stdout);
+	case IN_LIST: fputs(mode.text->begin_item, stdout); break;
+	case IN_LIST_LAZY:
+		printf("%s%s", mode.text->sep_item, mode.text->begin_item); break;
+	case IN_ITEM:
+		if(mode.is_before_sep && symbol_before_sep[symbol])
+			fputs(mode.text->sep_word, stdout);
+		mode.is_before_sep = symbol_after_sep[symbol];
+		break;
+	case IN_ITEM_LAZY: fputs(mode.text->sep_word, stdout); break;
+	}
+	mode.in = IN_ITEM;
+}
+
+/** Differed space. */
+static void mode_lazy(void) {
+	if(mode.in == IN_ITEM) mode.in = IN_ITEM_LAZY;
+}
+
+/** Paragraph/li/whatever end. */
+static void mode_end_item(void) {
+	switch(mode.in) {
+	case IN_CLEAR:
+	case IN_LIST:
+	case IN_LIST_LAZY: return;
+	case IN_ITEM:
+	case IN_ITEM_LAZY: fputs(mode.text->end_item, stdout);
+	}
+	mode.in = IN_LIST_LAZY;
+	mode.is_before_sep = 0;
+}
+
+/** Encode a bunch of arbitrary text as html. */
+static void html_encode(int length, const char *from) {
 	assert(length >= 0 && from);
 	while(length) {
 		switch(*from) {
@@ -115,23 +121,22 @@ typedef int (*OutFn)(const struct TokenArray *const tokens,
 OUT(ws) {
 	const struct Token *const space = *ptoken;
 	assert(tokens && space && space->symbol == SPACE);
-	ostate.is_lazy_space = 1;
+	mode_lazy();
 	*ptoken = TokenArrayNext(tokens, space);
 	return 1;
 }
 OUT(par) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == NEWLINE);
-	state_to_default();
+	mode_end_item();
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
 OUT(lit) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->length > 0 && t->from);
-	state_from_default();
-	/*printf("`%.*s'", t->length, t->from);*/
-	encode(t->length, t->from);
+	mode_ready(t->symbol);
+	html_encode(t->length, t->from);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -149,7 +154,7 @@ OUT(gen1) {
 	if(!(a = strchr(type, '_'))) goto catch;
 	type_size = (int)(a - type);
 	assert(t->length == a + 1 - t->from);
-	state_from_default();
+	mode_ready(t->symbol);
 	printf("&lt;%.*s&gt;%.*s",
 		t->length - 1, t->from, param->length, param->from);
 	*ptoken = TokenArrayNext(tokens, rparen);
@@ -178,7 +183,7 @@ OUT(gen2) {
 	if(!(a = strchr(type2, '_'))) goto catch;
 	type2_size = (int)(a - type2);
 	assert(t->length == a + 1 - t->from);
-	state_from_default();
+	mode_ready(t->symbol);
 	printf("&lt;%.*s&gt;%.*s&lt;%.*s&gt;%.*s", type1_size, type1,
 		param1->length, param1->from, type2_size, type2, param2->length,
 		param2->from);
@@ -214,7 +219,7 @@ OUT(gen3) {
 	if(!(a = strchr(type3, '_'))) goto catch;
 	type3_size = (int)(a - type3);
 	assert(t->length == a + 1 - t->from);
-	state_from_default();
+	mode_ready(t->symbol);
 	printf("&lt;%.*s&gt;%.*s&lt;%.*s&gt;%.*s&lt;%.*s&gt;%.*s",
 		type1_size, type1, param1->length, param1->from, type2_size, type2,
 		param2->length, param2->from, type3_size, type3,
@@ -228,18 +233,17 @@ catch:
 OUT(escape) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == ESCAPE && t->length == 2);
-	state_from_default();
-	encode(1, t->from + 1);
-	/*printf("%c", t->from[1]);*/
+	mode_ready(t->symbol);
+	html_encode(1, t->from + 1);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
 OUT(url) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == URL);
-	state_from_default();
+	mode_ready(t->symbol);
 	printf("<a href = \"%.*s\">", t->length, t->from);
-	encode(t->length, t->from);
+	html_encode(t->length, t->from);
 	printf("</a>");
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
@@ -249,10 +253,10 @@ OUT(cite) {
 	const char *const url_encoded = UrlEncode(t->from, t->length);
 	assert(tokens && t && t->symbol == CITE);
 	if(!url_encoded) goto catch;
-	state_from_default();
+	mode_ready(t->symbol);
 	printf("<a href = \"https://scholar.google.ca/scholar?q=%s\">",
 		url_encoded);
-	encode(t->length, t->from);
+	html_encode(t->length, t->from);
 	printf("</a>");
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
@@ -263,7 +267,7 @@ catch:
 OUT(see_fn) {
 	const struct Token *const fn = *ptoken;
 	assert(tokens && fn && fn->symbol == SEE_FN);
-	state_from_default();
+	mode_ready(fn->symbol);
 	printf("<a href = \"#%s:%.*s\">%.*s</a>", division_strings[DIV_FUNCTION],
 		fn->length, fn->from, fn->length, fn->from);
 	*ptoken = TokenArrayNext(tokens, fn);
@@ -272,7 +276,7 @@ OUT(see_fn) {
 OUT(see_tag) {
 	const struct Token *const tag = *ptoken;
 	assert(tokens && tag && tag->symbol == SEE_TAG);
-	state_from_default();
+	mode_ready(tag->symbol);
 	printf("<a href = \"#%s:%.*s\">%.*s</a>", division_strings[DIV_TAG],
 		tag->length, tag->from, tag->length, tag->from);
 	*ptoken = TokenArrayNext(tokens, tag);
@@ -281,7 +285,7 @@ OUT(see_tag) {
 OUT(see_typedef) {
 	const struct Token *const def = *ptoken;
 	assert(tokens && def && def->symbol == SEE_TYPEDEF);
-	state_from_default();
+	mode_ready(def->symbol);
 	printf("<a href = \"#%s:%.*s\">%.*s</a>", division_strings[DIV_TYPEDEF],
 		def->length, def->from, def->length, def->from);
 	*ptoken = TokenArrayNext(tokens, def);
@@ -290,7 +294,7 @@ OUT(see_typedef) {
 OUT(see_data) {
 	const struct Token *const data = *ptoken;
 	assert(tokens && data && data->symbol == SEE_DATA);
-	state_from_default();
+	mode_ready(data->symbol);
 	printf("<a href = \"#%s:%.*s\">%.*s</a>", division_strings[DIV_DATA],
 		data->length, data->from, data->length, data->from);
 	*ptoken = TokenArrayNext(tokens, data);
@@ -299,7 +303,7 @@ OUT(see_data) {
 OUT(math_begin) { /* Math and code. */
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == MATH_BEGIN);
-	state_from_default();
+	mode_ready(t->symbol);
 	printf("<code>");
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
@@ -307,7 +311,7 @@ OUT(math_begin) { /* Math and code. */
 OUT(math_end) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == MATH_END);
-	state_from_default();
+	mode_ready(t->symbol);
 	printf("</code>");
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
@@ -315,7 +319,7 @@ OUT(math_end) {
 OUT(em_begin) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == EM_BEGIN);
-	state_from_default();
+	mode_ready(t->symbol);
 	printf("<em>");
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
@@ -323,7 +327,7 @@ OUT(em_begin) {
 OUT(em_end) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == EM_END);
-	state_from_default();
+	mode_ready(t->symbol);
 	printf("</em>");
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
@@ -331,7 +335,7 @@ OUT(em_end) {
 OUT(link) {
 	const struct Token *const t = *ptoken, *text, *turl;
 	assert(tokens && t && t->symbol == LINK_START);
-	state_from_default();
+	mode_ready(t->symbol);
 	for(turl = TokenArrayNext(tokens, t);;turl = TokenArrayNext(tokens, turl)) {
 		if(!turl) goto catch;
 		if(turl->symbol == URL) break;
@@ -349,7 +353,7 @@ catch:
 OUT(nbsp) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == NBSP);
-	state_from_default();
+	mode_ready(t->symbol);
 	printf("&nbsp;");
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
@@ -357,23 +361,23 @@ OUT(nbsp) {
 OUT(nbthinsp) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == NBTHINSP);
-	state_from_default();
-	printf("&#8239;"/*"&thinsp;"<-I think it's breaking.*/);
+	mode_ready(t->symbol);
+	printf("&#8239;" /* "&thinsp;" <- breaking? */);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
 OUT(list) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == LIST_ITEM);
-	state_to_list();
+	change_mode(&mode_ul);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
 OUT(pre) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == PREFORMATTED);
-	state_to_pre();
-	encode(t->length, t->from);
+	change_mode(&mode_pre);
+	html_encode(t->length, t->from);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -415,7 +419,7 @@ static void highlight_tokens(const struct TokenArray *const tokens,
 		} else {
 			is_highlight = 0;
 		}
-		state_sep_if_needed(token->symbol);
+		/*state_sep_if_needed(token->symbol);*/
 		if(is_highlight) printf("<em>");
 		token = print_token(tokens, token);
 		if(is_highlight) printf("</em>");
@@ -427,6 +431,7 @@ static void print_tokens(const struct TokenArray *const tokens) {
 }
 
 void ReportDebug(void) {
+#ifdef DEBUG
 	struct Segment *segment = 0;
 	struct Attribute *att = 0;
 	fprintf(stderr, "Report debug:\n");
@@ -445,9 +450,11 @@ void ReportDebug(void) {
 			TokenArrayToString(&att->contents));
 		fputc('\n', stderr);
 	}
+#endif
 }
 
-/* Lambdas would be nice! */
+/* Lambdas would be nice! fixme: this needs rewriting and simplifying in light
+ of modes. It should be simpler. */
 
 /** @return If there exist an `attribute_symbol` with content within
  `segment`. */
@@ -550,7 +557,7 @@ static void attribute_print(const struct Segment *const segment,
 	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
 		if(attribute->token.symbol != symbol) continue;
 		print_tokens(&attribute->contents);
-		state_to_default();
+		mode_end_item();
 	}
 }
 /** For `segment`, print all attributes that match `symbol` whose header
@@ -569,7 +576,7 @@ static void attribute_header_print(const struct Segment *const segment,
 		print_tokens(&attribute->header);
 		printf("]");
 		print_tokens(&attribute->contents);
-		state_to_default();
+		mode_end_item();
 	}
 }
 
@@ -578,42 +585,33 @@ static void attribute_header_print(const struct Segment *const segment,
 static void division_attribute_print(const enum Division division,
 	const enum Symbol symbol) {
 	struct Segment *segment = 0;
-	reset_state("", "", ", ");
 	while((segment = SegmentArrayNext(&report, segment))) {
 		if(segment->division != division) continue;
 		attribute_print(segment, symbol);
-		state_to_default();
+		mode_end_item();
 	}
 }
 
 static void print_attribute_maybe(const struct Segment *const segment,
 	const enum Symbol symbol) {
 	assert(segment && symbol);
+	printf("<!-- print attribute maybe??? -->");
 	if(!segment_attribute_exists(segment, symbol)) return;
 	printf("\n\n");
-	reset_state("{", "}", ", ");
+	change_mode(&mode_dl);/*reset_state("{", "}", ", ");*/
 	attribute_print(segment, symbol);
-	state_to_default();
+	mode_end_item(); /* state_to_default(); */
 }
 
 static void print_attribute_header_maybe(const struct Segment *const segment,
 	const enum Symbol symbol, const struct Token *header) {
 	assert(segment && symbol);
+	printf("<!-- print attribute header maybe??? -->");
 	if(!segment_attribute_header_exists(segment, symbol, header)) return;
 	printf("\n\n");
-	reset_state("{", "}", ", ");
+	change_mode(&mode_dl);/*reset_state("{", "}", ", ");*/
 	attribute_header_print(segment, symbol, header);
-	state_to_default();
-}
-
-/** Prints only the code of a `segment`.
- @implements division_act */
-static void print_code(const struct Segment *const segment) {
-	reset_state("", "", "&nbsp;");
-	printf("<!-- code --><pre>");
-	highlight_tokens(&segment->code, &segment->code_params);
-	state_to_default();
-	printf("</pre>\n\n");
+	mode_end_item(); /* state_to_default(); */
 }
 
 /** Prints all a `segment`.
@@ -624,19 +622,21 @@ static void segment_print_all(const struct Segment *const segment) {
 	assert(segment);
 	/* The title is generally the first param. Only single-words. */
 	if((param = param_no(segment, 0))) {
-		reset_state("", "", "???");
+		change_mode(&mode_p);/*reset_state("", "", "???");*/
 		printf("<a name = \"%s:", division_strings[segment->division]);
 		print_token(&segment->code, param);
 		printf("\"><!-- --></a>\n");
-		reset_state("<h3>", "</h3>", "???");
+		change_mode(&mode_h3);/*reset_state("<h3>", "</h3>", "???");*/
 		print_token(&segment->code, param);
-		state_to_default();
+		mode_end_item(); /* state_to_default(); */
 		printf("\n\n");
-		print_code(segment);
+		change_mode(&mode_code);
+		highlight_tokens(&segment->code, &segment->code_params);
+		flush_mode();
 	}
-	reset_state("<p>", "</p>", "\n\n");
+	change_mode(&mode_p);
 	print_tokens(&segment->doc);
-	state_to_default();
+	mode_end_item(); /* state_to_default(); */
 	if(segment->division == DIV_PREAMBLE) {
 		/*fixme: print_attributes_header(segment, ATT_PARAM);*/
 	} else if(segment->division == DIV_FUNCTION) {
@@ -659,11 +659,11 @@ static void segment_print_all(const struct Segment *const segment) {
 /** Prints preable segment's doc. */
 static void preamble_print_all_content(void) {
 	struct Segment *segment = 0;
-	reset_state("<p>", "</p>", "\n\n");
+	change_mode(&mode_p);
 	while((segment = SegmentArrayNext(&report, segment))) {
 		if(segment->division != DIV_PREAMBLE) continue;
 		print_tokens(&segment->doc);
-		state_to_default();
+		mode_end_item(); /* state_to_default(); */
 	}
 	printf("\n\nAlso print attributes.\n\n");
 	/* fixme: also print fn attributes for @since @std @depend, _etc_. */
@@ -709,54 +709,47 @@ int ReportOut(void) {
 		"\t\tmargin:           0 -4px;\n"
 		"\t\tpadding:          4px;\n"
 		"\t}\n"
-		"</style>\n"
-		"<title>");
-	if(division_attribute_exists(DIV_PREAMBLE, ATT_TITLE)) {
-		division_attribute_print(DIV_PREAMBLE, ATT_TITLE);
-	} else {
-		printf("Untitled");
-	}
-	printf("</title>\n"
-		"</head>\n\n\n"
+		"</style>\n");
+	change_mode(&mode_title);
+	division_attribute_print(DIV_PREAMBLE, ATT_TITLE);
+	flush_mode();
+	printf("</head>\n\n"
 		"<body>\n\n");
-	if(division_attribute_exists(DIV_PREAMBLE, ATT_TITLE)) {
-		printf("<h1>");
-		division_attribute_print(DIV_PREAMBLE, ATT_TITLE);
-		printf("</h1>\n\n");
-	}
-	if(division_attribute_exists(DIV_PREAMBLE, ATT_AUTHOR)) {
-		printf("<p>");
-		division_attribute_print(DIV_PREAMBLE, ATT_AUTHOR);
-		printf("</p>\n\n");
-	}
 
-	if(!is_preamble && !is_function && !is_tag && !is_typedef && !is_data
-		&& !is_license) { printf("<p>No documentation.</p>\n\n"); goto closing;}
+	change_mode(&mode_h1),
+	division_attribute_print(DIV_PREAMBLE, ATT_TITLE),
+	flush_mode();
 
-	printf("<ul>\n");
-	if(is_typedef || is_tag || is_data || is_function)
-		printf("\t<li><a href = \"#summary:\">Summary</a></li>\n");
-	if(is_preamble) printf("\t<li><a href = \"#%s:\">Preamble</li>\n",
-		division_strings[DIV_PREAMBLE]);
-	if(is_typedef) printf("\t<li><a href = \"#%s:\">Typedef Aliases</a></li>\n",
-		division_strings[DIV_TYPEDEF]);
-	if(is_tag)
-		printf("\t<li><a href = \"#%s:\">Struct, Union, and Enum Definitions"
-		"</a></li>\n", division_strings[DIV_TAG]);
-	if(is_data) printf("\t<li><a href = \"#%s:\">Data Definitions</a></li>\n",
-		division_strings[DIV_DATA]);
-	if(is_function)
-		printf( "\t<li><a href = \"#%s:\">Function Definitions</a></li>\n",
-		division_strings[DIV_FUNCTION]);
-	if(is_license) printf("\t<li><a href = \"#license:\">License</a></li>\n");
-	printf("</ul>\n\n");
+	change_mode(&mode_p);
+	division_attribute_print(DIV_PREAMBLE, ATT_AUTHOR);
+	flush_mode();
+
+	change_mode(&mode_ul);
+	if(is_typedef || is_tag || is_data || is_function) mode_ready(END),
+		printf("<a href = \"#summary:\">Summary</a>"), mode_end_item();
+	if(is_preamble) mode_ready(END), printf("<a href = \"#%s:\">Preamble</a>",
+		division_strings[DIV_PREAMBLE]), mode_end_item();
+	if(is_typedef) mode_ready(END),
+		printf("<a href = \"#%s:\">Typedef Aliases</a>",
+		division_strings[DIV_TYPEDEF]), mode_end_item();
+	if(is_tag) mode_ready(END),
+		printf("<a href = \"#%s:\">Struct, Union, and Enum Definitions</a>",
+		division_strings[DIV_TAG]), mode_end_item();
+	if(is_data) mode_ready(END),
+		printf("<a href = \"#%s:\">Data Definitions</a>",
+		division_strings[DIV_DATA]), mode_end_item();
+	if(is_function) mode_ready(END),
+		printf("<a href = \"#%s:\">Function Definitions</a>",
+		division_strings[DIV_FUNCTION]), mode_end_item();
+	if(is_license) mode_ready(END),
+		printf("<a href = \"#license:\">License</a>"), mode_end_item();
+	flush_mode();
 
 	/* Print summary. */
+	change_mode(&mode_simple);
 	if(is_typedef || is_tag || is_data || is_function)
 		printf("<a name = \"summary:\"><!-- --></a>\n"
 		"<h2>Summary</h2>\n\n");
-	reset_state("", "", " ");
-
 	if(is_typedef) {
 		const struct Segment *segment = 0;
 		printf("<table>\n\n"
@@ -774,8 +767,10 @@ int ReportOut(void) {
 			printf("\">");
 			print_token(&segment->code, params + idxs[0]);
 			printf("</a></td><td>");
-			/* fixme: typedef should not be there. */
+			/* fixme: More advanced in Semantic: we know "typedef ". */
+			change_mode(&mode_code);
 			print_tokens(&segment->code);
+			change_mode(&mode_simple);
 			printf("</td></tr>\n\n");
 		}
 		printf("</table>\n\n");
@@ -852,14 +847,16 @@ int ReportOut(void) {
 		}
 		printf("</table>\n\n");
 	}
-	
+	flush_mode(); /* Does nothing; just for symmetry. */
+
 	/* Preamble contents. */
 	if(is_preamble) {
 		printf("<a name = \"%s:\"><!-- --></a>\n"
 			"<h2>Preamble</h2>\n\n",
 			division_strings[DIV_PREAMBLE]);
+		change_mode(&mode_p);
 		preamble_print_all_content();
-		printf("\n\n");
+		flush_mode();
 	}
 
 	/* Print typedefs. */
@@ -892,13 +889,13 @@ int ReportOut(void) {
 	if(is_license) {
 		printf("<a name = \"license:\"><!-- --></a>\n"
 			"<h2>License</h2>\n\n");
-		reset_state("<p>", "</p>", "\n\n");
+		change_mode(&mode_p);/*reset_state("<p>", "</p>", "\n\n");*/
 		division_attribute_act(DIV_PREAMBLE, ATT_LICENSE, &print_tokens);
-		state_to_default();
+		mode_end_item(); /* state_to_default(); */
 		printf("\n\n");
 	}
 
-closing:
+	flush_mode();
 	printf("</body>\n"
 		"</html>\n");
 	return errno ? 0 : 1;
