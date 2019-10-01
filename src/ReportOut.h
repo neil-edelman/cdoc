@@ -5,6 +5,7 @@ static const int symbol_before_sep[] = { SYMBOL(PARAM6D) };
 static const int symbol_after_sep[]  = { SYMBOL(PARAM6E) };
 static const char *symbol_attribute_titles[] = { SYMBOL(PARAM6F) };
 
+/* fixme: hmmm, have a fn to change only lists? */
 static const struct ModeText {
 	const char *name, *begin_list, *begin_item, *sep_word, *end_item, *sep_item,
 		*end_list;
