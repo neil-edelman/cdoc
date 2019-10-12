@@ -16,7 +16,7 @@ static const struct ModeText {
 	mode_p   = { "para", "<div>", "<p>", " ", "</p>\n\n", "", "</div>\n\n" },
 	mode_ul  = { "ul",   "<ul>\n", "\t<li>", " ", "</li>\n", "", "</ul>\n\n" },
 	mode_dl  = { "dl",   "<dl>\n", "\t<dd>", " ", "</dd>\n", "", "</dl>\n\n" },
-	mode_code= { "code",    "<code>",   "", "&nbsp;", "", ", ", "</code>"},
+	mode_code= { "code",    "<code>",   "", "&nbsp;", "", ", ", "</code>"}, /* this is scetchy. */
 	mode_pre = { "pre",     "<pre>", "", "", "", "\n", "</pre>" };
 
 static struct {

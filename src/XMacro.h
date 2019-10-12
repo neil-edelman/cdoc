@@ -1,7 +1,7 @@
 #ifndef XMACRO_H /* <-- !x */
 #define XMACRO_H
 
-/* X-Marcos are great for debugging. */
+/* X-Macros are great for debugging. */
 
 #define PARAM(A) A
 #define STRINGISE(A) #A

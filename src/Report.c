@@ -281,7 +281,6 @@ int ReportPlace(void) {
 		sorter.is_ignored_code = 0;
 		assert(!sorter.is_attribute_header);
 		sorter.is_semantic_set = 0;
-		fprintf(stderr, "ReportPlace: new segment.\n");
 	}
 
 	/* Make a `token` where the context places us. */
