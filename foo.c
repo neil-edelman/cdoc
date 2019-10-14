@@ -12,7 +12,9 @@ Paragraph @ @a \,~~
 
  @title Foo `Bar`
  @depend C89
- 
+ @author Somebody
+ @author Nobody
+
  Escapes. \\ \` \@ \_ \`
  lala \" preformated <http://foo.com/>*
  \"  
@@ -116,6 +118,7 @@ enum Token { END };
  @fixme
  @return END.
  @implements ScannerFn
+ @author External Author
  @allow */
 static enum Token fun2_scan_eof(struct Scanner *const arg1_2, int arg2_2) {
 	(void)arg1_2, (void)arg2_2; return END;

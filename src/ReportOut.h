@@ -9,8 +9,10 @@ static const char *symbol_attribute_titles[] = { SYMBOL(PARAM6F) };
  be printed around literals. */
 static const struct StyleText {
 	const char *name, *begin, *sep, *end;
-} html_text  = { "text", "", " ", "" },
-	html_line= { "line", "", " ", "\n" },
+} no_style = { "no style", "", "", "" },
+	plain_text = { "text",  "", " ", "" },
+	plain_line = { "line", "", " ", "\n" },
+	plain_csv = { "csv", "", ", ", ""},
 	html_p   = { "para", "<p>", " ", "</p>\n\n" },
 	html_li  = { "li",   "\t<li>", " ", "</li>\n" },
 	html_dt  = { "dt",   "\t<dt>", " ", "</dt>\n" },
@@ -61,9 +63,9 @@ static int style_push(const struct StyleText *const text) {
 	struct Style *const push = StyleArrayNew(&mode.styles);
 	assert(text);
 	if(!push) return 0;
+	printf("<!-- push %s -->", text->name);
 	push->text = text;
 	push->lazy = BEGIN;
-	printf("<!-- push %s -->", text->name);
 	return 1;
 }
 
@@ -82,30 +84,31 @@ static void style_pop_push(void) {
 	struct Style *const peek = StyleArrayPeek(&mode.styles);
 	int success;
 	assert(peek);
-	printf("<!-- pop-push %s -->", StyleArrayToString(&mode.styles));
 	style_pop();
 	success = style_push(peek->text);
 	assert(success);
 }
 
-/** Right before we print. */
+/** Right before we print. If one doesn't have a `symbol`, just pass
+ `END == 0`. */
 static void style_prepare_output(const enum Symbol symbol) {
 	struct Style *const top = StyleArrayPeek(&mode.styles), *style = 0;
 	assert(top);
-	/* Flush differed begins. */
+	/* Make sure all the stack is on `ITEM`. */
 	while((style = StyleArrayNext(&mode.styles, style))) {
-		if(style->lazy != BEGIN) continue;
-		fputs(style->text->begin, stdout);
+		switch(style->lazy) {
+		case ITEM: continue;
+		case SEPARATE: fputs(style->text->sep, stdout); break;
+		case BEGIN: fputs(style->text->begin, stdout); break;
+		}
 		style->lazy = ITEM;
 		mode.is_before_sep = 0;
 	}
-	assert(top->lazy != BEGIN);
-	/* Is there a lazy or implied separation? */
-	if(top->lazy == SEPARATE
-		|| (mode.is_before_sep && symbol_before_sep[symbol]))
+	assert(top->lazy == ITEM);
+	/* If there was no separation, is there an implied separation? */
+	if(mode.is_before_sep && symbol_before_sep[symbol])
 		fputs(top->text->sep, stdout);
 	mode.is_before_sep = symbol_after_sep[symbol];
-	top->lazy = ITEM;
 }
 
 /** Differed space. */
@@ -479,8 +482,51 @@ void ReportDebug(void) {
 #endif
 }
 
+
+
+
+
 /* Lambdas would be nice! fixme: this needs rewriting and simplifying in light
  of modes. It should be simpler. */
+
+typedef int (*DivisionPredicate)(const enum Division);
+
+/** @implements DivisionPredicate */
+static int is_div_preamble(const enum Division d) {
+	return d == DIV_PREAMBLE;
+}
+
+/** @implements DivisionPredicate */
+static int is_not_div_preamble(const enum Division d) {
+	return d != DIV_PREAMBLE;
+}
+
+
+
+/** For `segment`, print all attributes that match `symbol`.
+ @order O(`attributes`) */
+static void segment_att_print(const struct Segment *const segment,
+	const enum Symbol symbol) {
+	struct Attribute *attribute = 0;
+	assert(segment);
+	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
+		if(attribute->token.symbol != symbol) continue;
+		print_tokens(&attribute->contents);
+		style_pop_push();
+	}
+}
+/** For each `division` segment, print all attributes that match `symbol`.
+ <needed!>
+ @order O(`segments` * `attributes`) */
+static void div_att_print(const DivisionPredicate div_pred,
+	const enum Symbol symbol) {
+	struct Segment *segment = 0;
+	while((segment = SegmentArrayNext(&report, segment)))
+		if(!div_pred || div_pred(segment->division))
+		segment_att_print(segment, symbol);
+}
+
+
 
 /** @return If there exist an `attribute_symbol` with content within
  `segment`. */
@@ -509,7 +555,8 @@ static int segment_attribute_act(const struct Segment *const segment,
 	return 0;
 }
 
-/** @return Is `division` in the report? */
+/** @return Is `division` in the report?
+ <needed> */
 static int division_exists(const enum Division division) {
 	struct Segment *segment = 0;
 	while((segment = SegmentArrayNext(&report, segment)))
@@ -528,7 +575,8 @@ static void division_act(const enum Division division,
 	}
 }
 
-/** @return Is `attribute_symbol` under `division` in the report? */
+/** @return Is `attribute_symbol` under `division` in the report?
+ <needed> */
 static int division_attribute_exists(const enum Division division,
 	const enum Symbol attribute_symbol) {
 	struct Segment *segment = 0;
@@ -574,18 +622,6 @@ static int segment_attribute_header_exists(const struct Segment *const segment,
 	return 0;
 }
 
-/** For `segment`, print all attributes that match `symbol`.
- @order O(`attributes`) */
-static void attribute_print(const struct Segment *const segment,
-	const enum Symbol symbol) {
-	struct Attribute *attribute = 0;
-	assert(segment);
-	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
-		if(attribute->token.symbol != symbol) continue;
-		print_tokens(&attribute->contents);
-		/*style_end_item();*/
-	}
-}
 /** For `segment`, print all attributes that match `symbol` whose header
  contains `header`.
  @order O(`attributes`) */
@@ -606,18 +642,6 @@ static void attribute_header_print(const struct Segment *const segment,
 	}
 }
 
-/** For each `division` segment, print all attributes that match `symbol`.
- @order O(`segments` * `attributes`) */
-static void division_attribute_print(const enum Division division,
-	const enum Symbol symbol) {
-	struct Segment *segment = 0;
-	while((segment = SegmentArrayNext(&report, segment))) {
-		if(segment->division != division) continue;
-		attribute_print(segment, symbol);
-		/*style_end_item()*/;
-	}
-}
-
 static void print_attribute_maybe(const struct Segment *const segment,
 	const enum Symbol symbol) {
 	assert(segment && symbol);
@@ -625,7 +649,7 @@ static void print_attribute_maybe(const struct Segment *const segment,
 	if(!segment_attribute_exists(segment, symbol)) return;
 	printf("\n\n");
 	if(!style_push(&html_dl)) {fprintf(stderr, "Fire and brimstone.\n"); return; }
-	attribute_print(segment, symbol);
+	segment_att_print(segment, symbol);
 	/*style_end_item()*/; /* state_to_default(); */
 }
 
@@ -705,7 +729,7 @@ int ReportOut(void) {
 		is_typedef = division_exists(DIV_TYPEDEF),
 		is_data = division_exists(DIV_DATA),
 		is_license = division_attribute_exists(DIV_PREAMBLE, ATT_LICENSE);
-	/* We set `errno` here so that we don't have to test output each time. */
+	/* Set `errno` here so that we don't have to test output each time. */
 	errno = 0;
 	printf("<!doctype html public \"-//W3C//DTD HTML 4.01//EN\" "
 		"\"http://www.w3.org/TR/html4/strict.dtd\">\n\n"
@@ -735,19 +759,22 @@ int ReportOut(void) {
 		"\t\tpadding:          4px;\n"
 		"\t}\n"
 		"</style>\n");
-	if(!style_push(&html_title)) return 0;
-	division_attribute_print(DIV_PREAMBLE, ATT_TITLE);
-	style_pop();
+	if(!style_push(&html_title) || !style_push(&plain_text)) return 0;
+	div_att_print(&is_div_preamble /*DIV_PREAMBLE*/, ATT_TITLE);
+	style_pop(), style_pop();
 	printf("</head>\n\n"
 		"<body>\n\n");
 
-	if(!style_push(&html_h1)) return 0;
-	division_attribute_print(DIV_PREAMBLE, ATT_TITLE),
-	style_pop();
+	if(!style_push(&html_h1) || !style_push(&plain_text)) return 0;
+	div_att_print(DIV_PREAMBLE, ATT_TITLE);
+	style_pop(), style_pop();
 
-	if(!style_push(&html_p)) return 0;
-	division_attribute_print(DIV_PREAMBLE, ATT_AUTHOR);
-	style_pop();
+	/* fixme: also get authors of fn. */
+	if(!style_push(&html_p) || !style_push(&plain_csv)
+		|| !style_push(&plain_text)) return 0;
+	div_att_print(DIV_PREAMBLE, ATT_AUTHOR);
+	/*fff*/
+	style_pop(), style_pop(), style_pop();
 
 	if(!style_push(&html_ul) || !style_push(&html_li)) return 0;
 	if(is_typedef || is_tag || is_data || is_function)
@@ -771,9 +798,10 @@ int ReportOut(void) {
 		printf("<a href = \"#license:\">License</a>"), style_pop_push();
 	style_pop(); /* li */
 	style_pop(); /* ul */
+	assert(!StyleArraySize(&mode.styles));
 
 	/* Print summary. fixme: this could be way shorter. */
-	if(!style_push(&html_text)) return 0;
+	if(!style_push(&no_style)) return 0;
 	if(is_typedef || is_tag || is_data || is_function)
 		printf("<a name = \"summary:\"><!-- --></a>\n"
 		"<h2>Summary</h2>\n\n");
@@ -875,6 +903,7 @@ int ReportOut(void) {
 		printf("</table>\n\n");
 	}
 	style_pop();
+	assert(!StyleArraySize(&mode.styles));
 
 	/* Preamble contents. */
 	if(is_preamble) {
