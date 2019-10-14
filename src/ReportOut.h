@@ -13,6 +13,7 @@ static const struct StyleText {
 	plain_text = { "text",  "", " ", "" },
 	plain_line = { "line", "", " ", "\n" },
 	plain_csv = { "csv", "", ", ", ""},
+	plain_paranthetic = { "paranthetic", "(", " ", ")" },
 	html_p   = { "para", "<p>", " ", "</p>\n\n" },
 	html_li  = { "li",   "\t<li>", " ", "</li>\n" },
 	html_dt  = { "dt",   "\t<dt>", " ", "</dt>\n" },
@@ -59,14 +60,16 @@ static void style_clear(void) {
 	mode.is_before_sep = 0;
 }
 
-static int style_push(const struct StyleText *const text) {
+static void style_push(const struct StyleText *const text) {
 	struct Style *const push = StyleArrayNew(&mode.styles);
 	assert(text);
-	if(!push) return 0;
+	/* There's so many void functions that rely on this function and it's such
+	 a small amount of memory, that it's useless to recover. The OS will have
+	 to clean up our mess. */
+	if(!push) { perror("Unrecoverable"), exit(EXIT_FAILURE); return; }
 	printf("<!-- push %s -->", text->name);
 	push->text = text;
 	push->lazy = BEGIN;
-	return 1;
 }
 
 static void style_pop(void) {
@@ -82,11 +85,9 @@ static void style_pop(void) {
 
 static void style_pop_push(void) {
 	struct Style *const peek = StyleArrayPeek(&mode.styles);
-	int success;
 	assert(peek);
 	style_pop();
-	success = style_push(peek->text);
-	assert(success);
+	style_push(peek->text);
 }
 
 /** Right before we print. If one doesn't have a `symbol`, just pass
@@ -398,14 +399,14 @@ OUT(nbthinsp) {
 OUT(list) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == LIST_ITEM);
-	if(!style_push(&html_ul)) return 0;
+	style_push(&html_ul);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
 OUT(pre) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == PREFORMATTED);
-	if(!style_push(&html_pre)) return 0;
+	style_push(&html_pre);
 	html_encode(t->length, t->from);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
@@ -448,7 +449,6 @@ static void highlight_tokens(const struct TokenArray *const tokens,
 		} else {
 			is_highlight = 0;
 		}
-		/*state_sep_if_needed(token->symbol);*/
 		if(is_highlight) printf("<em>");
 		token = print_token(tokens, token);
 		if(is_highlight) printf("</em>");
@@ -504,26 +504,40 @@ static int is_not_div_preamble(const enum Division d) {
 
 
 /** For `segment`, print all attributes that match `symbol`.
+ @param[is_details] Prints where is is first.
  @order O(`attributes`) */
 static void segment_att_print(const struct Segment *const segment,
-	const enum Symbol symbol) {
+	const enum Symbol symbol, const int is_details) {
 	struct Attribute *attribute = 0;
 	assert(segment);
 	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
+		size_t *pindex;
 		if(attribute->token.symbol != symbol) continue;
+		if(is_details) {
+			style_prepare_output(END);
+			printf("%s", division_strings[segment->division]);
+			if((pindex = SizeArrayNext(&segment->code_params, 0))
+			   && *pindex < TokenArraySize(&segment->code)) {
+				const struct Token *token
+					= TokenArrayGet(&segment->code) + *pindex;
+				fputc(' ', stdout);
+				lit(&segment->code, &token);
+			}
+			fputs(": ", stdout);
+		}
 		print_tokens(&attribute->contents);
 		style_pop_push();
 	}
 }
 /** For each `division` segment, print all attributes that match `symbol`.
- <needed!>
+ @param[is_details] Prints where is is first.
  @order O(`segments` * `attributes`) */
 static void div_att_print(const DivisionPredicate div_pred,
-	const enum Symbol symbol) {
+	const enum Symbol symbol, const int is_details) {
 	struct Segment *segment = 0;
 	while((segment = SegmentArrayNext(&report, segment)))
 		if(!div_pred || div_pred(segment->division))
-		segment_att_print(segment, symbol);
+		segment_att_print(segment, symbol, is_details);
 }
 
 
@@ -648,8 +662,8 @@ static void print_attribute_maybe(const struct Segment *const segment,
 	printf("<!-- print attribute maybe??? -->");
 	if(!segment_attribute_exists(segment, symbol)) return;
 	printf("\n\n");
-	if(!style_push(&html_dl)) {fprintf(stderr, "Fire and brimstone.\n"); return; }
-	segment_att_print(segment, symbol);
+	style_push(&html_dl);
+	segment_att_print(segment, symbol, 0);
 	/*style_end_item()*/; /* state_to_default(); */
 }
 
@@ -659,7 +673,7 @@ static void print_attribute_header_maybe(const struct Segment *const segment,
 	printf("<!-- print attribute header maybe??? -->");
 	if(!segment_attribute_header_exists(segment, symbol, header)) return;
 	printf("\n\n");
-	if(!style_push(&html_dl)) {fprintf(stderr, "Fire and brimstone.\n"); return; }
+	style_push(&html_dl);
 	attribute_header_print(segment, symbol, header);
 	/*style_end_item()*/; /* state_to_default(); */
 }
@@ -672,19 +686,19 @@ static void segment_print_all(const struct Segment *const segment) {
 	assert(segment);
 	/* The title is generally the first param. Only single-words. */
 	if((param = param_no(segment, 0))) {
-		if(!style_push(&html_p)) {fprintf(stderr, "Fire and brimstone.\n"); return; }
+		style_push(&html_p);
 		printf("<a name = \"%s:", division_strings[segment->division]);
 		print_token(&segment->code, param);
 		printf("\"><!-- --></a>\n");
-		if(!style_push(&html_h3)) {fprintf(stderr, "Fire and brimstone.\n"); return; }
+		style_push(&html_h3);
 		print_token(&segment->code, param);
 		/*style_end_item()*/; /* state_to_default(); */
 		printf("\n\n");
-		if(!style_push(&html_code)) {fprintf(stderr, "Fire and brimstone.\n"); return; }
+		style_push(&html_code);
 		highlight_tokens(&segment->code, &segment->code_params);
 		style_pop();
 	}
-	if(!style_push(&html_p)) {fprintf(stderr, "Fire and brimstone.\n"); return; }
+	style_push(&html_p);
 	print_tokens(&segment->doc);
 	/*style_end_item()*/; /* state_to_default(); */
 	if(segment->division == DIV_PREAMBLE) {
@@ -709,8 +723,8 @@ static void segment_print_all(const struct Segment *const segment) {
 /** Prints preable segment's doc. */
 static void preamble_print_all_content(void) {
 	struct Segment *segment = 0;
-	if(!style_push(&html_p)) {fprintf(stderr, "Fire and brimstone.\n"); return; }
-while((segment = SegmentArrayNext(&report, segment))) {
+	style_push(&html_p);
+	while((segment = SegmentArrayNext(&report, segment))) {
 		if(segment->division != DIV_PREAMBLE) continue;
 		print_tokens(&segment->doc);
 		/*style_end_item()*/; /* state_to_default(); */
@@ -759,24 +773,24 @@ int ReportOut(void) {
 		"\t\tpadding:          4px;\n"
 		"\t}\n"
 		"</style>\n");
-	if(!style_push(&html_title) || !style_push(&plain_text)) return 0;
-	div_att_print(&is_div_preamble /*DIV_PREAMBLE*/, ATT_TITLE);
+	style_push(&html_title), style_push(&plain_text);
+	div_att_print(&is_div_preamble, ATT_TITLE, 0);
 	style_pop(), style_pop();
 	printf("</head>\n\n"
 		"<body>\n\n");
 
-	if(!style_push(&html_h1) || !style_push(&plain_text)) return 0;
-	div_att_print(DIV_PREAMBLE, ATT_TITLE);
+	style_push(&html_h1), style_push(&plain_text);
+	div_att_print(&is_div_preamble, ATT_TITLE, 0);
 	style_pop(), style_pop();
 
-	/* fixme: also get authors of fn. */
-	if(!style_push(&html_p) || !style_push(&plain_csv)
-		|| !style_push(&plain_text)) return 0;
-	div_att_print(DIV_PREAMBLE, ATT_AUTHOR);
-	/*fff*/
-	style_pop(), style_pop(), style_pop();
+	style_push(&html_p), style_push(&plain_csv), style_push(&plain_text);
+	div_att_print(&is_div_preamble, ATT_AUTHOR, 0);
+	style_pop(), style_push(&plain_paranthetic), style_push(&plain_csv),
+	style_push(&plain_text);
+	div_att_print(&is_not_div_preamble, ATT_AUTHOR, 1);
+	style_pop(), style_pop(), style_pop(), style_pop(), style_pop();
 
-	if(!style_push(&html_ul) || !style_push(&html_li)) return 0;
+	style_push(&html_ul), style_push(&html_li);
 	if(is_typedef || is_tag || is_data || is_function)
 		style_prepare_output(END),
 		printf("<a href = \"#summary:\">Summary</a>"), style_pop_push();
@@ -796,12 +810,11 @@ int ReportOut(void) {
 		division_strings[DIV_FUNCTION]), style_pop_push();
 	if(is_license) style_prepare_output(END),
 		printf("<a href = \"#license:\">License</a>"), style_pop_push();
-	style_pop(); /* li */
-	style_pop(); /* ul */
+	style_pop(), /* li */ style_pop(); /* ul */
 	assert(!StyleArraySize(&mode.styles));
 
 	/* Print summary. fixme: this could be way shorter. */
-	if(!style_push(&no_style)) return 0;
+	style_push(&no_style);
 	if(is_typedef || is_tag || is_data || is_function)
 		printf("<a name = \"summary:\"><!-- --></a>\n"
 		"<h2>Summary</h2>\n\n");
@@ -823,7 +836,7 @@ int ReportOut(void) {
 			print_token(&segment->code, params + idxs[0]);
 			printf("</a></td><td>");
 			/* fixme: More advanced in Semantic: we know "typedef ". */
-			if(!style_push(&html_code)) return 0;
+			style_push(&html_code);
 			print_tokens(&segment->code);
 			style_pop();
 			printf("</td></tr>\n\n");
@@ -910,7 +923,7 @@ int ReportOut(void) {
 		printf("<a name = \"%s:\"><!-- --></a>\n"
 			"<h2>Preamble</h2>\n\n",
 			division_strings[DIV_PREAMBLE]);
-		if(!style_push(&html_p)) return 0;
+		style_push(&html_p);
 		preamble_print_all_content();
 		style_pop();
 	}
@@ -945,7 +958,7 @@ int ReportOut(void) {
 	if(is_license) {
 		printf("<a name = \"license:\"><!-- --></a>\n"
 			"<h2>License</h2>\n\n");
-		if(!style_push(&html_p)) return 0;
+		style_push(&html_p);
 		division_attribute_act(DIV_PREAMBLE, ATT_LICENSE, &print_tokens);
 		/*style_end_item()*/; /* state_to_default(); */
 		printf("\n\n");

@@ -145,6 +145,7 @@ static enum Token fun2_scan_eof(struct Scanner *const arg1_2, int arg2_2) {
 
 /** Function.
  @implements ScannerFn
+ @author Prof. Snape
  @allow */
 static enum Token fun3_scan_comment(struct Scanner *const arg1_1) {
 	goto comment;
