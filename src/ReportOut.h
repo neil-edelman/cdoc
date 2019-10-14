@@ -19,7 +19,7 @@ static const struct StyleText {
 	html_dt  = { "dt",   "\t<dt>", " ", "</dt>\n" },
 	html_dd  = { "dd",   "\t<dd>", " ", "</dd>\n" },
 	html_code= { "code", "<code>", "&nbsp;", "</code>"},
-	html_pre = { "pre",  "<pre>", " ", "</pre>" }, /* /\ Leaves. */
+	html_pre = { "pre",  "<pre>", "", "</pre>" }, /* /\ Leaves. */
 	html_title = { "title", "<title>", "; ", "</title>\n" }, /* \/ Internal. */
 	html_h1  = { "h1",   "<h1>", "; ", "</h1>\n\n" },
 	html_h3  = { "h3",   "<h3>", "; ", "</h3>\n\n" },
@@ -83,16 +83,16 @@ static void style_pop(void) {
 	if(top) assert(top->lazy != BEGIN), top->lazy = SEPARATE;
 }
 
+static const struct StyleText *style_text_peek(void) {
+	const struct Style *const s = StyleArrayPeek(&mode.styles);
+	return s ? s->text : 0;
+}
+
 static void style_pop_push(void) {
 	struct Style *const peek = StyleArrayPeek(&mode.styles);
 	assert(peek);
 	style_pop();
 	style_push(peek->text);
-}
-
-static void style_pop_all(void) {
-	struct Style *peek;
-	while((peek = StyleArrayPeek(&mode.styles))) style_pop();
 }
 
 /** Right before we print. If one doesn't have a `symbol`, just pass
@@ -163,9 +163,9 @@ OUT(ws) {
 OUT(par) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == NEWLINE);
-	/* This is so that <ul>, <pre>, we don't care. If we had any paragraphs
-	 inside of those things, we would have to find a better solution. */
-	style_pop_all();
+	/* Special consideration: `<ul>` gets two pops. */
+	style_pop();
+	if(style_text_peek() == &html_ul) style_pop();
 	style_push(&html_p); /* Start on a new paragraph. */
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
@@ -405,17 +405,29 @@ OUT(nbthinsp) {
 	return 1;
 }
 OUT(list) {
+	const struct StyleText *const peek = style_text_peek();
 	const struct Token *const t = *ptoken;
-	assert(tokens && t && t->symbol == LIST_ITEM);
-	style_pop(), style_push(&html_ul), style_push(&html_li);
+	assert(tokens && t && t->symbol == LIST_ITEM && peek);
+	/* This is a hack to get the lists to close automatically. */
+	if(peek == &html_li) {
+		style_pop_push();
+	} else {
+		style_pop(), style_push(&html_ul), style_push(&html_li);
+	}
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
+/* @fixme This is broken. Want it to `<pre>` all the way to the end, instead,
+ `<pre>` is happening each time. It is very messy, but approximates what we
+ want. Styles must be more complicated. */
 OUT(pre) {
+	const struct StyleText *const peek = style_text_peek();
 	const struct Token *const t = *ptoken;
-	assert(tokens && t && t->symbol == PREFORMATTED);
+	assert(tokens && t && t->symbol == PREFORMATTED && peek);
 	style_push(&html_pre);
+	style_prepare_output(t->symbol);
 	html_encode(t->length, t->from);
+	style_pop();
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -529,7 +541,7 @@ static void segment_att_print(const struct Segment *const segment,
 				const struct Token *token
 					= TokenArrayGet(&segment->code) + *pindex;
 				fputc(' ', stdout);
-				lit(&segment->code, &token);
+				print_token(&segment->code, token);
 			}
 			fputs(": ", stdout);
 		}
