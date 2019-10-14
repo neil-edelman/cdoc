@@ -90,6 +90,11 @@ static void style_pop_push(void) {
 	style_push(peek->text);
 }
 
+static void style_pop_all(void) {
+	struct Style *peek;
+	while((peek = StyleArrayPeek(&mode.styles))) style_pop();
+}
+
 /** Right before we print. If one doesn't have a `symbol`, just pass
  `END == 0`. */
 static void style_prepare_output(const enum Symbol symbol) {
@@ -158,7 +163,10 @@ OUT(ws) {
 OUT(par) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == NEWLINE);
-	style_pop_push();
+	/* This is so that <ul>, <pre>, we don't care. If we had any paragraphs
+	 inside of those things, we would have to find a better solution. */
+	style_pop_all();
+	style_push(&html_p); /* Start on a new paragraph. */
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -399,7 +407,7 @@ OUT(nbthinsp) {
 OUT(list) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == LIST_ITEM);
-	style_push(&html_ul);
+	style_pop(), style_push(&html_ul), style_push(&html_li);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -720,19 +728,6 @@ static void segment_print_all(const struct Segment *const segment) {
 	print_attribute_maybe(segment, ATT_LICENSE);
 }
 
-/** Prints preable segment's doc. */
-static void preamble_print_all_content(void) {
-	struct Segment *segment = 0;
-	style_push(&html_p);
-	while((segment = SegmentArrayNext(&report, segment))) {
-		if(segment->division != DIV_PREAMBLE) continue;
-		print_tokens(&segment->doc);
-		/*style_end_item()*/; /* state_to_default(); */
-	}
-	printf("\n\nAlso print attributes.\n\n");
-	/* fixme: also print fn attributes for @since @std @depend, _etc_. */
-}
-
 /** Outputs a report.
  @throws[EILSEQ] Sequence error.
  @return Success. */
@@ -776,20 +771,27 @@ int ReportOut(void) {
 	style_push(&html_title), style_push(&plain_text);
 	div_att_print(&is_div_preamble, ATT_TITLE, 0);
 	style_pop(), style_pop();
+	assert(!StyleArraySize(&mode.styles));
 	printf("</head>\n\n"
 		"<body>\n\n");
 
+	/* Title. */
 	style_push(&html_h1), style_push(&plain_text);
 	div_att_print(&is_div_preamble, ATT_TITLE, 0);
 	style_pop(), style_pop();
+	assert(!StyleArraySize(&mode.styles));
 
+	/* Search for any author. */
 	style_push(&html_p), style_push(&plain_csv), style_push(&plain_text);
 	div_att_print(&is_div_preamble, ATT_AUTHOR, 0);
-	style_pop(), style_push(&plain_paranthetic), style_push(&plain_csv),
-	style_push(&plain_text);
+	/* text */ style_pop(), style_push(&plain_paranthetic),
+	style_push(&plain_csv), style_push(&plain_text);
 	div_att_print(&is_not_div_preamble, ATT_AUTHOR, 1);
+	/* text, csv, paran, csv, p */
 	style_pop(), style_pop(), style_pop(), style_pop(), style_pop();
+	assert(!StyleArraySize(&mode.styles));
 
+	/* TOC. */
 	style_push(&html_ul), style_push(&html_li);
 	if(is_typedef || is_tag || is_data || is_function)
 		style_prepare_output(END),
@@ -915,19 +917,27 @@ int ReportOut(void) {
 		}
 		printf("</table>\n\n");
 	}
-	style_pop();
+	style_pop(); /* no_style */
 	assert(!StyleArraySize(&mode.styles));
 
 	/* Preamble contents. */
 	if(is_preamble) {
+		struct Segment *segment = 0;
 		printf("<a name = \"%s:\"><!-- --></a>\n"
 			"<h2>Preamble</h2>\n\n",
 			division_strings[DIV_PREAMBLE]);
-		style_push(&html_p);
-		preamble_print_all_content();
-		style_pop();
+		style_push(&html_p)/*, style_push(&plain_text)*/;
+		while((segment = SegmentArrayNext(&report, segment))) {
+			if(segment->division != DIV_PREAMBLE) continue;
+			print_tokens(&segment->doc);
+			style_pop_push();
+		}
+		style_pop(); /* p */
+		printf("\n\n[Also print attributes.]\n\n");
+		/* fixme: also print fn attributes for @since @std @depend, _etc_. */
 	}
 
+#if 0
 	/* Print typedefs. */
 	if(is_typedef) {
 		printf("<a name = \"%s:\"><!-- --></a>"
@@ -963,8 +973,8 @@ int ReportOut(void) {
 		/*style_end_item()*/; /* state_to_default(); */
 		printf("\n\n");
 	}
+#endif
 
-	style_pop();
 	printf("</body>\n"
 		"</html>\n");
 	style_clear();
