@@ -6,25 +6,37 @@ static const int symbol_after_sep[]  = { SYMBOL(PARAM6E) };
 static const char *symbol_attribute_titles[] = { SYMBOL(PARAM6F) };
 
 /* Every `StyleText` can have a beginning, a separator, and an end, which will
- be printed around literals. */
+ be printed around literals. Block and can appear alone elements have
+ `is_next_level`. */
 static const struct StyleText {
 	const char *name, *begin, *sep, *end;
-} no_style = { "no style", "", "", "" },
-	plain_text = { "text",  "", " ", "" },
-	plain_line = { "line", "", " ", "\n" },
-	plain_csv = { "csv", "", ", ", ""},
-	plain_paranthetic = { "paranthetic", "(", " ", ")" },
-	html_p   = { "para", "<p>", " ", "</p>\n\n" },
-	html_li  = { "li",   "\t<li>", " ", "</li>\n" },
-	html_dt  = { "dt",   "\t<dt>", " ", "</dt>\n" },
-	html_dd  = { "dd",   "\t<dd>", " ", "</dd>\n" },
-	html_code= { "code", "<code>", "&nbsp;", "</code>"},
-	html_pre = { "pre",  "<pre>", "", "</pre>" }, /* /\ Leaves. */
-	html_title = { "title", "<title>", "; ", "</title>\n" }, /* \/ Internal. */
-	html_h1  = { "h1",   "<h1>", "; ", "</h1>\n\n" },
-	html_h3  = { "h3",   "<h3>", "; ", "</h3>\n\n" },
-	html_ul  = { "ul",   "<ul>\n", "", "</ul>\n\n" },
-	html_dl  = { "dl",   "<dl>\n", "", "</dl>\n\n" };
+	int is_next_level;
+} no_style = { "no style", "", "", "", 0 },
+	plain_text = { "text",  "", " ", "", 0 },
+	plain_parenthetic = { "parenthetic", "(", " ", ")", 0 },
+	plain_csv = { "csv", "", ", ", "", 0 },
+	plain_ssv = { "ssv", "", "; ", "", 0 },
+	html_p   = { "para", "<p>", " ", "</p>\n\n", 1 },
+	html_ul  = { "ul",   "<ul>\n", "", "</ul>\n\n", 1 },
+	html_li  = { "li",   "\t<li>", " ", "</li>\n", 0 },
+	html_dt  = { "dt",   "\t<dt>", " ", "</dt>\n", 0 },
+	html_dd  = { "dd",   "\t<dd>", " ", "</dd>\n", 0 },
+	html_code= { "code", "<code>", "&nbsp;", "</code>", 0},
+	html_pre = { "pre",  "<pre>\n", "", "</pre>\n\n", 1 },
+	html_pre_line = { "line", "", "\n", "\n", 0 },
+	html_title = { "title", "<title>", "", "</title>\n", 1 },
+	html_h1  = { "h1",   "<h1>", "", "</h1>\n\n", 1 },
+	html_h3  = { "h3",   "<h3>", "", "</h3>\n\n", 1 },
+	html_dl  = { "dl",   "<dl>\n", "", "</dl>\n\n", 1 };
+
+/* block: address article(5) aside(5) blockquote canvas(5) dd div dl dt
+ fieldset? figcaption(5) figure(5) footer(5) form h1-6 header(5) hr li main(5)
+ nav(5) noscript ol p pre section(5) tfoot ul video(5) */
+
+/* inline: a abbr acronym b bdo big br button cite code dfn em i img input kbd
+ label map object output q (quote) samp script select small span strong sub sup
+ textarea time(5) tt(4) var */
+/* em strong code samp kbd var */
 
 /* This does a delayed lazy unencoded surrounding text. Popping a `Style` and
  pushing another one, then printing, will cause a end-separator-start-print.
@@ -83,16 +95,28 @@ static void style_pop(void) {
 	if(top) assert(top->lazy != BEGIN), top->lazy = SEPARATE;
 }
 
-static const struct StyleText *style_text_peek(void) {
-	const struct Style *const s = StyleArrayPeek(&mode.styles);
-	return s ? s->text : 0;
+/** Pops until the the element that is popped is a block element and can appear
+ outside all elements. */
+static void style_pop_level(void) {
+	struct Style *top;
+	while((top = StyleArrayPeek(&mode.styles))) {
+		style_pop();
+		if(top->text->is_next_level) break;
+	}
 }
 
+/** Pops and then pushes the same element. */
 static void style_pop_push(void) {
 	struct Style *const peek = StyleArrayPeek(&mode.styles);
 	assert(peek);
 	style_pop();
 	style_push(peek->text);
+}
+
+/** Some of the elements require looking at the style on top. */
+static const struct StyleText *style_text_peek(void) {
+	const struct Style *const s = StyleArrayPeek(&mode.styles);
+	return s ? s->text : 0;
 }
 
 /** Right before we print. If one doesn't have a `symbol`, just pass
@@ -163,10 +187,8 @@ OUT(ws) {
 OUT(par) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == NEWLINE);
-	/* Special consideration: `<ul>` gets two pops. */
-	style_pop();
-	if(style_text_peek() == &html_ul) style_pop();
-	style_push(&html_p); /* Start on a new paragraph. */
+	style_pop_level();
+	style_push(&html_p);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -408,11 +430,11 @@ OUT(list) {
 	const struct StyleText *const peek = style_text_peek();
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == LIST_ITEM && peek);
-	/* This is a hack to get the lists to close automatically. */
 	if(peek == &html_li) {
 		style_pop_push();
 	} else {
-		style_pop(), style_push(&html_ul), style_push(&html_li);
+		style_pop_level();
+		style_push(&html_ul), style_push(&html_li);
 	}
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
@@ -424,10 +446,12 @@ OUT(pre) {
 	const struct StyleText *const peek = style_text_peek();
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == PREFORMATTED && peek);
-	style_push(&html_pre);
+	if(peek != &html_pre_line) {
+		style_pop_level();
+		style_push(&html_pre), style_push(&html_pre_line);
+	}
 	style_prepare_output(t->symbol);
 	html_encode(t->length, t->from);
-	style_pop();
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -480,7 +504,7 @@ static void print_tokens(const struct TokenArray *const tokens) {
 }
 
 void ReportDebug(void) {
-#ifdef DEBUG
+#ifdef DEBUG_SEGMENTS
 	struct Segment *segment = 0;
 	struct Attribute *att = 0;
 	fprintf(stderr, "Report debug:\n");
@@ -780,27 +804,26 @@ int ReportOut(void) {
 		"\t\tpadding:          4px;\n"
 		"\t}\n"
 		"</style>\n");
-	style_push(&html_title), style_push(&plain_text);
+	style_push(&html_title), style_push(&plain_ssv), style_push(&plain_text);
 	div_att_print(&is_div_preamble, ATT_TITLE, 0);
-	style_pop(), style_pop();
+	style_pop_level();
 	assert(!StyleArraySize(&mode.styles));
 	printf("</head>\n\n"
 		"<body>\n\n");
 
 	/* Title. */
-	style_push(&html_h1), style_push(&plain_text);
+	style_push(&html_h1), style_push(&plain_ssv), style_push(&plain_text);
 	div_att_print(&is_div_preamble, ATT_TITLE, 0);
-	style_pop(), style_pop();
+	style_pop_level();
 	assert(!StyleArraySize(&mode.styles));
 
 	/* Search for any author. */
 	style_push(&html_p), style_push(&plain_csv), style_push(&plain_text);
 	div_att_print(&is_div_preamble, ATT_AUTHOR, 0);
-	/* text */ style_pop(), style_push(&plain_paranthetic),
+	style_pop(), style_push(&plain_parenthetic),
 	style_push(&plain_csv), style_push(&plain_text);
 	div_att_print(&is_not_div_preamble, ATT_AUTHOR, 1);
-	/* text, csv, paran, csv, p */
-	style_pop(), style_pop(), style_pop(), style_pop(), style_pop();
+	style_pop_level();
 	assert(!StyleArraySize(&mode.styles));
 
 	/* TOC. */
@@ -938,14 +961,30 @@ int ReportOut(void) {
 		printf("<a name = \"%s:\"><!-- --></a>\n"
 			"<h2>Preamble</h2>\n\n",
 			division_strings[DIV_PREAMBLE]);
-		style_push(&html_p)/*, style_push(&plain_text)*/;
 		while((segment = SegmentArrayNext(&report, segment))) {
 			if(segment->division != DIV_PREAMBLE) continue;
+			style_push(&html_p);
 			print_tokens(&segment->doc);
-			style_pop_push();
+			style_pop_level();
 		}
-		style_pop(); /* p */
+
 		printf("\n\n[Also print attributes.]\n\n");
+
+		style_push(&html_dl);
+
+		/* Search for any author. */
+		
+		style_push(&html_dd), style_push(&plain_csv), style_push(&plain_text);
+		div_att_print(&is_div_preamble, ATT_AUTHOR, 0);
+		/* text */ style_pop(), style_push(&plain_parenthetic),
+		style_push(&plain_csv), style_push(&plain_text);
+		div_att_print(&is_not_div_preamble, ATT_AUTHOR, 1);
+		/* text, csv, paran, csv, p */
+		style_pop(), style_pop(), style_pop(), style_pop(), style_pop();
+		assert(!StyleArraySize(&mode.styles));
+
+		style_pop(); /* dl */
+
 		/* fixme: also print fn attributes for @since @std @depend, _etc_. */
 	}
 

@@ -374,7 +374,10 @@ int Scanner(void) {
 	/* Scans all. */
 	errno = 0;
 	while((scanner.symbol = scan()) && ReportPlace())
-		fprintf(stderr, "%s.\n", pos()) /* <- spam! */;
+#ifdef DEBUG_SCANNER
+		fprintf(stderr, "%s.\n", pos())
+#endif
+		;
 	if(errno) goto catch;
 	return 1;
 catch:
