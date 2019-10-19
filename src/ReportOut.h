@@ -20,6 +20,7 @@ static const struct StyleText {
 	plain_see_license = { "see", "(See license details ", ", ", ".)", 0 },
 	plain_csv = { "csv", "", ", ", "", 0 },
 	plain_ssv = { "ssv", "", "; ", "", 0 },
+	html_div = { "div", "<div>", "", "</div>\n\n", 1},
 	html_p   = { "para", "<p>", " ", "</p>\n\n", 1 },
 	html_ul  = { "ul",   "<ul>\n", "", "</ul>\n\n", 1 },
 	html_li  = { "li",   "\t<li>", " ", "</li>\n", 0 },
@@ -550,20 +551,28 @@ static int is_not_div_preamble(const enum Division d) {
 
 
 
+/** @return The first token in `tokens` that matches `token`. */
+static const struct Token *any_token(const struct TokenArray *const tokens,
+	const struct Token *const token) {
+	const struct Token *t = 0;
+	while((t = TokenArrayNext(tokens, t)))
+		if(!token_compare(token, t)) return t;
+	return 0;
+}
+
 /** Functions as a bit-vector. */
 enum AttShow { SHOW_NONE, SHOW_WHERE, SHOW_TEXT, SHOW_ALL };
 
-/** For `segment`, print all attributes that match `symbol`.
- @param[is_details] Prints where is is first.
- @order O(`attributes`) */
 static void segment_att_print(const struct Segment *const segment,
-	const enum Symbol symbol, const enum AttShow show) {
+	const enum Symbol symbol, const struct Token *const header,
+	const enum AttShow show) {
 	struct Attribute *attribute = 0;
 	assert(segment);
 	if(!show) return;
 	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
 		size_t *pindex;
-		if(attribute->token.symbol != symbol) continue;
+		if(attribute->token.symbol != symbol
+			|| (header && !any_token(&attribute->header, header))) continue;
 		style_prepare_output(END);
 		if(show & SHOW_WHERE) {
 			if((pindex = SizeArrayNext(&segment->code_params, 0))
@@ -586,6 +595,26 @@ static void segment_att_print(const struct Segment *const segment,
 		style_pop_push();
 	}
 }
+
+#if 0
+static void segment_att_header_print(const struct Segment *const segment,
+	const enum Symbol symbol) {
+	struct Attribute *attribute = 0;
+	char a[12];
+	assert(segment && header);
+	token_to_string(header, &a);
+	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
+		if(attribute->token.symbol != symbol
+		   || !any_token(&attribute->header, header)) continue;
+		printf("[");
+		print_tokens(&attribute->header);
+		printf("]");
+		print_tokens(&attribute->contents);
+		/*style_end_item();*/
+	}
+}
+#endif
+
 /** For each `division` segment, print all attributes that match `symbol`.
  @param[is_where] Prints where is is.
  @param[is_text] Prints the text. */
@@ -595,7 +624,7 @@ static void div_att_print(const DivisionPredicate div_pred,
 	if(!show) return;
 	while((segment = SegmentArrayNext(&report, segment)))
 		if(!div_pred || div_pred(segment->division))
-		segment_att_print(segment, symbol, show);
+		segment_att_print(segment, symbol, 0, show);
 }
 
 
@@ -647,15 +676,11 @@ static void division_act(const enum Division division,
 	}
 }
 
-/** @return Is `attribute_symbol` under `division` in the report?
- <needed> */
-static int division_attribute_exists(const enum Division division,
-	const enum Symbol attribute_symbol) {
+/** @return Is `attribute_symbol` in the report? (needed for `@licence`.) */
+static int attribute_exists(const enum Symbol attribute_symbol) {
 	struct Segment *segment = 0;
-	while((segment = SegmentArrayNext(&report, segment))) {
-		if(segment->division != division) continue;
+	while((segment = SegmentArrayNext(&report, segment)))
 		if(segment_attribute_exists(segment, attribute_symbol)) return 1;
-	}
 	return 0;
 }
 
@@ -669,15 +694,6 @@ static void division_attribute_act(const enum Division division,
 		if(segment->division != division) continue;
 		segment_attribute_act(segment, attribute_symbol, act);
 	}
-}
-
-/** @return The first token in `tokens` that matches `token`. */
-static const struct Token *any_token(const struct TokenArray *const tokens,
-	const struct Token *const token) {
-	const struct Token *t = 0;
-	while((t = TokenArrayNext(tokens, t)))
-		if(!token_compare(token, t)) return t;
-	return 0;
 }
 
 /** Searches if attribute `symbol` exists within `segment` whose header
@@ -694,88 +710,16 @@ static int segment_attribute_header_exists(const struct Segment *const segment,
 	return 0;
 }
 
-/** For `segment`, print all attributes that match `symbol` whose header
- contains `header`.
- @order O(`attributes`) */
-static void attribute_header_print(const struct Segment *const segment,
-	const enum Symbol symbol, const struct Token *const header) {
-	struct Attribute *attribute = 0;
-	char a[12];
-	assert(segment && header);
-	token_to_string(header, &a);
-	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
-		if(attribute->token.symbol != symbol
-			|| !any_token(&attribute->header, header)) continue;
-		printf("[");
-		print_tokens(&attribute->header);
-		printf("]");
-		print_tokens(&attribute->contents);
-		/*style_end_item();*/
-	}
-}
-
-static void print_attribute_maybe(const struct Segment *const segment,
-	const enum Symbol symbol) {
-	assert(segment && symbol);
-	printf("<!-- print attribute maybe??? -->");
-	if(!segment_attribute_exists(segment, symbol)) return;
-	printf("\n\n");
-	style_push(&html_dl);
-	segment_att_print(segment, symbol, SHOW_TEXT);
-	/*style_end_item()*/; /* state_to_default(); */
-}
-
-static void print_attribute_header_maybe(const struct Segment *const segment,
-	const enum Symbol symbol, const struct Token *header) {
-	assert(segment && symbol);
-	printf("<!-- print attribute header maybe??? -->");
-	if(!segment_attribute_header_exists(segment, symbol, header)) return;
-	printf("\n\n");
-	style_push(&html_dl);
-	attribute_header_print(segment, symbol, header);
-	/*style_end_item()*/; /* state_to_default(); */
-}
-
-/** Prints all a `segment`.
- @implements division_act */
-static void segment_print_all(const struct Segment *const segment) {
-	const struct Token *param;
-	size_t no;
-	assert(segment);
-	/* The title is generally the first param. Only single-words. */
-	if((param = param_no(segment, 0))) {
-		style_push(&html_p);
-		printf("<a name = \"%s:", division_strings[segment->division]);
-		print_token(&segment->code, param);
-		printf("\"><!-- --></a>\n");
-		style_push(&html_h3);
-		print_token(&segment->code, param);
-		/*style_end_item()*/; /* state_to_default(); */
-		printf("\n\n");
-		style_push(&html_code);
-		highlight_tokens(&segment->code, &segment->code_params);
-		style_pop();
-	}
-	style_push(&html_p);
-	print_tokens(&segment->doc);
-	/*style_end_item()*/; /* state_to_default(); */
-	if(segment->division == DIV_PREAMBLE) {
-		/*fixme: print_attributes_header(segment, ATT_PARAM);*/
-	} else if(segment->division == DIV_FUNCTION) {
-		for(no = 1; (param = param_no(segment, no)); no++)
-			print_attribute_header_maybe(segment, ATT_PARAM, param);
-		print_attribute_maybe(segment, ATT_RETURN);
-		print_attribute_maybe(segment, ATT_IMPLEMENTS);
-		print_attribute_maybe(segment, ATT_THROWS);
-		print_attribute_maybe(segment, ATT_ORDER);
-	} else if(segment->division == DIV_TAG) {
-		/*fixme: print_attributes_header(segment, ATT_PARAM);*/
-	}
-	print_attribute_maybe(segment, ATT_AUTHOR);
-	print_attribute_maybe(segment, ATT_STD);
-	print_attribute_maybe(segment, ATT_DEPEND);
-	print_attribute_maybe(segment, ATT_FIXME);
-	print_attribute_maybe(segment, ATT_LICENSE);
+static void dl_segment_att(const struct Segment *const segment,
+	const enum Symbol attribute, const struct Token *header) {
+	assert(segment && attribute);
+	if((header && !segment_attribute_header_exists(segment, attribute, header))
+		|| (!header && !segment_attribute_exists(segment, attribute))) return;
+	sprintf(title, "\t<dt>%.128s:</dt>\n"
+		"\t<dd>", symbol_attribute_titles[attribute]);
+	style_push(&html_desc), style_push(&plain_ssv), style_push(&plain_text);
+	segment_att_print(segment, attribute, header, SHOW_TEXT);
+	style_pop(), style_pop(), style_pop();
 }
 
 /** This is used in preamble for attributes inside a `dl`.
@@ -793,6 +737,71 @@ static void dl_preamble_att(const enum Symbol attribute,
 	assert(StyleArraySize(&mode.styles) == 1);
 }
 
+/*static void dl_att_print(const struct Segment *const segment,
+	const enum Attribute attribute, const enum AttShow show) {
+	assert(attribute);
+	sprintf(title, "\t<dt>%.128s:</dt>\n"
+		"\t<dd>", symbol_attribute_titles[attribute->token.symbol]);
+	style_push(&html_desc), style_push(&plain_csv), style_push(&plain_text);
+	segment_att_print(, attribute, SHOW_TEXT);
+	style_pop(), style_push(&plain_parenthetic), style_push(&plain_csv),
+	style_push(&plain_text);
+	div_att_print(&is_not_div_preamble, attribute, show);
+	style_pop(), style_pop(), style_pop(), style_pop(), style_pop();
+}*/
+
+/** Prints all a `segment`.
+ @implements division_act */
+static void segment_print_all(const struct Segment *const segment) {
+	const struct Token *param;
+	assert(segment);
+	assert(!StyleArraySize(&mode.styles));
+	style_push(&html_div);
+	/* The title is generally the first param. Only single-words. */
+	if((param = param_no(segment, 0))) {
+		style_prepare_output(END);
+		printf("<a name = \"%s:", division_strings[segment->division]);
+		print_token(&segment->code, param);
+		printf("\"><!-- --></a>\n");
+		style_push(&html_h3);
+		print_token(&segment->code, param);
+		style_pop_level();
+		style_push(&html_p), style_push(&html_code);
+		highlight_tokens(&segment->code, &segment->code_params);
+		style_pop_level();
+	} else {
+		style_push(&html_h3);
+		style_prepare_output(END);
+		printf("Unknown");
+		style_pop_level();
+	}
+	style_push(&html_p);
+	print_tokens(&segment->doc);
+	style_pop_level();
+	style_push(&html_dl);
+	if(segment->division == DIV_PREAMBLE) {
+		/*fixme: print_attributes_header(segment, ATT_PARAM);*/
+	} else if(segment->division == DIV_FUNCTION) {
+		size_t no;
+		for(no = 1; (param = param_no(segment, no)); no++)
+			dl_segment_att(segment, ATT_PARAM, param);
+		dl_segment_att(segment, ATT_RETURN, 0);
+		dl_segment_att(segment, ATT_IMPLEMENTS, 0);
+		dl_segment_att(segment, ATT_THROWS, 0);
+		dl_segment_att(segment, ATT_ORDER, 0);
+	} else if(segment->division == DIV_TAG) {
+		/*fixme: print_attributes_header(segment, ATT_PARAM);*/
+	}
+	dl_segment_att(segment, ATT_AUTHOR, 0);
+	dl_segment_att(segment, ATT_STD, 0);
+	dl_segment_att(segment, ATT_DEPEND, 0);
+	dl_segment_att(segment, ATT_FIXME, 0);
+	dl_segment_att(segment, ATT_LICENSE, 0);
+	style_pop_level(); /* dl */
+	style_pop_level(); /* div */
+	assert(!StyleArraySize(&mode.styles));
+}
+
 /** Outputs a report.
  @throws[EILSEQ] Sequence error.
  @return Success. */
@@ -802,7 +811,7 @@ int ReportOut(void) {
 		is_tag = division_exists(DIV_TAG),
 		is_typedef = division_exists(DIV_TYPEDEF),
 		is_data = division_exists(DIV_DATA),
-		is_license = division_attribute_exists(DIV_PREAMBLE, ATT_LICENSE);
+		is_license = attribute_exists(ATT_LICENSE);
 	/* Set `errno` here so that we don't have to test output each time. */
 	errno = 0;
 	printf("<!doctype html public \"-//W3C//DTD HTML 4.01//EN\" "
@@ -1020,6 +1029,7 @@ int ReportOut(void) {
 			"<h2>General Definitions</h2>\n\n", division_strings[DIV_DATA]);
 		division_act(DIV_DATA, &segment_print_all);
 	}
+#endif
 	/* Print functions. */
 	if(is_function) {
 		printf("<a name = \"%s:\"><!-- --></a>"
@@ -1027,7 +1037,6 @@ int ReportOut(void) {
 			division_strings[DIV_FUNCTION]);
 		division_act(DIV_FUNCTION, &segment_print_all);
 	}
-#endif
 	/* License. */
 	if(is_license) {
 		printf("<a name = \"license:\"><!-- --></a>\n"
