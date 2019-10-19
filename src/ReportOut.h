@@ -17,13 +17,12 @@ static const struct StyleText {
 } no_style = { "no style", "", "", "", 0 },
 	plain_text = { "text",  "", " ", "", 0 },
 	plain_parenthetic = { "parenthetic", "(", " ", ")", 0 },
+	plain_see_license = { "see", "(See license details ", ", ", ".)", 0 },
 	plain_csv = { "csv", "", ", ", "", 0 },
 	plain_ssv = { "ssv", "", "; ", "", 0 },
 	html_p   = { "para", "<p>", " ", "</p>\n\n", 1 },
 	html_ul  = { "ul",   "<ul>\n", "", "</ul>\n\n", 1 },
 	html_li  = { "li",   "\t<li>", " ", "</li>\n", 0 },
-	/*html_dt  = { "dt",   "\t<dt>", " ", "</dt>\n", 0 },
-	html_dd  = { "dd",   "\t<dd>", " ", "</dd>\n", 0 },*/
 	html_code= { "code", "<code>", "&nbsp;", "</code>", 0},
 	html_pre = { "pre",  "<pre>\n", "", "</pre>\n\n", 1 },
 	html_pre_line = { "line", "", "\n", "\n", 0 },
@@ -551,41 +550,52 @@ static int is_not_div_preamble(const enum Division d) {
 
 
 
+/** Functions as a bit-vector. */
+enum AttShow { SHOW_NONE, SHOW_WHERE, SHOW_TEXT, SHOW_ALL };
+
 /** For `segment`, print all attributes that match `symbol`.
  @param[is_details] Prints where is is first.
  @order O(`attributes`) */
 static void segment_att_print(const struct Segment *const segment,
-	const enum Symbol symbol, const int is_details) {
+	const enum Symbol symbol, const enum AttShow show) {
 	struct Attribute *attribute = 0;
 	assert(segment);
+	if(!show) return;
 	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
 		size_t *pindex;
 		if(attribute->token.symbol != symbol) continue;
-		if(is_details) {
-			style_prepare_output(END);
-			printf("%s", division_strings[segment->division]);
+		style_prepare_output(END);
+		if(show & SHOW_WHERE) {
 			if((pindex = SizeArrayNext(&segment->code_params, 0))
-			   && *pindex < TokenArraySize(&segment->code)) {
+				&& *pindex < TokenArraySize(&segment->code)) {
 				const struct Token *token
 					= TokenArrayGet(&segment->code) + *pindex;
-				fputc(' ', stdout);
+				style_push(&no_style);
+				printf("<a href = \"#%s:", division_strings[segment->division]);
 				print_token(&segment->code, token);
+				printf("\">");
+				print_token(&segment->code, token);
+				printf("</a>");
+				style_pop();
+			} else {
+				printf("%s", division_strings[segment->division]);
 			}
-			fputs(": ", stdout);
 		}
-		print_tokens(&attribute->contents);
+		if(show == SHOW_ALL) fputs(": ", stdout);
+		if(show & SHOW_TEXT) print_tokens(&attribute->contents);
 		style_pop_push();
 	}
 }
 /** For each `division` segment, print all attributes that match `symbol`.
- @param[is_details] Prints where is is first.
- @order O(`segments` * `attributes`) */
+ @param[is_where] Prints where is is.
+ @param[is_text] Prints the text. */
 static void div_att_print(const DivisionPredicate div_pred,
-	const enum Symbol symbol, const int is_details) {
+	const enum Symbol symbol, const enum AttShow show) {
 	struct Segment *segment = 0;
+	if(!show) return;
 	while((segment = SegmentArrayNext(&report, segment)))
 		if(!div_pred || div_pred(segment->division))
-		segment_att_print(segment, symbol, is_details);
+		segment_att_print(segment, symbol, show);
 }
 
 
@@ -670,8 +680,8 @@ static const struct Token *any_token(const struct TokenArray *const tokens,
 	return 0;
 }
 
-/** Seaches if attribute `symbol` exists within `segment` whose header contains
- `header`.
+/** Searches if attribute `symbol` exists within `segment` whose header
+ contains `header`.
  @order O(`attributes`) */
 static int segment_attribute_header_exists(const struct Segment *const segment,
 	const enum Symbol symbol, const struct Token *const header) {
@@ -711,7 +721,7 @@ static void print_attribute_maybe(const struct Segment *const segment,
 	if(!segment_attribute_exists(segment, symbol)) return;
 	printf("\n\n");
 	style_push(&html_dl);
-	segment_att_print(segment, symbol, 0);
+	segment_att_print(segment, symbol, SHOW_TEXT);
 	/*style_end_item()*/; /* state_to_default(); */
 }
 
@@ -768,6 +778,21 @@ static void segment_print_all(const struct Segment *const segment) {
 	print_attribute_maybe(segment, ATT_LICENSE);
 }
 
+/** This is used in preamble for attributes inside a `dl`.
+ @param[is_recursive]  */
+static void dl_preamble_att(const enum Symbol attribute,
+	const enum AttShow show) {
+	sprintf(title, "\t<dt>%.128s:</dt>\n"
+		"\t<dd>", symbol_attribute_titles[attribute]);
+	style_push(&html_desc), style_push(&plain_csv), style_push(&plain_text);
+	div_att_print(&is_div_preamble, attribute, SHOW_TEXT);
+	style_pop(), style_push(&plain_parenthetic), style_push(&plain_csv),
+	style_push(&plain_text);
+	div_att_print(&is_not_div_preamble, attribute, show);
+	style_pop(), style_pop(), style_pop(), style_pop(), style_pop();
+	assert(StyleArraySize(&mode.styles) == 1);
+}
+
 /** Outputs a report.
  @throws[EILSEQ] Sequence error.
  @return Success. */
@@ -809,7 +834,7 @@ int ReportOut(void) {
 		"\t}\n"
 		"</style>\n");
 	style_push(&html_title), style_push(&plain_ssv), style_push(&plain_text);
-	div_att_print(&is_div_preamble, ATT_TITLE, 0);
+	div_att_print(&is_div_preamble, ATT_TITLE, SHOW_TEXT);
 	style_pop_level();
 	assert(!StyleArraySize(&mode.styles));
 	printf("</head>\n\n"
@@ -817,26 +842,18 @@ int ReportOut(void) {
 
 	/* Title. */
 	style_push(&html_h1), style_push(&plain_ssv), style_push(&plain_text);
-	div_att_print(&is_div_preamble, ATT_TITLE, 0);
-	style_pop_level();
-	assert(!StyleArraySize(&mode.styles));
-
-	/* Search for any author. */
-	style_push(&html_p), style_push(&plain_csv), style_push(&plain_text);
-	div_att_print(&is_div_preamble, ATT_AUTHOR, 0);
-	style_pop(), style_push(&plain_parenthetic),
-	style_push(&plain_csv), style_push(&plain_text);
-	div_att_print(&is_not_div_preamble, ATT_AUTHOR, 1);
+	div_att_print(&is_div_preamble, ATT_TITLE, SHOW_TEXT);
 	style_pop_level();
 	assert(!StyleArraySize(&mode.styles));
 
 	/* TOC. */
 	style_push(&html_ul), style_push(&html_li);
+	if(is_preamble) style_prepare_output(END),
+		printf("<a href = \"#%s:\">Preamble</a>",
+		division_strings[DIV_PREAMBLE]), style_pop_push();
 	if(is_typedef || is_tag || is_data || is_function)
 		style_prepare_output(END),
 		printf("<a href = \"#summary:\">Summary</a>"), style_pop_push();
-	if(is_preamble) style_prepare_output(END), printf("<a href = \"#%s:\">Preamble</a>",
-		division_strings[DIV_PREAMBLE]), style_pop_push();
 	if(is_typedef) style_prepare_output(END),
 		printf("<a href = \"#%s:\">Typedef Aliases</a>",
 		division_strings[DIV_TYPEDEF]), style_pop_push();
@@ -851,10 +868,34 @@ int ReportOut(void) {
 		division_strings[DIV_FUNCTION]), style_pop_push();
 	if(is_license) style_prepare_output(END),
 		printf("<a href = \"#license:\">License</a>"), style_pop_push();
-	style_pop(), /* li */ style_pop(); /* ul */
+	style_pop_level();
 	assert(!StyleArraySize(&mode.styles));
 
-	/* Print summary. fixme: this could be way shorter. */
+	/* Preamble contents. */
+	if(is_preamble) {
+		struct Segment *segment = 0;
+		printf("<a name = \"%s:\"><!-- --></a>\n"
+			   "<h2>Preamble</h2>\n\n",
+			   division_strings[DIV_PREAMBLE]);
+		while((segment = SegmentArrayNext(&report, segment))) {
+			if(segment->division != DIV_PREAMBLE) continue;
+			style_push(&html_p);
+			print_tokens(&segment->doc);
+			style_pop_level();
+		}
+		style_push(&html_dl);
+		/* `ATT_TITLE` is above. */
+		dl_preamble_att(ATT_PARAM, SHOW_NONE);
+		dl_preamble_att(ATT_AUTHOR, SHOW_ALL);
+		dl_preamble_att(ATT_STD, SHOW_ALL);
+		dl_preamble_att(ATT_DEPEND, SHOW_ALL);
+		dl_preamble_att(ATT_FIXME, SHOW_WHERE);
+		/* `ATT_RETURN`, `ATT_THROWS`, `ATT_IMPLEMENTS`, `ATT_ORDER`,
+		 `ATT_ALLOW` have warnings. `ATT_LICENSE` is below. */
+		style_pop_level();
+	}
+
+	/* Print summary. fixme: this could be way shorter? */
 	style_push(&no_style);
 	if(is_typedef || is_tag || is_data || is_function)
 		printf("<a name = \"summary:\"><!-- --></a>\n"
@@ -959,40 +1000,6 @@ int ReportOut(void) {
 	style_pop(); /* no_style */
 	assert(!StyleArraySize(&mode.styles));
 
-	/* Preamble contents. */
-	if(is_preamble) {
-		struct Segment *segment = 0;
-		printf("<a name = \"%s:\"><!-- --></a>\n"
-			"<h2>Preamble</h2>\n\n",
-			division_strings[DIV_PREAMBLE]);
-		while((segment = SegmentArrayNext(&report, segment))) {
-			if(segment->division != DIV_PREAMBLE) continue;
-			style_push(&html_p);
-			print_tokens(&segment->doc);
-			style_pop_level();
-		}
-
-		printf("\n\n[Also print attributes.]\n\n");
-
-		style_push(&html_dl);
-
-		/* Search for any author. */
-		sprintf(title, "\t<dt>%s</dt>\n"
-			"\t<dd>", symbol_attribute_titles[ATT_AUTHOR]);
-		style_push(&html_desc);
-		style_push(&plain_csv), style_push(&plain_text);
-		div_att_print(&is_div_preamble, ATT_AUTHOR, 0);
-		style_pop(), style_push(&plain_parenthetic), style_push(&plain_csv),
-			style_push(&plain_text);
-		div_att_print(&is_not_div_preamble, ATT_AUTHOR, 1);
-		style_pop(), style_pop(), style_pop(), style_pop(), style_pop();
-		assert(StyleArraySize(&mode.styles) == 1);
-
-		style_pop_level();
-
-		/* fixme: also print fn attributes for @since @std @depend, _etc_. */
-	}
-
 #if 0
 	/* Print typedefs. */
 	if(is_typedef) {
@@ -1020,16 +1027,18 @@ int ReportOut(void) {
 			division_strings[DIV_FUNCTION]);
 		division_act(DIV_FUNCTION, &segment_print_all);
 	}
+#endif
 	/* License. */
 	if(is_license) {
 		printf("<a name = \"license:\"><!-- --></a>\n"
 			"<h2>License</h2>\n\n");
 		style_push(&html_p);
-		division_attribute_act(DIV_PREAMBLE, ATT_LICENSE, &print_tokens);
-		/*style_end_item()*/; /* state_to_default(); */
-		printf("\n\n");
+		div_att_print(&is_div_preamble, ATT_LICENSE, SHOW_TEXT);
+		style_pop_push();
+		style_push(&plain_see_license), style_push(&plain_text);
+		div_att_print(&is_not_div_preamble, ATT_LICENSE, SHOW_WHERE);
+		style_pop_level();
 	}
-#endif
 
 	printf("</body>\n"
 		"</html>\n");

@@ -119,6 +119,7 @@ enum Token { END };
  @return END.
  @implements ScannerFn
  @author External Author
+ @license External license!
  @allow */
 static enum Token fun2_scan_eof(struct Scanner *const arg1_2, int arg2_2) {
 	(void)arg1_2, (void)arg2_2; return END;
@@ -146,6 +147,7 @@ static enum Token fun2_scan_eof(struct Scanner *const arg1_2, int arg2_2) {
 /** Function.
  @implements ScannerFn
  @author Prof. Snape
+ @license Other license!!
  @allow */
 static enum Token fun3_scan_comment(struct Scanner *const arg1_1) {
 	goto comment;
