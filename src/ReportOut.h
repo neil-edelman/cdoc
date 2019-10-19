@@ -5,6 +5,9 @@ static const int symbol_before_sep[] = { SYMBOL(PARAM6D) };
 static const int symbol_after_sep[]  = { SYMBOL(PARAM6E) };
 static const char *symbol_attribute_titles[] = { SYMBOL(PARAM6F) };
 
+/* `sprintf` titles. */
+static char title[256];
+
 /* Every `StyleText` can have a beginning, a separator, and an end, which will
  be printed around literals. Block and can appear alone elements have
  `is_next_level`. */
@@ -19,15 +22,16 @@ static const struct StyleText {
 	html_p   = { "para", "<p>", " ", "</p>\n\n", 1 },
 	html_ul  = { "ul",   "<ul>\n", "", "</ul>\n\n", 1 },
 	html_li  = { "li",   "\t<li>", " ", "</li>\n", 0 },
-	html_dt  = { "dt",   "\t<dt>", " ", "</dt>\n", 0 },
-	html_dd  = { "dd",   "\t<dd>", " ", "</dd>\n", 0 },
+	/*html_dt  = { "dt",   "\t<dt>", " ", "</dt>\n", 0 },
+	html_dd  = { "dd",   "\t<dd>", " ", "</dd>\n", 0 },*/
 	html_code= { "code", "<code>", "&nbsp;", "</code>", 0},
 	html_pre = { "pre",  "<pre>\n", "", "</pre>\n\n", 1 },
 	html_pre_line = { "line", "", "\n", "\n", 0 },
 	html_title = { "title", "<title>", "", "</title>\n", 1 },
 	html_h1  = { "h1",   "<h1>", "", "</h1>\n\n", 1 },
 	html_h3  = { "h3",   "<h3>", "", "</h3>\n\n", 1 },
-	html_dl  = { "dl",   "<dl>\n", "", "</dl>\n\n", 1 };
+	html_dl  = { "dl",   "<dl>\n", "", "</dl>\n\n", 1 },
+	html_desc = { "desc", title, "", "</dd>\n", 0 };
 
 /* block: address article(5) aside(5) blockquote canvas(5) dd div dl dt
  fieldset? figcaption(5) figure(5) footer(5) form h1-6 header(5) hr li main(5)
@@ -973,17 +977,18 @@ int ReportOut(void) {
 		style_push(&html_dl);
 
 		/* Search for any author. */
-		
-		style_push(&html_dd), style_push(&plain_csv), style_push(&plain_text);
-		div_att_print(&is_div_preamble, ATT_AUTHOR, 0);
-		/* text */ style_pop(), style_push(&plain_parenthetic),
+		sprintf(title, "\t<dt>%s</dt>\n"
+			"\t<dd>", symbol_attribute_titles[ATT_AUTHOR]);
+		style_push(&html_desc);
 		style_push(&plain_csv), style_push(&plain_text);
+		div_att_print(&is_div_preamble, ATT_AUTHOR, 0);
+		style_pop(), style_push(&plain_parenthetic), style_push(&plain_csv),
+			style_push(&plain_text);
 		div_att_print(&is_not_div_preamble, ATT_AUTHOR, 1);
-		/* text, csv, paran, csv, p */
 		style_pop(), style_pop(), style_pop(), style_pop(), style_pop();
-		assert(!StyleArraySize(&mode.styles));
+		assert(StyleArraySize(&mode.styles) == 1);
 
-		style_pop(); /* dl */
+		style_pop_level();
 
 		/* fixme: also print fn attributes for @since @std @depend, _etc_. */
 	}

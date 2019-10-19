@@ -5,7 +5,8 @@
 
 /* Define `Symbols` -- these are the numerical values given to a section of
  text. The format is
- `{ symbols, symbol_marks, symbol_outs, symbol_lspaces, symbol_rspaces }`. */
+ `{ symbols, symbol_marks, symbol_outs, symbol_lspaces, symbol_rspaces,
+ symbol_attribute_titles (must be short) }`. */
 #define SYMBOL(X) \
 	/* EOF -- marked '\0' in memory. */ \
 	X(END,        '\0', 0, 0, 0, 0), \
