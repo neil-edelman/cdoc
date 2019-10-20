@@ -166,8 +166,9 @@ void T_(Foo)(void) {
 
 /** Function `arg1_2`.
  @return Function of `arg2_2`. */
-T fun4(int (*arg1_2)(int a, int (*fn)(void)), Foo arg2_2) /** yo */ {
-	/** @param[a, fn] [] Doesn't do anything. */
+T fun4(int (*arg1_2)(int arg1_3, int (*fn)(void)), Foo arg2_3, /*no*/
+	struct T_(Array) arg3_3) /** yo */ {
+	/** @param[a, fn] Doesn't do anything. */
 	return arg1_2(arg2_2, 0);
 }
 
