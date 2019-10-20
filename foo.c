@@ -5,6 +5,8 @@ text
 &&](http://yo.c) Header. Yo <http://foo.org/> [MIT](https://mit.edu/)
 
 Paragraph @ @a \,~~
+ 
+ Yaaar <fn:foo>, <data:y>, <fn:this_is_not_a_fn>.
 
  \* This is meh.
  \* is
@@ -157,6 +159,10 @@ comment:
 }
 
 typedef int Foo;
+
+/** This is a foo. */
+void T_(Foo)(void) {
+}
 
 /** Function `arg1_2`.
  @return Function of `arg2_2`. */

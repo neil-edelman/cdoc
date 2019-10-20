@@ -94,17 +94,44 @@ static void unused_attribute(const struct AttributeArray *const attributes,
 	}
 }
 
+static void warn_internal_link(const struct Token *const token) {
+	enum Division division;
+	/*struct Segment *segment = 0;*/
+	assert(token);
+	switch(token->symbol) {
+		case SEE_FN:      division = DIV_FUNCTION; break;
+		case SEE_TAG:     division = DIV_TAG;      break;
+		case SEE_TYPEDEF: division = DIV_TYPEDEF;  break;
+		case SEE_DATA:    division = DIV_DATA;     break;
+		default: return;
+	}
+	/* fixme: `print_token` outputs a multi-token to stdout. There's no way to
+	 compare it with this currently. */
+	/*while((segment = SegmentArrayNext(&report, segment))) {
+		if(segment->division != division) continue;
+		token_compare();
+	}*/
+	fprintf(stderr,
+		"%s: there's no way to tell if this link is broken, currently.\n",
+		pos(token));
+}
+
 /** @fixme Should be like Report. */
 static void warn_segment(const struct Segment *const segment) {
 	struct Attribute *attribute;
 	const size_t *code_param;
 	const struct Token *const fallback = segment_fallback(segment);
+	struct Token *token = 0;
 	assert(segment);
 	/* Check for empty (or full, as the case may be) attributes. */
 	attribute = 0;
 	while((attribute = AttributeArrayNext(&segment->attributes, attribute)))
 		if(!attribute_okay(attribute)) fprintf(stderr,
 		"%s: attribute not used correctly.\n", pos(&attribute->token));
+	/* Check all text for undefined references. */
+	while((token = TokenArrayNext(&segment->doc, token)))
+		warn_internal_link(token);
+	/*...code, attributes { header, contents } */
 	/* Check for different things depending on the division. */
 	switch(segment->division) {
 	case DIV_FUNCTION:
@@ -207,7 +234,6 @@ void ReportWarn(void) {
 	struct Segment *segment = 0;
 	while((segment = SegmentArrayNext(&report, segment)))
 		warn_segment(segment);
-	/* fixme: warn if segments with the same data have the same name? meh. */
-	/* fixme: warn if text elements have undifined references (to fn, typedef,
-	 data.) */
+	/* fixme: warn if segments with the same data have the same name?
+	 It would be better to merge them into a hash. */
 }

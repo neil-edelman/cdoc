@@ -36,8 +36,7 @@ static void token_to_string(const struct Token *t, char (*const a)[12]) {
 /** Compares the _contents_ of the tokens. */
 static int token_compare(const struct Token *const a,
 	const struct Token *const b) {
-	return strncmp(a->from, b->from,
-		a->length > b->length ? a->length : b->length);
+	return a->length == b->length && strncmp(a->from, b->from, a->length);
 }
 #define ARRAY_NAME Token
 #define ARRAY_TYPE struct Token

@@ -24,7 +24,7 @@ static const struct StyleText {
 	html_p   = { "para", "<p>", " ", "</p>\n\n", 1 },
 	html_ul  = { "ul",   "<ul>\n", "", "</ul>\n\n", 1 },
 	html_li  = { "li",   "\t<li>", " ", "</li>\n", 0 },
-	html_code= { "code", "<code>", "&nbsp;", "</code>", 0},
+	html_code= { "code", "<code>", /*"&nbsp;"*/" ", "</code>", 0},
 	html_pre = { "pre",  "<pre>\n", "", "</pre>\n\n", 1 },
 	html_pre_line = { "line", "", "\n", "\n", 0 },
 	html_title = { "title", "<title>", "", "</title>\n", 1 },
@@ -958,9 +958,9 @@ int ReportOut(void) {
 			params = TokenArrayGet(&segment->code);
 			paramn = TokenArraySize(&segment->code);
 			assert(idxs[0] < paramn);
-			/* fixme: hard! */
-			printf("<tr><td>donno</td><td><a href = \"#%s:",
-				   division_strings[DIV_FUNCTION]);
+			/* fixme: hard!? */
+			printf("<tr><td>fixme</td><td><a href = \"#%s:",
+				division_strings[DIV_FUNCTION]);
 			print_token(&segment->code, params + idxs[0]);
 			printf("\">");
 			print_token(&segment->code, params + idxs[0]);
