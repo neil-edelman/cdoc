@@ -941,7 +941,6 @@ int ReportOut(void) {
 		style_pop_push();
 	}
 	if(is_function) {
-		const struct Segment *segment = 0;
 		style_prepare_output(END);
 		printf("<a href = \"#%s:\">Function Definitions</a>",
 			division_strings[DIV_FUNCTION]);
@@ -984,7 +983,6 @@ int ReportOut(void) {
 
 	/* Preamble contents. */
 	if(is_preamble) {
-		struct Segment *segment = 0;
 		printf("<a name = \"%s:\"><!-- --></a>\n"
 			   "<h2>Preamble</h2>\n\n",
 			   division_strings[DIV_PREAMBLE]);
@@ -1005,11 +1003,8 @@ int ReportOut(void) {
 		 `ATT_ALLOW` have warnings. `ATT_LICENSE` is below. */
 		style_pop_level();
 	}
-
-	/* Print summary. fixme: this could be way shorter? */
 	assert(!StyleArraySize(&mode.styles));
 
-#if 0
 	/* Print typedefs. */
 	if(is_typedef) {
 		printf("<a name = \"%s:\"><!-- --></a>"
@@ -1029,7 +1024,6 @@ int ReportOut(void) {
 			"<h2>General Definitions</h2>\n\n", division_strings[DIV_DATA]);
 		division_act(DIV_DATA, &segment_print_all);
 	}
-#endif
 	/* Print functions. */
 	if(is_function) {
 		printf("<a name = \"%s:\"><!-- --></a>"
