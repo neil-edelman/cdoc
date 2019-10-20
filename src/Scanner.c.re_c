@@ -300,6 +300,7 @@ scan:
 	<doc> "@implements" { return ATT_IMPLEMENTS; }
 	<doc> "@order"      { return ATT_ORDER; }
 	<doc> "@allow"      { return ATT_ALLOW; }
+	//<doc> "@license"    { return scanner.state = yycparam_begin, ATT_LICENSE; } // fixme??
 	<doc> "@license"    { return ATT_LICENSE; }
 	// fixme: have date_begin @since[], @updated[], maybe updated is bad.
 	// Why not just have it updated now?

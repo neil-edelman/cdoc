@@ -11,7 +11,7 @@
 	/* EOF -- marked '\0' in memory. */ \
 	X(END,        '\0', 0, 0, 0, 0), \
 	/* `C` syntax; 2nd is other stuff than '@'/'~' for inclusion in marker. */ \
-	X(OPERATOR,   '*', &lit, 1, 1, 0), \
+	X(OPERATOR,   '*', &lit, 1, 0, 0), \
 	X(COMMA,      ',', &lit, 0, 1, 0), \
 	X(SEMI,       ';', &lit, 0, 1, 0), \
 	X(LBRACE,     '{', &lit, 1, 1, 0), \

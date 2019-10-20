@@ -812,6 +812,8 @@ int ReportOut(void) {
 		is_typedef = division_exists(DIV_TYPEDEF),
 		is_data = division_exists(DIV_DATA),
 		is_license = attribute_exists(ATT_LICENSE);
+	const struct Segment *segment = 0;
+
 	/* Set `errno` here so that we don't have to test output each time. */
 	errno = 0;
 	printf("<!doctype html public \"-//W3C//DTD HTML 4.01//EN\" "
@@ -857,24 +859,124 @@ int ReportOut(void) {
 
 	/* TOC. */
 	style_push(&html_ul), style_push(&html_li);
-	if(is_preamble) style_prepare_output(END),
+	if(is_preamble) {
+		style_prepare_output(END);
 		printf("<a href = \"#%s:\">Preamble</a>",
-		division_strings[DIV_PREAMBLE]), style_pop_push();
-	if(is_typedef || is_tag || is_data || is_function)
-		style_prepare_output(END),
-		printf("<a href = \"#summary:\">Summary</a>"), style_pop_push();
-	if(is_typedef) style_prepare_output(END),
-		printf("<a href = \"#%s:\">Typedef Aliases</a>",
-		division_strings[DIV_TYPEDEF]), style_pop_push();
-	if(is_tag) style_prepare_output(END),
-		printf("<a href = \"#%s:\">Struct, Union, and Enum Definitions</a>",
-		division_strings[DIV_TAG]), style_pop_push();
-	if(is_data) style_prepare_output(END),
-		printf("<a href = \"#%s:\">Data Definitions</a>",
-		division_strings[DIV_DATA]), style_pop_push();
-	if(is_function) style_prepare_output(END),
+			   division_strings[DIV_PREAMBLE]);
+		style_pop_push();
+	}
+	if(is_typedef) {
+		style_prepare_output(END);
+		printf("<a href = \"#%s:\">Typedef Aliases</a>: ",
+			division_strings[DIV_TYPEDEF]);
+		style_push(&plain_csv), style_push(&no_style);
+		while((segment = SegmentArrayNext(&report, segment))) {
+			size_t *idxs;
+			struct Token *params;
+			if(segment->division != DIV_TYPEDEF
+				|| !SizeArraySize(&segment->code_params)) continue;
+			idxs = SizeArrayGet(&segment->code_params);
+			params = TokenArrayGet(&segment->code);
+			assert(idxs[0] < TokenArraySize(&segment->code));
+			style_prepare_output(END);
+			printf("<a href = \"#%s:",
+				division_strings[DIV_TYPEDEF]);
+			print_token(&segment->code, params + idxs[0]);
+			printf("\">");
+			print_token(&segment->code, params + idxs[0]);
+			printf("</a>");
+			style_pop_push();
+		}
+		style_pop(), style_pop();
+		style_pop_push();
+	}
+	if(is_tag) {
+		style_prepare_output(END);
+		printf("<a href = \"#%s:\">Struct, Union, and Enum Definitions</a>: ",
+			division_strings[DIV_TAG]);
+		style_push(&plain_csv), style_push(&no_style);
+		while((segment = SegmentArrayNext(&report, segment))) {
+			size_t *idxs;
+			struct Token *params;
+			if(segment->division != DIV_TAG
+				|| !SizeArraySize(&segment->code_params)) continue;
+			idxs = SizeArrayGet(&segment->code_params);
+			params = TokenArrayGet(&segment->code);
+			assert(idxs[0] < TokenArraySize(&segment->code));
+			/* fixme: tag type? */
+			style_prepare_output(END);
+			printf("<a href = \"#%s:", division_strings[DIV_TAG]);
+			print_token(&segment->code, params + idxs[0]);
+			printf("\">");
+			print_token(&segment->code, params + idxs[0]);
+			printf("</a>");
+			style_pop_push();
+		}
+		style_pop(), style_pop();
+		style_pop_push();
+	}
+	if(is_data) {
+		style_prepare_output(END);
+		printf("<a href = \"#%s:\">General Declarations</a>: ",
+			division_strings[DIV_DATA]);
+		style_push(&plain_csv), style_push(&no_style);
+		while((segment = SegmentArrayNext(&report, segment))) {
+			size_t *idxs;
+			struct Token *params;
+			if(segment->division != DIV_DATA
+				|| !SizeArraySize(&segment->code_params)) continue;
+			idxs = SizeArrayGet(&segment->code_params);
+			params = TokenArrayGet(&segment->code);
+			assert(idxs[0] < TokenArraySize(&segment->code));
+			/* fixme: data type? */
+			style_prepare_output(END);
+			printf("<a href = \"#%s:", division_strings[DIV_DATA]);
+			print_token(&segment->code, params + idxs[0]);
+			printf("\">");
+			print_token(&segment->code, params + idxs[0]);
+			printf("</a>");
+			style_pop_push();
+		}
+		style_pop(), style_pop();
+		style_pop_push();
+	}
+	if(is_function) {
+		const struct Segment *segment = 0;
+		style_prepare_output(END);
 		printf("<a href = \"#%s:\">Function Definitions</a>",
-		division_strings[DIV_FUNCTION]), style_pop_push();
+			division_strings[DIV_FUNCTION]);
+		style_push(&no_style);
+		style_prepare_output(END);
+		printf("<table>\n\n"
+			"<tr><th>Return Type</th><th>Function Name</th>"
+			"<th>Argument List</th></tr>\n\n");
+		while((segment = SegmentArrayNext(&report, segment))) {
+			size_t *idxs, idxn, idx, paramn;
+			struct Token *params;
+			if(segment->division != DIV_FUNCTION
+			   || !(idxn = SizeArraySize(&segment->code_params))) continue;
+			idxs = SizeArrayGet(&segment->code_params);
+			params = TokenArrayGet(&segment->code);
+			paramn = TokenArraySize(&segment->code);
+			assert(idxs[0] < paramn);
+			/* fixme: hard! */
+			printf("<tr><td>donno</td><td><a href = \"#%s:",
+				   division_strings[DIV_FUNCTION]);
+			print_token(&segment->code, params + idxs[0]);
+			printf("\">");
+			print_token(&segment->code, params + idxs[0]);
+			printf("</a></td><td>");
+			for(idx = 1; idx < idxn; idx++) {
+				assert(idxs[idx] < paramn);
+				if(idx > 1) printf(", ");
+				print_token(&segment->code, params + idxs[idx]);
+			}
+			printf("</td></tr>\n\n");
+		}
+		printf("</table>\n\n");
+		style_pop();
+		style_pop_push();
+	}
 	if(is_license) style_prepare_output(END),
 		printf("<a href = \"#license:\">License</a>"), style_pop_push();
 	style_pop_level();
@@ -905,108 +1007,6 @@ int ReportOut(void) {
 	}
 
 	/* Print summary. fixme: this could be way shorter? */
-	style_push(&no_style);
-	if(is_typedef || is_tag || is_data || is_function)
-		printf("<a name = \"summary:\"><!-- --></a>\n"
-		"<h2>Summary</h2>\n\n");
-	if(is_typedef) {
-		const struct Segment *segment = 0;
-		printf("<table>\n\n"
-			"<tr><th>Typedef Alias</th><th>Full</th></tr>\n\n");
-		while((segment = SegmentArrayNext(&report, segment))) {
-			size_t *idxs;
-			struct Token *params;
-			if(segment->division != DIV_TYPEDEF
-				|| !SizeArraySize(&segment->code_params)) continue;
-			idxs = SizeArrayGet(&segment->code_params);
-			params = TokenArrayGet(&segment->code);
-			assert(idxs[0] < TokenArraySize(&segment->code));
-			printf("<tr><td><a href = \"#%s:", division_strings[DIV_TYPEDEF]);
-			print_token(&segment->code, params + idxs[0]);
-			printf("\">");
-			print_token(&segment->code, params + idxs[0]);
-			printf("</a></td><td>");
-			/* fixme: More advanced in Semantic: we know "typedef ". */
-			style_push(&html_code);
-			print_tokens(&segment->code);
-			style_pop();
-			printf("</td></tr>\n\n");
-		}
-		printf("</table>\n\n");
-	}
-	if(is_tag) {
-		const struct Segment *segment = 0;
-		printf("<table>\n\n"
-			"<tr><th>Struct, Union, or Enum</th></tr>\n\n");
-		while((segment = SegmentArrayNext(&report, segment))) {
-			size_t *idxs;
-			struct Token *params;
-			if(segment->division != DIV_TAG
-				|| !SizeArraySize(&segment->code_params)) continue;
-			idxs = SizeArrayGet(&segment->code_params);
-			params = TokenArrayGet(&segment->code);
-			assert(idxs[0] < TokenArraySize(&segment->code));
-			/* fixme: tag type? */
-			printf("<tr><td><a href = \"#%s:", division_strings[DIV_TAG]);
-			print_token(&segment->code, params + idxs[0]);
-			printf("\">");
-			print_token(&segment->code, params + idxs[0]);
-			printf("</a></td></tr>\n\n");
-		}
-		printf("</table>\n\n");
-	}
-	if(is_data) {
-		const struct Segment *segment = 0;
-		printf("<table>\n\n"
-			"<tr><th>General Declarations</th></tr>\n\n");
-		while((segment = SegmentArrayNext(&report, segment))) {
-			size_t *idxs;
-			struct Token *params;
-			if(segment->division != DIV_DATA
-			   || !SizeArraySize(&segment->code_params)) continue;
-			idxs = SizeArrayGet(&segment->code_params);
-			params = TokenArrayGet(&segment->code);
-			assert(idxs[0] < TokenArraySize(&segment->code));
-			/* fixme: data type? */
-			printf("<tr><td><a href = \"#%s:", division_strings[DIV_DATA]);
-			print_token(&segment->code, params + idxs[0]);
-			printf("\">");
-			print_token(&segment->code, params + idxs[0]);
-			printf("</a></td></tr>\n\n");
-		}
-		printf("</table>\n\n");
-	}
-	if(is_function) {
-		const struct Segment *segment = 0;
-		printf("<table>\n\n"
-			"<tr><th>Return Type</th><th>Function Name</th>"
-			"<th>Argument List</th></tr>\n\n");
-		while((segment = SegmentArrayNext(&report, segment))) {
-			size_t *idxs, idxn, idx, paramn;
-			struct Token *params;
-			if(segment->division != DIV_FUNCTION
-				|| !(idxn = SizeArraySize(&segment->code_params))) continue;
-			idxs = SizeArrayGet(&segment->code_params);
-			params = TokenArrayGet(&segment->code);
-			paramn = TokenArraySize(&segment->code);
-			assert(idxs[0] < paramn);
-			/* fixme: hard! */
-			printf("<tr><td>donno</td><td><a href = \"#%s:",
-				division_strings[DIV_FUNCTION]);
-			print_token(&segment->code, params + idxs[0]);
-			printf("\">");
-			print_token(&segment->code, params + idxs[0]);
-			printf("</a></td><td>");
-			for(idx = 1; idx < idxn; idx++) {
-				assert(idxs[idx] < paramn);
-				if(idx > 1) printf(", ");
-				print_token(&segment->code, params + idxs[idx]);
-			}
-			printf("</td></tr>\n\n");
-		}
-		printf("</table>\n\n");
-	}
-	style_pop(); /* no_style */
 	assert(!StyleArraySize(&mode.styles));
 
 #if 0
