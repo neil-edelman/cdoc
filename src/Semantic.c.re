@@ -1,7 +1,8 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- Divides up the code into divisions based on `symbol_marks` in `Symbol.h`. */
+ Divides up the code into divisions based on `symbol_marks` in `Symbol.h`.
+ @fixme Reports data for fn recieving templetised things. */
 
 #include <stdio.h>
 #include <string.h>
@@ -136,6 +137,7 @@ generic = "x"
 | "3(" part "," part "," part ")"; // Eg, X_(Array)
 type = tag? redact* generic; // Eg, struct X_(Array)
 type_or_void = type | void;
+argument = ("_" | "*" | "s" | "x" | generic)+;
 */
 
 static int parse(void) {
@@ -166,7 +168,7 @@ static int parse(void) {
 	}
 	// Fixme: this is one of the . . . four? ways to define a function?
 	static? redact* (@label (generic | type_or_void | qualifier) redact*){2,}
-		@args "(" ( ([_*sx]+ ("," [_*sx]+)* ",."?) | void ) ")" redact* end {
+		@args "(" ( (argument ("," argument)* ",."?) | void ) ")" redact* end {
 		semantic.division = DIV_FUNCTION;
 		if(!add_param(label, &is_success)) return 0;
 		label = 0; /* For the args. */

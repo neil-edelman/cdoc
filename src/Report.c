@@ -2,7 +2,10 @@
  [MIT License](https://opensource.org/licenses/MIT).
 
  Organises tokens into sections, each section can have some documentation,
- code, and maybe attributes. */
+ code, and maybe attributes.
+ @fixme The two-above rule isn't working.
+ @fixme Report error if two top-level braces are in the same segment.
+ @fixme A hash would be better. */
 
 #include <string.h> /* size_t strncpy sprintf */
 #include <limits.h> /* INT_MAX */
