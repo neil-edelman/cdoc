@@ -47,6 +47,11 @@ static int token_compare(const struct Token *const a,
 #define ARRAY_TYPE struct Token
 #define ARRAY_TO_STRING &token_to_string
 #include "Array.h"
+/** This is used in `Semantic.c.re` to get the first line for error info. */
+size_t TokensFirstLine(const struct TokenArray *const tokens) {
+	const struct Token *const first = TokenArrayNext(tokens, 0);
+	return first ? first->line : 0;
+}
 /** This is used in `Semantic.c.re` to get the size of the string for
  `tokens`. */
 size_t TokensMarkSize(const struct TokenArray *const tokens) {

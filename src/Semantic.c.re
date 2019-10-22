@@ -70,8 +70,7 @@ static void effectively_typedef_fn_ptr(char *const buffer) {
 	}
 }
 
-/* fixme: range? */
-#define ARRAY_NAME Size
+#define ARRAY_NAME Index
 #define ARRAY_TYPE size_t
 #include "../src/Array.h"
 
@@ -83,21 +82,20 @@ static void effectively_typedef_fn_ptr(char *const buffer) {
 static struct {
 	struct CharArray buffer, work;
 	enum Division division;
-	struct SizeArray params;
+	struct IndexArray params;
+	size_t line;
 } semantic;
 
 /** @param[name] In `semantic.buffer`.
- @param[success] Pointer to success or null; it could be that the label wasn't
- a name and it will return 1 and `success` false.
  @return False on error. */
-static int add_param(const char *const label, int *const success) {
+static int add_param(const char *const label) {
 	size_t *param;
-	if(success) *success = 0;
-	if(!label || !strchr("x123", *label))
-		return fprintf(stderr, "Couldn't find anything to label.\n"), 1;
-	if(!(param = SizeArrayNew(&semantic.params))) return 0;
+	const char *const acceptable = "x123";
+	if(!label || !strchr(acceptable, *label)) return fprintf(stderr,
+		"Line %lu: param is '%c', not %s.\n", (unsigned long)semantic.line,
+		label ? *label : '0', acceptable), errno = EILSEQ, 0;
+	if(!(param = IndexArrayNew(&semantic.params))) return 0;
 	*param = (size_t)(label - CharArrayGet(&semantic.buffer));
-	if(success) *success = 1;
 	return 1;
 }
 
@@ -143,8 +141,9 @@ argument = ("_" | "*" | "s" | "x" | generic)+;
 static int parse(void) {
 	char *const buffer = CharArrayGet(&semantic.buffer);
 	const char *cursor = buffer, *marker = cursor;
-	const char *args = 0, *label = 0, *one_more = 0;
-	int is_success;
+	const char *args = 0, *label = 0;
+	int parens = 0;
+	int is_not_likely = 0;
 
 	assert(buffer);
 /*!re2c
@@ -157,22 +156,21 @@ static int parse(void) {
 	typedef redact* skip_complex+ @label redact* end {
 		semantic.division = DIV_TYPEDEF;
 		label = type_from_right(buffer, label - 1, 1);
-		if(!add_param(label, 0)) return 0;
+		if(!add_param(label)) return 0;
 		return 1;
 	}
 	// "something tag [id]" is a tag.
 	skip_simple* tag @label generic? redact* end {
 		semantic.division = DIV_TAG;
-		if(!add_param(label, 0)) return 0;
+		if(!add_param(label)) return 0;
 		return 1;
 	}
 	// Fixme: this is one of the . . . four? ways to define a function?
 	static? redact* (@label (generic | type_or_void | qualifier) redact*){2,}
 		@args "(" ( (argument ("," argument)* ",."?) | void ) ")" redact* end {
 		semantic.division = DIV_FUNCTION;
-		if(!add_param(label, &is_success)) return 0;
+		if(!add_param(label)) return 0;
 		label = 0; /* For the args. */
-		if(!is_success) return 0;
 		cursor = marker = args;
 		goto params;
 	}
@@ -188,30 +186,41 @@ static int parse(void) {
 			maybe = type_from_right(buffer, label, 1);
 			if(maybe) { label = maybe; break; }
 		}
-		if(label >= buffer && !add_param(label, 0)) return 0;
+		if(label >= buffer && !add_param(label)) return 0;
 		return 1;
 	}
 */
-	/* The DIV_FUNCTION backtracks here to figure out the arguments.
-	fixme: doesn't work. */
+	/* The DIV_FUNCTION backtracks here to figure out the arguments. */
 params:
 /*!re2c
-	"(v)" { return 1; }
-	"(" / [^v] { goto params; }
-	[_*s]+ { goto params; }
-	@label "x" { goto params; }
-	")" | ",.)" | @one_more "," {
-		if(!add_param(label, &is_success)) return 0;
-		label = 0; /* For next time. */
-		if(!is_success) goto unable;
-		if(one_more) { one_more = 0; goto params; }
-		return 1;
+	// We don't care about these.
+	[_*sv.]+ { goto params; }
+	// Raise the level of parentheses.
+	"(" { parens++; goto params; }
+	// Lower the level; if zero, add the last param if you have it.
+	")" {
+		if(--parens <= 0) {
+			if(label && !add_param(label)) return 0;
+			return 1;
+		}
+		is_not_likely = 1;
+		goto params;
+	}
+	// Update the label until `is_not_likely`; the label is generally the last.
+	generic { if(!label || !is_not_likely) label = cursor - 1; goto params; }
+	// New label.
+	"," {
+		if(parens > 1) goto params;
+		else if(parens < 1 || !label || !add_param(label)) goto unable;
+		label = 0;
+		is_not_likely = 0;
+		goto params;
 	}
 	* { goto unable; }
 */
 unable:
-	/* fixme: generics don't work. */
-	fprintf(stderr, "Warning: unable to extract parameter list.\n");
+	fprintf(stderr, "Line %lu: unable to extract parameter list from %s.\n",
+		(unsigned long)semantic.line, buffer);
 	return 1;
 }
 
@@ -271,14 +280,15 @@ int Semantic(const struct TokenArray *const code) {
 		CharArray_(&semantic.buffer);
 		CharArray_(&semantic.work);
 		semantic.division = DIV_PREAMBLE;
-		SizeArray_(&semantic.params);
+		IndexArray_(&semantic.params);
 		return 1;
 	}
 
 	/* Reset the semantic to the most general state. */
 	CharArrayClear(&semantic.buffer);
 	semantic.division = DIV_DATA;
-	SizeArrayClear(&semantic.params);
+	IndexArrayClear(&semantic.params);
+	semantic.line = TokensFirstLine(code);
 
 	/* Make a string from `symbol_marks` and allocate maximum memory. */
 	buffer_size = TokensMarkSize(code);
@@ -292,8 +302,9 @@ int Semantic(const struct TokenArray *const code) {
 	{ /* Checks whether this makes sense. */
 		int checks = 0;
 		if(!check_symbols(&checks)) return 0;
-		/* Classifying unknown statement as a general declaration. */
-		if(!checks) return 1;
+		if(!checks) return fprintf(stderr,
+			"Line %lu: classifying unknown statement as a general declaration."
+			"\n", (unsigned long)semantic.line), 1;
 	}
 
 	/* Git rid of code. (Shouldn't happen!) */
@@ -303,6 +314,7 @@ int Semantic(const struct TokenArray *const code) {
 	/* Now with the {}[] removed. */
 	effectively_typedef_fn_ptr(buffer);
 	if(!parse()) return 0;
+	fprintf(stderr, "Line %lu: \"%s\" -> %s.\n", (unsigned long)semantic.line, buffer, divisions[semantic.division]);
 	/* It has been determined to be `divisions[semantic.division]`. */
 	return 1;
 }
@@ -317,7 +329,7 @@ enum Division SemanticDivision(void) {
  @param[array] Pass to get the size_t array. */
 void SemanticParams(size_t *const no, const size_t **const array) {
 	if(!no) { if(array) *array = 0; return; }
-	*no = SizeArraySize(&semantic.params);
+	*no = IndexArraySize(&semantic.params);
 	if(!array) return;
-	*array = SizeArrayGet(&semantic.params);
+	*array = IndexArrayGet(&semantic.params);
 }

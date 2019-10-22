@@ -144,7 +144,6 @@ catch:
 finally:
 	Report_();
 	Scanner_();
-	Semantic(0);
 
 	return exit_code;
 }

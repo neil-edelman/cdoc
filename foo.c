@@ -85,6 +85,9 @@ int (*(*foo)(void ))[3];
 /** ? */
 int (*c);
 
+int fun0(int (*arg1_2)(int, int (*not)(int)), int arg2_2) {
+}
+
 /** Function declare x as function (int) returning pointer to function (int)
  returning pointer to function (pointer to function (int) returning int)
  returning int
@@ -161,12 +164,12 @@ comment:
 typedef int Foo;
 
 /** This is a foo. */
-void T_(Foo)(void) {
+void T_(fun4)(void) {
 }
 
 /** Function `arg1_2`.
  @return Function of `arg2_2`. */
-T fun4(int (*arg1_2)(int arg1_3, int (*fn)(void)), Foo arg2_3, /*no*/
+T fun5(int (*arg1_2)(int arg1_3, int (*fn)(void)), Foo arg2_3, /*no*/
 	struct T_(Array) arg3_3) /** yo */ {
 	/** @param[a, fn] Doesn't do anything. */
 	return arg1_2(arg2_2, 0);
@@ -185,5 +188,5 @@ int main(void) {
 
 
 /** @title No. */
-int etc(void) {
+int fun6(void) {
 }
