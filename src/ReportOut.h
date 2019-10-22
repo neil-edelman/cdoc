@@ -31,7 +31,8 @@ static const struct StyleText {
 	html_h1  = { "h1",   "<h1>", "", "</h1>\n\n", 1 },
 	html_h3  = { "h3",   "<h3>", "", "</h3>\n\n", 1 },
 	html_dl  = { "dl",   "<dl>\n", "", "</dl>\n\n", 1 },
-	html_desc = { "desc", title, "", "</dd>\n", 0 };
+	html_desc = { "desc", title, "", "</dd>\n", 0 },
+	html_em = { "em", "<em>", "", "</em>", 0 };
 
 /* block: address article(5) aside(5) blockquote canvas(5) dd div dl dt
  fieldset? figcaption(5) figure(5) footer(5) form h1-6 header(5) hr li main(5)
@@ -484,16 +485,16 @@ static const struct Token *print_token(const struct TokenArray *const tokens,
  words.
  @throws[EILSEQ] Sequence error. Must detect with `errno`. */
 static void highlight_tokens(const struct TokenArray *const tokens,
-	const struct SizeArray *const highlights) {
+	const struct IndexArray *const highlights) {
 	const struct Token *const first = TokenArrayNext(tokens, 0), *token = first;
-	size_t *highlight = SizeArrayNext(highlights, 0);
+	size_t *highlight = IndexArrayNext(highlights, 0);
 	int is_highlight;
 	assert(tokens);
 	if(!token) return;
 	while(token) {
 		if(highlight && *highlight == (size_t)(token - first)) {
 			is_highlight = 1;
-			highlight = SizeArrayNext(highlights, highlight);
+			highlight = IndexArrayNext(highlights, highlight);
 		} else {
 			is_highlight = 0;
 		}
@@ -519,7 +520,7 @@ void ReportDebug(void) {
 			"doc: %s.\n",
 			divisions[segment->division],
 			TokenArrayToString(&segment->code),
-			SizeArrayToString(&segment->code_params),
+			IndexArrayToString(&segment->code_params),
 			TokenArrayToString(&segment->doc));
 		while((att = AttributeArrayNext(&segment->attributes, att)))
 			fprintf(stderr, "%s{%s} %s.\n", symbols[att->token.symbol],
@@ -575,7 +576,7 @@ static void segment_att_print(const struct Segment *const segment,
 			|| (header && !any_token(&attribute->header, header))) continue;
 		style_prepare_output(END);
 		if(show & SHOW_WHERE) {
-			if((pindex = SizeArrayNext(&segment->code_params, 0))
+			if((pindex = IndexArrayNext(&segment->code_params, 0))
 				&& *pindex < TokenArraySize(&segment->code)) {
 				const struct Token *token
 					= TokenArrayGet(&segment->code) + *pindex;
@@ -802,6 +803,26 @@ static void segment_print_all(const struct Segment *const segment) {
 	assert(!StyleArraySize(&mode.styles));
 }
 
+static void best_guess_at_modifiers(const struct Segment *const segment) {
+	const struct Token *code = TokenArrayGet(&segment->code),
+		*stop = code + *IndexArrayGet(&segment->code_params);
+	assert(segment && segment->division == DIV_FUNCTION
+		&& IndexArraySize(&segment->code_params) >= 1
+		&& TokenArraySize(&segment->code)
+		> *IndexArrayGet(&segment->code_params));
+	while(code < stop) {
+		if(code->symbol == LPAREN) {
+			style_separate();
+			style_push(&html_em);
+			style_prepare_output(END);
+			printf("function");
+			style_pop();
+			return;
+		}
+		code = print_token(&segment->code, code);
+	}
+}
+
 /** Outputs a report.
  @throws[EILSEQ] Sequence error.
  @return Success. */
@@ -874,8 +895,8 @@ int ReportOut(void) {
 			size_t *idxs;
 			struct Token *params;
 			if(segment->division != DIV_TYPEDEF
-				|| !SizeArraySize(&segment->code_params)) continue;
-			idxs = SizeArrayGet(&segment->code_params);
+				|| !IndexArraySize(&segment->code_params)) continue;
+			idxs = IndexArrayGet(&segment->code_params);
 			params = TokenArrayGet(&segment->code);
 			assert(idxs[0] < TokenArraySize(&segment->code));
 			style_prepare_output(END);
@@ -899,8 +920,8 @@ int ReportOut(void) {
 			size_t *idxs;
 			struct Token *params;
 			if(segment->division != DIV_TAG
-				|| !SizeArraySize(&segment->code_params)) continue;
-			idxs = SizeArrayGet(&segment->code_params);
+				|| !IndexArraySize(&segment->code_params)) continue;
+			idxs = IndexArrayGet(&segment->code_params);
 			params = TokenArrayGet(&segment->code);
 			assert(idxs[0] < TokenArraySize(&segment->code));
 			/* fixme: tag type? */
@@ -924,8 +945,8 @@ int ReportOut(void) {
 			size_t *idxs;
 			struct Token *params;
 			if(segment->division != DIV_DATA
-				|| !SizeArraySize(&segment->code_params)) continue;
-			idxs = SizeArrayGet(&segment->code_params);
+				|| !IndexArraySize(&segment->code_params)) continue;
+			idxs = IndexArrayGet(&segment->code_params);
 			params = TokenArrayGet(&segment->code);
 			assert(idxs[0] < TokenArraySize(&segment->code));
 			/* fixme: data type? */
@@ -947,19 +968,22 @@ int ReportOut(void) {
 		style_push(&no_style);
 		style_prepare_output(END);
 		printf("<table>\n\n"
-			"<tr><th>Return Type</th><th>Function Name</th>"
+			"<tr><th>Modifiers</th><th>Function Name</th>"
 			"<th>Argument List</th></tr>\n\n");
 		while((segment = SegmentArrayNext(&report, segment))) {
 			size_t *idxs, idxn, idx, paramn;
 			struct Token *params;
 			if(segment->division != DIV_FUNCTION
-			   || !(idxn = SizeArraySize(&segment->code_params))) continue;
-			idxs = SizeArrayGet(&segment->code_params);
+			   || !(idxn = IndexArraySize(&segment->code_params))) continue;
+			idxs = IndexArrayGet(&segment->code_params);
 			params = TokenArrayGet(&segment->code);
 			paramn = TokenArraySize(&segment->code);
 			assert(idxs[0] < paramn);
-			/* fixme: hard!? */
-			printf("<tr><td>fixme</td><td><a href = \"#%s:",
+			printf("<tr><td>");
+			style_push(&plain_text);
+			best_guess_at_modifiers(segment);
+			style_pop();
+			printf("</td><td><a href = \"#%s:",
 				division_strings[DIV_FUNCTION]);
 			print_token(&segment->code, params + idxs[0]);
 			printf("\">");

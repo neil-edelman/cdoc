@@ -65,12 +65,12 @@ void TokensMark(const struct TokenArray *const tokens, char *const marks) {
 }
 
 
-static void size_to_string(const size_t *const n, char (*const a)[12]) {
+static void index_to_string(const size_t *const n, char (*const a)[12]) {
 	sprintf(*a, "%lu", (unsigned long)*n % 1000000000lu);
 }
-#define ARRAY_NAME Size
+#define ARRAY_NAME Index
 #define ARRAY_TYPE size_t
-#define ARRAY_TO_STRING &size_to_string
+#define ARRAY_TO_STRING &index_to_string
 #include "Array.h"
 
 
@@ -104,7 +104,7 @@ static void attributes_(struct AttributeArray *const atts) {
 struct Segment {
 	enum Division division;
 	struct TokenArray doc, code;
-	struct SizeArray code_params;
+	struct IndexArray code_params;
 	struct AttributeArray attributes;
 };
 static void segment_to_string(const struct Segment *seg, char (*const a)[12]) {
@@ -119,8 +119,8 @@ static const struct Token *param_no(const struct Segment *const segment,
 	const size_t param) {
 	size_t *pidx;
 	assert(segment);
-	if(param >= SizeArraySize(&segment->code_params)) return 0;
-	pidx = SizeArrayGet(&segment->code_params) + param;
+	if(param >= IndexArraySize(&segment->code_params)) return 0;
+	pidx = IndexArrayGet(&segment->code_params) + param;
 	/* This is really careful. */
 	if(*pidx >= TokenArraySize(&segment->code)) {
 		char a[12];
@@ -145,7 +145,7 @@ void Report_(void) {
 	/* Destroy the report. */
 	while((segment = SegmentArrayPop(&report)))
 		TokenArray_(&segment->doc), TokenArray_(&segment->code),
-		SizeArray_(&segment->code_params), attributes_(&segment->attributes);
+		IndexArray_(&segment->code_params), attributes_(&segment->attributes);
 	SegmentArray_(&report);
 	/* Destroy the semantic buffer. */
 	Semantic(0);
@@ -158,7 +158,7 @@ static struct Segment *new_segment(void) {
 	segment->division = DIV_PREAMBLE; /* Default. */
 	TokenArray(&segment->doc);
 	TokenArray(&segment->code);
-	SizeArray(&segment->code_params);
+	IndexArray(&segment->code_params);
 	AttributeArray(&segment->attributes);
 	return segment;
 }
@@ -210,9 +210,9 @@ static int semantic(struct Segment *const segment) {
 	/* Copy `Semantic` size array to this size array,
 	 (not the same, local scope; kind of a hack.) */
 	SemanticParams(&no, &source);
-	if(!(dest = SizeArrayBuffer(&segment->code_params, no))) return 0;
+	if(!(dest = IndexArrayBuffer(&segment->code_params, no))) return 0;
 	for(i = 0; i < no; i++) dest[i] = source[i];
-	SizeArrayExpand(&segment->code_params, no);
+	IndexArrayExpand(&segment->code_params, no);
 	return 1;
 }
 
@@ -379,8 +379,8 @@ static int keep_segment(const struct Segment *const s) {
 static const struct Token *segment_fallback(const struct Segment *const segment)
 {
 	assert(segment);
-	return SizeArraySize(&segment->code_params)
-		? TokenArrayGet(&segment->code) + SizeArrayGet(&segment->code_params)[0]
+	return IndexArraySize(&segment->code_params)
+		? TokenArrayGet(&segment->code) + IndexArrayGet(&segment->code_params)[0]
 		: TokenArraySize(&segment->code) ? TokenArrayGet(&segment->code)
 		: TokenArraySize(&segment->doc) ? TokenArrayGet(&segment->doc)
 		: AttributeArraySize(&segment->attributes)

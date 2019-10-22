@@ -145,7 +145,7 @@ static void warn_segment(const struct Segment *const segment) {
 			&& !is_static(&segment->code))
 			fprintf(stderr, "%s: no documentation.\n", pos(fallback));
 		/* No function title? */
-		if(SizeArraySize(&segment->code_params) < 1) fprintf(stderr,
+		if(IndexArraySize(&segment->code_params) < 1) fprintf(stderr,
 			"%s: unable to extract function name.\n", pos(fallback));
 		/* Unused in function. */
 		unused_attribute(&segment->attributes, ATT_TITLE);
@@ -162,8 +162,8 @@ static void warn_segment(const struct Segment *const segment) {
 				fprintf(stderr, "%s: extraneous parameter.\n", pos(match));
 		}
 		/* Check for params that are undocumented. */
-		code_param = SizeArrayNext(&segment->code_params, 0);
-		while((code_param = SizeArrayNext(&segment->code_params, code_param))) {
+		code_param = IndexArrayNext(&segment->code_params, 0);
+		while((code_param = IndexArrayNext(&segment->code_params, code_param))) {
 			const struct Token *param = TokenArrayGet(&segment->code)
 				+ *code_param;
 			assert(*code_param <= TokenArraySize(&segment->code));
@@ -176,7 +176,7 @@ static void warn_segment(const struct Segment *const segment) {
 		break;
 	case DIV_PREAMBLE:
 		/* Should not have params. */
-		if(SizeArraySize(&segment->code_params)) fprintf(stderr,
+		if(IndexArraySize(&segment->code_params)) fprintf(stderr,
 			"%s: params useless in preamble.\n", pos(fallback));
 		/* Unused in preamble. */
 		unused_attribute(&segment->attributes, ATT_RETURN);
@@ -187,7 +187,7 @@ static void warn_segment(const struct Segment *const segment) {
 		break;
 	case DIV_TAG:
 		/* Should have one. */
-		if(SizeArraySize(&segment->code_params) != 1) fprintf(stderr,
+		if(IndexArraySize(&segment->code_params) != 1) fprintf(stderr,
 			"%s: unable to extract one tag name.\n", pos(fallback));
 		/* Unused in tags. */
 		unused_attribute(&segment->attributes, ATT_TITLE);
@@ -200,7 +200,7 @@ static void warn_segment(const struct Segment *const segment) {
 		break;
 	case DIV_TYPEDEF:
 		/* Should have one. */
-		if(SizeArraySize(&segment->code_params) != 1) fprintf(stderr,
+		if(IndexArraySize(&segment->code_params) != 1) fprintf(stderr,
 			"%s: unable to extract one typedef name.\n", pos(fallback));
 		/* Unused in typedefs. */
 		unused_attribute(&segment->attributes, ATT_TITLE);
@@ -213,7 +213,7 @@ static void warn_segment(const struct Segment *const segment) {
 		break;
 	case DIV_DATA:
 		/* Should have one. */
-		if(SizeArraySize(&segment->code_params) != 1) fprintf(stderr,
+		if(IndexArraySize(&segment->code_params) != 1) fprintf(stderr,
 			"%s: unable to extract one data name.\n", pos(fallback));
 		/* Unused in data. */
 		unused_attribute(&segment->attributes, ATT_TITLE);
