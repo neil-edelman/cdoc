@@ -31,6 +31,8 @@ static const struct StyleText {
 	html_h1  = { "h1",   "<h1>", "", "</h1>\n\n", 1 },
 	html_h3  = { "h3",   "<h3>", "", "</h3>\n\n", 1 },
 	html_dl  = { "dl",   "<dl>\n", "", "</dl>\n\n", 1 },
+	html_dt  = { "dt",   "\t<dt>", "", "</dt>\n\n", 0 },
+	html_dd  = { "dd",   "\t<dd>", "", "</dd>\n\n", 0 },
 	html_desc = { "desc", title, "", "</dd>\n", 0 },
 	html_em = { "em", "<em>", "", "</em>", 0 };
 
@@ -644,7 +646,7 @@ static int segment_attribute_exists(const struct Segment *const segment,
 
 /** `act` on all contents os `attribute_symbol` with content within
  `segment`. */
-static int segment_attribute_act(const struct Segment *const segment,
+/*static int segment_attribute_act(const struct Segment *const segment,
 	const enum Symbol attribute_symbol,
 	void (*act)(const struct TokenArray *const)) {
 	struct Attribute *attribute = 0;
@@ -655,7 +657,7 @@ static int segment_attribute_act(const struct Segment *const segment,
 		act(&attribute->contents);
 	}
 	return 0;
-}
+}*/
 
 /** @return Is `division` in the report?
  <needed> */
@@ -685,8 +687,8 @@ static int attribute_exists(const enum Symbol attribute_symbol) {
 	return 0;
 }
 
-/** `act` on all `attribute_symbol` under `division`. */
-static void division_attribute_act(const enum Division division,
+/* `act` on all `attribute_symbol` under `division`. */
+/*static void division_attribute_act(const enum Division division,
 	const enum Symbol attribute_symbol,
 	void (*act)(const struct TokenArray *const)) {
 	const struct Segment *segment = 0;
@@ -695,7 +697,7 @@ static void division_attribute_act(const enum Division division,
 		if(segment->division != division) continue;
 		segment_attribute_act(segment, attribute_symbol, act);
 	}
-}
+}*/
 
 /** Searches if attribute `symbol` exists within `segment` whose header
  contains `header`.
@@ -716,9 +718,13 @@ static void dl_segment_att(const struct Segment *const segment,
 	assert(segment && attribute);
 	if((header && !segment_attribute_header_exists(segment, attribute, header))
 		|| (!header && !segment_attribute_exists(segment, attribute))) return;
-	sprintf(title, "\t<dt>%.128s:</dt>\n"
-		"\t<dd>", symbol_attribute_titles[attribute]);
-	style_push(&html_desc), style_push(&plain_ssv), style_push(&plain_text);
+	style_push(&html_dt), style_push(&plain_text);
+	style_prepare_output(END);
+	printf("%s:", symbol_attribute_titles[attribute]);
+	if(header) style_separate(), style_push(&html_em),
+		print_token(&segment->code, header), style_pop();
+	style_pop(), style_pop();
+	style_push(&html_dd), style_push(&plain_ssv), style_push(&plain_text);
 	segment_att_print(segment, attribute, header, SHOW_TEXT);
 	style_pop(), style_pop(), style_pop();
 }

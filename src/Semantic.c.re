@@ -192,7 +192,8 @@ static int parse(void) {
 		return 1;
 	}
 */
-	/* The DIV_FUNCTION backtracks here to figure out the arguments. */
+	/* The DIV_FUNCTION backtracks here to figure out the arguments.
+	fixme: doesn't work. */
 params:
 /*!re2c
 	"(v)" { return 1; }
@@ -209,6 +210,7 @@ params:
 	* { goto unable; }
 */
 unable:
+	/* fixme: generics don't work. */
 	fprintf(stderr, "Warning: unable to extract parameter list.\n");
 	return 1;
 }

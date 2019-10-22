@@ -5,7 +5,9 @@
  code, and maybe attributes.
  @fixme The two-above rule isn't working.
  @fixme Report error if two top-level braces are in the same segment.
- @fixme A hash would be better. */
+ @fixme A hash would be better.
+ @fixme Eg, fixme with no args disappears; we should NOT check if the string is
+ empty. */
 
 #include <string.h> /* size_t strncpy sprintf */
 #include <limits.h> /* INT_MAX */
