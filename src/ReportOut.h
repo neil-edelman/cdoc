@@ -446,9 +446,6 @@ OUT(list) {
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
-/* @fixme This is broken. Want it to `<pre>` all the way to the end, instead,
- `<pre>` is happening each time. It is very messy, but approximates what we
- want. Styles must be more complicated. */
 OUT(pre) {
 	const struct StyleText *const peek = style_text_peek();
 	const struct Token *const t = *ptoken;
@@ -930,8 +927,8 @@ int ReportOut(void) {
 			idxs = IndexArrayGet(&segment->code_params);
 			params = TokenArrayGet(&segment->code);
 			assert(idxs[0] < TokenArraySize(&segment->code));
-			/* fixme: tag type? */
 			style_prepare_output(END);
+			/* fixme: tag type? */
 			printf("<a href = \"#%s:", division_strings[DIV_TAG]);
 			print_token(&segment->code, params + idxs[0]);
 			printf("\">");
@@ -955,7 +952,6 @@ int ReportOut(void) {
 			idxs = IndexArrayGet(&segment->code_params);
 			params = TokenArrayGet(&segment->code);
 			assert(idxs[0] < TokenArraySize(&segment->code));
-			/* fixme: data type? */
 			style_prepare_output(END);
 			printf("<a href = \"#%s:", division_strings[DIV_DATA]);
 			print_token(&segment->code, params + idxs[0]);

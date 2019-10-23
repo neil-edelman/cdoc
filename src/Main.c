@@ -99,16 +99,13 @@
  @version 2019-06
  @std C89
  @depend [re2c](http://re2c.org/)
- @fixme Old-style function definitions are not supported.
- @fixme \@depend, \@author, ect. in functions should automatically be placed in
- header.
  @fixme Authors can only be ASCII.
  @fixme Trigraph support, (haha.)
  @fixme Old-style function support.
  @fixme `re2c` appends a comma at the end of the enumeration list, not
  compliant with C90.
  @fixme Hide const on params when it can not affect function calls.
- @fixme Prototypes and fuctions are the same thing. */
+ @fixme Prototypes and fuctions are the same thing; hash map? */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
