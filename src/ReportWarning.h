@@ -117,7 +117,11 @@ static void warn_internal_link(const struct Token *const token) {
 			|| !(fun_index = IndexArrayNext(&segment->code_params, 0))
 			|| *fun_index >= TokenArraySize(&segment->code)) continue;
 		compare = TokenArrayGet(&segment->code) + *fun_index;
-		print_token_s(&segment->code, compare, &b);
+		/* fixme: returns false error at end of tokens! */
+		if(!print_token_s(&segment->code, compare, &b))
+			{ fprintf(stderr,
+			"%s: length was too long or end of tokens to compare with %s.\n",
+			pos(token), a); continue; }
 		if(!strcmp(a, b))
 			{ /*fprintf(stderr, "%s: link okay.\n", pos(token));*/ return; }
 	}
