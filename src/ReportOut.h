@@ -31,8 +31,8 @@ static const struct StyleText {
 	html_h1  = { "h1",   "<h1>", "", "</h1>\n\n", 1 },
 	html_h3  = { "h3",   "<h3>", "", "</h3>\n\n", 1 },
 	html_dl  = { "dl",   "<dl>\n", "", "</dl>\n\n", 1 },
-	html_dt  = { "dt",   "\t<dt>", "", "</dt>\n\n", 0 },
-	html_dd  = { "dd",   "\t<dd>", "", "</dd>\n\n", 0 },
+	html_dt  = { "dt",   "\t<dt>", "", "</dt>\n", 0 },
+	html_dd  = { "dd",   "\t<dd>", "", "</dd>\n", 0 },
 	html_desc = { "desc", title, "", "</dd>\n", 0 },
 	html_em = { "em", "<em>", "", "</em>", 0 };
 
@@ -86,7 +86,7 @@ static void style_push(const struct StyleText *const text) {
 	 a small amount of memory, that it's useless to recover. The OS will have
 	 to clean up our mess. */
 	if(!push) { perror("Unrecoverable"), exit(EXIT_FAILURE); return; }
-	printf("<!-- push %s -->", text->name);
+	/*printf("<!-- push %s -->", text->name);*/
 	push->text = text;
 	push->lazy = BEGIN;
 }
@@ -95,7 +95,7 @@ static void style_pop(void) {
 	struct Style *const pop = StyleArrayPop(&mode.styles),
 		*const top = StyleArrayPeek(&mode.styles);
 	assert(pop);
-	printf("<!-- pop %s -->", pop->text->name);
+	/*printf("<!-- pop %s -->", pop->text->name);*/
 	if(pop->lazy == BEGIN) return;
 	/* Was used. */
 	fputs(pop->text->end, stdout);
@@ -810,7 +810,6 @@ static void dl_preamble_att(const enum Symbol attribute,
 	style_push(&plain_text);
 	div_att_print(&is_not_div_preamble, attribute, show);
 	style_pop(), style_pop(), style_pop(), style_pop(), style_pop();
-	assert(StyleArraySize(&mode.styles) == 1);
 }
 
 /*static void dl_att_print(const struct Segment *const segment,
@@ -831,7 +830,6 @@ static void dl_preamble_att(const enum Symbol attribute,
 static void segment_print_all(const struct Segment *const segment) {
 	const struct Token *param;
 	assert(segment);
-	assert(!StyleArraySize(&mode.styles));
 	style_push(&html_div);
 	/* The title is generally the first param. Only single-words. */
 	if((param = param_no(segment, 0))) {
@@ -875,7 +873,6 @@ static void segment_print_all(const struct Segment *const segment) {
 	dl_segment_att(segment, ATT_LICENSE, 0);
 	style_pop_level(); /* dl */
 	style_pop_level(); /* div */
-	assert(!StyleArraySize(&mode.styles));
 }
 
 static void best_guess_at_modifiers(const struct Segment *const segment) {
@@ -958,7 +955,7 @@ int ReportOut(void) {
 	if(is_preamble) {
 		style_prepare_output(END);
 		printf("<a href = \"#%s:\">Preamble</a>",
-			   division_strings[DIV_PREAMBLE]);
+			division_strings[DIV_PREAMBLE]);
 		style_pop_push();
 	}
 	if(is_typedef) {
@@ -1037,9 +1034,25 @@ int ReportOut(void) {
 	}
 	if(is_function) {
 		style_prepare_output(END);
-		printf("<a href = \"#%s:\">Function Definitions</a>",
+		printf("<a href = \"#%s:\">Function Definitions</a>: "
+			"see <a href = \"#summary:\">function table</a>.",
 			division_strings[DIV_FUNCTION]);
-		style_push(&no_style);
+		style_pop_push();
+	}
+	if(is_license) style_prepare_output(END),
+		printf("<a href = \"#license:\">License</a>"), style_pop_push();
+	style_pop_level();
+	assert(!StyleArraySize(&mode.styles));
+
+	/* Function table. */
+	if(is_function) {
+		style_push(&html_div);
+		style_prepare_output(END);
+		printf("<a name = \"summary:\"><!-- --></a>\n\n");
+		style_push(&html_h3);
+		style_prepare_output(END);
+		printf("Function Table");
+		style_pop();
 		style_prepare_output(END);
 		printf("<table>\n\n"
 			"<tr><th>Modifiers</th><th>Function Name</th>"
@@ -1048,7 +1061,7 @@ int ReportOut(void) {
 			size_t *idxs, idxn, idx, paramn;
 			struct Token *params;
 			if(segment->division != DIV_FUNCTION
-			   || !(idxn = IndexArraySize(&segment->code_params))) continue;
+				|| !(idxn = IndexArraySize(&segment->code_params))) continue;
 			idxs = IndexArrayGet(&segment->code_params);
 			params = TokenArrayGet(&segment->code);
 			paramn = TokenArraySize(&segment->code);
@@ -1072,16 +1085,13 @@ int ReportOut(void) {
 		}
 		printf("</table>\n\n");
 		style_pop();
-		style_pop_push();
+		assert(!StyleArraySize(&mode.styles));
 	}
-	if(is_license) style_prepare_output(END),
-		printf("<a href = \"#license:\">License</a>"), style_pop_push();
-	style_pop_level();
-	assert(!StyleArraySize(&mode.styles));
 
 	/* Preamble contents. */
 	if(is_preamble) {
-		/* fixme: enclose in block tag; this is not html4/strict. */
+		style_push(&html_div);
+		style_prepare_output(END);
 		printf("<a name = \"%s:\"><!-- --></a>\n"
 			   "<h2>Preamble</h2>\n\n",
 			   division_strings[DIV_PREAMBLE]);
@@ -1101,37 +1111,52 @@ int ReportOut(void) {
 		/* `ATT_RETURN`, `ATT_THROWS`, `ATT_IMPLEMENTS`, `ATT_ORDER`,
 		 `ATT_ALLOW` have warnings. `ATT_LICENSE` is below. */
 		style_pop_level();
+		style_pop_level();
 	}
 	assert(!StyleArraySize(&mode.styles));
 
 	/* Print typedefs. */
 	if(is_typedef) {
+		style_push(&html_div);
+		style_prepare_output(END);
 		printf("<a name = \"%s:\"><!-- --></a>"
 			"<h2>Typedef Aliases</h2>\n\n", division_strings[DIV_TYPEDEF]);
 		division_act(DIV_TYPEDEF, &segment_print_all);
+		style_pop_level();
 	}
 	/* Print tags. */
 	if(is_tag) {
+		style_push(&html_div);
+		style_prepare_output(END);
 		printf("<a name = \"%s:\"><!-- --></a>"
 			"<h2>Struct, Union, and Enum Definitions</h2>\n\n",
 			division_strings[DIV_TAG]);
 		division_act(DIV_TAG, &segment_print_all);
+		style_pop_level();
 	}
 	/* Print general declarations. */
 	if(is_data) {
+		style_push(&html_div);
+		style_prepare_output(END);
 		printf("<a name = \"%s:\"><!-- --></a>"
 			"<h2>General Definitions</h2>\n\n", division_strings[DIV_DATA]);
 		division_act(DIV_DATA, &segment_print_all);
+		style_pop_level();
 	}
 	/* Print functions. */
 	if(is_function) {
+		style_push(&html_div);
+		style_prepare_output(END);
 		printf("<a name = \"%s:\"><!-- --></a>"
 			"<h2>Function Definitions</h2>\n\n",
 			division_strings[DIV_FUNCTION]);
 		division_act(DIV_FUNCTION, &segment_print_all);
+		style_pop_level();
 	}
 	/* License. */
 	if(is_license) {
+		style_push(&html_div);
+		style_prepare_output(END);
 		printf("<a name = \"license:\"><!-- --></a>\n"
 			"<h2>License</h2>\n\n");
 		style_push(&html_p);
@@ -1139,6 +1164,7 @@ int ReportOut(void) {
 		style_pop_push();
 		style_push(&plain_see_license), style_push(&plain_text);
 		div_att_print(&is_not_div_preamble, ATT_LICENSE, SHOW_WHERE);
+		style_pop_level();
 		style_pop_level();
 	}
 

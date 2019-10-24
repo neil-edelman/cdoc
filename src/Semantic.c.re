@@ -141,7 +141,7 @@ argument = ("_" | "*" | "s" | "x" | generic)+;
 static int parse(void) {
 	char *const buffer = CharArrayGet(&semantic.buffer);
 	const char *cursor = buffer, *marker = cursor;
-	const char *args = 0, *label = 0;
+	const char *args = 0, *label = 0, *begin;
 	int parens = 0;
 	int is_not_likely = 0;
 
@@ -159,7 +159,8 @@ static int parse(void) {
 		if(!add_param(label)) return 0;
 		return 1;
 	}
-	// "something tag [id]" is a tag.
+	// "something tag [id]" is a tag. fixme: what to do with unlabeled tags?
+	// re2c: tag 'label' has 2nd degree of nondeterminism
 	skip_simple* tag @label generic? redact* end {
 		semantic.division = DIV_TAG;
 		if(!add_param(label)) return 0;
@@ -207,7 +208,7 @@ params:
 		goto params;
 	}
 	// Update the label until `is_not_likely`; the label is generally the last.
-	generic { if(!label || !is_not_likely) label = cursor - 1; goto params; }
+	@begin generic { if(!label || !is_not_likely) label = begin; goto params; }
 	// New label.
 	"," {
 		if(parens > 1) goto params;
@@ -314,7 +315,8 @@ int Semantic(const struct TokenArray *const code) {
 	/* Now with the {}[] removed. */
 	effectively_typedef_fn_ptr(buffer);
 	if(!parse()) return 0;
-	fprintf(stderr, "Line %lu: \"%s\" -> %s.\n", (unsigned long)semantic.line, buffer, divisions[semantic.division]);
+	/*fprintf(stderr, "Line %lu: \"%s\" -> %s.\n",
+		(unsigned long)semantic.line, buffer, divisions[semantic.division]);*/
 	/* It has been determined to be `divisions[semantic.division]`. */
 	return 1;
 }
