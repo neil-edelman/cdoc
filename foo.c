@@ -6,7 +6,7 @@ text
 
 Paragraph @ @a \,~~
  
- Yaaar <fn:foo>, <data:y>, <fn:this_is_not_a_fn>.
+ Yaaar <fn:not_fn>, <fn:<T>not_fn>, <fn:<T>fun4>, <data:y>.
 
  \* This is meh.
  \* is

@@ -96,7 +96,9 @@ static void unused_attribute(const struct AttributeArray *const attributes,
 
 static void warn_internal_link(const struct Token *const token) {
 	enum Division division;
-	/*struct Segment *segment = 0;*/
+	char a[256], b[256];
+	size_t *fun_index;
+	struct Segment *segment = 0;
 	assert(token);
 	switch(token->symbol) {
 		case SEE_FN:      division = DIV_FUNCTION; break;
@@ -105,33 +107,43 @@ static void warn_internal_link(const struct Token *const token) {
 		case SEE_DATA:    division = DIV_DATA;     break;
 		default: return;
 	}
-	/* fixme: `print_token` outputs a multi-token to stdout. There's no way to
-	 compare it with this currently. */
-	/*while((segment = SegmentArrayNext(&report, segment))) {
-		if(segment->division != division) continue;
-		token_compare();
-	}*/
-	fprintf(stderr,
-		"%s: there's no way to tell if this link is broken, currently.\n",
-		pos(token));
+	/* Encode the link text. */
+	html_encode_s(token->length, token->from, &a);
+	/* Search for it. fixme: this builds up labels from scratch, then discards
+	 them, over and over. */
+	while((segment = SegmentArrayNext(&report, segment))) {
+		const struct Token *compare;
+		if(segment->division != division
+			|| !(fun_index = IndexArrayNext(&segment->code_params, 0))
+			|| *fun_index >= TokenArraySize(&segment->code)) continue;
+		compare = TokenArrayGet(&segment->code) + *fun_index;
+		print_token_s(&segment->code, compare, &b);
+		if(!strcmp(a, b))
+			{ /*fprintf(stderr, "%s: link okay.\n", pos(token));*/ return; }
+	}
+	fprintf(stderr, "%s: link broken.\n", pos(token));
 }
 
 /** @fixme Should be like Report. */
 static void warn_segment(const struct Segment *const segment) {
-	struct Attribute *attribute;
+	struct Attribute *attribute = 0;
 	const size_t *code_param;
 	const struct Token *const fallback = segment_fallback(segment);
 	struct Token *token = 0;
 	assert(segment);
 	/* Check for empty (or full, as the case may be) attributes. */
-	attribute = 0;
 	while((attribute = AttributeArrayNext(&segment->attributes, attribute)))
 		if(!attribute_okay(attribute)) fprintf(stderr,
 		"%s: attribute not used correctly.\n", pos(&attribute->token));
 	/* Check all text for undefined references. */
 	while((token = TokenArrayNext(&segment->doc, token)))
 		warn_internal_link(token);
-	/*...code, attributes { header, contents } */
+	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
+		while((token = TokenArrayNext(&attribute->header, token)))
+			warn_internal_link(token);
+		while((token = TokenArrayNext(&attribute->contents, token)))
+			warn_internal_link(token);
+	}
 	/* Check for different things depending on the division. */
 	switch(segment->division) {
 	case DIV_FUNCTION:

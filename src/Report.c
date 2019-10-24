@@ -400,5 +400,5 @@ void ReportCull(void) {
 	SegmentArrayKeepIf(&report, &keep_segment);
 }
 
-#include "ReportWarning.h"
 #include "ReportOut.h"
+#include "ReportWarning.h"
