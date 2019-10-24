@@ -84,13 +84,18 @@ static int match_attribute_contents(const struct Token *const match,
 	return 0;
 }
 
-static void unused_attribute(const struct AttributeArray *const attributes,
+static void unused_attribute(const struct Segment *const segment,
 	const enum Symbol symbol) {
+	const struct AttributeArray *const attributes = &segment->attributes;
 	struct Attribute *attribute = 0;
-	assert(attributes && symbol);
+	char a[12], b[12];
+	assert(segment && attributes && symbol);
+	segment_to_string(segment, &a);
 	while((attribute = AttributeArrayNext(attributes, attribute))) {
 		if(attribute->token.symbol != symbol) continue;
-		fprintf(stderr, "%s: attribute not used.\n", pos(&attribute->token));
+		attribute_to_string(attribute, &b);
+		fprintf(stderr, "%s: %s attribute not used in %s.\n",
+			pos(&attribute->token), b, a);
 	}
 }
 
@@ -164,9 +169,9 @@ static void warn_segment(const struct Segment *const segment) {
 		if(IndexArraySize(&segment->code_params) < 1) fprintf(stderr,
 			"%s: unable to extract function name.\n", pos(fallback));
 		/* Unused in function. */
-		unused_attribute(&segment->attributes, ATT_TITLE);
+		unused_attribute(segment, ATT_TITLE);
 		if(!is_static(&segment->code))
-			unused_attribute(&segment->attributes, ATT_ALLOW);
+			unused_attribute(segment, ATT_ALLOW);
 		/* Check for extraneous params. */
 		attribute = 0;
 		while((attribute = AttributeArrayNext(&segment->attributes, attribute)))
@@ -195,51 +200,51 @@ static void warn_segment(const struct Segment *const segment) {
 		if(IndexArraySize(&segment->code_params)) fprintf(stderr,
 			"%s: params useless in preamble.\n", pos(fallback));
 		/* Unused in preamble. */
-		unused_attribute(&segment->attributes, ATT_RETURN);
-		unused_attribute(&segment->attributes, ATT_THROWS);
-		unused_attribute(&segment->attributes, ATT_IMPLEMENTS);
-		unused_attribute(&segment->attributes, ATT_ORDER);
-		unused_attribute(&segment->attributes, ATT_ALLOW);
+		unused_attribute(segment, ATT_RETURN);
+		unused_attribute(segment, ATT_THROWS);
+		unused_attribute(segment, ATT_IMPLEMENTS);
+		unused_attribute(segment, ATT_ORDER);
+		unused_attribute(segment, ATT_ALLOW);
 		break;
 	case DIV_TAG:
 		/* Should have one. */
 		if(IndexArraySize(&segment->code_params) != 1) fprintf(stderr,
 			"%s: unable to extract one tag name.\n", pos(fallback));
 		/* Unused in tags. */
-		unused_attribute(&segment->attributes, ATT_TITLE);
-		unused_attribute(&segment->attributes, ATT_RETURN);
-		unused_attribute(&segment->attributes, ATT_THROWS);
-		unused_attribute(&segment->attributes, ATT_IMPLEMENTS);
-		unused_attribute(&segment->attributes, ATT_ORDER);
+		unused_attribute(segment, ATT_TITLE);
+		unused_attribute(segment, ATT_RETURN);
+		unused_attribute(segment, ATT_THROWS);
+		unused_attribute(segment, ATT_IMPLEMENTS);
+		unused_attribute(segment, ATT_ORDER);
 		if(!is_static(&segment->code))
-			unused_attribute(&segment->attributes, ATT_ALLOW);
+			unused_attribute(segment, ATT_ALLOW);
 		break;
 	case DIV_TYPEDEF:
 		/* Should have one. */
 		if(IndexArraySize(&segment->code_params) != 1) fprintf(stderr,
 			"%s: unable to extract one typedef name.\n", pos(fallback));
 		/* Unused in typedefs. */
-		unused_attribute(&segment->attributes, ATT_TITLE);
-		unused_attribute(&segment->attributes, ATT_PARAM);
-		unused_attribute(&segment->attributes, ATT_RETURN);
-		unused_attribute(&segment->attributes, ATT_THROWS);
-		unused_attribute(&segment->attributes, ATT_IMPLEMENTS);
-		unused_attribute(&segment->attributes, ATT_ORDER);
-		unused_attribute(&segment->attributes, ATT_ALLOW);
+		unused_attribute(segment, ATT_TITLE);
+		unused_attribute(segment, ATT_PARAM);
+		unused_attribute(segment, ATT_RETURN);
+		unused_attribute(segment, ATT_THROWS);
+		unused_attribute(segment, ATT_IMPLEMENTS);
+		unused_attribute(segment, ATT_ORDER);
+		unused_attribute(segment, ATT_ALLOW);
 		break;
 	case DIV_DATA:
 		/* Should have one. */
 		if(IndexArraySize(&segment->code_params) != 1) fprintf(stderr,
 			"%s: unable to extract one data name.\n", pos(fallback));
 		/* Unused in data. */
-		unused_attribute(&segment->attributes, ATT_TITLE);
-		unused_attribute(&segment->attributes, ATT_PARAM);
-		unused_attribute(&segment->attributes, ATT_RETURN);
-		unused_attribute(&segment->attributes, ATT_THROWS);
-		unused_attribute(&segment->attributes, ATT_IMPLEMENTS);
-		unused_attribute(&segment->attributes, ATT_ORDER);
+		unused_attribute(segment, ATT_TITLE);
+		unused_attribute(segment, ATT_PARAM);
+		unused_attribute(segment, ATT_RETURN);
+		unused_attribute(segment, ATT_THROWS);
+		unused_attribute(segment, ATT_IMPLEMENTS);
+		unused_attribute(segment, ATT_ORDER);
 		if(!is_static(&segment->code))
-			unused_attribute(&segment->attributes, ATT_ALLOW);
+			unused_attribute(segment, ATT_ALLOW);
 		break;
 	default:
 		assert((fprintf(stderr, "Can not happen.\n"), 0));

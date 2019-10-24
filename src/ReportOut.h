@@ -1,5 +1,3 @@
-#include "UrlEncode.h"
-
 /* `SYMBOL` is declared in `Scanner.h`. */
 static const int symbol_before_sep[] = { SYMBOL(PARAM6D) };
 static const int symbol_after_sep[]  = { SYMBOL(PARAM6E) };
@@ -579,19 +577,21 @@ static void print_tokens(const struct TokenArray *const tokens) {
 	highlight_tokens(tokens, 0);
 }
 
-void ReportDebug(void) {
-#ifdef DEBUG_SEGMENTS
+void ReportDebugSegments(void) {
 	struct Segment *segment = 0;
 	struct Attribute *att = 0;
-	fprintf(stderr, "Report debug:\n");
+	struct Token *t;
+	fprintf(stderr, "Segments:\n");
 	while((segment = SegmentArrayNext(&report, segment))) {
 		fprintf(stderr, "Segment division %s:\n"
-			"code: %s;\n"
-			"params: %s;\n"
-			"doc: %s.\n",
+			"Line %lu code: %s;\n"
+			"params params: %s;\n"
+			"Line %lu doc: %s.\n",
 			divisions[segment->division],
+			(t = TokenArrayNext(&segment->code, 0)) ? t->line : 0,
 			TokenArrayToString(&segment->code),
 			IndexArrayToString(&segment->code_params),
+			(t = TokenArrayNext(&segment->doc, 0)) ? t->line : 0,
 			TokenArrayToString(&segment->doc));
 		while((att = AttributeArrayNext(&segment->attributes, att)))
 			fprintf(stderr, "%s{%s} %s.\n", symbols[att->token.symbol],
@@ -599,7 +599,6 @@ void ReportDebug(void) {
 			TokenArrayToString(&att->contents));
 		fputc('\n', stderr);
 	}
-#endif
 }
 
 
@@ -668,25 +667,6 @@ static void segment_att_print(const struct Segment *const segment,
 	}
 }
 
-#if 0
-static void segment_att_header_print(const struct Segment *const segment,
-	const enum Symbol symbol) {
-	struct Attribute *attribute = 0;
-	char a[12];
-	assert(segment && header);
-	token_to_string(header, &a);
-	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
-		if(attribute->token.symbol != symbol
-		   || !any_token(&attribute->header, header)) continue;
-		printf("[");
-		print_tokens(&attribute->header);
-		printf("]");
-		print_tokens(&attribute->contents);
-		/*style_end_item();*/
-	}
-}
-#endif
-
 /** For each `division` segment, print all attributes that match `symbol`.
  @param[is_where] Prints where is is.
  @param[is_text] Prints the text. */
@@ -713,23 +693,7 @@ static int segment_attribute_exists(const struct Segment *const segment,
 	return 0;
 }
 
-/** `act` on all contents os `attribute_symbol` with content within
- `segment`. */
-/*static int segment_attribute_act(const struct Segment *const segment,
-	const enum Symbol attribute_symbol,
-	void (*act)(const struct TokenArray *const)) {
-	struct Attribute *attribute = 0;
-	assert(segment);
-	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
-		if(attribute->token.symbol != attribute_symbol
-		   || !TokenArraySize(&attribute->contents)) continue;
-		act(&attribute->contents);
-	}
-	return 0;
-}*/
-
-/** @return Is `division` in the report?
- <needed> */
+/** @return Is `division` in the report? */
 static int division_exists(const enum Division division) {
 	struct Segment *segment = 0;
 	while((segment = SegmentArrayNext(&report, segment)))
@@ -755,18 +719,6 @@ static int attribute_exists(const enum Symbol attribute_symbol) {
 		if(segment_attribute_exists(segment, attribute_symbol)) return 1;
 	return 0;
 }
-
-/* `act` on all `attribute_symbol` under `division`. */
-/*static void division_attribute_act(const enum Division division,
-	const enum Symbol attribute_symbol,
-	void (*act)(const struct TokenArray *const)) {
-	const struct Segment *segment = 0;
-	assert(act);
-	while((segment = SegmentArrayNext(&report, segment))) {
-		if(segment->division != division) continue;
-		segment_attribute_act(segment, attribute_symbol, act);
-	}
-}*/
 
 /** Searches if attribute `symbol` exists within `segment` whose header
  contains `header`.
@@ -811,19 +763,6 @@ static void dl_preamble_att(const enum Symbol attribute,
 	div_att_print(&is_not_div_preamble, attribute, show);
 	style_pop(), style_pop(), style_pop(), style_pop(), style_pop();
 }
-
-/*static void dl_att_print(const struct Segment *const segment,
-	const enum Attribute attribute, const enum AttShow show) {
-	assert(attribute);
-	sprintf(title, "\t<dt>%.128s:</dt>\n"
-		"\t<dd>", symbol_attribute_titles[attribute->token.symbol]);
-	style_push(&html_desc), style_push(&plain_csv), style_push(&plain_text);
-	segment_att_print(, attribute, SHOW_TEXT);
-	style_pop(), style_push(&plain_parenthetic), style_push(&plain_csv),
-	style_push(&plain_text);
-	div_att_print(&is_not_div_preamble, attribute, show);
-	style_pop(), style_pop(), style_pop(), style_pop(), style_pop();
-}*/
 
 /** Prints all a `segment`.
  @implements division_act */
@@ -1168,7 +1107,7 @@ int ReportOut(void) {
 		style_pop_level();
 	}
 
-	printf("</body>\n"
+	printf("</body>\n\n"
 		"</html>\n");
 	style_clear();
 	return errno ? 0 : 1;

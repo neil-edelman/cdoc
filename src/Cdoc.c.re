@@ -96,7 +96,6 @@
 
  @title Main.c
  @author Neil
- @version 2019-06
  @std C89
  @depend [re2c](http://re2c.org/)
  @fixme Nothing prevents invalid html from being output, for example, having a
@@ -113,17 +112,43 @@
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
 #include <string.h> /* strcmp */
-#include "Scanner.h"
-#include "Report.h"
-#include "Semantic.h"
+#include <errno.h>  /* errno */
+#include "../src/Scanner.h"
+#include "../src/Report.h"
+#include "../src/Semantic.h"
+
+static struct {
+	int print_segments, provide_file;
+} args;
+
+static int parse_arg(const char *const string) {
+	const char *m, *s = string;
+	/* !stags:re2c format = 'const char *@@;'; */
+
+/*!re2c
+	re2c:define:YYCTYPE = char;
+	re2c:define:YYCURSOR = s;
+	re2c:define:YYMARKER = m;
+	re2c:yyfill:enable = 0;
+
+	end = "\x00";
+
+	* { fprintf(stderr, "Error with argument \"%s\".\n", string); return 0; }
+	"-s" | "--segments" end { args.print_segments = 1; return 1; }
+	"-d" | "--debug" end { args.provide_file = 1; return 1; }
+*/
+}
 
 /** @param[argc, argv] If "debug", `freopens` a path that is on my computer. */
 int main(int argc, char **argv) {
-	int exit_code = EXIT_FAILURE;
+	int exit_code = EXIT_FAILURE, i;
 	const char *reason = 0;
 
+	for(i = 1; i < argc; i++) if(!parse_arg(argv[i]))
+		{ errno = EDOM; reason = "unreconised argument"; goto catch; }
+
 	/* https://stackoverflow.com/questions/10293387/piping-into-application-run-under-xcode/13658537 */
-	if (argc == 2 && strcmp(argv[1], "debug") == 0 ) {
+	if(args.provide_file) {
 		const char *test_file_path = "/Users/neil/Movies/Cdoc/foo.c";
 		fprintf(stderr, "== [RUNNING IN DEBUG MODE with %s]==\n\n",
 				test_file_path);
@@ -131,7 +156,6 @@ int main(int argc, char **argv) {
 	}
 
 	if(!Scanner()) { reason = "scanner"; goto catch; }
-	ReportDebug();
 	ReportWarn();
 	ReportCull();
 	if(!ReportOut()) { reason = "output"; goto catch; }
@@ -142,6 +166,7 @@ catch:
 	perror(reason);
 	
 finally:
+	if(args.print_segments) ReportDebugSegments();
 	Report_();
 	Scanner_();
 

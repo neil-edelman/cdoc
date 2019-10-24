@@ -15,6 +15,7 @@
 #include "Division.h"
 #include "Scanner.h"
 #include "Semantic.h"
+#include "UrlEncode.h"
 #include "Report.h"
 
 
@@ -387,7 +388,8 @@ static const struct Token *segment_fallback(const struct Segment *const segment)
 {
 	assert(segment);
 	return IndexArraySize(&segment->code_params)
-		? TokenArrayGet(&segment->code) + IndexArrayGet(&segment->code_params)[0]
+		? TokenArrayGet(&segment->code)
+		+ IndexArrayGet(&segment->code_params)[0]
 		: TokenArraySize(&segment->code) ? TokenArrayGet(&segment->code)
 		: TokenArraySize(&segment->doc) ? TokenArrayGet(&segment->doc)
 		: AttributeArraySize(&segment->attributes)
