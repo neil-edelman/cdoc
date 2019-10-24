@@ -99,13 +99,16 @@
  @version 2019-06
  @std C89
  @depend [re2c](http://re2c.org/)
+ @fixme Nothing prevents invalid html from being output, for example, having a
+ link in the title. Switch to md if that happens?
  @fixme Authors can only be ASCII.
  @fixme Trigraph support, (haha.)
  @fixme Old-style function support.
  @fixme `re2c` appends a comma at the end of the enumeration list, not
  compliant with C90.
- @fixme Hide const on params when it can not affect function calls.
- @fixme Prototypes and fuctions are the same thing; hash map? */
+ @fixme Hide `const` on params when it can not affect function calls.
+ @fixme Prototypes and fuctions are the same thing; this will confuse it. Hash
+ map? */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */

@@ -1081,6 +1081,7 @@ int ReportOut(void) {
 
 	/* Preamble contents. */
 	if(is_preamble) {
+		/* fixme: enclose in block tag; this is not html4/strict. */
 		printf("<a name = \"%s:\"><!-- --></a>\n"
 			   "<h2>Preamble</h2>\n\n",
 			   division_strings[DIV_PREAMBLE]);
