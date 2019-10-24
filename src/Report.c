@@ -227,7 +227,8 @@ static int semantic(struct Segment *const segment) {
 
 
 /** This appends the current token based on the state it was last in.
- @return Success. */
+ @return Success.
+ @fixme Doesn't work sometimes. Have a state machine. */
 int ReportPlace(void) {
 	const enum Symbol symbol = ScannerSymbol();
 	const int indent_level = ScannerIndentLevel();
