@@ -626,15 +626,8 @@ static int is_not_div_preamble(const enum Division d) {
 static const struct Token *any_token(const struct TokenArray *const tokens,
 	const struct Token *const token) {
 	const struct Token *t = 0;
-	char a[12], b[12];
-	token_to_string(token, &a);
-	printf("(%s in %s: ", a, TokenArrayToString(tokens));
 	while((t = TokenArrayNext(tokens, t)))
-		if(!token_compare(token, t)) {
-			token_to_string(t, &b);
-			return printf("%s,%s true)\n", a, b), t;
-		}
-	printf("false)\n");
+		if(!token_compare(token, t)) return t;
 	return 0;
 }
 
@@ -649,16 +642,8 @@ static void segment_att_print_all(const struct Segment *const segment,
 	if(!show) return;
 	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
 		size_t *pindex;
-		if(attribute->token.symbol != symbol) continue;
-		if(match && !any_token(&attribute->header, match)) continue;
-		if(match) {
-			char a[12];
-			token_to_string(match, &a);
-			fprintf(stderr, "segment_att_print_all(%s):\n", a);
-			fprintf(stderr, "%s{%s} %s.\n", symbols[attribute->token.symbol],
-					TokenArrayToString(&attribute->header),
-					TokenArrayToString(&attribute->contents));
-		}
+		if(attribute->token.symbol != symbol
+			|| (match && !any_token(&attribute->header, match))) continue;
 		style_prepare_output(END);
 		if(show & SHOW_WHERE) {
 			if((pindex = IndexArrayNext(&segment->code_params, 0))
