@@ -107,7 +107,9 @@
  compliant with C90.
  @fixme Hide `const` on params when it can not affect function calls.
  @fixme Prototypes and fuctions are the same thing; this will confuse it. Hash
- map? */
+ map?
+ @fixme \Theta \O \times ...
+ @fixme Links on multiple lines doesn't work. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
