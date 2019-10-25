@@ -995,7 +995,7 @@ int ReportOut(void) {
 		style_pop();
 		style_prepare_output(END);
 		printf("<table>\n\n"
-			"<tr><th align = right>Modifiers</th><th>Function Name</th>"
+			"<tr><th>Modifiers</th><th>Function Name</th>"
 			"<th>Argument List</th></tr>\n\n");
 		while((segment = SegmentArrayNext(&report, segment))) {
 			size_t *idxs, idxn, idx, paramn;
