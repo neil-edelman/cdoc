@@ -585,7 +585,7 @@ void ReportDebugSegments(void) {
 	while((segment = SegmentArrayNext(&report, segment))) {
 		fprintf(stderr, "Segment division %s:\n"
 			"Line %lu code: %s;\n"
-			"params params: %s;\n"
+			"params no.: %s;\n"
 			"Line %lu doc: %s.\n",
 			divisions[segment->division],
 			(t = TokenArrayNext(&segment->code, 0)) ? t->line : 0,
@@ -626,24 +626,39 @@ static int is_not_div_preamble(const enum Division d) {
 static const struct Token *any_token(const struct TokenArray *const tokens,
 	const struct Token *const token) {
 	const struct Token *t = 0;
+	char a[12], b[12];
+	token_to_string(token, &a);
+	printf("(%s in %s: ", a, TokenArrayToString(tokens));
 	while((t = TokenArrayNext(tokens, t)))
-		if(!token_compare(token, t)) return t;
+		if(!token_compare(token, t)) {
+			token_to_string(t, &b);
+			return printf("%s,%s true)\n", a, b), t;
+		}
+	printf("false)\n");
 	return 0;
 }
 
 /** Functions as a bit-vector. */
 enum AttShow { SHOW_NONE, SHOW_WHERE, SHOW_TEXT, SHOW_ALL };
 
-static void segment_att_print(const struct Segment *const segment,
-	const enum Symbol symbol, const struct Token *const header,
+static void segment_att_print_all(const struct Segment *const segment,
+	const enum Symbol symbol, const struct Token *const match,
 	const enum AttShow show) {
 	struct Attribute *attribute = 0;
 	assert(segment);
 	if(!show) return;
 	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
 		size_t *pindex;
-		if(attribute->token.symbol != symbol
-			|| (header && !any_token(&attribute->header, header))) continue;
+		if(attribute->token.symbol != symbol) continue;
+		if(match && !any_token(&attribute->header, match)) continue;
+		if(match) {
+			char a[12];
+			token_to_string(match, &a);
+			fprintf(stderr, "segment_att_print_all(%s):\n", a);
+			fprintf(stderr, "%s{%s} %s.\n", symbols[attribute->token.symbol],
+					TokenArrayToString(&attribute->header),
+					TokenArrayToString(&attribute->contents));
+		}
 		style_prepare_output(END);
 		if(show & SHOW_WHERE) {
 			if((pindex = IndexArrayNext(&segment->code_params, 0))
@@ -676,7 +691,7 @@ static void div_att_print(const DivisionPredicate div_pred,
 	if(!show) return;
 	while((segment = SegmentArrayNext(&report, segment)))
 		if(!div_pred || div_pred(segment->division))
-		segment_att_print(segment, symbol, 0, show);
+		segment_att_print_all(segment, symbol, 0, show);
 }
 
 
@@ -721,15 +736,15 @@ static int attribute_exists(const enum Symbol attribute_symbol) {
 }
 
 /** Searches if attribute `symbol` exists within `segment` whose header
- contains `header`.
+ contains `match`.
  @order O(`attributes`) */
-static int segment_attribute_header_exists(const struct Segment *const segment,
-	const enum Symbol symbol, const struct Token *const header) {
+static int segment_attribute_match_exists(const struct Segment *const segment,
+	const enum Symbol symbol, const struct Token *const match) {
 	struct Attribute *attribute = 0;
 	assert(segment);
 	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
 		if(attribute->token.symbol != symbol) continue;
-		if(any_token(&attribute->header, header)) return 1;
+		if(any_token(&attribute->header, match)) return 1;
 	}
 	return 0;
 }
@@ -737,7 +752,7 @@ static int segment_attribute_header_exists(const struct Segment *const segment,
 static void dl_segment_att(const struct Segment *const segment,
 	const enum Symbol attribute, const struct Token *header) {
 	assert(segment && attribute);
-	if((header && !segment_attribute_header_exists(segment, attribute, header))
+	if((header && !segment_attribute_match_exists(segment, attribute, header))
 		|| (!header && !segment_attribute_exists(segment, attribute))) return;
 	style_push(&html_dt), style_push(&plain_text);
 	style_prepare_output(END);
@@ -746,7 +761,21 @@ static void dl_segment_att(const struct Segment *const segment,
 		print_token(&segment->code, header), style_pop();
 	style_pop(), style_pop();
 	style_push(&html_dd), style_push(&plain_ssv), style_push(&plain_text);
-	segment_att_print(segment, attribute, header, SHOW_TEXT);
+	segment_att_print_all(segment, attribute, header, SHOW_TEXT);
+	style_pop(), style_pop(), style_pop();
+}
+
+static void dl_segment_att_header_match(const struct Segment *const segment,
+	const enum Symbol attribute, const struct Token *match) {
+	assert(segment && attribute && match);
+	if(!segment_attribute_match_exists(segment, attribute, match)) return;
+	style_push(&html_dt), style_push(&plain_text);
+	style_prepare_output(END);
+	printf("%s:", symbol_attribute_titles[attribute]);
+	style_separate(), style_push(&html_em), print_token(&segment->code, match);
+	style_pop(), style_pop(), style_pop();
+	style_push(&html_dd), style_push(&plain_text), style_push(&plain_text);
+	segment_att_print_all(segment, attribute, match, SHOW_TEXT);
 	style_pop(), style_pop(), style_pop();
 }
 
@@ -770,6 +799,7 @@ static void segment_print_all(const struct Segment *const segment) {
 	const struct Token *param;
 	assert(segment);
 	style_push(&html_div);
+
 	/* The title is generally the first param. Only single-words. */
 	if((param = param_no(segment, 0))) {
 		style_prepare_output(END);
@@ -788,16 +818,20 @@ static void segment_print_all(const struct Segment *const segment) {
 		printf("Unknown");
 		style_pop_level();
 	}
+
+	/* Now text. */
 	style_push(&html_p);
 	print_tokens(&segment->doc);
 	style_pop_level();
+
+	/* Attrubutes. */
 	style_push(&html_dl);
 	if(segment->division == DIV_PREAMBLE) {
 		/*fixme: print_attributes_header(segment, ATT_PARAM);*/
 	} else if(segment->division == DIV_FUNCTION) {
 		size_t no;
 		for(no = 1; (param = param_no(segment, no)); no++)
-			dl_segment_att(segment, ATT_PARAM, param);
+			dl_segment_att_header_match(segment, ATT_PARAM, param);
 		dl_segment_att(segment, ATT_RETURN, 0);
 		dl_segment_att(segment, ATT_IMPLEMENTS, 0);
 		/* fixme: this prints it wrong. Have a new fn. */

@@ -187,6 +187,28 @@ int main(void) {
 
 
 
-/** @title No. */
-int fun6(void) {
+/** @title No.
+
+ Oyvey lipsum.
+ 
+ O!!!!
+ @param[oy, vey] Nothing.
+ @param[oy] Maybe something.
+ @return No.
+ @return Way.
+ @implements Foo
+ @implements Bar
+ @throws[AUGH, OY] Bad.
+ @throws[RUN, AWAY] Ohno.
+ @author Nobody
+ @author Sombody
+ @std C
+ @std Java
+ @depend Meh
+ @depend Duh
+ @fixme Ohoh.
+ @fixme Ohno.
+ @license No.
+ @license Way. */
+int fun6(oy, vey) {
 }
