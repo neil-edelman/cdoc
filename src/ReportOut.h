@@ -995,7 +995,7 @@ int ReportOut(void) {
 		style_pop();
 		style_prepare_output(END);
 		printf("<table>\n\n"
-			"<tr><th>Modifiers</th><th>Function Name</th>"
+			"<tr><th align = right>Modifiers</th><th>Function Name</th>"
 			"<th>Argument List</th></tr>\n\n");
 		while((segment = SegmentArrayNext(&report, segment))) {
 			size_t *idxs, idxn, idx, paramn;
@@ -1006,7 +1006,7 @@ int ReportOut(void) {
 			params = TokenArrayGet(&segment->code);
 			paramn = TokenArraySize(&segment->code);
 			assert(idxs[0] < paramn);
-			printf("<tr><td>");
+			printf("<tr><td align = right>");
 			style_push(&plain_text);
 			best_guess_at_modifiers(segment);
 			style_pop();
