@@ -284,9 +284,9 @@ scan:
 		{ scanner.sub0 = sub0, scanner.sub1 = sub1; return SEE_TYPEDEF;}
 	<doc> "<data:" @sub0 generic_id @sub1 ">"
 		{ scanner.sub0 = sub0, scanner.sub1 = sub1; return SEE_DATA; }
-	<doc> "[" whitespace* / all_inside* "](" whitespace* uri whitespace* ")"
+	<doc> "[" whitespace* / all_inside* "](" uri ")"
 		{ return scanner.state = yycanchor, LINK_START; }
-	<doc> "!["whitespace* / all_inside* "](" whitespace* uri whitespace* ")"
+	<doc> "![" whitespace* / all_inside* "](" uri ")"
 		{ return scanner.state = yycanchor, IMAGE_START; }
 
 	// These are tags.
@@ -301,6 +301,7 @@ scan:
 	<doc> "@implements" { return ATT_IMPLEMENTS; }
 	<doc> "@order"      { return ATT_ORDER; }
 	<doc> "@allow"      { return ATT_ALLOW; }
+	//<doc> "@license"    { return scanner.state = yycparam_begin, ATT_LICENSE; } // fixme??
 	<doc> "@license"    { return ATT_LICENSE; }
 	// fixme: have date_begin @since[], @updated[], maybe updated is bad.
 	// Why not just have it updated now?
@@ -316,11 +317,10 @@ scan:
 		return fprintf(stderr, "%s: not allowed in parameter list.\n", pos()),
 		errno = EILSEQ, END; }
 
-	// Link/image text. Ended by `URL`.
-	// MD []() is inconsistent; []<> maybe? Can't fix it now, it's everywhere.
+	// Link/image text. Ended by `URL`. MD []() is inconsistent notation. :[
 	<anchor>  word_inside { return WORD; }
 	<anchor>  whitespace+ { return SPACE; }
-	<anchor>  whitespace* "](" whitespace* @sub0 uri @sub1 whitespace* ")"
+	<anchor>  whitespace* "](" @sub0 uri @sub1 ")"
 		{ scanner.sub0 = sub0, scanner.sub1 = sub1;
 		return scanner.state = yycdoc, URL; }
 */

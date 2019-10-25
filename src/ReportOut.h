@@ -800,6 +800,7 @@ static void segment_print_all(const struct Segment *const segment) {
 			dl_segment_att(segment, ATT_PARAM, param);
 		dl_segment_att(segment, ATT_RETURN, 0);
 		dl_segment_att(segment, ATT_IMPLEMENTS, 0);
+		/* fixme: this prints it wrong. Have a new fn. */
 		dl_segment_att(segment, ATT_THROWS, 0);
 		dl_segment_att(segment, ATT_ORDER, 0);
 	} else if(segment->division == DIV_TAG) {
