@@ -163,7 +163,8 @@ comment:
 
 typedef int Foo;
 
-/** This is a foo. */
+/** This is a foo.
+ @order \Omega \Theta \O \times \cdot O */
 void T_(fun4)(void) {
 }
 

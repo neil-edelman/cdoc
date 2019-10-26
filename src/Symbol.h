@@ -56,6 +56,11 @@
 	X(NEWLINE,   '~', &par, 0, 0, 0), \
 	X(NBSP,      '~', &nbsp, 0, 0, 0), \
 	X(NBTHINSP,  '~', &nbthinsp, 0, 0, 0), \
+	X(MATHCALO,  '~', &mathcalo, 0, 0, 0), \
+	X(CTHETA,    '~', &ctheta, 0, 0, 0), \
+	X(COMEGA,    '~', &comega, 0, 0, 0), \
+	X(TIMES,     '~', &times, 0, 0, 0), \
+	X(CDOT,      '~', &cdot, 0, 0, 0), \
 	X(ESCAPE,    '~', &escape, 0, 0, 0), \
 	/* Like <http://foo.com/>, <Cite1999>, [Foo](http://foo.com),
 	 ![Foo](foo.png), <fn:foo>, _etc_. */ \

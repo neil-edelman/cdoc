@@ -494,6 +494,49 @@ OUT(nbthinsp) {
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
+OUT(mathcalo) {
+	const struct Token *const t = *ptoken;
+	assert(tokens && t && t->symbol == MATHCALO && !a);
+	style_prepare_output(t->symbol);
+	/* Omicron. It looks like a stylised "O"? The actual is "&#120030;" but
+	 good luck finding a font that supports that. If one was using JavaScript
+	 and had a constant connection, we could use MathJax. */
+	printf("&#927" /* "O" */);
+	*ptoken = TokenArrayNext(tokens, t);
+	return 1;
+}
+OUT(ctheta) {
+	const struct Token *const t = *ptoken;
+	assert(tokens && t && t->symbol == CTHETA && !a);
+	style_prepare_output(t->symbol);
+	printf("&#920;" /* "&Theta;" This is supported on more browsers. */);
+	*ptoken = TokenArrayNext(tokens, t);
+	return 1;
+}
+OUT(comega) {
+	const struct Token *const t = *ptoken;
+	assert(tokens && t && t->symbol == COMEGA && !a);
+	style_prepare_output(t->symbol);
+	printf("&#937;" /* "&Omega;" */);
+	*ptoken = TokenArrayNext(tokens, t);
+	return 1;
+}
+OUT(times) {
+	const struct Token *const t = *ptoken;
+	assert(tokens && t && t->symbol == TIMES && !a);
+	style_prepare_output(t->symbol);
+	printf("&#215;");
+	*ptoken = TokenArrayNext(tokens, t);
+	return 1;
+}
+OUT(cdot) {
+	const struct Token *const t = *ptoken;
+	assert(tokens && t && t->symbol == CDOT && !a);
+	style_prepare_output(t->symbol);
+	printf("&#183;" /* &middot; */);
+	*ptoken = TokenArrayNext(tokens, t);
+	return 1;
+}
 OUT(list) {
 	const struct StyleText *const peek = style_text_peek();
 	const struct Token *const t = *ptoken;
@@ -735,31 +778,18 @@ static int segment_attribute_match_exists(const struct Segment *const segment,
 }
 
 static void dl_segment_att(const struct Segment *const segment,
-	const enum Symbol attribute, const struct Token *header) {
-	assert(segment && attribute);
-	if((header && !segment_attribute_match_exists(segment, attribute, header))
-		|| (!header && !segment_attribute_exists(segment, attribute))) return;
+	const enum Symbol attribute, const struct Token *match,
+	const struct StyleText *const style) {
+	assert(segment && attribute && style);
+	if((match && !segment_attribute_match_exists(segment, attribute, match))
+		|| (!match && !segment_attribute_exists(segment, attribute))) return;
 	style_push(&html_dt), style_push(&plain_text);
 	style_prepare_output(END);
 	printf("%s:", symbol_attribute_titles[attribute]);
-	if(header) style_separate(), style_push(&html_em),
-		print_token(&segment->code, header), style_pop();
+	if(match) style_separate(), style_push(&html_em),
+		print_token(&segment->code, match), style_pop();
 	style_pop(), style_pop();
-	style_push(&html_dd), style_push(&plain_ssv), style_push(&plain_text);
-	segment_att_print_all(segment, attribute, header, SHOW_TEXT);
-	style_pop(), style_pop(), style_pop();
-}
-
-static void dl_segment_att_header_match(const struct Segment *const segment,
-	const enum Symbol attribute, const struct Token *match) {
-	assert(segment && attribute && match);
-	if(!segment_attribute_match_exists(segment, attribute, match)) return;
-	style_push(&html_dt), style_push(&plain_text);
-	style_prepare_output(END);
-	printf("%s:", symbol_attribute_titles[attribute]);
-	style_separate(), style_push(&html_em), print_token(&segment->code, match);
-	style_pop(), style_pop(), style_pop();
-	style_push(&html_dd), style_push(&plain_text), style_push(&plain_text);
+	style_push(&html_dd), style_push(style), style_push(&plain_text);
 	segment_att_print_all(segment, attribute, match, SHOW_TEXT);
 	style_pop(), style_pop(), style_pop();
 }
@@ -777,6 +807,26 @@ static void dl_preamble_att(const enum Symbol attribute,
 	div_att_print(&is_not_div_preamble, attribute, show);
 	style_pop(), style_pop(), style_pop(), style_pop(), style_pop();
 }
+
+static void dl_segment_specific_att(const struct Attribute *const attribute) {
+	assert(attribute);
+	style_push(&html_dt), style_push(&plain_text);
+	style_prepare_output(END);
+	printf("%s:", symbol_attribute_titles[attribute->token.symbol]);
+	if(TokenArraySize(&attribute->header)) {
+		const struct Token *token = 0;
+		style_separate();
+		style_push(&plain_csv);
+		while((token = TokenArrayNext(&attribute->header, token)))
+			print_token(&attribute->header, token), style_separate();
+		style_pop();
+	}
+	style_pop(), style_pop();
+	style_push(&html_dd), style_push(&plain_text);
+	print_tokens(&attribute->contents);
+	style_pop(), style_pop();
+}
+
 
 /** Prints all a `segment`.
  @implements division_act */
@@ -814,22 +864,25 @@ static void segment_print_all(const struct Segment *const segment) {
 	if(segment->division == DIV_PREAMBLE) {
 		/*fixme: print_attributes_header(segment, ATT_PARAM);*/
 	} else if(segment->division == DIV_FUNCTION) {
+		const struct Attribute *att = 0;
 		size_t no;
 		for(no = 1; (param = param_no(segment, no)); no++)
-			dl_segment_att_header_match(segment, ATT_PARAM, param);
-		dl_segment_att(segment, ATT_RETURN, 0);
-		dl_segment_att(segment, ATT_IMPLEMENTS, 0);
-		/* fixme: this prints it wrong. Have a new fn. */
-		dl_segment_att(segment, ATT_THROWS, 0);
-		dl_segment_att(segment, ATT_ORDER, 0);
+			dl_segment_att(segment, ATT_PARAM, param, &plain_text);
+		dl_segment_att(segment, ATT_RETURN, 0, &plain_text);
+		dl_segment_att(segment, ATT_IMPLEMENTS, 0, &plain_csv);
+		while((att = AttributeArrayNext(&segment->attributes, att))) {
+			if(att->token.symbol != ATT_THROWS) continue;
+			dl_segment_specific_att(att);
+		}
+		dl_segment_att(segment, ATT_ORDER, 0, &plain_text);
 	} else if(segment->division == DIV_TAG) {
 		/*fixme: print_attributes_header(segment, ATT_PARAM);*/
 	}
-	dl_segment_att(segment, ATT_AUTHOR, 0);
-	dl_segment_att(segment, ATT_STD, 0);
-	dl_segment_att(segment, ATT_DEPEND, 0);
-	dl_segment_att(segment, ATT_FIXME, 0);
-	dl_segment_att(segment, ATT_LICENSE, 0);
+	dl_segment_att(segment, ATT_AUTHOR, 0, &plain_csv);
+	dl_segment_att(segment, ATT_STD, 0, &plain_ssv);
+	dl_segment_att(segment, ATT_DEPEND, 0, &plain_ssv);
+	dl_segment_att(segment, ATT_FIXME, 0, &plain_text);
+	dl_segment_att(segment, ATT_LICENSE, 0, &plain_text);
 	style_pop_level(); /* dl */
 	style_pop_level(); /* div */
 }
@@ -1122,6 +1175,8 @@ int ReportOut(void) {
 		div_att_print(&is_div_preamble, ATT_LICENSE, SHOW_TEXT);
 		style_pop_push();
 		style_push(&plain_see_license), style_push(&plain_text);
+		/* fixme: if a segment has multiple licenses, they will show multiple
+		 times. */
 		div_att_print(&is_not_div_preamble, ATT_LICENSE, SHOW_WHERE);
 		style_pop_level();
 		style_pop_level();

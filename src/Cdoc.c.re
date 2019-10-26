@@ -24,7 +24,10 @@
     simple, can be anywhere and don't nest;
  \* `\\"` (and optionally a space) causes all the line after to be
     pre-formatted;
- \* `\\,` non-breaking thin space (U+202F HTML &#8239; for working with units);
+ \* Escapes included for convenience: `\\,` non-breaking thin space,
+    `\\O` \O Bachmann–Landau notation, (but really capital omicron because
+    fonts,) `\\Theta` \Theta, `\\Omega` \Omega, `\\times` \times,
+    `\cdot` \cdot.
  \* `\~` non-breaking space;
  \* \_emphasised\_: _emphasised_;
  \* \`code/math\`: `code/math`;

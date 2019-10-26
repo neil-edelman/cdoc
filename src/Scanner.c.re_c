@@ -69,6 +69,14 @@ eof = "\x00";
 whitespace = [ \t\v\f];
 newline = "\n" | "\r" "\n"?;
 
+nbthinsp = "\\,";
+mathcalo = "\\O";
+ctheta = "\\Theta";
+comega = "\\Omega";
+times = "\\times";
+cdot = "\\cdot";
+escapes = nbthinsp | mathcalo | ctheta | comega | times | cdot;
+
 // Words can be composed of anything except:
 // " \t\n\v\f\r" whitespace and newline;
 // "*" potential end-of-comment;
@@ -97,7 +105,7 @@ end_doc = "*"+"/";
 art = whitespace* "*"? newline " *";
 white_inside = whitespace | newline | art [^/[\]\x00];
 all_inside = word_inside | "\\" escape_except_asterisk | white_inside
-	| "\\*" [^/[\]\x00] | "\\,";
+	| "\\*" [^/[\]\x00] | escapes;
 comment_break = "/" "*"+ "*" "/";
 begin_comment = "/""*";
 end_comment = "*""/";
@@ -254,7 +262,12 @@ scan:
 	<em>   word_em   { return WORD; }
 	<doc, math, em, anchor> "\\" escape_except_asterisk { return ESCAPE; }
 	<doc, math, em, anchor> "\\*" / [^/] { return ESCAPE; }
-	<doc, math, em, anchor> "\\," { return NBTHINSP; }
+	<doc, math, em, anchor> nbthinsp { return NBTHINSP; }
+	<doc, math, em, anchor> mathcalo { return MATHCALO; }
+	<doc, math, em, anchor> ctheta   { return CTHETA; }
+	<doc, math, em, anchor> comega   { return COMEGA; }
+	<doc, math, em, anchor> times    { return TIMES; }
+	<doc, math, em, anchor> cdot     { return CDOT; }
 	<doc> "_" { return scanner.state = yycem, EM_BEGIN; }
 	<em> "_" { return scanner.state = yycdoc, EM_END; }
 	<doc> "`" { return scanner.state = yycmath, MATH_BEGIN; }
