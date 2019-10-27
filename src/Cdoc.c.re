@@ -111,8 +111,7 @@
  @fixme Hide `const` on params when it can not affect function calls.
  @fixme Prototypes and fuctions are the same thing; this will confuse it. Hash
  map?
- @fixme \Theta \O \times ...
- @fixme Links on multiple lines doesn't work. */
+ @fixme Links to non-documented code which sometimes doesn't show up, work. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */

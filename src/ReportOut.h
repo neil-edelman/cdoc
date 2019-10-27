@@ -405,8 +405,11 @@ OUT(see_tag) {
 	const struct Token *const tag = *ptoken;
 	assert(tokens && tag && tag->symbol == SEE_TAG && !a);
 	style_prepare_output(tag->symbol);
-	printf("<a href = \"#%s:%.*s\">%.*s</a>", division_strings[DIV_TAG],
-		tag->length, tag->from, tag->length, tag->from);
+	printf("<a href = \"#%s:", division_strings[DIV_TAG]);
+	html_encode(tag->length, tag->from);
+	printf("\">");
+	html_encode(tag->length, tag->from);
+	printf("</a>");
 	*ptoken = TokenArrayNext(tokens, tag);
 	return 1;
 }
@@ -414,8 +417,11 @@ OUT(see_typedef) {
 	const struct Token *const def = *ptoken;
 	assert(tokens && def && def->symbol == SEE_TYPEDEF && !a);
 	style_prepare_output(def->symbol);
-	printf("<a href = \"#%s:%.*s\">%.*s</a>", division_strings[DIV_TYPEDEF],
-		def->length, def->from, def->length, def->from);
+	printf("<a href = \"#%s:", division_strings[DIV_TYPEDEF]);
+	html_encode(def->length, def->from);
+	printf("\">");
+	html_encode(def->length, def->from);
+	printf("</a>");
 	*ptoken = TokenArrayNext(tokens, def);
 	return 1;
 }
@@ -423,8 +429,11 @@ OUT(see_data) {
 	const struct Token *const data = *ptoken;
 	assert(tokens && data && data->symbol == SEE_DATA && !a);
 	style_prepare_output(data->symbol);
-	printf("<a href = \"#%s:%.*s\">%.*s</a>", division_strings[DIV_DATA],
-		data->length, data->from, data->length, data->from);
+	printf("<a href = \"#%s:", division_strings[DIV_DATA]);
+	html_encode(data->length, data->from);
+	printf("\">");
+	html_encode(data->length, data->from);
+	printf("</a>");
 	*ptoken = TokenArrayNext(tokens, data);
 	return 1;
 }
@@ -807,7 +816,7 @@ static void dl_segment_specific_att(const struct Attribute *const attribute) {
  @implements division_act */
 static void segment_print_all(const struct Segment *const segment) {
 	const struct Token *param;
-	assert(segment);
+	assert(segment && segment->division != DIV_PREAMBLE);
 	style_push(&html_div);
 
 	/* The title is generally the first param. Only single-words. */
@@ -836,9 +845,7 @@ static void segment_print_all(const struct Segment *const segment) {
 
 	/* Attrubutes. */
 	style_push(&html_dl);
-	if(segment->division == DIV_PREAMBLE) {
-		/*fixme: print_attributes_header(segment, ATT_PARAM);*/
-	} else if(segment->division == DIV_FUNCTION) {
+	if(segment->division == DIV_FUNCTION) {
 		const struct Attribute *att = 0;
 		size_t no;
 		for(no = 1; (param = param_no(segment, no)); no++)
@@ -851,7 +858,11 @@ static void segment_print_all(const struct Segment *const segment) {
 		}
 		dl_segment_att(segment, ATT_ORDER, 0, &plain_text);
 	} else if(segment->division == DIV_TAG) {
-		/*fixme: print_attributes_header(segment, ATT_PARAM);*/
+		const struct Attribute *att = 0;
+		while((att = AttributeArrayNext(&segment->attributes, att))) {
+			if(att->token.symbol != ATT_PARAM) continue;
+			dl_segment_specific_att(att);
+		}
 	}
 	dl_segment_att(segment, ATT_AUTHOR, 0, &plain_csv);
 	dl_segment_att(segment, ATT_STD, 0, &plain_ssv);
@@ -1090,7 +1101,14 @@ int ReportOut(void) {
 		}
 		style_push(&html_dl);
 		/* `ATT_TITLE` is above. */
-		dl_preamble_att(ATT_PARAM, SHOW_NONE);
+		while((segment = SegmentArrayNext(&report, segment))) {
+			const struct Attribute *att = 0;
+			if(segment->division != DIV_PREAMBLE) continue;
+			while((att = AttributeArrayNext(&segment->attributes, att))) {
+				if(att->token.symbol != ATT_PARAM) continue;
+				dl_segment_specific_att(att);
+			}
+		}
 		dl_preamble_att(ATT_AUTHOR, SHOW_ALL);
 		dl_preamble_att(ATT_STD, SHOW_ALL);
 		dl_preamble_att(ATT_DEPEND, SHOW_ALL);
