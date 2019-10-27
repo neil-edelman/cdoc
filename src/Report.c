@@ -16,6 +16,7 @@
 #include "Scanner.h"
 #include "Semantic.h"
 #include "UrlEncode.h"
+#include "Cdoc.h"
 #include "Report.h"
 
 
@@ -142,6 +143,24 @@ static const struct Token *param_no(const struct Segment *const segment,
 	}
 	return TokenArrayGet(&segment->code) + *pidx;
 }
+/** Gets the last line that this segment documentation is defined on. */
+static size_t last_doc_line(const struct Segment *const segment) {
+	struct Attribute *a = 0;
+	struct Token *t;
+	size_t last = 0;
+	assert(segment);
+	if((t = TokenArrayBack(&segment->doc, 0)) && t->line > last)
+		last = t->line;
+	if((a = AttributeArrayBack(&segment->attributes, a))) {
+		if(a->token.line > last)
+			last = a->token.line;
+		if((t = TokenArrayBack(&a->header, 0)) && t->line > last)
+			last = t->line;
+		if((t = TokenArrayBack(&a->contents, 0)) && t->line > last)
+			last = t->line;
+	}
+	return last;
+}
 
 
 /** Top-level static document. */
@@ -229,62 +248,131 @@ static int semantic(struct Segment *const segment) {
 
 
 
+/** Helper for next. Note that if it stops on a preamble command, this is not
+ printed. */
+static void cut_segment_here(struct Segment **const psegment) {
+	const struct Segment *segment = 0;
+	struct Attribute *att = 0;
+	struct Token *t;
+	assert(psegment);
+	if(!(segment = *psegment)) return;
+	if(CdocOptionsScanner()) {
+		fprintf(stderr, "Segment division %s:\n"
+			"Line %lu code: %s;\n"
+			"params no.: %s;\n"
+			"Line %lu doc: %s.\n",
+			divisions[segment->division],
+			(t = TokenArrayNext(&segment->code, 0)) ? t->line : 0,
+			TokenArrayToString(&segment->code),
+			IndexArrayToString(&segment->code_params),
+			(t = TokenArrayNext(&segment->doc, 0)) ? t->line : 0,
+			TokenArrayToString(&segment->doc));
+		while((att = AttributeArrayNext(&segment->attributes, att)))
+			fprintf(stderr, "%s{%s} %s.\n", symbols[att->token.symbol],
+			TokenArrayToString(&att->header),
+			TokenArrayToString(&att->contents));
+	}
+	*psegment = 0;
+}
+
+/** Prints line info into a static buffer. */
+static const char *oops(void) {
+	static char p[128];
+	sprintf(p, "Line %lu, %s", (unsigned long)ScannerLine(),
+		symbols[ScannerSymbol()]);
+	return p;
+}
+
 /** This appends the current token based on the state it was last in.
  @return Success.
  @fixme Doesn't work sometimes. Have a state machine. */
 int ReportNotify(void) {
 	const enum Symbol symbol = ScannerSymbol();
-	const int indent_level = ScannerIndentLevel();
 	const char symbol_mark = symbol_marks[symbol];
 	int is_differed_cut = 0;
+	size_t last_doc_line = 0;
 	static struct {
+		enum { S_CODE, S_DOC, S_ARGS } state;
 		struct Segment *segment;
 		struct Attribute *attribute;
 		unsigned space, newline;
-		int is_attribute_header, is_ignored_code, is_semantic_set;
-	} sorter = { 0, 0, 0, 0, 0, 0, 0 }; /* This holds the sorting state. */
+		int is_code_ignored, is_semantic_set;
+	} sorter = { 0, 0, 0, 0, 0, 0, 0 };
 	/* These symbols require special consideration. */
 	switch(symbol) {
-	case DOC_BEGIN: /* (Multiple?) doc comments. */
+	case DOC_BEGIN:
+		if(sorter.state != S_CODE) return fprintf(stderr,
+			"%s: sneak path; was expecting code.\n", oops()), errno = EDOM, 0;
+		sorter.state = S_DOC;
+		/* Reset attribute. */
 		sorter.attribute = 0;
+		/* Two docs on top of each other without code, the top one belongs to
+		 the preamble. */
 		if(sorter.segment && !TokenArraySize(&sorter.segment->code))
-			sorter.segment = 0;
+			cut_segment_here(&sorter.segment);
 		return 1;
-	case DOC_END: return 1; /* Doesn't actually do something. */
-	case DOC_LEFT: /* Should only happen in @foo[]. */
-		if(!sorter.segment || !sorter.attribute || sorter.is_attribute_header)
-			return errno = EILSEQ, 0;
-		sorter.is_attribute_header = 1;
+	case DOC_END:
+		if(sorter.state != S_DOC) return fprintf(stderr,
+			"%s: sneak path; was expecting doc.\n", oops()), errno = EDOM, 0;
+		sorter.state = S_CODE;
+		last_doc_line = ScannerLine();
+		return 1;
+	case DOC_LEFT:
+		if(sorter.state != S_DOC || !sorter.segment || !sorter.attribute)
+			return fprintf(stderr,
+			"%s: sneak path; was expecting doc with attribute.\n", oops()),
+			errno = EDOM, 0;
+		sorter.state = S_ARGS;
 		return 1;
 	case DOC_RIGHT:
-		if(!sorter.segment || !sorter.attribute || !sorter.is_attribute_header)
-			return errno = EILSEQ, 0;
-		sorter.is_attribute_header = 0;
+		if(sorter.state != S_ARGS || !sorter.segment || !sorter.attribute)
+			return fprintf(stderr,
+			"%s: sneak path; was expecting args with attribute.\n", oops()),
+			errno = EDOM, 0;
+		sorter.state = S_DOC;
 		return 1;
-	case DOC_COMMA:
-		if(!sorter.segment || !sorter.attribute || !sorter.is_attribute_header)
-			return errno = EILSEQ, 0;
-		return 1; /* Doesn't actually do something. [,,] */
+	case DOC_COMMA: /* @arg[,,] */
+		if(sorter.state != S_ARGS || !sorter.segment || !sorter.attribute)
+			return fprintf(stderr,
+			"%s: sneak path; was expecting args with attribute.\n", oops()),
+			errno = EDOM, 0;
+		return 1;
 	case SPACE:   sorter.space++; return 1;
 	case NEWLINE: sorter.newline++; return 1;
 	case SEMI:
-		if(indent_level != 0 || !sorter.segment) break;
+		/* Break on global semicolons only. */
+		if(ScannerIndentLevel() != 0 || !sorter.segment) break;
+		/* Find out what this line means if one hasn't already. */
 		if(!sorter.is_semantic_set && !semantic(sorter.segment)) return 0;
 		sorter.is_semantic_set = 1;
 		is_differed_cut = 1;
 		break;
 	case LBRACE:
-		if(indent_level != 1 || sorter.is_semantic_set) break;
+		/* If it's a leading brace, see what the Semantic says about it. */
+		if(ScannerIndentLevel() != 1 || sorter.is_semantic_set
+			|| !sorter.segment) break;
 		if(!semantic(sorter.segment)) return 0;
 		sorter.is_semantic_set = 1;
-		if(sorter.segment->division == DIV_FUNCTION)
-			sorter.is_ignored_code = 1;
+		if(sorter.segment->division == DIV_FUNCTION) sorter.is_code_ignored = 1;
 		break;
-	case RBRACE: /* Functions don't have ';' to end them. */
-		if(indent_level != 0) break;
+	case RBRACE:
+		/* Functions don't have ';' to end them. */
+		if(ScannerIndentLevel() != 0 || !sorter.segment) break;
 		if(sorter.segment->division == DIV_FUNCTION) is_differed_cut = 1;
 		break;
 	default: break;
+	}
+
+	/* Code that starts far away from docs goes in it's own segment. */
+	if(sorter.segment && symbol_mark != '~' && symbol_mark != '@'
+		&& !TokenArraySize(&sorter.segment->code)) {
+		struct Token *last_doc = TokenArrayBack(&sorter.segment->doc, 0);
+		
+		/////////////////////
+		
+		if(last_doc && /* isn't the last doc */last_doc->line + 2 < ScannerLine())
+			fprintf(stderr, "----->CUT?? last doc %lu %s %.*s, scanner %lu\n", last_doc->line, symbols[last_doc->symbol], last_doc->length, last_doc->from, ScannerLine());
+			/*cut_segment_here(&sorter.segment);*/
 	}
 
 	/* Make a new segment if needed. */
@@ -292,49 +380,51 @@ int ReportNotify(void) {
 		if(!(sorter.segment = new_segment())) return 0;
 		sorter.attribute = 0;
 		sorter.space = sorter.newline = 0;
-		sorter.is_ignored_code = 0;
-		assert(!sorter.is_attribute_header);
-		sorter.is_semantic_set = 0;
+		sorter.is_code_ignored = sorter.is_semantic_set = 0;
 	}
 
 	/* Make a `token` where the context places us. */
 	switch(symbol_mark) {
-	case '~':
-	{ /* This lazily places whitespace when other stuff is added. */
-		struct TokenArray *selected = sorter.attribute
-		? (sorter.is_attribute_header ? &sorter.attribute->header
-		   : &sorter.attribute->contents) : &sorter.segment->doc;
-		const int is_para = sorter.newline > 1,
-		is_space = sorter.space || sorter.newline,
-		is_doc_empty = !TokenArraySize(&sorter.segment->doc),
-		is_selected_empty = !TokenArraySize(selected);
-		sorter.space = sorter.newline = 0;
-		if(is_para) {
-			/* Switch out of attribute. */
-			sorter.attribute = 0, sorter.is_attribute_header = 0;
-			selected = &sorter.segment->doc;
-			if(!is_doc_empty
-			   && !new_token(&sorter.segment->doc, NEWLINE)) return 0;
-		} else if(is_space) {
-			if(!is_selected_empty
-			   && !new_token(selected, SPACE)) return 0;
+	case '~': /* General docs. */
+		assert(sorter.state == S_DOC || sorter.state == S_ARGS);
+		{ /* This lazily places whitespace and newlines. */
+			struct TokenArray *selected = sorter.attribute
+				? (sorter.state == S_ARGS ? &sorter.attribute->header
+				: &sorter.attribute->contents) : &sorter.segment->doc;
+			const int is_para = sorter.newline > 1,
+			is_space = sorter.space || sorter.newline,
+			is_doc_empty = !TokenArraySize(&sorter.segment->doc),
+			is_selected_empty = !TokenArraySize(selected);
+			sorter.space = sorter.newline = 0;
+			if(is_para) {
+				/* Switch out of attribute when on new paragraph. */
+				sorter.attribute = 0, sorter.state = S_DOC;
+				selected = &sorter.segment->doc;
+				if(!is_doc_empty
+				   && !new_token(&sorter.segment->doc, NEWLINE)) return 0;
+			} else if(is_space) {
+				if(!is_selected_empty
+				   && !new_token(selected, SPACE)) return 0;
+			}
+			if(!new_token(selected, symbol)) return 0;
 		}
-		if(!new_token(selected, symbol)) return 0;
-	}
 		break;
-	case '@':
+	case '@': /* An attribute marker. */
+		assert(sorter.state == S_DOC);
 		if(!(sorter.attribute = new_attribute(sorter.segment, symbol)))
 			return 0;
-		assert(!sorter.is_attribute_header);
 		sorter.space = sorter.newline = 0; /* Also reset this for attributes. */
 		break;
 	default: /* Code. */
-		if(sorter.is_ignored_code) break;
+		assert(sorter.state == S_CODE);
+		if(sorter.is_code_ignored) break;
 		if(!new_token(&sorter.segment->code, symbol)) return 0;
 		break;
 	}
-	/* End the segment? */
-	if(is_differed_cut) sorter.segment = 0;
+
+	/* End the segment. */
+	if(is_differed_cut) cut_segment_here(&sorter.segment);
+
 	return 1;
 }
 

@@ -620,31 +620,6 @@ static void print_tokens(const struct TokenArray *const tokens) {
 	highlight_tokens(tokens, 0);
 }
 
-void ReportDebugSegments(void) {
-	struct Segment *segment = 0;
-	struct Attribute *att = 0;
-	struct Token *t;
-	fprintf(stderr, "Segments:\n");
-	while((segment = SegmentArrayNext(&report, segment))) {
-		fprintf(stderr, "Segment division %s:\n"
-			"Line %lu code: %s;\n"
-			"params no.: %s;\n"
-			"Line %lu doc: %s.\n",
-			divisions[segment->division],
-			(t = TokenArrayNext(&segment->code, 0)) ? t->line : 0,
-			TokenArrayToString(&segment->code),
-			IndexArrayToString(&segment->code_params),
-			(t = TokenArrayNext(&segment->doc, 0)) ? t->line : 0,
-			TokenArrayToString(&segment->doc));
-		while((att = AttributeArrayNext(&segment->attributes, att)))
-			fprintf(stderr, "%s{%s} %s.\n", symbols[att->token.symbol],
-			TokenArrayToString(&att->header),
-			TokenArrayToString(&att->contents));
-		fputc('\n', stderr);
-	}
-}
-
-
 
 
 

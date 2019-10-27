@@ -124,7 +124,7 @@
 #include "../src/Cdoc.h"
 
 static struct {
-	int provide_file, print_scanner, print_segments;
+	int provide_file, print_scanner;
 } args;
 
 static int parse_arg(const char *const string) {
@@ -142,7 +142,6 @@ static int parse_arg(const char *const string) {
 	* { fprintf(stderr, "Error with argument \"%s\".\n", string); return 0; }
 	"-d" | "--debug" end { args.provide_file = 1; return 1; }
 	"-s" | "--scanner" end { args.print_scanner = 1; return 1; }
-	"-p" | "--parse" end { args.print_segments = 1; return 1; }
 */
 }
 
@@ -179,7 +178,6 @@ catch:
 	perror(reason);
 	
 finally:
-	if(args.print_segments) ReportDebugSegments();
 	Report_();
 	Scanner_();
 
