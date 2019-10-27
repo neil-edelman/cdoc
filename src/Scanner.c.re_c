@@ -7,7 +7,7 @@
 #include <assert.h> /* assert */
 #include <errno.h>  /* errno EILSEQ */
 #include "../src/Symbol.h"
-#include "../src/Report.h"
+#include "../src/Cdoc.h"
 #include "../src/Scanner.h"
 
 
@@ -352,13 +352,17 @@ void Scanner_(void) {
 
 /** Singleton; reads from `stdin` until done; it doesn't make sense to call
  this twice since the input is consumed.
+ @param[notify] The function that is notified when it gets a match. Returns
+ false for error.
  @return Success.
  @throws[malloc, fread]
  @throws[EILSEQ] File has embedded nulls. */
-int Scanner(void) {
+int Scanner(int (*const notify)(void)) {
 	const size_t granularity = 1024;
 	char *read_here, *zero;
 	size_t nread, zero_len;
+	errno = 0;
+	if(!notify) return errno = EDOM, 0;
 	/* Read all contents from `stdin` at once. */
 	do {
 		if(!(read_here = CharArrayBuffer(&scanner.buffer, granularity))
@@ -387,11 +391,8 @@ int Scanner(void) {
 	}
 	/* Scans all. */
 	errno = 0;
-	while((scanner.symbol = scan()) && ReportPlace())
-#ifdef DEBUG_SCANNER
-		fprintf(stderr, "%s.\n", pos())
-#endif
-		;
+	while((scanner.symbol = scan()) && notify())
+		if(CdocOptionsScanner()) fprintf(stderr, "%s.\n", pos());
 	if(errno) goto catch;
 	return 1;
 catch:

@@ -121,9 +121,10 @@
 #include "../src/Scanner.h"
 #include "../src/Report.h"
 #include "../src/Semantic.h"
+#include "../src/Cdoc.h"
 
 static struct {
-	int print_segments, provide_file;
+	int provide_file, print_scanner, print_segments;
 } args;
 
 static int parse_arg(const char *const string) {
@@ -139,9 +140,16 @@ static int parse_arg(const char *const string) {
 	end = "\x00";
 
 	* { fprintf(stderr, "Error with argument \"%s\".\n", string); return 0; }
-	"-s" | "--segments" end { args.print_segments = 1; return 1; }
 	"-d" | "--debug" end { args.provide_file = 1; return 1; }
+	"-s" | "--scanner" end { args.print_scanner = 1; return 1; }
+	"-p" | "--parse" end { args.print_segments = 1; return 1; }
 */
+}
+
+/** @return Whether the command-line option to print the scanner on `stderr`
+ was set. */
+int CdocOptionsScanner(void) {
+	return args.print_scanner;
 }
 
 /** @param[argc, argv] If "debug", `freopens` a path that is on my computer. */
@@ -160,7 +168,7 @@ int main(int argc, char **argv) {
 		freopen(test_file_path, "r", stdin);
 	}
 
-	if(!Scanner()) { reason = "scanner"; goto catch; }
+	if(!Scanner(&ReportNotify)) { reason = "scanner"; goto catch; }
 	ReportWarn();
 	ReportCull();
 	if(!ReportOut()) { reason = "output"; goto catch; }
