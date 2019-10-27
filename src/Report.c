@@ -143,24 +143,7 @@ static const struct Token *param_no(const struct Segment *const segment,
 	}
 	return TokenArrayGet(&segment->code) + *pidx;
 }
-/** Gets the last line that this segment documentation is defined on. */
-static size_t last_doc_line(const struct Segment *const segment) {
-	struct Attribute *a = 0;
-	struct Token *t;
-	size_t last = 0;
-	assert(segment);
-	if((t = TokenArrayBack(&segment->doc, 0)) && t->line > last)
-		last = t->line;
-	if((a = AttributeArrayBack(&segment->attributes, a))) {
-		if(a->token.line > last)
-			last = a->token.line;
-		if((t = TokenArrayBack(&a->header, 0)) && t->line > last)
-			last = t->line;
-		if((t = TokenArrayBack(&a->contents, 0)) && t->line > last)
-			last = t->line;
-	}
-	return last;
-}
+
 
 
 /** Top-level static document. */
@@ -290,14 +273,14 @@ int ReportNotify(void) {
 	const enum Symbol symbol = ScannerSymbol();
 	const char symbol_mark = symbol_marks[symbol];
 	int is_differed_cut = 0;
-	size_t last_doc_line = 0;
 	static struct {
 		enum { S_CODE, S_DOC, S_ARGS } state;
+		size_t last_doc_line;
 		struct Segment *segment;
 		struct Attribute *attribute;
 		unsigned space, newline;
 		int is_code_ignored, is_semantic_set;
-	} sorter = { 0, 0, 0, 0, 0, 0, 0 };
+	} sorter = { 0, 0, 0, 0, 0, 0, 0, 0 };
 	/* These symbols require special consideration. */
 	switch(symbol) {
 	case DOC_BEGIN:
@@ -315,7 +298,7 @@ int ReportNotify(void) {
 		if(sorter.state != S_DOC) return fprintf(stderr,
 			"%s: sneak path; was expecting doc.\n", oops()), errno = EDOM, 0;
 		sorter.state = S_CODE;
-		last_doc_line = ScannerLine();
+		sorter.last_doc_line = ScannerLine();
 		return 1;
 	case DOC_LEFT:
 		if(sorter.state != S_DOC || !sorter.segment || !sorter.attribute)
@@ -365,15 +348,9 @@ int ReportNotify(void) {
 
 	/* Code that starts far away from docs goes in it's own segment. */
 	if(sorter.segment && symbol_mark != '~' && symbol_mark != '@'
-		&& !TokenArraySize(&sorter.segment->code)) {
-		struct Token *last_doc = TokenArrayBack(&sorter.segment->doc, 0);
-		
-		/////////////////////
-		
-		if(last_doc && /* isn't the last doc */last_doc->line + 2 < ScannerLine())
-			fprintf(stderr, "----->CUT?? last doc %lu %s %.*s, scanner %lu\n", last_doc->line, symbols[last_doc->symbol], last_doc->length, last_doc->from, ScannerLine());
-			/*cut_segment_here(&sorter.segment);*/
-	}
+		&& !TokenArraySize(&sorter.segment->code) && sorter.last_doc_line
+		&& sorter.last_doc_line + 2 < ScannerLine())
+		cut_segment_here(&sorter.segment);
 
 	/* Make a new segment if needed. */
 	if(!sorter.segment) {
