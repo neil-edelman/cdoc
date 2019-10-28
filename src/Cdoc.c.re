@@ -109,9 +109,13 @@
  @fixme `re2c` appends a comma at the end of the enumeration list, not
  compliant with C90.
  @fixme Hide `const` on params when it can not affect function calls.
- @fixme Prototypes and fuctions are the same thing; this will confuse it. Hash
- map?
- @fixme Links to non-documented code which sometimes doesn't show up, work. */
+ @fixme Prototypes and functions are the same thing; this will confuse it. Hash
+ map will be faster and more precise.
+ @fixme Links to non-documented code which sometimes doesn't show up, work.
+ @fixme Sometimes it's an error, sometimes it's a warning, seemingly at random.
+ Make all the errors on-line.
+ @fixme `cat file1 file2 > cdoc` is not cutting it because line numbers. Should
+ be easy to load files individually. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
