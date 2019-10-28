@@ -1032,8 +1032,10 @@ int ReportOut(void) {
 	}
 	if(is_function) {
 		style_prepare_output(END);
-		printf("<a href = \"#%s:\">Function Definitions</a>: "
-			"see <a href = \"#summary:\">function table</a>.",
+		printf("<a href = \"#summary:\">Function Summary</a>");
+		style_pop_push();
+		style_prepare_output(END);
+		printf("<a href = \"#%s:\">Function Definitions</a>",
 			division_strings[DIV_FUNCTION]);
 		style_pop_push();
 	}
@@ -1041,50 +1043,6 @@ int ReportOut(void) {
 		printf("<a href = \"#license:\">License</a>"), style_pop_push();
 	style_pop_level();
 	assert(!StyleArraySize(&mode.styles));
-
-	/* Function table. */
-	if(is_function) {
-		style_push(&html_div);
-		style_prepare_output(END);
-		printf("<a name = \"summary:\"><!-- --></a>\n\n");
-		style_push(&html_h3);
-		style_prepare_output(END);
-		printf("Function Table");
-		style_pop();
-		style_prepare_output(END);
-		printf("<table>\n\n"
-			"<tr><th>Modifiers</th><th>Function Name</th>"
-			"<th>Argument List</th></tr>\n\n");
-		while((segment = SegmentArrayNext(&report, segment))) {
-			size_t *idxs, idxn, idx, paramn;
-			struct Token *params;
-			if(segment->division != DIV_FUNCTION
-				|| !(idxn = IndexArraySize(&segment->code_params))) continue;
-			idxs = IndexArrayGet(&segment->code_params);
-			params = TokenArrayGet(&segment->code);
-			paramn = TokenArraySize(&segment->code);
-			assert(idxs[0] < paramn);
-			printf("<tr><td align = right>");
-			style_push(&plain_text);
-			best_guess_at_modifiers(segment);
-			style_pop();
-			printf("</td><td><a href = \"#%s:",
-				division_strings[DIV_FUNCTION]);
-			print_token(&segment->code, params + idxs[0]);
-			printf("\">");
-			print_token(&segment->code, params + idxs[0]);
-			printf("</a></td><td>");
-			for(idx = 1; idx < idxn; idx++) {
-				assert(idxs[idx] < paramn);
-				if(idx > 1) printf(", ");
-				print_token(&segment->code, params + idxs[idx]);
-			}
-			printf("</td></tr>\n\n");
-		}
-		printf("</table>\n\n");
-		style_pop();
-		assert(!StyleArraySize(&mode.styles));
-	}
 
 	/* Preamble contents. */
 	if(is_preamble) {
@@ -1150,6 +1108,46 @@ int ReportOut(void) {
 	}
 	/* Print functions. */
 	if(is_function) {
+		/* Function table. */
+		style_push(&html_div);
+		style_prepare_output(END);
+		printf("<a name = \"summary:\"><!-- --></a>"
+			"<h2>Function Summary</h2>\n\n");
+		style_prepare_output(END);
+		printf("<table>\n\n"
+			   "<tr><th>Modifiers</th><th>Function Name</th>"
+			   "<th>Argument List</th></tr>\n\n");
+		while((segment = SegmentArrayNext(&report, segment))) {
+			size_t *idxs, idxn, idx, paramn;
+			struct Token *params;
+			if(segment->division != DIV_FUNCTION
+			   || !(idxn = IndexArraySize(&segment->code_params))) continue;
+			idxs = IndexArrayGet(&segment->code_params);
+			params = TokenArrayGet(&segment->code);
+			paramn = TokenArraySize(&segment->code);
+			assert(idxs[0] < paramn);
+			printf("<tr><td align = right>");
+			style_push(&plain_text);
+			best_guess_at_modifiers(segment);
+			style_pop();
+			printf("</td><td><a href = \"#%s:",
+				   division_strings[DIV_FUNCTION]);
+			print_token(&segment->code, params + idxs[0]);
+			printf("\">");
+			print_token(&segment->code, params + idxs[0]);
+			printf("</a></td><td>");
+			for(idx = 1; idx < idxn; idx++) {
+				assert(idxs[idx] < paramn);
+				if(idx > 1) printf(", ");
+				print_token(&segment->code, params + idxs[idx]);
+			}
+			printf("</td></tr>\n\n");
+		}
+		printf("</table>\n\n");
+		style_pop();
+		assert(!StyleArraySize(&mode.styles));
+
+		/* Functions. */
 		style_push(&html_div);
 		style_prepare_output(END);
 		printf("<a name = \"%s:\"><!-- --></a>"
