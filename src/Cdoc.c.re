@@ -85,7 +85,7 @@
  \* no `[in]`, `[out]`, one should be able to tell from `const`;
  \* no `\\param c1` or `\@param a` -- this probably is the most departure from
     normal documentation generators, but it's confusing having the text and the
-    variable be indistinguishable and complicates the state;
+    variable be indistinguishable;
  \* no titles with `\!\[Caption text\](/path/to/img.jpg "Image title")` HTML4;
  \* no titles with `\[The link text\](http://example.net/ "Link title")` HTML4;
  \* instead of `\\struct`, `\\union`, `\\enum`, `\\var`, `\\typedef`, just
@@ -111,11 +111,14 @@
  @fixme Hide `const` on params when it can not affect function calls.
  @fixme Prototypes and functions are the same thing; this will confuse it. Hash
  map will be faster and more precise.
- @fixme Links to non-documented code which sometimes doesn't show up, work.
+ @fixme Links to non-documented code which sometimes doesn't show up, work
+ without error, and create broken links.
  @fixme Sometimes it's an error, sometimes it's a warning, seemingly at random.
  Make all the errors on-line.
  @fixme `cat file1 file2 > cdoc` is not cutting it because line numbers. Should
- be easy to load files individually. */
+ be easy to load files individually.
+ @fixme 80-characters _per_ line limit; I've got it working, just need to apply
+ to this code. Needs buffering. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
