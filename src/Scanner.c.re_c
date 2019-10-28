@@ -145,7 +145,12 @@ generic_id = (("<" [A-Z]+ ">")? id)+;
 uri_scheme = [^:/?# \t\n\v\f\r*<>()&\x00]+ ":";
 uri_authority = "//" [^/?# \t\n\v\f\r*<>()&\x00]*;
 uri_path = [^?# \t\n\v\f\r*<>()&\x00]+;
-looks_like_uri_path = ([^?# \t\n\v\f\r*<>()&./\x00]* ("/" | "."))+;
+// It has to have a * or / in it or else it's just a word, which might be a
+// uri, but mmm, really?
+looks_like_uri_path = (
+	  ([^?# \t\n\v\f\r*<>()&./\x00]* ("/" | ".") [^?# \t\n\v\f\r*<>()&./\x00]+)
+	| ([^?# \t\n\v\f\r*<>()&./\x00]+ ("/" | ".") [^?# \t\n\v\f\r*<>()&./\x00]*)
+)+;
 uri_query = ("?" [^# \t\n\v\f\r*<>()&\x00]*);
 uri_fragment = ("#" [^ \t\n\v\f\r*<>()&\x00]*);
 absolute_uri = uri_scheme uri_authority uri_path uri_query? uri_fragment?;
@@ -156,7 +161,7 @@ uri = absolute_uri | relative_uri;
 author = [A-Z][A-Za-z'`-]+; // Fixme: No!!! UTF-8
 etalia = "et" whitespace? "al" "."?;
 authorsep = ","? (whitespace? "and" whitespace | whitespace? "&" whitespace?
-| whitespace?);
+	| whitespace?);
 closing = ","? whitespace?;
 date = [1-3][0-9][0-9][0-9];
 page = ","? whitespace? (("pp" | "p") "."?)? whitespace?
