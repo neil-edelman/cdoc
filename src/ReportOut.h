@@ -487,6 +487,24 @@ catch:
 	fprintf(stderr, "%s: expected `[description](url)`.\n", pos(t));
 	return 0;
 }
+OUT(image) {
+	const struct Token *const t = *ptoken, *text, *turl;
+	assert(tokens && t && t->symbol == IMAGE_START && !a);
+	style_prepare_output(t->symbol);
+	for(turl = TokenArrayNext(tokens, t);;turl = TokenArrayNext(tokens, turl)) {
+		if(!turl) goto catch;
+		if(turl->symbol == URL) break;
+	}
+	printf("<img src = \"%.*s\" alt = \"", turl->length, turl->from);
+	for(text = TokenArrayNext(tokens, t); text->symbol != URL; )
+		if(!(text = print_token(tokens, text))) goto catch;
+	printf("\">");
+	*ptoken = TokenArrayNext(tokens, turl);
+	return 1;
+	catch:
+	fprintf(stderr, "%s: expected `[description](url)`.\n", pos(t));
+	return 0;
+}
 OUT(nbsp) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == NBSP && !a);

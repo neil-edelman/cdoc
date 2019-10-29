@@ -67,7 +67,7 @@
 	X(URL,         '~', &url, 0, 0, 0), \
 	X(CITE,        '~', &cite, 0, 0, 0), \
 	X(LINK_START,  '~', &link, 0, 0, 0), \
-	X(IMAGE_START, '~', 0, 0, 0, 0), /* fixme */ \
+	X(IMAGE_START, '~', &image, 0, 0, 0), \
 	X(SEE_FN,      '~', &see_fn, 0, 0, 0), \
 	X(SEE_TAG,     '~', &see_tag, 0, 0, 0), \
 	X(SEE_TYPEDEF, '~', &see_typedef, 0, 0, 0), \
