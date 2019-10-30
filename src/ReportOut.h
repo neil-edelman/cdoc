@@ -487,6 +487,28 @@ catch:
 	fprintf(stderr, "%s: expected `[description](url)`.\n", pos(t));
 	return 0;
 }
+static int png_dim(const char *file, unsigned *const width,
+	unsigned *const height) {
+	FILE *fp = 0;
+	unsigned char f[24];
+	int success = 0;
+	assert(file && width && height);
+	if(!(fp = fopen(file, "rb"))) goto catch;
+	if(fread(f, 24, 1, fp) != 1 || f[0] != 0x89 || f[1] != 0x50
+		|| f[2] != 0x4E || f[3] != 0x47 || f[4] != 0x0D || f[5] != 0x0A
+		|| f[6] != 0x1A || f[7] != 0x0A || f[12] != 0x49 || f[13] != 0x48
+		|| f[14] != 0x44 || f[15] != 0x52) goto catch;
+	*width  = f[16] << 24 | f[17] << 16 | f[18] << 8 | f[19];
+	*height = f[20] << 24 | f[21] << 16 | f[22] << 8 | f[23];
+	success = 1;
+	goto finally;
+catch:
+	if(errno) { perror(file); errno = 0; }
+	else { fprintf(stderr, "%s: couldn't load png dimensions.\n", file); }
+finally:
+	if(fp) fclose(fp);
+	return success;
+}
 OUT(image) {
 	const struct Token *const t = *ptoken, *text, *turl;
 	assert(tokens && t && t->symbol == IMAGE_START && !a);
@@ -498,10 +520,28 @@ OUT(image) {
 	printf("<img src = \"%.*s\" alt = \"", turl->length, turl->from);
 	for(text = TokenArrayNext(tokens, t); text->symbol != URL; )
 		if(!(text = print_token(tokens, text))) goto catch;
-	printf("\">");
+	printf("\"");
+	if(turl->length >= 4 && turl->from[turl->length - 4] == '.'
+		&& turl->from[turl->length - 3] == 'p'
+		&& turl->from[turl->length - 2] == 'n'
+		&& turl->from[turl->length - 1] == 'g') {
+		char file[256];
+		unsigned width, height;
+		if((size_t)turl->length >= sizeof file) { fprintf(stderr,
+			"Path is too big.\n"); goto catch_dim; }
+		strncpy(file, turl->from, turl->length);
+		file[turl->length] = '\0';
+		if(!png_dim(file, &width, &height)) goto catch_dim;
+		printf(" width = %u height = %u", width, height);
+	} else {
+catch_dim:
+		fprintf(stderr,
+			"%s: couldn't get dimensions (only support local pngs.)\n", pos(t));
+	}
+	printf(">");
 	*ptoken = TokenArrayNext(tokens, turl);
 	return 1;
-	catch:
+catch:
 	fprintf(stderr, "%s: expected `[description](url)`.\n", pos(t));
 	return 0;
 }
