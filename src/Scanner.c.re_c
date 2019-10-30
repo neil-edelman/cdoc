@@ -147,7 +147,7 @@ uri_authority = "//" [^/?# \t\n\v\f\r*<>()&\x00]*;
 uri_path = [^?# \t\n\v\f\r*<>()&\x00]+;
 // It has to have a * or / in it or else it's just a word, which might be a
 // uri, but mmm, really?
-looks_like_uri_path = (
+looks_like_uri_path = ("."{1,2} "/")* (
 	  ([^?# \t\n\v\f\r*<>()&./\x00]* ("/" | ".") [^?# \t\n\v\f\r*<>()&./\x00]+)
 	| ([^?# \t\n\v\f\r*<>()&./\x00]+ ("/" | ".") [^?# \t\n\v\f\r*<>()&./\x00]*)
 )+;
