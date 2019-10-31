@@ -487,12 +487,58 @@ catch:
 	fprintf(stderr, "%s: expected `[description](url)`.\n", pos(t));
 	return 0;
 }
+/** Inspired by
+ <https://github.com/ImageMagick/jpeg-turbo/blob/master/rdjpgcom.c>.
+ @license <https://imagemagick.org/script/license.php> */
+static int jpeg_dim(const char *file, unsigned *const width,
+	unsigned *const height) {
+	FILE *fp = 0;
+	unsigned char f[8];
+	unsigned skip;
+	int success = 0;
+	assert(file && width && height);
+	errno = 0;
+	if(!(fp = fopen(file, "rb"))) goto catch;
+	/* The start of the file has to be an `SOI`. */
+	if(fread(f, 2, 1, fp) != 1 || f[0] != 0xFF || f[1] != 0xD8) goto catch;
+	for( ; ; ) {
+		/* Discard up until the last `0xFF`, then that is the marker type. */
+		do { if(fread(f, 1, 1, fp) != 1) goto catch; } while(f[0] != 0xFF);
+		do { if(fread(f, 1, 1, fp) != 1) goto catch; } while(f[0] == 0xFF);
+		switch(f[0]) {
+		case 0xC0: case 0xC1: case 0xC2: case 0xC3: case 0xC5: /* _sic_ */
+		case 0xC6: case 0xC7: case 0xC9: /* _sic_ */ case 0xCA: case 0xCB:
+		case 0xCD: /* _sic_ */ case 0xCE: case 0xCF: /* `SOF` markers. */
+			if(fread(f, 8, 1, fp) != 1
+				|| (skip = (f[0] << 8) | f[1]) != 8u + 3 * f[7])
+				goto catch;
+			*width  = (f[5] << 8) | f[6];
+			*height = (f[3] << 8) | f[4];
+			success = 1;
+			goto finally;
+		case 0xD8: case 0xD9: /* Image data `SOS, EOI` without image size? */
+			goto catch;
+		default: /* Skip the rest by reading it's size. */
+			if(fread(f, 2, 1, fp) != 1
+				|| (skip = (f[0] << 8) | f[1]) < 2
+				|| fseek(fp, skip - 2, SEEK_CUR) != 0)
+				goto catch;
+		}
+	}
+catch:
+	if(errno) { perror(file); errno = 0; }
+	else { fprintf(stderr, "%s: couldn't load jpeg dimensions.\n", file); }
+finally:
+	if(fp) fclose(fp);
+	return success;
+}
 static int png_dim(const char *file, unsigned *const width,
 	unsigned *const height) {
 	FILE *fp = 0;
 	unsigned char f[24];
 	int success = 0;
 	assert(file && width && height);
+	errno = 0;
 	if(!(fp = fopen(file, "rb"))) goto catch;
 	if(fread(f, 24, 1, fp) != 1 || f[0] != 0x89 || f[1] != 0x50
 		|| f[2] != 0x4E || f[3] != 0x47 || f[4] != 0x0D || f[5] != 0x0A
@@ -533,6 +579,19 @@ OUT(image) {
 		file[turl->length] = '\0';
 		if(!png_dim(file, &width, &height)) goto catch_dim;
 		printf(" width = %u height = %u", width, height);
+	} else if(turl->length >= 4 && turl->from[turl->length - 4] == '.'
+		&& turl->from[turl->length - 3] == 'j'
+		&& turl->from[turl->length - 2] == 'p'
+		&& turl->from[turl->length - 1] == 'g') {
+		/* <https://en.wikipedia.org/wiki/JPEG>: .jpg, .jpeg, .jpe, .jif, .jfif, .jfi */
+		char file[256];
+		unsigned width, height;
+		if((size_t)turl->length >= sizeof file) { fprintf(stderr,
+			"Path is too big.\n"); goto catch_dim; }
+			strncpy(file, turl->from, turl->length);
+			file[turl->length] = '\0';
+			if(!jpeg_dim(file, &width, &height)) goto catch_dim;
+			printf(" width = %u height = %u", width, height);
 	} else {
 catch_dim:
 		fprintf(stderr,
