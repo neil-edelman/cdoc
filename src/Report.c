@@ -16,6 +16,7 @@
 #include "Scanner.h"
 #include "Semantic.h"
 #include "UrlEncode.h"
+#include "ImageDimension.h"
 #include "Cdoc.h"
 #include "Report.h"
 
