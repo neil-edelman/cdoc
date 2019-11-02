@@ -158,7 +158,9 @@ relative_uri = uri_scheme? uri_authority?
 	looks_like_uri_path uri_query? uri_fragment?;
 uri = absolute_uri | relative_uri;
 // Citation format. Not authoritative.
-author = [A-Z][A-Za-z'`-]+; // Fixme: No!!! UTF-8
+// Author is equivalent to <[A-Z][A-Za-z'`-]+>, except accepting all code
+// points after ASCII. It supports accents, but includes stuff that it shoudn't.
+author = [^\x00-\x40\x5B-\x7F][^\x00-\x26\x28-\x2C\x2E-\x40\x5B-\x5F\x7b-\x7f]+;
 etalia = "et" whitespace? "al" "."?;
 authorsep = ","? (whitespace? "and" whitespace | whitespace? "&" whitespace?
 	| whitespace?);

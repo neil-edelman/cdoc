@@ -12,6 +12,8 @@ Paragraph @ @a \,~~
  \* is
  \* bah.
 
+ Here's a citation <ÀæĔge2007>.
+
  Yo ![Ellen Ripley](Ellen_Ripley_badass.png) and jpeg ![Ellen](Ellen_ripley.jpg)
  ![Inigo Montoya](inigomontoyacrop.jpg) and ![Sarah Connor](./term2.png).
  And ![link](https://image.cnbcfm.com/api/v1/image/106027126-1563474038976mv5bzmy2mwy2ztatmgzhzc00njvkltlhytatmdm1yze3nwy0mjixxkeyxkfqcgdeqxvynjg2njqwmdq._v1_sx1776_cr001776999_al_.jpg)
