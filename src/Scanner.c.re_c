@@ -360,23 +360,23 @@ void Scanner_(void) {
 	scanner.line = scanner.doc_line = 0;
 }
 
-/** Singleton; reads from `stdin` until done; it doesn't make sense to call
+/** Singleton; reads from `fp` until done; it doesn't make sense to call
  this twice since the input is consumed.
  @param[notify] The function that is notified when it gets a match. Returns
  false for error.
  @return Success.
  @throws[malloc, fread]
  @throws[EILSEQ] File has embedded nulls. */
-int Scanner(int (*const notify)(void)) {
+int Scanner(int (*const notify)(void), FILE *const fp) {
 	const size_t granularity = 1024;
 	char *read_here, *zero;
 	size_t nread, zero_len;
 	errno = 0;
-	if(!notify) return errno = EDOM, 0;
-	/* Read all contents from `stdin` at once. */
+	if(!notify || !fp) return errno = EDOM, 0;
+	/* Read all contents at once. */
 	do {
 		if(!(read_here = CharArrayBuffer(&scanner.buffer, granularity))
-			|| (nread = fread(read_here, 1, granularity, stdin), ferror(stdin))
+			|| (nread = fread(read_here, 1, granularity, fp), ferror(fp))
 			|| !CharArrayExpand(&scanner.buffer, nread)) goto catch;
 	} while(nread == granularity);
 	/* Embed '\0' on the end for simple lexing. */
@@ -402,7 +402,7 @@ int Scanner(int (*const notify)(void)) {
 	/* Scans all. */
 	errno = 0;
 	while((scanner.symbol = scan()) && notify())
-		if(CdocOptionsScanner()) fprintf(stderr, "%s.\n", pos());
+		if(CdocOptionsDebug()) fprintf(stderr, "%s.\n", pos());
 	if(errno) goto catch;
 	return 1;
 catch:

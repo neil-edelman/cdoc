@@ -1,1 +1,1 @@
-int CdocOptionsScanner(void);
+int CdocOptionsDebug(void);

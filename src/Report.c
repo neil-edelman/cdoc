@@ -240,7 +240,7 @@ static void cut_segment_here(struct Segment **const psegment) {
 	struct Token *t;
 	assert(psegment);
 	if(!(segment = *psegment)) return;
-	if(CdocOptionsScanner()) {
+	if(CdocOptionsDebug()) {
 		fprintf(stderr, "Segment division %s:\n"
 			"Line %lu code: %s;\n"
 			"params no.: %s;\n"

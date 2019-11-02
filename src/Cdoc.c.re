@@ -128,51 +128,58 @@
 #include "../src/Semantic.h"
 #include "../src/Cdoc.h"
 
+static void usage(void) {
+	fprintf(stderr, "cdoc <filename> [-h | --help] [-d | --debug]\n\n"
+		"Given <filename>, a C file with encoded documentation,\n"
+		"outputs that documentation.\n");
+}
+
 static struct {
-	int provide_file, print_scanner;
+	int debug;
+	const char *fn;
 } args;
 
 static int parse_arg(const char *const string) {
-	const char *m, *s = string;
+	const char *s = string;
 	/* !stags:re2c format = 'const char *@@;'; */
 
 /*!re2c
 	re2c:define:YYCTYPE = char;
 	re2c:define:YYCURSOR = s;
-	re2c:define:YYMARKER = m;
 	re2c:yyfill:enable = 0;
 
 	end = "\x00";
 
-	* { fprintf(stderr, "Error with argument \"%s\".\n", string); return 0; }
-	"-d" | "--debug" end { args.provide_file = 1; return 1; }
-	"-s" | "--scanner" end { args.print_scanner = 1; return 1; }
+	* {
+		if(args.fn) return fprintf(stderr,
+			"Error understanding \"%s\"; filename already provided \"%s\".\n",
+			string, args.fn), 0;
+		args.fn = string;
+		return 1;
+	}
+	("-h" | "--help") end { usage(); exit(EXIT_SUCCESS); }
+	("-d" | "--debug") end { args.debug = 1; return 1; }
+	"-" [^\x00]* end {
+		return fprintf(stderr, "Unreconised option, \"%s\".\n", string), 0;
+	}
 */
 }
 
 /** @return Whether the command-line option to print the scanner on `stderr`
  was set. */
-int CdocOptionsScanner(void) {
-	return args.print_scanner;
+int CdocOptionsDebug(void) {
+	return args.debug;
 }
 
 /** @param[argc, argv] If "debug", `freopens` a path that is on my computer. */
 int main(int argc, char **argv) {
+	FILE *fp = 0;
 	int exit_code = EXIT_FAILURE, i;
 	const char *reason = 0;
 
-	for(i = 1; i < argc; i++) if(!parse_arg(argv[i]))
-		{ errno = EDOM; reason = "unreconised argument"; goto catch; }
-
-	/* https://stackoverflow.com/questions/10293387/piping-into-application-run-under-xcode/13658537 */
-	if(args.provide_file) {
-		const char *test_file_path = "/Users/neil/Movies/Cdoc/foo.c";
-		fprintf(stderr, "== [RUNNING IN DEBUG MODE with %s]==\n\n",
-				test_file_path);
-		freopen(test_file_path, "r", stdin);
-	}
-
-	if(!Scanner(&ReportNotify)) { reason = "scanner"; goto catch; }
+	for(i = 1; i < argc; i++) if(!parse_arg(argv[i])) goto catch;
+	if(!args.fn || !(fp = fopen(args.fn, "r"))) goto catch;
+	if(!Scanner(&ReportNotify, fp)) { reason = args.fn; goto catch; }
 	ReportWarn();
 	ReportCull();
 	if(!ReportOut()) { reason = "output"; goto catch; }
@@ -180,11 +187,16 @@ int main(int argc, char **argv) {
 	exit_code = EXIT_SUCCESS; goto finally;
 	
 catch:
-	perror(reason);
+	if(errno) {
+		perror(reason);
+	} else {
+		usage();
+	}
 	
 finally:
 	Report_();
 	Scanner_();
+	if(fp) fclose(fp);
 
 	return exit_code;
 }
