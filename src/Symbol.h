@@ -45,8 +45,9 @@
 	X(ATT_THROWS,     '@', 0, 0, 0, "Exceptional Return"), \
 	X(ATT_IMPLEMENTS, '@', 0, 0, 0, "Implements"), \
 	X(ATT_ORDER,      '@', 0, 0, 0, "Order"), \
-	X(ATT_ALLOW,      '@', 0, 0, 0, "static allowed (should never see)"), \
+	X(ATT_ALLOW,      '@', 0, 0, 0, 0), \
 	X(ATT_LICENSE,    '@', 0, 0, 0, "License"), \
+	X(ATT_INCLUDE,    '%', 0, 0, 0, 0), \
 	/* Documentation syntax; 2nd is '~' because it's documentation, it's just
 	 comments as far as `C` is concerned. */ \
 	X(DOC_BEGIN, '~', 0, 0, 0, 0), \

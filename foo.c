@@ -21,7 +21,7 @@ Paragraph @ @a \,~~
  @title Foo `Bar`
  @depend C89
  @author Somebody
- @author Nobody
+ @author Nobody @include
 
  Escapes. \\ \` \@ \_ \`
  lala \" preformated <http://foo.com/>*
@@ -30,6 +30,8 @@ Paragraph @ @a \,~~
  */
 
 #include <assert.h>
+/** @include */
+#include "foo.h"
 
 #ifdef CAT
 #undef CAT

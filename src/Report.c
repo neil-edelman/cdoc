@@ -393,6 +393,10 @@ int ReportNotify(void) {
 			return 0;
 		sorter.space = sorter.newline = 0; /* Also reset this for attributes. */
 		break;
+	case '%': /* Include file. */
+		assert(sorter.state == S_DOC);
+		fprintf(stderr, "#include directive\n");
+		break;
 	default: /* Code. */
 		assert(sorter.state == S_CODE);
 		if(sorter.is_code_ignored) break;
