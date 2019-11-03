@@ -33,6 +33,7 @@
 	X(VOID,       'v', &lit, 1, 1, 0), \
 	X(ELLIPSIS,   '.', &lit, 1, 1, 0), \
 	X(ASSIGNMENT, '=', &lit, 1, 1, 0), \
+	X(LOCAL_INCLUDE, 'i', 0, 0, 0, 0), \
 	/* Each-block-tags; 2nd is '@' because we want them to have special
 	 meaning. Non-printable, so it doesn't matter about the last few. */ \
 	X(ATT_TITLE,      '@', 0, 0, 0, "Title"), \
@@ -47,7 +48,6 @@
 	X(ATT_ORDER,      '@', 0, 0, 0, "Order"), \
 	X(ATT_ALLOW,      '@', 0, 0, 0, 0), \
 	X(ATT_LICENSE,    '@', 0, 0, 0, "License"), \
-	X(ATT_INCLUDE,    '%', 0, 0, 0, 0), \
 	/* Documentation syntax; 2nd is '~' because it's documentation, it's just
 	 comments as far as `C` is concerned. */ \
 	X(DOC_BEGIN, '~', 0, 0, 0, 0), \

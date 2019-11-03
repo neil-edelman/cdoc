@@ -30,8 +30,7 @@ Paragraph @ @a \,~~
  */
 
 #include <assert.h>
-/** @include */
-#include "foo.h"
+#include "foo.h" /** \include */
 
 #ifdef CAT
 #undef CAT

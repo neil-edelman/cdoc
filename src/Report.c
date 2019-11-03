@@ -344,6 +344,28 @@ int ReportNotify(void) {
 		if(ScannerIndentLevel() != 0 || !sorter.segment) break;
 		if(sorter.segment->division == DIV_FUNCTION) is_differed_cut = 1;
 		break;
+	case LOCAL_INCLUDE: /* Include file. */
+		assert(sorter.state == S_CODE);
+		{
+			FILE *fp = 0;
+			const char *const from = ScannerFrom(), *const to = ScannerTo();
+			char fn[256];
+			int success = 0;
+			assert(from && from <= to);
+			if(from + sizeof fn <= to) return fprintf(stderr,
+				"%s: too long to open file.\n", oops()), errno = EILSEQ, 0;
+			strncpy(fn, from, to - from), fn[to - from] = '\0';
+			fprintf(stderr, "Include directive %s.\n", fn);
+			if(!(fp = fopen(fn, "r"))) goto include_catch;
+			if(!Scanner(&ReportNotify, fp)) goto include_catch;
+			success = 1;
+			goto include_finally;
+		include_catch:
+			perror(fn);
+		include_finally:
+			if(fp) fclose(fp);
+			return success;
+		}
 	default: break;
 	}
 
@@ -392,10 +414,6 @@ int ReportNotify(void) {
 		if(!(sorter.attribute = new_attribute(sorter.segment, symbol)))
 			return 0;
 		sorter.space = sorter.newline = 0; /* Also reset this for attributes. */
-		break;
-	case '%': /* Include file. */
-		assert(sorter.state == S_DOC);
-		fprintf(stderr, "#include directive\n");
 		break;
 	default: /* Code. */
 		assert(sorter.state == S_CODE);

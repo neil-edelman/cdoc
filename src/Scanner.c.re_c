@@ -88,7 +88,7 @@ escapes = nbthinsp | mathcalo | ctheta | comega | times | cdot;
 // "<>[]" for embedded things;
 // "\x00" eof.
 // Words in math/code, em, and inside brackets do not nest.
-word_base = [^ \t\n\v\f\r*_`~!\\@<>[\]\x00];
+word_base = [^ \t\n\r\v\f*_`~!\\@<>[\]\x00];
 escape_asterisk = "*";
 escape_lone = "_" | "`" | "~";
 escape_multi = "!" | "\\" | "@" | "<" | ">";
@@ -106,6 +106,9 @@ art = whitespace* "*"? newline " *";
 white_inside = whitespace | newline | art [^/[\]\x00];
 all_inside = word_inside | "\\" escape_except_asterisk | white_inside
 	| "\\*" [^/[\]\x00] | escapes;
+qfile = [^"\t\n\r\v\f]+;
+include_comment = whitespace*
+	"/*""*"+ whitespace* "@include" whitespace* "*"+"/";
 comment_break = "/" "*"+ "*" "/";
 begin_comment = "/""*";
 end_comment = "*""/";
@@ -194,7 +197,7 @@ scan:
 	}
 	// Return space.
 	<doc, em, math> whitespace+ { return SPACE; }
-	<code> whitespace+ { goto reset; }
+	<code, include> whitespace+ { goto reset; }
 	// Newlines are generally ignored but documentation counts for paragraphs.
 	<*> newline {
 		scanner.line++;
@@ -208,7 +211,8 @@ scan:
 	}
 
 	// Continuation.
-	<string, character, macro> "\\" newline { scanner.line++; goto scan; }
+	<string, character, macro, include> "\\" newline
+		{ scanner.line++; goto scan; }
 	<string> "\"" { scanner.state = yyccode; return CONSTANT; }
 	<character> "'" { scanner.state = yyccode; return CONSTANT; }
 	<string, character> "\\". { goto scan; }
@@ -226,6 +230,9 @@ scan:
 	<macro> begin_comment :=> macro_comment
 	<code> comment_break { goto reset; } // Like this: /*****/.
 	<code> begin_comment :=> comment
+	<code> "#include" whitespace+ "\"" @sub0 qfile @sub1 "\"" whitespace* begin_doc whitespace* "\\include" whitespace* end_doc
+		{ scanner.sub0 = sub0, scanner.sub1 = sub1;
+		return scanner.state = yycmacro, LOCAL_INCLUDE; }
 	<code> macro_start :=> macro
 	<code> "L"? "\"" :=> string
 	<code> "'" :=> character
@@ -325,7 +332,6 @@ scan:
 	<doc> "@order"      { return ATT_ORDER; }
 	<doc> "@allow"      { return ATT_ALLOW; }
 	<doc> "@license"    { return ATT_LICENSE; }
-	<doc> "@include"    { return ATT_INCLUDE; }
 	// fixme: have date_begin @since[], @updated[], maybe updated is bad.
 	// Why not just have it updated now?
 	// Check if now is in the future.
