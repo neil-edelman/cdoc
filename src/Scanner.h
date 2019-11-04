@@ -8,5 +8,6 @@ struct Scanner *Scanner(const char *fn, int (*const notify)(void));
 enum Symbol ScannerSymbol(void);
 const char *ScannerFrom(void);
 const char *ScannerTo(void);
+const char *ScannerFilename(void);
 size_t ScannerLine(void);
 int ScannerIndentLevel(void);

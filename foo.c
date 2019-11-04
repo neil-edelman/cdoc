@@ -8,7 +8,7 @@ Paragraph @ @a \,~~
  
  Yaaar <fn:not_fn>, <fn:<T>not_fn>, <fn:<T>fun4>, <data:y>.
  
- \see{Cee}
+ \see{No}
 
  \* This is meh.
  \* is

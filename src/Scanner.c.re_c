@@ -468,5 +468,6 @@ const char *ScannerTo(void) {
 	errno = EDOM;
 	return 0;
 }
+const char *ScannerFilename(void) { return cur ? cur->fn : "nofile"; }
 size_t ScannerLine(void) { return cur ? cur->line : 0; }
 int ScannerIndentLevel(void) { return cur ? cur->indent_level : 0; }

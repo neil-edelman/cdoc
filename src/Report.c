@@ -26,6 +26,7 @@ struct Token {
 	enum Symbol symbol;
 	const char *from;
 	int length;
+	const char *fn;
 	size_t line;
 };
 static void token_to_string(const struct Token *t, char (*const a)[12]) {
@@ -187,6 +188,7 @@ static int init_token(struct Token *const token, const enum Symbol symbol) {
 	token->symbol = symbol;
 	token->from = from;
 	token->length = (int)(to - from);
+	token->fn = ScannerFilename();
 	token->line = ScannerLine();
 	return 1;
 }
@@ -438,8 +440,9 @@ static const char *pos(const struct Token *const token) {
 		const int max_size = 32,
 			is_truncated = token->length > max_size ? 1 : 0,
 			len = is_truncated ? max_size : token->length;
-		sprintf(p, "Line %lu, %s \"%.*s\"", (unsigned long)token->line,
-				symbols[token->symbol], len, token->from);
+		sprintf(p, "%.32s:%lu, %s \"%.*s\"", token->fn,
+			(unsigned long)token->line, symbols[token->symbol], len,
+			token->from);
 	}
 	return p;
 }
