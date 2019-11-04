@@ -183,7 +183,8 @@ terminate:
 				case '<': fputs("&lt;", stdout); break;
 				case '>': fputs("&gt;", stdout); break; 
 				case '&': fputs("&amp;", stdout); break;
-				case '\0': fprintf(stderr, "Encoded null.\n"); return;
+				case '\0': fprintf(stderr, "Encoded null with %d left.\n",
+					length); return;
 				default: fputc(*from, stdout); break;
 			}
 			from++, length--;

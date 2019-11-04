@@ -356,12 +356,11 @@ int ReportNotify(void) {
 				"%s: too long to open file.\n", oops()), errno = EILSEQ, 0;
 			strncpy(fn, from, to - from), fn[to - from] = '\0';
 			fprintf(stderr, "Include directive %s.\n", fn);
-			if(!(fp = fopen(fn, "r"))) goto include_catch;
-			if(!Scanner(&ReportNotify, fp)) goto include_catch;
+			if(!Scanner(fn, &ReportNotify)) goto include_catch;
 			success = 1;
 			goto include_finally;
 		include_catch:
-			perror(fn);
+			perror(fn), errno = 0;
 		include_finally:
 			if(fp) fclose(fp);
 			return success;

@@ -1,8 +1,10 @@
 #include <stddef.h> /* size_t */
 #include "Symbol.h" /* enum Symbol */
 
-void Scanner_(void);
-int Scanner(int (*const notify)(void), FILE *const fp);
+struct Scanner;
+
+void Scanner_(struct Scanner *const scanner);
+struct Scanner *Scanner(const char *fn, int (*const notify)(void));
 enum Symbol ScannerSymbol(void);
 const char *ScannerFrom(void);
 const char *ScannerTo(void);

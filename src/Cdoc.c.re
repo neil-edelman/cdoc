@@ -123,25 +123,30 @@
 #include <stdio.h>  /* fprintf */
 #include <string.h> /* strcmp */
 #include <errno.h>  /* errno */
+#ifndef STRICT_ANSI
+#include <unistd.h>
+#endif /* STRICT_ANSI */
 #include "../src/Scanner.h"
 #include "../src/Report.h"
 #include "../src/Semantic.h"
 #include "../src/Cdoc.h"
 
 static void usage(void) {
-	fprintf(stderr, "cdoc <filename> [-h | --help] [-d | --debug]\n\n"
+	fprintf(stderr, "cdoc <filename> [-h | --help] [-d | --debug]\n"
+		"\t[(-d: | --directory:)<directory>]\n\n"
 		"Given <filename>, a C file with encoded documentation,\n"
 		"outputs that documentation.\n");
 }
 
 static struct {
 	int debug;
-	const char *fn;
+	const char *fn, *dir;
 } args;
 
 static int parse_arg(const char *const string) {
-	const char *s = string;
-	/* !stags:re2c format = 'const char *@@;'; */
+	const char *s = string, *dir;
+
+/*!stags:re2c format = 'const char *@@;'; */
 
 /*!re2c
 	re2c:define:YYCTYPE = char;
@@ -159,6 +164,13 @@ static int parse_arg(const char *const string) {
 	}
 	("-h" | "--help") end { usage(); exit(EXIT_SUCCESS); }
 	("-d" | "--debug") end { args.debug = 1; return 1; }
+	("-d:" | "--directory:") @dir [^\x00]+ end {
+		if(args.dir) return fprintf(stderr,
+			"Error understanding \"%s\"; directory already provided \"%s\".\n",
+			dir, args.dir), 0;
+		args.dir = dir;
+		return 1;
+	}
 	"-" [^\x00]* end {
 		return fprintf(stderr, "Unreconised option, \"%s\".\n", string), 0;
 	}
@@ -171,31 +183,39 @@ int CdocOptionsDebug(void) {
 	return args.debug;
 }
 
-/** @param[argc, argv] If "debug", `freopens` a path that is on my computer. */
+/** @param[argc, argv] Argument vectors. */
 int main(int argc, char **argv) {
 	FILE *fp = 0;
+	struct Scanner *scanner = 0;
 	int exit_code = EXIT_FAILURE, i;
-	const char *reason = 0;
 
 	for(i = 1; i < argc; i++) if(!parse_arg(argv[i])) goto catch;
-	if(!args.fn || !(fp = fopen(args.fn, "r"))) goto catch;
-	if(!Scanner(&ReportNotify, fp)) { reason = args.fn; goto catch; }
+	if(args.dir) {
+#ifdef STRICT_ANSI
+		fprintf(stderr,
+			"Was compiled with STRICT_ANSI which does not support --directory."
+		), exit(EXIT_FAILURE);
+#else /* !STRICT_ANSI */
+		if(chdir(args.dir) == -1) goto catch;
+#endif /* !STRICT_ANSI */
+	}
+	if(!(scanner = Scanner(args.fn, &ReportNotify))) goto catch;
 	ReportWarn();
 	ReportCull();
-	if(!ReportOut()) { reason = "output"; goto catch; }
+	if(!ReportOut()) goto catch;
 
 	exit_code = EXIT_SUCCESS; goto finally;
 	
 catch:
 	if(errno) {
-		perror(reason);
+		perror(args.fn ? args.fn : "(no file specified)");
 	} else {
 		usage();
 	}
 	
 finally:
 	Report_();
-	Scanner_();
+	Scanner_(scanner);
 	if(fp) fclose(fp);
 
 	return exit_code;

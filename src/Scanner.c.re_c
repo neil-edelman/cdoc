@@ -3,12 +3,13 @@
 
 #include <stdio.h>  /* printf sprintf */
 #include <string.h> /* memset strchr */
+#include <stdlib.h> /* malloc free */
 /* #define NDEBUG */
 #include <assert.h> /* assert */
 #include <errno.h>  /* errno EILSEQ */
 #include "../src/Symbol.h"
 #include "../src/Cdoc.h"
-#include "../src/Scanner.h"
+#include "../src/Scanner.h" /** \include */
 
 
 /* Define {CharArray}, a vector of characters -- dynamic string in which we
@@ -35,17 +36,26 @@ struct Scanner {
 	int indent_level;
 	int ignore_block;
 	size_t line, doc_line;
-} scanner;
+	const char *fn;
+};
+
+static struct Scanner *cur;
 
 /** Prints line info in a static buffer, (to be printed?) */
 static const char *pos(void) {
 	static char p[128];
-	const int max_size = 32,
-		is_truncated = (scanner.from + max_size < scanner.cursor) ? 1 : 0,
-		len = is_truncated ? max_size : (int)(scanner.cursor - scanner.from);
-	assert(scanner.from <= scanner.cursor);
-	sprintf(p, "Line %lu, %s \"%.*s\" state %d", (unsigned long)scanner.line,
-		symbols[scanner.symbol], len, scanner.from, scanner.state);
+	if(!cur) {
+		sprintf(p, "No file loaded");
+	} else {
+		const int max_size = 32,
+			is_truncated = (cur->from + max_size < cur->cursor) ? 1 : 0,
+			len = is_truncated ? max_size :
+			(int)(cur->cursor - cur->from);
+		assert(cur->from <= cur->cursor);
+		sprintf(p, "%.32s:%lu, %s \"%.*s\" state %d", cur->fn,
+			(unsigned long)cur->line, symbols[cur->symbol], len,
+			cur->from, cur->state);
+	}
 	return p;
 }
 
@@ -54,13 +64,13 @@ static const char *pos(void) {
 /*!re2c
 re2c:yyfill:enable   = 0;
 re2c:define:YYCTYPE  = char;
-re2c:define:YYCURSOR = scanner.cursor;
-re2c:define:YYMARKER = scanner.marker; // Rules overlap.
-re2c:define:YYCTXMARKER = scanner.ctx_marker;
+re2c:define:YYCURSOR = cur->cursor;
+re2c:define:YYMARKER = cur->marker; // Rules overlap.
+re2c:define:YYCTXMARKER = cur->ctx_marker;
 re2c:define:YYCONDTYPE = "ScanState";
-re2c:define:YYGETCONDITION = "scanner.state";
+re2c:define:YYGETCONDITION = "cur->state";
 re2c:define:YYGETCONDITION:naked = 1;
-re2c:define:YYSETCONDITION = "scanner.state = @@;";
+re2c:define:YYSETCONDITION = "cur->state = @@;";
 re2c:define:YYSETCONDITION:naked = 1;
 re2c:flags:tags      = 1;
 
@@ -179,10 +189,11 @@ list = " \\* ";
 /** Scans. */
 static enum Symbol scan(void) {
 	const char *sub0, *sub1;
-	scanner.sub0 = scanner.sub1 = 0;
-	scanner.doc_line = scanner.line;
+	assert(cur);
+	cur->sub0 = cur->sub1 = 0;
+	cur->doc_line = cur->line;
 reset:
-	scanner.from = scanner.cursor;
+	cur->from = cur->cursor;
 scan:
 /*!re2c
 	// Oops, don't know how to deal with that.
@@ -191,8 +202,9 @@ scan:
 	<comment, macro_comment, string, character> * { goto scan; }
 	// Everything stops at EOF.
 	<*> "\x00" {
-		if(scanner.state != yyccode || scanner.indent_level)
-			fprintf(stderr, "%s: unexpected EOF.\n", pos()), errno = EILSEQ;
+		if(cur->state != yyccode || cur->indent_level)
+			fprintf(stderr, "%s: unexpected EOF.\n", pos()),
+			errno = EILSEQ;
 		return END;
 	}
 	// Return space.
@@ -200,21 +212,21 @@ scan:
 	<code, include> whitespace+ { goto reset; }
 	// Newlines are generally ignored but documentation counts for paragraphs.
 	<*> newline {
-		scanner.line++;
-		if(scanner.state == yycdoc || scanner.state == yycanchor)
+		cur->line++;
+		if(cur->state == yycdoc || cur->state == yycanchor)
 			return NEWLINE;
-		else if(scanner.state == yycstring || scanner.state == yyccharacter)
+		else if(cur->state == yycstring || cur->state == yyccharacter)
 			return fprintf(stderr, "%s: string syntax.\n", pos()),
 			errno = EILSEQ, END;
-		else if(scanner.state == yycmacro) scanner.state = yyccode;
+		else if(cur->state == yycmacro) cur->state = yyccode;
 		goto reset;
 	}
 
 	// Continuation.
 	<string, character, macro, include> "\\" newline
-		{ scanner.line++; goto scan; }
-	<string> "\"" { scanner.state = yyccode; return CONSTANT; }
-	<character> "'" { scanner.state = yyccode; return CONSTANT; }
+		{ cur->line++; goto scan; }
+	<string> "\"" { cur->state = yyccode; return CONSTANT; }
+	<character> "'" { cur->state = yyccode; return CONSTANT; }
 	<string, character> "\\". { goto scan; }
 	<comment> end_comment :=> code
 	<macro_comment> end_comment :=> macro
@@ -223,7 +235,8 @@ scan:
 	// With flattening the `ScanState` stack, this is not actually worth
 	// the effort; honestly, it's not going to matter.
 	<macro> begin_doc / [^/] { return fprintf(stderr,
-		"%s: documentation inside macro.\n", pos()), errno = EILSEQ, END; }
+		"%s: documentation inside macro.\n", pos()), errno = EILSEQ,
+		END; }
 	// Everything is ignored except comments.
 	<macro> ([^\x00\n\r] \ [/])+  { goto scan; }
 	<macro> [/] / [^*]  { goto scan; }
@@ -231,8 +244,8 @@ scan:
 	<code> comment_break { goto reset; } // Like this: /*****/.
 	<code> begin_comment :=> comment
 	<code> "#include" whitespace+ "\"" @sub0 qfile @sub1 "\"" whitespace* begin_doc whitespace* "\\include" whitespace* end_doc
-		{ scanner.sub0 = sub0, scanner.sub1 = sub1;
-		return scanner.state = yycmacro, LOCAL_INCLUDE; }
+		{ cur->sub0 = sub0, cur->sub1 = sub1;
+		return cur->state = yycmacro, LOCAL_INCLUDE; }
 	<code> macro_start :=> macro
 	<code> "L"? "\"" :=> string
 	<code> "'" :=> character
@@ -248,8 +261,8 @@ scan:
 	<code> "typedef"    { return TYPEDEF; }
 	<code> "static"     { return STATIC; }
 	<code> "void"       { return VOID; }
-	<code> ("{" | "<%") { scanner.indent_level++; return LBRACE; }
-	<code> ("}" | "%>") { scanner.indent_level--; return RBRACE; }
+	<code> ("{" | "<%") { cur->indent_level++; return LBRACE; }
+	<code> ("}" | "%>") { cur->indent_level--; return RBRACE; }
 	<code> ("[" | "<:") { return LBRACK; }
 	<code> ("]" | ":>") { return RBRACK; }
 	<code> "("          { return LPAREN; }
@@ -259,20 +272,20 @@ scan:
 	<code> "..."        { return ELLIPSIS; }
 	<code> id           { return ID; }
 
-	<code> begin_doc / [^/] { return scanner.state = yycdoc, DOC_BEGIN; }
+	<code> begin_doc / [^/] { return cur->state = yycdoc, DOC_BEGIN; }
 	// Also newlines in comments should be optionally ascii-art.
 	<doc, math, em, param_item, param_more> art / [^/] {
-		scanner.line++;
-		if(scanner.state == yycdoc) return NEWLINE;
+		cur->line++;
+		if(cur->state == yycdoc) return NEWLINE;
 		goto reset;
 	}
 	<doc, math, em, param_item, param_more, anchor> "\\*""/" { return
-		fprintf(stderr, "%s: escape past end of documentation.\n", pos()),
-		errno = EILSEQ, END; }
+		fprintf(stderr, "%s: escape past end of documentation.\n",
+		pos()), errno = EILSEQ, END; }
 	<math, em, param_item, param_more, anchor, pre> end_doc { return
-		fprintf(stderr, "%s: unexpected end of documentation.\n", pos()),
-		errno = EILSEQ, END; }
-	<doc> end_doc { return scanner.state = yyccode, DOC_END; }
+		fprintf(stderr, "%s: unexpected end of documentation.\n",
+		pos()), errno = EILSEQ, END; }
+	<doc> end_doc { return cur->state = yyccode, DOC_END; }
 
 	<doc>  word      { return WORD; }
 	<math> word_math { return WORD; }
@@ -285,49 +298,49 @@ scan:
 	<doc, math, em, anchor> comega   { return COMEGA; }
 	<doc, math, em, anchor> times    { return TIMES; }
 	<doc, math, em, anchor> cdot     { return CDOT; }
-	<doc> "_" { return scanner.state = yycem, EM_BEGIN; }
-	<em> "_" { return scanner.state = yycdoc, EM_END; }
-	<doc> "`" { return scanner.state = yycmath, MATH_BEGIN; }
-	<math> "`" { return scanner.state = yycdoc, MATH_END; }
+	<doc> "_" { return cur->state = yycem, EM_BEGIN; }
+	<em> "_" { return cur->state = yycdoc, EM_END; }
+	<doc> "`" { return cur->state = yycmath, MATH_BEGIN; }
+	<math> "`" { return cur->state = yycdoc, MATH_END; }
 	<doc> "~" { return NBSP; }
 	<doc> list { return LIST_ITEM; }
-	<doc> "\\\"" " "? / [^\n\r\x00] { scanner.state = yycpre; goto reset; }
+	<doc> "\\\"" " "? / [^\n\r\x00] { cur->state = yycpre; goto reset; }
 	<doc> "\\\"" " "? [\n\r\x00] { return
 		fprintf(stderr, "%s: preformatted cannot be empty.\n", pos()),
 		errno = EILSEQ, END; }
 	<pre> [^*\n\r\x00]+ | "*"+ / [\n\r\x00]
-		{ return scanner.state = yycdoc, PREFORMATTED; }
+		{ return cur->state = yycdoc, PREFORMATTED; }
 	<pre> [^*\n\r\x00]+ / "*" { goto scan; }
 	<pre> "*"+ / [^/\n\r\x00] { goto scan; }
 
 	// These are recognised in the documentation as stuff; parse them further
 	// using `sub`.
 	<doc> "<" @sub0 uri @sub1 ">"
-		{ scanner.sub0 = sub0, scanner.sub1 = sub1; return URL; }
+		{ cur->sub0 = sub0, cur->sub1 = sub1; return URL; }
 	<doc> "<" @sub0 citation @sub1 ">"
-		{ scanner.sub0 = sub0, scanner.sub1 = sub1; return CITE; }
+		{ cur->sub0 = sub0, cur->sub1 = sub1; return CITE; }
 	<doc> "<fn:" @sub0 generic_id @sub1 ">"
-		{ scanner.sub0 = sub0, scanner.sub1 = sub1; return SEE_FN; }
+		{ cur->sub0 = sub0, cur->sub1 = sub1; return SEE_FN; }
 	<doc> "<tag:" @sub0 generic_id @sub1 ">"
-		{ scanner.sub0 = sub0, scanner.sub1 = sub1; return SEE_TAG; }
+		{ cur->sub0 = sub0, cur->sub1 = sub1; return SEE_TAG; }
 	<doc> "<typedef:" @sub0 generic_id @sub1 ">"
-		{ scanner.sub0 = sub0, scanner.sub1 = sub1; return SEE_TYPEDEF;}
+		{ cur->sub0 = sub0, cur->sub1 = sub1; return SEE_TYPEDEF;}
 	<doc> "<data:" @sub0 generic_id @sub1 ">"
-		{ scanner.sub0 = sub0, scanner.sub1 = sub1; return SEE_DATA; }
+		{ cur->sub0 = sub0, cur->sub1 = sub1; return SEE_DATA; }
 	<doc> "[" whitespace* / all_inside* "](" uri ")"
-		{ return scanner.state = yycanchor, LINK_START; }
+		{ return cur->state = yycanchor, LINK_START; }
 	<doc> "![" whitespace* / all_inside* "](" uri ")"
-		{ return scanner.state = yycanchor, IMAGE_START; }
+		{ return cur->state = yycanchor, IMAGE_START; }
 
 	// These are tags.
 	<doc> "@title"      { return ATT_TITLE; }
-	<doc> "@param"      { return scanner.state = yycparam_begin, ATT_PARAM; }
+	<doc> "@param"      { return cur->state = yycparam_begin, ATT_PARAM; }
 	<doc> "@author"     { return ATT_AUTHOR; }
 	<doc> "@std"        { return ATT_STD; }
 	<doc> "@depend"     { return ATT_DEPEND; }
 	<doc> "@fixme"      { return ATT_FIXME; }
 	<doc> "@return"     { return ATT_RETURN; }
-	<doc> "@throws"     { return scanner.state = yycparam_begin, ATT_THROWS; }
+	<doc> "@throws"     { return cur->state = yycparam_begin, ATT_THROWS; }
 	<doc> "@implements" { return ATT_IMPLEMENTS; }
 	<doc> "@order"      { return ATT_ORDER; }
 	<doc> "@allow"      { return ATT_ALLOW; }
@@ -337,102 +350,123 @@ scan:
 	// Check if now is in the future.
 
 	// Parameter lists.
-	<param_begin> "[" { return scanner.state = yycparam_item, DOC_LEFT; }
-	<param_item>  id  { return scanner.state = yycparam_more, DOC_ID; }
-	<param_more>  "," { return scanner.state = yycparam_item, DOC_COMMA; }
-	<param_more>  "]" { return scanner.state = yycdoc,        DOC_RIGHT; }
+	<param_begin> "[" { return cur->state = yycparam_item, DOC_LEFT; }
+	<param_item>  id  { return cur->state = yycparam_more, DOC_ID; }
+	<param_more>  "," { return cur->state = yycparam_item, DOC_COMMA; }
+	<param_more>  "]" { return cur->state = yycdoc,        DOC_RIGHT; }
 	<param_item, param_more> whitespace+ { goto reset; }
 	<param_begin, param_item, param_more> * {
-		return fprintf(stderr, "%s: not allowed in parameter list.\n", pos()),
-		errno = EILSEQ, END; }
+		return fprintf(stderr, "%s: not allowed in parameter list.\n",
+		pos()), errno = EILSEQ, END; }
 
 	// Link/image text. Ended by `URL`. MD []() is inconsistent notation. :[
 	<anchor>  word_inside { return WORD; }
 	<anchor>  whitespace+ { return SPACE; }
 	<anchor>  whitespace* "](" @sub0 uri @sub1 ")"
-		{ scanner.sub0 = sub0, scanner.sub1 = sub1;
-		return scanner.state = yycdoc, URL; }
+		{ cur->sub0 = sub0, cur->sub1 = sub1;
+		return cur->state = yycdoc, URL; }
 */
 }
 
-/** Unloads scanner from memory. */
-void Scanner_(void) {
-	scanner.marker = scanner.ctx_marker = scanner.from = scanner.cursor = 0;
-	scanner.sub0 = scanner.sub1 = 0;
-	CharArray_(&scanner.buffer);
-	scanner.state = yyccode; /* Generated by `re2c`. */
-	scanner.symbol = END;
-	scanner.indent_level = 0;
-	scanner.ignore_block = 0;
-	scanner.line = scanner.doc_line = 0;
+static void zero_scanner(struct Scanner *const scanner) {
+	assert(scanner);
+	scanner->marker = scanner->ctx_marker = scanner->from = scanner->cursor = 0;
+	scanner->sub0 = scanner->sub1 = 0;
+	CharArray(&scanner->buffer);
+	scanner->state = yyccode; /* Generated by `re2c`. */
+	scanner->symbol = END;
+	scanner->indent_level = 0;
+	scanner->ignore_block = 0;
+	scanner->line = scanner->doc_line = 0;
+	scanner->fn = 0;
 }
 
-/** Singleton; reads from `fp` until done; it doesn't make sense to call
- this twice since the input is consumed.
- @param[notify] The function that is notified when it gets a match. Returns
- false for error.
+/** Unloads scanner from memory. */
+void Scanner_(struct Scanner *const scanner) {
+	if(!scanner) return;
+	CharArray_(&scanner->buffer);
+	zero_scanner(scanner);
+}
+
+/** Tries to open `fn` and read it all into memory.
+ @param[notify] The function that is notified when it gets a match. It
+ interpets return of false for error.
  @return Success.
- @throws[malloc, fread]
- @throws[EILSEQ] File has embedded nulls. */
-int Scanner(int (*const notify)(void), FILE *const fp) {
+ @throws[malloc, fopen, fread]
+ @throws[EILSEQ] File has embedded nulls.
+ @throws[EDOM] Passed null. */
+struct Scanner *Scanner(const char *const fn, int (*const notify)(void)) {
+	FILE *fp = 0;
 	const size_t granularity = 1024;
 	char *read_here, *zero;
 	size_t nread, zero_len;
-	errno = 0;
-	if(!notify || !fp) return errno = EDOM, 0;
+	struct Scanner *scanner = 0, *previous;
+	if(!notify || !fn) { errno = EDOM; goto catch; }
+	if(!(scanner = malloc(sizeof *scanner))) goto catch;
+	zero_scanner(scanner);
+	scanner->fn = fn;
+	if(!(fp = fopen(fn, "r"))) goto catch;
 	/* Read all contents at once. */
 	do {
-		if(!(read_here = CharArrayBuffer(&scanner.buffer, granularity))
+		if(!(read_here = CharArrayBuffer(&scanner->buffer, granularity))
 			|| (nread = fread(read_here, 1, granularity, fp), ferror(fp))
-			|| !CharArrayExpand(&scanner.buffer, nread)) goto catch;
+			|| !CharArrayExpand(&scanner->buffer, nread)) goto catch;
 	} while(nread == granularity);
+	fclose(fp), fp = 0;
 	/* Embed '\0' on the end for simple lexing. */
-	if(!(zero = CharArrayNew(&scanner.buffer))) goto catch;
+	if(!(zero = CharArrayNew(&scanner->buffer))) goto catch;
 	*zero = '\0';
-	scanner.state = yyccode;
 	/* Point these toward the first char; `buffer` is necessarily done
 	 growing, or we could not do this. */
-	scanner.marker = scanner.ctx_marker = scanner.from = scanner.cursor
-		= CharArrayGet(&scanner.buffer);
-	scanner.line = scanner.doc_line = 1;
+	scanner->marker = scanner->ctx_marker = scanner->from = scanner->cursor
+		= CharArrayGet(&scanner->buffer);
+	scanner->line = scanner->doc_line = 1;
 	/* We use simplified sentinel method of detecting EOF, so the file can have
 	 no embedded '\0'. */
 	{
-		const char *const buffer = CharArrayGet(&scanner.buffer);
+		const char *const buffer = CharArrayGet(&scanner->buffer);
 		zero_len = (size_t)(strchr(buffer, '\0') - buffer);
-		if(zero_len != CharArraySize(&scanner.buffer) - 1)
+		if(zero_len != CharArraySize(&scanner->buffer) - 1)
 			{ errno = EILSEQ; fprintf(stderr,
 			"Expects Modified UTF-8 encoding; embedded '\\0' at byte %lu/%lu."
 			"\n", (unsigned long)zero_len,
-			(unsigned long)CharArraySize(&scanner.buffer) - 1); goto catch; }
+			(unsigned long)CharArraySize(&scanner->buffer) - 1); goto catch; }
 	}
 	/* Scans all. */
 	errno = 0;
-	while((scanner.symbol = scan()) && notify())
+	previous = cur, cur = scanner;
+	while((scanner->symbol = scan()) && notify())
 		if(CdocOptionsDebug()) fprintf(stderr, "%s.\n", pos());
+	cur = previous;
 	if(errno) goto catch;
-	return 1;
+	goto finally;
 catch:
-	Scanner_();
-	return 0;
+	Scanner_(scanner), scanner = 0;
+finally:
+	if(fp) fclose(fp);
+	return scanner;
 }
 
-enum Symbol ScannerSymbol(void) { return scanner.symbol; }
-/** @throws[EILSEQ] When the scanner hasn't been called.
+enum Symbol ScannerSymbol(void) {
+	if(!cur) return END;
+	return cur->symbol;
+}
+
+/** @throws[EDOM] When the scanner hasn't been called or the no scanner.
  @throws[malloc] Couldn't get memory. */
 const char *ScannerFrom(void) {
-	if(scanner.sub0) return assert(scanner.sub0 < scanner.sub1),
-		scanner.sub0;
-	else if(scanner.from) return assert(scanner.from < scanner.cursor),
-		scanner.from;
-	errno = EILSEQ;
+	if(!cur) { errno = EDOM; return 0; }
+	if(cur->sub0) return assert(cur->sub0 < cur->sub1), cur->sub0;
+	else if(cur->from) return assert(cur->from < cur->cursor), cur->from;
+	errno = EDOM;
 	return 0;
 }
 const char *ScannerTo(void) {
-	if(scanner.sub1) return scanner.sub1;
-	else if(scanner.cursor) return scanner.cursor;
-	errno = EILSEQ;
+	if(!cur) { errno = EDOM; return 0; }
+	if(cur->sub1) return cur->sub1;
+	else if(cur->cursor) return cur->cursor;
+	errno = EDOM;
 	return 0;
 }
-size_t ScannerLine(void) { return scanner.line; }
-int ScannerIndentLevel(void) { return scanner.indent_level; }
+size_t ScannerLine(void) { return cur ? cur->line : 0; }
+int ScannerIndentLevel(void) { return cur ? cur->indent_level : 0; }

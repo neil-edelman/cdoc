@@ -8,6 +8,8 @@
  @param[width, height] Pointers that get overwritten on success; required.
  @param[no_discarded] Optional discarded bytes pointer.
  @return Success, otherwise `errno` will (probably) be set.
+ @throws[EILSEQ] Not valid PNG data.
+ @throws[fread]
  @license <http://www.faqs.org/faqs/jpeg-faq/part1/> said to look up
  [rdjpgcom.c](https://github.com/ImageMagick/jpeg-turbo/blob/master/rdjpgcom.c),
  which has
@@ -41,7 +43,7 @@ static int jpeg_dim(FILE *const fp, unsigned *const width,
 				if(fread(f, 8, 1, fp) != 1) return 0;
 				/* Check that the size of this block is consistent with the
 				 number of components. */
-				if(((f[0] << 8) | f[1]) != 8u + 3 * f[7])
+				if((((unsigned)f[0] << 8) | f[1]) != 8u + 3 * f[7])
 					return errno = EILSEQ, 0;
 				*width  = (f[5] << 8) | f[6];
 				*height = (f[3] << 8) | f[4];
@@ -62,7 +64,9 @@ static int jpeg_dim(FILE *const fp, unsigned *const width,
  [LibPNG specifications](http://www.libpng.org/pub/png/spec/1.2/png-1.2.pdf)
  @param[file] File that has been opened in binary mode and rewound; required.
  @param[width, height] Pointers that get overwritten on success; required.
- @return Success, otherwise `errno` will (probably) be set. */
+ @return Success, otherwise `errno` will (probably) be set.
+ @throws[EILSEQ] Not valid PNG data.
+ @throws[fread] */
 static int png_dim(FILE *const fp, unsigned *const width,
 	unsigned *const height) {
 	unsigned char f[24];
@@ -71,7 +75,7 @@ static int png_dim(FILE *const fp, unsigned *const width,
 	if(f[0] != 0x89 || f[1] != 0x50 || f[2] != 0x4E || f[3] != 0x47
 		|| f[4] != 0x0D || f[5] != 0x0A || f[6] != 0x1A || f[7] != 0x0A
 		|| f[12] != 0x49 || f[13] != 0x48 || f[14] != 0x44 || f[15] != 0x52)
-		return errno = EDOM, 0;
+		return errno = EILSEQ, 0;
 	*width  = f[16] << 24 | f[17] << 16 | f[18] << 8 | f[19];
 	*height = f[20] << 24 | f[21] << 16 | f[22] << 8 | f[23];
 	return 1;
@@ -102,7 +106,7 @@ end:
 	success = 1;
 	goto finally;
 catch:
-	if(errno) { perror(fn); errno = 0; }
+	perror(fn), errno = 0;
 finally:
 	if(fp) fclose(fp);
 	return success;
