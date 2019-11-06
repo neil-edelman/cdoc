@@ -193,7 +193,7 @@ int main(int argc, char **argv) {
 	if(args.dir) {
 #ifdef STRICT_ANSI
 		fprintf(stderr,
-			"Was compiled with STRICT_ANSI which does not support --directory."
+		"Was compiled with STRICT_ANSI which does not support --directory.\n"
 		), exit(EXIT_FAILURE);
 #else /* !STRICT_ANSI */
 		if(chdir(args.dir) == -1) goto catch;

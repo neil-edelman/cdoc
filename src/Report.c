@@ -284,6 +284,7 @@ int ReportNotify(void) {
 		unsigned space, newline;
 		int is_code_ignored, is_semantic_set;
 	} sorter = { 0, 0, 0, 0, 0, 0, 0, 0 };
+	/*errno = 0;*/
 	/* These symbols require special consideration. */
 	switch(symbol) {
 	case DOC_BEGIN:
@@ -349,7 +350,6 @@ int ReportNotify(void) {
 	case LOCAL_INCLUDE: /* Include file. */
 		assert(sorter.state == S_CODE);
 		{
-			FILE *fp = 0;
 			const char *const from = ScannerFrom(), *const to = ScannerTo();
 			char fn[256];
 			int success = 0;
@@ -358,13 +358,14 @@ int ReportNotify(void) {
 				"%s: too long to open file.\n", oops()), errno = EILSEQ, 0;
 			strncpy(fn, from, to - from), fn[to - from] = '\0';
 			fprintf(stderr, "Include directive %s.\n", fn);
+			cut_segment_here(&sorter.segment);
 			if(!Scanner(fn, &ReportNotify)) goto include_catch;
+			cut_segment_here(&sorter.segment);
 			success = 1;
 			goto include_finally;
-		include_catch:
+include_catch:
 			perror(fn), errno = 0;
-		include_finally:
-			if(fp) fclose(fp);
+include_finally:
 			return success;
 		}
 	default: break;
