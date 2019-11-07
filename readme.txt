@@ -2,40 +2,9 @@ Copyright (C) 2017 Neil Edelman.
 
 neil dot edelman each mail dot mcgill dot ca
 
-C identifiers are limited to C90.
-
-Function pointers must be typedefed.
-
-Version 1.3.
-
-"sudo make install" will make "cdoc" and copy it to /usr/local/bin.
 The delimiter of Cdoc comments is "/** ". An example:
 
-cat Foo.c Foo.h | cdoc text > Foo.txt
-
-Cdoc is a light weight, JavaDoc-style, documentation generator for
-C. It is not aware of C, but searches in your file for the double
-asterisk '** ' comment. It does not support ascii art (three or
-more asterisks are not recognised.) It does not support writing
-html in your source code, and escapes '<>&' in html mode; placing
-two new lines is sufficient to start a new paragraph.
-
-The following symbols are recognised: \url{url}, \cite{word},
-\see{reference}, \${math}, and {emphasis}. Cdoc decides based on
-context of the following code whether it goes in the preamble,
-functions, or declarations. It uses simple, but inexact heuristic,
-which may become confused. It supports macro-generics if you write
-them just like void A_BI_(Create, Thing)(void); it will transform
-it into, <A>Create<BI>Thing(void).
-
-Each-expressions must come first on the line. Cdoc recognises:
-@param, @author, @since, @fixme, @deprecated are accepted globally;
-@title, @std, @version are accepted in the preamble; @return,
-@throws, @implements, @order, @allow are accepted before functions.
-The title is set by @file. Functions that are marked static as the
-first modifier are not included unless one marks them by @allow.
-The @param and @throws have an optional sub-argument separated by
-':' or a new line that splits the "expression: description."
+cdoc Foo.c > Foo.c.html
 
 License:
 
