@@ -239,19 +239,21 @@ static int semantic(struct Segment *const segment) {
 static void cut_segment_here(struct Segment **const psegment) {
 	const struct Segment *segment = 0;
 	struct Attribute *att = 0;
-	struct Token *t;
+	struct Token *doc, *code;
 	assert(psegment);
 	if(!(segment = *psegment)) return;
 	if(CdocOptionsDebug()) {
+		code = TokenArrayNext(&segment->code, 0);
+		doc  = TokenArrayNext(&segment->doc,  0);
 		fprintf(stderr, "Segment division %s:\n"
-			"Line %lu code: %s;\n"
-			"params no.: %s;\n"
-			"Line %lu doc: %s.\n",
+			"%s:%lu code: %s;\n"
+			"of which params: %s;\n"
+			"%s:%lu doc: %s.\n",
 			divisions[segment->division],
-			(t = TokenArrayNext(&segment->code, 0)) ? t->line : 0,
+			code ? code->fn : "N/A", code ? code->line : 0,
 			TokenArrayToString(&segment->code),
 			IndexArrayToString(&segment->code_params),
-			(t = TokenArrayNext(&segment->doc, 0)) ? t->line : 0,
+			doc ? doc->fn : "N/A", doc ? doc->line : 0,
 			TokenArrayToString(&segment->doc));
 		while((att = AttributeArrayNext(&segment->attributes, att)))
 			fprintf(stderr, "%s{%s} %s.\n", symbols[att->token.symbol],
@@ -264,7 +266,7 @@ static void cut_segment_here(struct Segment **const psegment) {
 /** Prints line info into a static buffer. */
 static const char *oops(void) {
 	static char p[128];
-	sprintf(p, "Line %lu, %s", (unsigned long)ScannerLine(),
+	sprintf(p, "%s:%lu, %s", ScannerFilename(), (unsigned long)ScannerLine(),
 		symbols[ScannerSymbol()]);
 	return p;
 }
@@ -357,14 +359,14 @@ int ReportNotify(void) {
 			if(from + sizeof fn <= to) return fprintf(stderr,
 				"%s: too long to open file.\n", oops()), errno = EILSEQ, 0;
 			strncpy(fn, from, to - from), fn[to - from] = '\0';
-			fprintf(stderr, "Include directive %s.\n", fn);
+			fprintf(stderr, "Report: include directive %s; cut.\n", fn);
 			cut_segment_here(&sorter.segment);
 			if(!Scanner(fn, &ReportNotify)) goto include_catch;
 			cut_segment_here(&sorter.segment);
 			success = 1;
 			goto include_finally;
 include_catch:
-			perror(fn), errno = 0;
+			perror(fn);
 include_finally:
 			return success;
 		}

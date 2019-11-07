@@ -178,7 +178,6 @@ static void html_encode_s(int length, const char *from, char (*const a)[256]) {
 terminate:
 		*build = '\0';
 	} else {
-		const char *debug = from;
 		while(length) {
 			switch(*from) {
 				case '<': fputs("&lt;", stdout); break;
