@@ -2,7 +2,7 @@
  [MIT License](https://opensource.org/licenses/MIT). */
 
 #include <stdio.h>  /* printf sprintf */
-#include <string.h> /* memset strchr */
+#include <string.h> /* memset strchr strlen */
 #include <stdlib.h> /* malloc free */
 /* #define NDEBUG */
 #include <assert.h> /* assert */
@@ -36,7 +36,7 @@ struct Scanner {
 	int indent_level;
 	int ignore_block;
 	size_t line, doc_line;
-	const char *fn;
+	char fn[6];
 };
 
 static struct Scanner *cur;
@@ -52,7 +52,7 @@ static const char *pos(void) {
 			len = is_truncated ? max_size :
 			(int)(cur->cursor - cur->from);
 		assert(cur->from <= cur->cursor);
-		sprintf(p, "%.32s:%lu, %s \"%.*s\" state %d", cur->fn,
+		sprintf(p, "%s:%lu, %s \"%.*s\" state %d", cur->fn,
 			(unsigned long)cur->line, symbols[cur->symbol], len,
 			cur->from, cur->state);
 	}
@@ -378,7 +378,7 @@ static void zero_scanner(struct Scanner *const scanner) {
 	scanner->indent_level = 0;
 	scanner->ignore_block = 0;
 	scanner->line = scanner->doc_line = 0;
-	scanner->fn = 0;
+	*scanner->fn = '\0';
 }
 
 /** Unloads scanner from memory. */
@@ -404,7 +404,12 @@ struct Scanner *Scanner(const char *const fn, int (*const notify)(void)) {
 	if(!notify || !fn) { errno = EDOM; goto catch; }
 	if(!(scanner = malloc(sizeof *scanner))) goto catch;
 	zero_scanner(scanner);
-	scanner->fn = fn;
+	{ /* Truncate to the end, that's the highest infomation density. */
+		const size_t fn_len = strlen(fn);
+		const char *const fn_cpy = (fn_len < sizeof scanner->fn) ? fn :
+			fn + fn_len - sizeof scanner->fn + 1;
+		strcpy(scanner->fn, fn_cpy);
+	}
 	if(!(fp = fopen(fn, "r"))) goto catch;
 	/* Read all contents at once. */
 	do {
