@@ -141,10 +141,11 @@ static void usage(void) {
 static struct {
 	int debug;
 	const char *fn, *dir;
+	enum Output output;
 } args;
 
 static int parse_arg(const char *const string) {
-	const char *s = string, *dir;
+	const char *s = string, *dir, *output;
 
 /*!stags:re2c format = 'const char *@@;'; */
 
@@ -171,6 +172,20 @@ static int parse_arg(const char *const string) {
 		args.dir = dir;
 		return 1;
 	}
+	("-o:" | "--output:") output_strings[OUT_HTML] end {
+		if(args.output) return fprintf(stderr,
+			"Error understanding \"%s\"; output already provided \"%s\".\n",
+			string, output[args.output]);
+		args.output = OUT_HTML;
+		return 1;
+	}
+	("-o:" | "--output:") output_strings[OUT_MD] end {
+		if(args.output) return fprintf(stderr,
+			"Error understanding \"%s\"; output already provided \"%s\".\n",
+			string, output[args.output]);
+		args.output = OUT_MD;
+		return 1;
+	}
 	"-" [^\x00]* end {
 		return fprintf(stderr, "Unreconised option, \"%s\".\n", string), 0;
 	}
@@ -181,6 +196,11 @@ static int parse_arg(const char *const string) {
  was set. */
 int CdocOptionsDebug(void) {
 	return args.debug;
+}
+
+/** @return What output was specified. */
+enum Output CdocOptionsOutput(void) {
+	return args.output == OUT_UNSPECIFIED ? OUT_MD : args.output;
 }
 
 /** @param[argc, argv] Argument vectors. */

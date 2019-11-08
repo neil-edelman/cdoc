@@ -10,12 +10,13 @@
 #define PARAM2B(A, B) B
 #define STRINGISE2A(A, B) #A
 
-#define PARAM6A(A, B, C, D, E, F) A
-#define PARAM6B(A, B, C, D, E, F) B
-#define PARAM6C(A, B, C, D, E, F) C
-#define PARAM6D(A, B, C, D, E, F) D
-#define PARAM6E(A, B, C, D, E, F) E
-#define PARAM6F(A, B, C, D, E, F) F
-#define STRINGISE6A(A, B, C, D, E, F) #A
+#define PARAM7A(A, B, C, D, E, F, G) A
+#define PARAM7B(A, B, C, D, E, F, G) B
+#define PARAM7C(A, B, C, D, E, F, G) C
+#define PARAM7D(A, B, C, D, E, F, G) D
+#define PARAM7E(A, B, C, D, E, F, G) E
+#define PARAM7F(A, B, C, D, E, F, G) F
+#define PARAM7G(A, B, C, D, E, F, G) G
+#define STRINGISE7A(A, B, C, D, E, F, G) #A
 
 #endif /* !x */
