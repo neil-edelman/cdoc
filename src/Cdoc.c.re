@@ -130,6 +130,7 @@
 #include "../src/Report.h"
 #include "../src/Semantic.h"
 #include "../src/Cdoc.h"
+#include "../src/Output.h"
 
 static void usage(void) {
 	fprintf(stderr, "cdoc <filename> [-h | --help] [-d | --debug]\n"
@@ -145,7 +146,7 @@ static struct {
 } args;
 
 static int parse_arg(const char *const string) {
-	const char *s = string, *dir, *output;
+	const char *s = string, *dir;
 
 /*!stags:re2c format = 'const char *@@;'; */
 
@@ -172,14 +173,15 @@ static int parse_arg(const char *const string) {
 		args.dir = dir;
 		return 1;
 	}
-	("-o:" | "--output:") output_strings[OUT_HTML] end {
+	// this is hard coded :[
+	("-o:" | "--output:") "html" end {
 		if(args.output) return fprintf(stderr,
 			"Error understanding \"%s\"; output already provided \"%s\".\n",
 			string, output[args.output]);
 		args.output = OUT_HTML;
 		return 1;
 	}
-	("-o:" | "--output:") output_strings[OUT_MD] end {
+	("-o:" | "--output:") "md" end {
 		if(args.output) return fprintf(stderr,
 			"Error understanding \"%s\"; output already provided \"%s\".\n",
 			string, output[args.output]);

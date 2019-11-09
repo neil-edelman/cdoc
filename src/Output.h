@@ -4,12 +4,11 @@
 #include "XMacro.h"
 
 #define OUTPUT(X) \
-	X(OUT_UNSPECIFIED, "unspecified"), \
-	X(OUT_HTML, "html"), \
-	X(OUT_MD, "md")
+	X(OUT_UNSPECIFIED), \
+	X(OUT_HTML), \
+	X(OUT_MD)
 
-enum Output { OUTPUT(PARAM2A) };
-static const char *const output_strings[] = { OUTPUT(PARAM2B) };
-static const char *const output[] = { OUTPUT(STRINGISE2A) };
+enum Output { OUTPUT(PARAM) };
+static const char *const output[] = { OUTPUT(STRINGISE) };
 
 #endif /* !out --> */

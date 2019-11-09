@@ -13,6 +13,7 @@
 #include <limits.h> /* INT_MAX */
 #include <stdio.h>  /* sprintf */
 #include "Division.h"
+#include "Output.h"
 #include "Scanner.h"
 #include "Semantic.h"
 #include "UrlEncode.h"

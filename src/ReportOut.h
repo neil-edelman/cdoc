@@ -1,7 +1,7 @@
 /* `SYMBOL` is declared in `Scanner.h`. */
-static const int symbol_before_sep[] = { SYMBOL(PARAM7E) };
-static const int symbol_after_sep[]  = { SYMBOL(PARAM7F) };
-static const char *symbol_attribute_titles[] = { SYMBOL(PARAM7G) };
+static const int symbol_before_sep[] = { SYMBOL(PARAM6D) };
+static const int symbol_after_sep[]  = { SYMBOL(PARAM6E) };
+static const char *symbol_attribute_titles[] = { SYMBOL(PARAM6F) };
 
 /* `sprintf` titles. */
 static char title[256];
@@ -23,9 +23,13 @@ static const struct StyleText {
 	md_p     = { "para", "", " ", "\n\n", 1 },
 	html_ul  = { "ul",   "<ul>\n", "", "</ul>\n\n", 1 },
 	html_li  = { "li",   "\t<li>", " ", "</li>\n", 0 },
+	md_ul    = { "ul",   "",       "",  "\n", 1 },
+	md_li    = { "li",   " * ",    " ", "\n", 0 },
 	html_code= { "code", "<code>", /*"&nbsp;"*/" ", "</code>", 0},
 	html_pre = { "pre",  "<pre>\n", "", "</pre>\n\n", 1 },
 	html_pre_line = { "line", "", "\n", "\n", 0 },
+	md_pre = { "pre",  "", "", "\n", 1 }, /* fixme: not sure. */
+	md_pre_line = { "line", "", "\n    ", "\n", 0 },
 	html_title = { "title", "<title>", "", "</title>\n", 1 },
 	html_h1  = { "h1",   "<h1>", "", "</h1>\n\n", 1 },
 	html_h3  = { "h3",   "<h3>", "", "</h3>\n\n", 1 },
@@ -145,63 +149,93 @@ static void style_separate(void) {
 	if(top->lazy == ITEM) top->lazy = SEPARATE;
 }
 
-/** Encode a bunch of arbitrary text `from` to `length` as html.
+/** Encode a bunch of arbitrary text `from` to `length` as whatever the options
+ were.
  @param[a] If specified, prints it to the string. */
-static void html_encode_s(int length, const char *from, char (*const a)[256]) {
-	assert(length >= 0 && from);
-	if(a) {
-		/* Ugly. Really ugly. */
-		char *build = *a;
-		assert(*a);
-		while(length) {
-			switch(*from) {
-			case '<': if((size_t)(build - *a) >= sizeof *a - 5) goto terminate;
-				strcpy(build, "&lt;"), build += 4; break;
-			case '>': if((size_t)(build - *a) >= sizeof *a - 5) goto terminate;
-				strcpy(build, "&gt;"), build += 4; break;
-			case '&': if((size_t)(build - *a) >= sizeof *a - 6) goto terminate;
-				strcpy(build, "&amp;"), build += 5; break;
-			case '\0': goto terminate;
-			default: if((size_t)(build - *a) >= sizeof *a - 1) goto terminate;
-				*build++ = *from; break;
-			}
-			from++, length--;
-		}
-terminate:
-		*build = '\0';
-	} else {
-		while(length) {
-			switch(*from) {
-				case '<': fputs("&lt;", stdout); break;
-				case '>': fputs("&gt;", stdout); break; 
-				case '&': fputs("&amp;", stdout); break;
-				case '\0': fprintf(stderr, "Encoded null with %d left.\n",
-					length); return;
-				default: fputc(*from, stdout); break;
-			}
-			from++, length--;
-		}
+static void encode_s(int length, const char *from, char (*const a)[256]) {
+	char *build = *a;
+	assert(length >= 0 && from && ((a && *a) || !a));
+
+	switch(CdocOptionsOutput()) {
+	case OUT_HTML:
+		if(a) goto html_encode_string;
+		else goto html_encode_print;
+	case OUT_MD:
+		if(a) goto md_encode_string;
+		else goto md_encode_print;
+	default: assert(0);
 	}
-}
-/** Encode a bunch of arbitrary text as itself.
- @fixme No. Escape `_[ */
-static void md_encode_s(int length, const char *from, char (*const a)[256]) {
-	assert(length >= 0 && from);
-	if(a) {
-		const size_t l = (size_t)length < sizeof *a ? (size_t)length
-			: sizeof *a - 1;
-		strncpy(*a, from, l);
-		*a[l] = '\0';
-	} else {
-		printf("%.*s", length, from);
+
+html_encode_string:
+	while(length) {
+		switch(*from) {
+		case '<': if((size_t)(build - *a) >= sizeof *a - 5) goto terminate_html;
+			strcpy(build, "&lt;"), build += 4; break;
+		case '>': if((size_t)(build - *a) >= sizeof *a - 5) goto terminate_html;
+			strcpy(build, "&gt;"), build += 4; break;
+		case '&': if((size_t)(build - *a) >= sizeof *a - 6) goto terminate_html;
+			strcpy(build, "&amp;"), build += 5; break;
+		case '\0': goto terminate_html;
+		default: if((size_t)(build - *a) >= sizeof *a - 1) goto terminate_html;
+			*build++ = *from; break;
+		}
+		from++, length--;
 	}
+terminate_html:
+	*build = '\0';
+	return;
+
+md_encode_string:
+	while(length) {
+		switch(*from) {
+		case '\\': case '`': case '*': case '_': case '{': case '}': case '[':
+		case ']': case '(': case ')': case '#': case '+': case '-': case '.':
+		case '!':
+			if((size_t)(build - *a) >= sizeof *a - 2) goto terminate_md;
+			*build++ = '\\'; *build++ = *from; break;
+		case '\0':
+			goto terminate_md;
+		default: if((size_t)(build - *a) >= sizeof *a - 1) goto terminate_md;
+			*build++ = *from; break;
+		}
+		from++, length--;
+	}
+terminate_md:
+	*build = '\0';
+	return;	
+
+html_encode_print:
+	while(length) {
+		switch(*from) {
+		case '<': fputs("&lt;", stdout); break;
+		case '>': fputs("&gt;", stdout); break; 
+		case '&': fputs("&amp;", stdout); break;
+		case '\0': fprintf(stderr, "Encoded null with %d left.\n", length);
+			return;
+		default: fputc(*from, stdout); break;
+		}
+		from++, length--;
+	}
+	return;
+
+md_encode_print:
+	while(length) {
+		switch(*from) {
+		case '\\': case '`': case '*': case '_': case '{': case '}': case '[':
+		case ']': case '(': case ')': case '#': case '+': case '-': case '.':
+		case '!':
+			printf("\\%c", *from); break;
+		case '\0': fprintf(stderr, "Encoded null with %d left.\n", length);
+			return;
+		default: fputc(*from, stdout); break;
+		}
+		from++, length--;
+	}
+	return;
 }
 
-static void html_encode(int length, const char *from) {
-	html_encode_s(length, from, 0);
-}
-static void md_encode(int length, const char *from) {
-	md_encode_s(length, from, 0);
+static void encode(int length, const char *from) {
+	encode_s(length, from, 0);
 }
 
 /* Some `OutFn` need this. */
@@ -233,34 +267,14 @@ OUT(par) {
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
-OUT(par_md) {
-	const struct Token *const t = *ptoken;
-	assert(tokens && t && t->symbol == NEWLINE && !a);
-	style_pop_level();
-	style_push(&md_p);
-	*ptoken = TokenArrayNext(tokens, t);
-	return 1;
-}
 OUT(lit) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->length > 0 && t->from);
 	if(a) {
-		html_encode_s(t->length, t->from, a);
+		encode_s(t->length, t->from, a);
 	} else {
 		style_prepare_output(t->symbol);
-		html_encode(t->length, t->from);
-	}
-	*ptoken = TokenArrayNext(tokens, t);
-	return 1;
-}
-OUT(lit_md) {
-	const struct Token *const t = *ptoken;
-	assert(tokens && t && t->length > 0 && t->from);
-	if(a) {
-		md_encode_s(t->length, t->from, a);
-	} else {
-		style_prepare_output(t->symbol);
-		md_encode(t->length, t->from);
+		encode(t->length, t->from);
 	}
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
@@ -272,7 +286,9 @@ OUT(gen1) {
 		*const rparen = TokenArrayNext(tokens, param);
 	const char *b, *type;
 	int type_size;
-	const char *const format = "&lt;%.*s&gt;%.*s";
+	const enum Output o = CdocOptionsOutput();
+	const char *const format =
+		o == OUT_HTML ? "&lt;%.*s&gt;%.*s" : "<%.*s>%.*s";
 	assert(tokens && t && t->symbol == ID_ONE_GENERIC);
 	if(!lparen || lparen->symbol != LPAREN || !param || !rparen
 	   || rparen->symbol != RPAREN) goto catch;
@@ -282,8 +298,9 @@ OUT(gen1) {
 	assert(t->length == b + 1 - t->from);
 	if(a) {
 		assert(*a);
-		if(t->length - 1 + param->length + strlen("&lt;&gt;") + 1 >= sizeof *a)
-			return fprintf(stderr, "%s: too long.\n", pos(t)), 0;
+		if(t->length - 1 + param->length + strlen(o == OUT_HTML ? "&lt;&gt;"
+			: "<>") + 1 >= sizeof *a) return fprintf(stderr, "%s: too long.\n",
+			pos(t)), 0;
 		sprintf(*a, format, t->length - 1, t->from, param->length,
 			param->from);
 	} else {
@@ -293,38 +310,6 @@ OUT(gen1) {
 	*ptoken = TokenArrayNext(tokens, rparen);
 	return 1;
 catch:
-	fprintf(stderr, "%s: expected generic(id) %s.\n", pos(t),
-		TokenArrayToString(tokens));
-	return 0;
-}
-OUT(gen1_md) {
-	const struct Token *const t = *ptoken,
-	*const lparen = TokenArrayNext(tokens, t),
-	*const param = TokenArrayNext(tokens, lparen),
-	*const rparen = TokenArrayNext(tokens, param);
-	const char *b, *type;
-	int type_size;
-	const char *const format = "<%.*s>%.*s";
-	assert(tokens && t && t->symbol == ID_ONE_GENERIC);
-	if(!lparen || lparen->symbol != LPAREN || !param || !rparen
-		|| rparen->symbol != RPAREN) goto catch;
-	type = t->from;
-	if(!(b = strchr(type, '_'))) goto catch;
-	type_size = (int)(b - type);
-	assert(t->length == b + 1 - t->from);
-	if(a) {
-		assert(*a);
-		if(t->length - 1 + param->length + strlen("<>") + 1 >= sizeof *a)
-			return fprintf(stderr, "%s: too long.\n", pos(t)), 0;
-		sprintf(*a, format, t->length - 1, t->from, param->length,
-			param->from);
-	} else {
-		style_prepare_output(t->symbol);
-		printf(format, t->length - 1, t->from, param->length, param->from);
-	}
-	*ptoken = TokenArrayNext(tokens, rparen);
-	return 1;
-	catch:
 	fprintf(stderr, "%s: expected generic(id) %s.\n", pos(t),
 		TokenArrayToString(tokens));
 	return 0;
@@ -338,7 +323,9 @@ OUT(gen2) {
 		*const rparen = TokenArrayNext(tokens, param2);
 	const char *b, *type1, *type2;
 	int type1_size, type2_size;
-	const char *const format = "&lt;%.*s&gt;%.*s&lt;%.*s&gt;%.*s";
+	const enum Output o = CdocOptionsOutput();
+	const char *const format = o == OUT_HTML ?
+		"&lt;%.*s&gt;%.*s&lt;%.*s&gt;%.*s" : "<%.*s>%.*s<%.*s>%.*s";
 	assert(tokens && t && t->symbol == ID_TWO_GENERICS);
 	if(!lparen || lparen->symbol != LPAREN || !param1 || !comma
 		|| comma->symbol != COMMA || !param2 || !rparen
@@ -353,47 +340,8 @@ OUT(gen2) {
 	if(a) {
 		assert(*a);
 		if(type1_size + param1->length + type2_size + param2->length
-			+ strlen("&lt;&gt;&lt;&gt;") + 1 >= sizeof *a)
-			return fprintf(stderr, "%s: too long.\n", pos(t)), 0;
-		sprintf(*a, format, type1_size, type1, param1->length, param1->from,
-			type2_size, type2, param2->length, param2->from);
-	} else {
-		style_prepare_output(t->symbol);
-		printf(format, type1_size, type1, param1->length, param1->from,
-			type2_size, type2, param2->length, param2->from);
-	}
-	*ptoken = TokenArrayNext(tokens, rparen);
-	return 1;
-catch:
-	fprintf(stderr, "%s: expected generic2(id,id).\n", pos(t));
-	return 0;
-}
-OUT(gen2_md) {
-	const struct Token *const t = *ptoken,
-	*const lparen = TokenArrayNext(tokens, t),
-	*const param1 = TokenArrayNext(tokens, lparen),
-	*const comma = TokenArrayNext(tokens, param1),
-	*const param2 = TokenArrayNext(tokens, comma),
-	*const rparen = TokenArrayNext(tokens, param2);
-	const char *b, *type1, *type2;
-	int type1_size, type2_size;
-	const char *const format = "<%.*s>%.*s<%.*s>%.*s";
-	assert(tokens && t && t->symbol == ID_TWO_GENERICS);
-	if(!lparen || lparen->symbol != LPAREN || !param1 || !comma
-		|| comma->symbol != COMMA || !param2 || !rparen
-		|| rparen->symbol != RPAREN) goto catch;
-	type1 = t->from;
-	if(!(b = strchr(type1, '_'))) goto catch;
-	type1_size = (int)(b - type1);
-	type2 = b + 1;
-	if(!(b = strchr(type2, '_'))) goto catch;
-	type2_size = (int)(b - type2);
-	assert(t->length == b + 1 - t->from);
-	if(a) {
-		assert(*a);
-		if(type1_size + param1->length + type2_size + param2->length
-			+ strlen("<><>") + 1 >= sizeof *a)
-			return fprintf(stderr, "%s: too long.\n", pos(t)), 0;
+			+ strlen(o == OUT_HTML ? "&lt;&gt;&lt;&gt;" : "<><>") + 1
+			>= sizeof *a) return fprintf(stderr, "%s: too long.\n", pos(t)), 0;
 		sprintf(*a, format, type1_size, type1, param1->length, param1->from,
 			type2_size, type2, param2->length, param2->from);
 	} else {
@@ -418,8 +366,10 @@ OUT(gen3) {
 		*const rparen = TokenArrayNext(tokens, param3);
 	const char *b, *type1, *type2, *type3;
 	int type1_size, type2_size, type3_size;
-	const char *const format
-		= "&lt;%.*s&gt;%.*s&lt;%.*s&gt;%.*s&lt;%.*s&gt;%.*s";
+	const enum Output o = CdocOptionsOutput();
+	const char *const format = o == OUT_HTML ?
+		"&lt;%.*s&gt;%.*s&lt;%.*s&gt;%.*s&lt;%.*s&gt;%.*s"
+		: "<%.*s>%.*s<%.*s>%.*s<%.*s>%.*s";
 	assert(tokens && t && t->symbol == ID_THREE_GENERICS);
 	if(!lparen || lparen->symbol != LPAREN || !param1 || !comma1
 	   || comma1->symbol != COMMA || !param2 || !comma2 ||
@@ -438,57 +388,9 @@ OUT(gen3) {
 	if(a) {
 		assert(*a);
 		if(type1_size + param1->length + type2_size + param2->length
-			+ type3_size + param3->length + strlen("&lt;&gt;&lt;&gt;&lt;&gt;")
-			+ 1 >= sizeof *a) return fprintf(stderr, "%s: too long.\n",
-			pos(t)), 0;
-		sprintf(*a, format, type1_size, type1, param1->length, param1->from,
-			type2_size, type2, param2->length, param2->from, type3_size, type3,
-			param3->length, param3->from);
-	} else {
-		style_prepare_output(t->symbol);
-		printf(format, type1_size, type1, param1->length, param1->from,
-			type2_size, type2, param2->length, param2->from, type3_size, type3,
-			param3->length, param3->from);
-	}
-	*ptoken = TokenArrayNext(tokens, rparen);
-	return 1;
-catch:
-	fprintf(stderr, "%s: expected A_B_C_(id,id,id).\n", pos(t));
-	return 0;
-}
-OUT(gen3_md) {
-	const struct Token *const t = *ptoken,
-	*const lparen = TokenArrayNext(tokens, t),
-	*const param1 = TokenArrayNext(tokens, lparen),
-	*const comma1 = TokenArrayNext(tokens, param1),
-	*const param2 = TokenArrayNext(tokens, comma1),
-	*const comma2 = TokenArrayNext(tokens, param2),
-	*const param3 = TokenArrayNext(tokens, comma2),
-	*const rparen = TokenArrayNext(tokens, param3);
-	const char *b, *type1, *type2, *type3;
-	int type1_size, type2_size, type3_size;
-	const char *const format = "<%.*s>%.*s<%.*s>%.*s<%.*s>%.*s";
-	assert(tokens && t && t->symbol == ID_THREE_GENERICS);
-	if(!lparen || lparen->symbol != LPAREN || !param1 || !comma1
-		|| comma1->symbol != COMMA || !param2 || !comma2 ||
-		comma2->symbol != COMMA || !param3 || !rparen
-		|| rparen->symbol != RPAREN) goto catch;
-	type1 = t->from;
-	if(!(b = strchr(type1, '_'))) goto catch;
-	type1_size = (int)(b - type1);
-	type2 = b + 1;
-	if(!(b = strchr(type2, '_'))) goto catch;
-	type2_size = (int)(b - type2);
-	type3 = b + 1;
-	if(!(b = strchr(type3, '_'))) goto catch;
-	type3_size = (int)(b - type3);
-	assert(t->length == b + 1 - t->from);
-	if(a) {
-		assert(*a);
-		if(type1_size + param1->length + type2_size + param2->length
-			+ type3_size + param3->length + strlen("<><><>")
-			+ 1 >= sizeof *a) return fprintf(stderr, "%s: too long.\n",
-			pos(t)), 0;
+			+ type3_size + param3->length + strlen(o == OUT_HTML
+			? "&lt;&gt;&lt;&gt;&lt;&gt;" : "<><><>") + 1 >= sizeof *a)
+			return fprintf(stderr, "%s: too long.\n", pos(t)), 0;
 		sprintf(*a, format, type1_size, type1, param1->length, param1->from,
 			type2_size, type2, param2->length, param2->from, type3_size, type3,
 			param3->length, param3->from);
@@ -508,15 +410,7 @@ OUT(escape) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == ESCAPE && t->length == 2 && !a);
 	style_prepare_output(t->symbol);
-	html_encode(1, t->from + 1);
-	*ptoken = TokenArrayNext(tokens, t);
-	return 1;
-}
-OUT(escape_md) {
-	const struct Token *const t = *ptoken;
-	assert(tokens && t && t->symbol == ESCAPE && t->length == 2 && !a);
-	style_prepare_output(t->symbol);
-	md_encode(1, t->from + 1);
+	encode(1, t->from + 1);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -524,19 +418,16 @@ OUT(url) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == URL && !a);
 	style_prepare_output(t->symbol);
-	printf("<a href = \"%.*s\">", t->length, t->from);
-	html_encode(t->length, t->from);
-	printf("</a>");
-	*ptoken = TokenArrayNext(tokens, t);
-	return 1;
-}
-OUT(url_md) {
-	const struct Token *const t = *ptoken;
-	assert(tokens && t && t->symbol == URL && !a);
-	style_prepare_output(t->symbol);
-	printf("[");
-	md_encode(t->length, t->from);
-	printf("](%.*s)", t->length, t->from); /* What if it contains ()? */
+	if(CdocOptionsOutput() == OUT_HTML) {
+		printf("<a href = \"%.*s\">", t->length, t->from);
+		encode(t->length, t->from);
+		printf("</a>");
+	} else {
+		printf("[");
+		encode(t->length, t->from);
+		/* fixme: What if it contains ()? */
+		printf("](%.*s)", t->length, t->from);
+	}
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -546,25 +437,16 @@ OUT(cite) {
 	assert(tokens && t && t->symbol == CITE && !a);
 	if(!url_encoded) goto catch;
 	style_prepare_output(t->symbol);
-	printf("<a href = \"https://scholar.google.ca/scholar?q=%s\">",
-		url_encoded);
-	html_encode(t->length, t->from);
-	printf("</a>");
-	*ptoken = TokenArrayNext(tokens, t);
-	return 1;
-catch:
-	fprintf(stderr, "%s: expected <short source>.\n", pos(t));
-	return 0;
-}
-OUT(cite_md) {
-	const struct Token *const t = *ptoken;
-	const char *const url_encoded = UrlEncode(t->from, t->length);
-	assert(tokens && t && t->symbol == CITE && !a);
-	if(!url_encoded) goto catch;
-	style_prepare_output(t->symbol);
-	printf("[");
-	md_encode(t->length, t->from);
-	printf("](https://scholar.google.ca/scholar?q=%s)", url_encoded);
+	if(CdocOptionsOutput() == OUT_HTML) {
+		printf("<a href = \"https://scholar.google.ca/scholar?q=%s\">",
+			url_encoded);
+		encode(t->length, t->from);
+		printf("</a>");
+	} else {
+		printf("[");
+		encode(t->length, t->from);
+		printf("](https://scholar.google.ca/scholar?q=%s)", url_encoded);
+	}
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 catch:
@@ -575,23 +457,19 @@ OUT(see_fn) {
 	const struct Token *const fn = *ptoken;
 	assert(tokens && fn && fn->symbol == SEE_FN && !a);
 	style_prepare_output(fn->symbol);
-	printf("<a href = \"#%s:", division_strings[DIV_FUNCTION]);
-	html_encode(fn->length, fn->from);
-	printf("\">");
-	html_encode(fn->length, fn->from);
-	printf("</a>");
-	*ptoken = TokenArrayNext(tokens, fn);
-	return 1;
-}
-OUT(see_fn_md) {
-	const struct Token *const fn = *ptoken;
-	assert(tokens && fn && fn->symbol == SEE_FN && !a);
-	style_prepare_output(fn->symbol);
-	printf("[");
-	md_encode(fn->length, fn->from);
-	printf("](%s:", division_strings[DIV_FUNCTION]);
-	md_encode(fn->length, fn->from);
-	printf(")");
+	if(CdocOptionsOutput() == OUT_HTML) {
+		printf("<a href = \"#%s:", division_strings[DIV_FUNCTION]);
+		encode(fn->length, fn->from);
+		printf("\">");
+		encode(fn->length, fn->from);
+		printf("</a>");
+	} else {
+		printf("[");
+		encode(fn->length, fn->from);
+		printf("](%s:", division_strings[DIV_FUNCTION]);
+		encode(fn->length, fn->from);
+		printf(")");
+	}
 	*ptoken = TokenArrayNext(tokens, fn);
 	return 1;
 }
@@ -599,23 +477,19 @@ OUT(see_tag) {
 	const struct Token *const tag = *ptoken;
 	assert(tokens && tag && tag->symbol == SEE_TAG && !a);
 	style_prepare_output(tag->symbol);
-	printf("<a href = \"#%s:", division_strings[DIV_TAG]);
-	html_encode(tag->length, tag->from);
-	printf("\">");
-	html_encode(tag->length, tag->from);
-	printf("</a>");
-	*ptoken = TokenArrayNext(tokens, tag);
-	return 1;
-}
-OUT(see_tag_md) {
-	const struct Token *const tag = *ptoken;
-	assert(tokens && tag && tag->symbol == SEE_TAG && !a);
-	style_prepare_output(tag->symbol);
-	printf("[");
-	md_encode(tag->length, tag->from);
-	printf("](%s:", division_strings[DIV_TAG]);
-	md_encode(tag->length, tag->from);
-	printf(")");
+	if(CdocOptionsOutput() == OUT_HTML) {
+		printf("<a href = \"#%s:", division_strings[DIV_TAG]);
+		encode(tag->length, tag->from);
+		printf("\">");
+		encode(tag->length, tag->from);
+		printf("</a>");
+	} else {
+		printf("[");
+		encode(tag->length, tag->from);
+		printf("](%s:", division_strings[DIV_TAG]);
+		encode(tag->length, tag->from);
+		printf(")");
+	}
 	*ptoken = TokenArrayNext(tokens, tag);
 	return 1;
 }
@@ -623,23 +497,19 @@ OUT(see_typedef) {
 	const struct Token *const def = *ptoken;
 	assert(tokens && def && def->symbol == SEE_TYPEDEF && !a);
 	style_prepare_output(def->symbol);
-	printf("<a href = \"#%s:", division_strings[DIV_TYPEDEF]);
-	html_encode(def->length, def->from);
-	printf("\">");
-	html_encode(def->length, def->from);
-	printf("</a>");
-	*ptoken = TokenArrayNext(tokens, def);
-	return 1;
-}
-OUT(see_typedef_md) {
-	const struct Token *const def = *ptoken;
-	assert(tokens && def && def->symbol == SEE_TYPEDEF && !a);
-	style_prepare_output(def->symbol);
-	printf("[");
-	md_encode(def->length, def->from);
-	printf("](%s:", division_strings[DIV_TYPEDEF]);
-	md_encode(def->length, def->from);
-	printf(")");
+	if(CdocOptionsOutput() == OUT_HTML) {
+		printf("<a href = \"#%s:", division_strings[DIV_TYPEDEF]);
+		encode(def->length, def->from);
+		printf("\">");
+		encode(def->length, def->from);
+		printf("</a>");
+	} else {
+		printf("[");
+		encode(def->length, def->from);
+		printf("](%s:", division_strings[DIV_TYPEDEF]);
+		encode(def->length, def->from);
+		printf(")");
+	}
 	*ptoken = TokenArrayNext(tokens, def);
 	return 1;
 }
@@ -647,23 +517,19 @@ OUT(see_data) {
 	const struct Token *const data = *ptoken;
 	assert(tokens && data && data->symbol == SEE_DATA && !a);
 	style_prepare_output(data->symbol);
-	printf("<a href = \"#%s:", division_strings[DIV_DATA]);
-	html_encode(data->length, data->from);
-	printf("\">");
-	html_encode(data->length, data->from);
-	printf("</a>");
-	*ptoken = TokenArrayNext(tokens, data);
-	return 1;
-}
-OUT(see_data_md) {
-	const struct Token *const data = *ptoken;
-	assert(tokens && data && data->symbol == SEE_DATA && !a);
-	style_prepare_output(data->symbol);
-	printf("[");
-	md_encode(data->length, data->from);
-	printf("](%s:", division_strings[DIV_DATA]);
-	md_encode(data->length, data->from);
-	printf(")");
+	if(CdocOptionsOutput() == OUT_HTML) {
+		printf("<a href = \"#%s:", division_strings[DIV_DATA]);
+		encode(data->length, data->from);
+		printf("\">");
+		encode(data->length, data->from);
+		printf("</a>");
+	} else {
+		printf("[");
+		encode(data->length, data->from);
+		printf("](%s:", division_strings[DIV_DATA]);
+		encode(data->length, data->from);
+		printf(")");
+	}
 	*ptoken = TokenArrayNext(tokens, data);
 	return 1;
 }
@@ -671,7 +537,7 @@ OUT(math_begin) { /* Math and code. */
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == MATH_BEGIN && !a);
 	style_prepare_output(t->symbol);
-	printf("<code>");
+	printf(CdocOptionsOutput() == OUT_HTML ? "<code>" : "`");
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -679,16 +545,7 @@ OUT(math_end) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == MATH_END && !a);
 	style_prepare_output(t->symbol);
-	printf("</code>");
-	*ptoken = TokenArrayNext(tokens, t);
-	return 1;
-}
-OUT(math_md) {
-	const struct Token *const t = *ptoken;
-	assert(tokens && t && (t->symbol == MATH_BEGIN || t->symbol == MATH_END)
-		&& !a);
-	style_prepare_output(t->symbol);
-	printf("`");
+	printf(CdocOptionsOutput() == OUT_HTML ? "</code>" : "`");
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -696,7 +553,7 @@ OUT(em_begin) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == EM_BEGIN && !a);
 	style_prepare_output(t->symbol);
-	printf("<em>");
+	printf(CdocOptionsOutput() == OUT_HTML ? "<em>" : "_");
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -704,30 +561,28 @@ OUT(em_end) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == EM_END && !a);
 	style_prepare_output(t->symbol);
-	printf("</em>");
+	printf(CdocOptionsOutput() == OUT_HTML ? "</em>" : "_");
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
-OUT(em_md) {
-	const struct Token *const t = *ptoken;
-	assert(tokens && t && (t->symbol == EM_BEGIN || t->symbol == EM_END) && !a);
-	style_prepare_output(t->symbol);
-	printf("_");
-	*ptoken = TokenArrayNext(tokens, t);
-	return 1;
-}
+
+
+/* fixme: complete all the following. */
 OUT(link) {
 	const struct Token *const t = *ptoken, *text, *turl;
+	const enum Output o = CdocOptionsOutput();
 	assert(tokens && t && t->symbol == LINK_START && !a);
 	style_prepare_output(t->symbol);
 	for(turl = TokenArrayNext(tokens, t);;turl = TokenArrayNext(tokens, turl)) {
 		if(!turl) goto catch;
 		if(turl->symbol == URL) break;
 	}
-	printf("<a href = \"%.*s\">", turl->length, turl->from);
+	if(o == OUT_HTML) printf("<a href = \"%.*s\">", turl->length, turl->from);
+	else printf("[");
 	for(text = TokenArrayNext(tokens, t); text->symbol != URL; )
 		if(!(text = print_token(tokens, text))) goto catch;
-	printf("</a>");
+	if(o == OUT_HTML) printf("</a>");
+	else printf("](%.*s)", turl->length, turl->from);
 	*ptoken = TokenArrayNext(tokens, turl);
 	return 1;
 catch:
@@ -736,28 +591,37 @@ catch:
 }
 OUT(image) {
 	const struct Token *const t = *ptoken, *text, *turl;
-	unsigned width, height;
-	char fn[256];
+	const enum Output o = CdocOptionsOutput();
 	assert(tokens && t && t->symbol == IMAGE_START && !a);
 	style_prepare_output(t->symbol);
 	for(turl = TokenArrayNext(tokens, t);;turl = TokenArrayNext(tokens, turl)) {
 		if(!turl) goto catch;
 		if(turl->symbol == URL) break;
 	}
-	printf("<img src = \"%.*s\" alt = \"", turl->length, turl->from);
+	if(o == OUT_HTML)
+		printf("<img src = \"%.*s\" alt = \"", turl->length, turl->from);
+	else
+		printf("![");
 	for(text = TokenArrayNext(tokens, t); text->symbol != URL; )
 		if(!(text = print_token(tokens, text))) goto catch;
-	printf("\"");
-	if((size_t)turl->length >= sizeof fn) { fprintf(stderr,
-		"%s: path is too big %d to find dimensions.\n", pos(t), turl->length);
-		goto dimensionless; }
-	strncpy(fn, turl->from, turl->length);
-	fn[turl->length] = '\0';
-	/* Detailed exceptions inside; it's really a warning, skip it. */
-	if(!ImageDimension(fn, &width, &height)) { errno = 0; goto dimensionless; }
-	printf(" width = %u height = %u", width, height);
+	if(o == OUT_HTML) {
+		unsigned width, height;
+		char fn[256];
+		printf("\"");
+		if((size_t)turl->length >= sizeof fn) { fprintf(stderr,
+			"%s: path is too big %d to find dimensions.\n", pos(t),
+			turl->length); goto dimensionless; }
+		strncpy(fn, turl->from, turl->length);
+		fn[turl->length] = '\0';
+		/* Detailed exceptions inside; it's really a warning, skip it. */
+		if(!ImageDimension(fn, &width, &height))
+			{ errno = 0; goto dimensionless; }
+		printf(" width = %u height = %u", width, height);
 dimensionless:
-	printf(">");
+		printf(">");
+	} else {
+		printf("](%.*s)", turl->length, turl->from);
+	}
 	*ptoken = TokenArrayNext(tokens, turl);
 	return 1;
 catch:
@@ -826,12 +690,15 @@ OUT(cdot) {
 OUT(list) {
 	const struct StyleText *const peek = style_text_peek();
 	const struct Token *const t = *ptoken;
+	const enum Output o = CdocOptionsOutput();
+	const struct StyleText *const li = o == OUT_HTML ? &html_li : &md_li,
+		*const ul = o == OUT_HTML ? &html_ul : &md_ul;
 	assert(tokens && t && t->symbol == LIST_ITEM && peek && !a);
-	if(peek == &html_li) {
+	if(peek == li) {
 		style_pop_push();
 	} else {
 		style_pop_level();
-		style_push(&html_ul), style_push(&html_li);
+		style_push(ul), style_push(li);
 	}
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
@@ -839,13 +706,16 @@ OUT(list) {
 OUT(pre) {
 	const struct StyleText *const peek = style_text_peek();
 	const struct Token *const t = *ptoken;
+	const enum Output o = CdocOptionsOutput();
+	const struct StyleText *const line = o == OUT_HTML ? &html_pre_line
+		: &md_pre_line, *const pref = o == OUT_HTML ? &html_pre : &md_pre;
 	assert(tokens && t && t->symbol == PREFORMATTED && peek && !a);
-	if(peek != &html_pre_line) {
+	if(peek != line) {
 		style_pop_level();
-		style_push(&html_pre), style_push(&html_pre_line);
+		style_push(pref), style_push(line);
 	}
 	style_prepare_output(t->symbol);
-	html_encode(t->length, t->from);
+	encode(t->length, t->from);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -853,8 +723,7 @@ OUT(pre) {
 
 
 /* `SYMBOL` is declared in `Scanner.h`. */
-static const OutFn symbol_md_outs[] = { SYMBOL(PARAM7C) };
-static const OutFn symbol_html_outs[] = { SYMBOL(PARAM7D) };
+static const OutFn symbol_outs[] = { SYMBOL(PARAM6C) };
 
 
 

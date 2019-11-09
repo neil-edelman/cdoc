@@ -113,7 +113,7 @@ static void warn_internal_link(const struct Token *const token) {
 		default: return;
 	}
 	/* Encode the link text. */
-	html_encode_s(token->length, token->from, &a);
+	encode_s(token->length, token->from, &a);
 	/* Search for it. fixme: this builds up labels from scratch, then discards
 	 them, over and over. */
 	while((segment = SegmentArrayNext(&report, segment))) {
