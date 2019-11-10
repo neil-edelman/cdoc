@@ -1,4 +1,4 @@
-#include "Output.h"
+#include "Format.h"
 
 int CdocOptionsDebug(void);
-enum Output CdocOptionsOutput(void);
+enum Format CdocOptionsFormat(void);

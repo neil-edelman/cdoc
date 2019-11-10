@@ -123,73 +123,65 @@
 #include <stdio.h>  /* fprintf */
 #include <string.h> /* strcmp */
 #include <errno.h>  /* errno */
-#ifndef STRICT_ANSI
-#include <unistd.h>
-#endif /* STRICT_ANSI */
+#include <assert.h> /* assert */
 #include "../src/Scanner.h"
 #include "../src/Report.h"
 #include "../src/Semantic.h"
 #include "../src/Cdoc.h"
-#include "../src/Output.h"
 
 static void usage(void) {
-	fprintf(stderr, "cdoc <filename> [-h | --help] [-d | --debug]\n"
-		"\t[(-d: | --directory:)<directory>]\n\n"
-		"Given <filename>, a C file with encoded documentation,\n"
+	fprintf(stderr, "Usage: cdoc [options] <input-file>\n"
+		"Where options are:\n"
+		"  -h | --help               This information.\n"
+		"  -d | --debug              Prints a lot of debug information.\n"
+		"  -f | --format (html | md) Overrides built-in guessing.\n"
+		"  -o | --output <filename>  Stick the output file in this.\n"
+		"Given <input-file>, a C file with encoded documentation,\n"
 		"outputs that documentation.\n");
 }
 
 static struct {
+	enum { EXPECT_NOTHING, EXPECT_OUT, EXPECT_FORMAT } expect;
+	const char *in_fn, *out_fn;
+	enum Format format;
 	int debug;
-	const char *fn, *dir;
-	enum Output output;
 } args;
 
 static int parse_arg(const char *const string) {
-	const char *s = string, *dir;
-
-/*!stags:re2c format = 'const char *@@;'; */
-
+	const char *s = string, *m = s;
+	switch(args.expect) {
+	case EXPECT_NOTHING: break;
+	case EXPECT_OUT: assert(!args.out_fn); args.expect = EXPECT_NOTHING;
+		args.out_fn = string; return 1;
+	case EXPECT_FORMAT: assert(!args.format); args.expect = EXPECT_NOTHING;
+		if(!strcmp("md", string)) args.format = OUT_MD;
+		else if(!strcmp("html", string)) args.format = OUT_HTML;
+		else return 0;
+		return 1;
+	}
 /*!re2c
 	re2c:define:YYCTYPE = char;
 	re2c:define:YYCURSOR = s;
+	re2c:define:YYMARKER = m;
 	re2c:yyfill:enable = 0;
-
 	end = "\x00";
-
+	// If it's not any other, it's probably an input filename?
 	* {
-		if(args.fn) return fprintf(stderr,
-			"Error understanding \"%s\"; filename already provided \"%s\".\n",
-			string, args.fn), 0;
-		args.fn = string;
+		if(args.in_fn) return 0;
+		args.in_fn = string;
 		return 1;
 	}
 	("-h" | "--help") end { usage(); exit(EXIT_SUCCESS); }
 	("-d" | "--debug") end { args.debug = 1; return 1; }
-	("-d:" | "--directory:") @dir [^\x00]+ end {
-		if(args.dir) return fprintf(stderr,
-			"Error understanding \"%s\"; directory already provided \"%s\".\n",
-			dir, args.dir), 0;
-		args.dir = dir;
+	("-f" | "--format") end {
+		if(args.format) return 0;
+		args.expect = EXPECT_FORMAT;
 		return 1;
 	}
-	// this is hard coded :[
-	("-o:" | "--output:") "html" end {
-		if(args.output) return fprintf(stderr,
-			"Error understanding \"%s\"; output already provided \"%s\".\n",
-			string, output[args.output]);
-		args.output = OUT_HTML;
+	("-o" | "--output") end {
+		if(args.out_fn) return 0;
+		args.expect = EXPECT_OUT;
 		return 1;
-	}
-	("-o:" | "--output:") "md" end {
-		if(args.output) return fprintf(stderr,
-			"Error understanding \"%s\"; output already provided \"%s\".\n",
-			string, output[args.output]);
-		args.output = OUT_MD;
-		return 1;
-	}
-	"-" [^\x00]* end {
-		return fprintf(stderr, "Unreconised option, \"%s\".\n", string), 0;
 	}
 */
 }
@@ -200,9 +192,24 @@ int CdocOptionsDebug(void) {
 	return args.debug;
 }
 
-/** @return What output was specified. */
-enum Output CdocOptionsOutput(void) {
-	return args.output == OUT_UNSPECIFIED ? OUT_MD : args.output;
+/** @return True if `suffix` is a suffix of `string`. */
+static int is_suffix(const char *const string, const char *const suffix) {
+	const size_t str_len = strlen(string), suf_len = strlen(suffix);
+	assert(string && suffix);
+	if(str_len < suf_len) return 0;
+	return !strncmp(string - str_len - suf_len, suffix, suf_len);
+}
+
+/** @return What output was specified. If there was no output specified,
+ guess. */
+enum Format CdocOptionsFormat(void) {
+	if(args.format == OUT_UNSPECIFIED) {
+		if(args.out_fn && (is_suffix(args.out_fn, ".html")
+			|| is_suffix(args.out_fn, ".htm")))
+			args.format = OUT_HTML;
+		else args.format = OUT_MD;
+	}
+	return args.format;
 }
 
 /** @param[argc, argv] Argument vectors. */
@@ -212,16 +219,8 @@ int main(int argc, char **argv) {
 	int exit_code = EXIT_FAILURE, i;
 
 	for(i = 1; i < argc; i++) if(!parse_arg(argv[i])) goto catch;
-	if(args.dir) {
-#ifdef STRICT_ANSI
-		fprintf(stderr,
-		"Was compiled with STRICT_ANSI which does not support --directory.\n"
-		), exit(EXIT_FAILURE);
-#else /* !STRICT_ANSI */
-		if(chdir(args.dir) == -1) goto catch;
-#endif /* !STRICT_ANSI */
-	}
-	if(!(scanner = Scanner(args.fn, &ReportNotify))) goto catch;
+	if(args.expect) goto catch; /* Expecting something more. */
+	if(!(scanner = Scanner(args.in_fn, &ReportNotify))) goto catch;
 	ReportWarn();
 	ReportCull();
 	if(!ReportOut()) goto catch;
@@ -230,7 +229,7 @@ int main(int argc, char **argv) {
 	
 catch:
 	if(errno) {
-		perror(args.fn ? args.fn : "(no file specified)");
+		perror(args.in_fn ? args.in_fn : "(no file specified)");
 	} else {
 		usage();
 	}

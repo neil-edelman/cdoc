@@ -156,7 +156,7 @@ static void encode_s(int length, const char *from, char (*const a)[256]) {
 	char *build = *a;
 	assert(length >= 0 && from && ((a && *a) || !a));
 
-	switch(CdocOptionsOutput()) {
+	switch(CdocOptionsFormat()) {
 	case OUT_HTML:
 		if(a) goto html_encode_string;
 		else goto html_encode_print;
@@ -263,7 +263,7 @@ OUT(par) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == NEWLINE && !a);
 	style_pop_level();
-	CdocOptionsOutput() == OUT_HTML ? style_push(&html_p) : style_push(&md_p);
+	CdocOptionsFormat() == OUT_HTML ? style_push(&html_p) : style_push(&md_p);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -286,9 +286,9 @@ OUT(gen1) {
 		*const rparen = TokenArrayNext(tokens, param);
 	const char *b, *type;
 	int type_size;
-	const enum Output o = CdocOptionsOutput();
+	const enum Format f = CdocOptionsFormat();
 	const char *const format =
-		o == OUT_HTML ? "&lt;%.*s&gt;%.*s" : "<%.*s>%.*s";
+		f == OUT_HTML ? "&lt;%.*s&gt;%.*s" : "<%.*s>%.*s";
 	assert(tokens && t && t->symbol == ID_ONE_GENERIC);
 	if(!lparen || lparen->symbol != LPAREN || !param || !rparen
 	   || rparen->symbol != RPAREN) goto catch;
@@ -298,7 +298,7 @@ OUT(gen1) {
 	assert(t->length == b + 1 - t->from);
 	if(a) {
 		assert(*a);
-		if(t->length - 1 + param->length + strlen(o == OUT_HTML ? "&lt;&gt;"
+		if(t->length - 1 + param->length + strlen(f == OUT_HTML ? "&lt;&gt;"
 			: "<>") + 1 >= sizeof *a) return fprintf(stderr, "%s: too long.\n",
 			pos(t)), 0;
 		sprintf(*a, format, t->length - 1, t->from, param->length,
@@ -323,8 +323,8 @@ OUT(gen2) {
 		*const rparen = TokenArrayNext(tokens, param2);
 	const char *b, *type1, *type2;
 	int type1_size, type2_size;
-	const enum Output o = CdocOptionsOutput();
-	const char *const format = o == OUT_HTML ?
+	const enum Format f = CdocOptionsFormat();
+	const char *const format = f == OUT_HTML ?
 		"&lt;%.*s&gt;%.*s&lt;%.*s&gt;%.*s" : "<%.*s>%.*s<%.*s>%.*s";
 	assert(tokens && t && t->symbol == ID_TWO_GENERICS);
 	if(!lparen || lparen->symbol != LPAREN || !param1 || !comma
@@ -340,7 +340,7 @@ OUT(gen2) {
 	if(a) {
 		assert(*a);
 		if(type1_size + param1->length + type2_size + param2->length
-			+ strlen(o == OUT_HTML ? "&lt;&gt;&lt;&gt;" : "<><>") + 1
+			+ strlen(f == OUT_HTML ? "&lt;&gt;&lt;&gt;" : "<><>") + 1
 			>= sizeof *a) return fprintf(stderr, "%s: too long.\n", pos(t)), 0;
 		sprintf(*a, format, type1_size, type1, param1->length, param1->from,
 			type2_size, type2, param2->length, param2->from);
@@ -366,8 +366,8 @@ OUT(gen3) {
 		*const rparen = TokenArrayNext(tokens, param3);
 	const char *b, *type1, *type2, *type3;
 	int type1_size, type2_size, type3_size;
-	const enum Output o = CdocOptionsOutput();
-	const char *const format = o == OUT_HTML ?
+	const enum Format f = CdocOptionsFormat();
+	const char *const format = f == OUT_HTML ?
 		"&lt;%.*s&gt;%.*s&lt;%.*s&gt;%.*s&lt;%.*s&gt;%.*s"
 		: "<%.*s>%.*s<%.*s>%.*s<%.*s>%.*s";
 	assert(tokens && t && t->symbol == ID_THREE_GENERICS);
@@ -388,7 +388,7 @@ OUT(gen3) {
 	if(a) {
 		assert(*a);
 		if(type1_size + param1->length + type2_size + param2->length
-			+ type3_size + param3->length + strlen(o == OUT_HTML
+			+ type3_size + param3->length + strlen(f == OUT_HTML
 			? "&lt;&gt;&lt;&gt;&lt;&gt;" : "<><><>") + 1 >= sizeof *a)
 			return fprintf(stderr, "%s: too long.\n", pos(t)), 0;
 		sprintf(*a, format, type1_size, type1, param1->length, param1->from,
@@ -418,7 +418,7 @@ OUT(url) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == URL && !a);
 	style_prepare_output(t->symbol);
-	if(CdocOptionsOutput() == OUT_HTML) {
+	if(CdocOptionsFormat() == OUT_HTML) {
 		printf("<a href = \"%.*s\">", t->length, t->from);
 		encode(t->length, t->from);
 		printf("</a>");
@@ -437,7 +437,7 @@ OUT(cite) {
 	assert(tokens && t && t->symbol == CITE && !a);
 	if(!url_encoded) goto catch;
 	style_prepare_output(t->symbol);
-	if(CdocOptionsOutput() == OUT_HTML) {
+	if(CdocOptionsFormat() == OUT_HTML) {
 		printf("<a href = \"https://scholar.google.ca/scholar?q=%s\">",
 			url_encoded);
 		encode(t->length, t->from);
@@ -457,7 +457,7 @@ OUT(see_fn) {
 	const struct Token *const fn = *ptoken;
 	assert(tokens && fn && fn->symbol == SEE_FN && !a);
 	style_prepare_output(fn->symbol);
-	if(CdocOptionsOutput() == OUT_HTML) {
+	if(CdocOptionsFormat() == OUT_HTML) {
 		printf("<a href = \"#%s:", division_strings[DIV_FUNCTION]);
 		encode(fn->length, fn->from);
 		printf("\">");
@@ -477,7 +477,7 @@ OUT(see_tag) {
 	const struct Token *const tag = *ptoken;
 	assert(tokens && tag && tag->symbol == SEE_TAG && !a);
 	style_prepare_output(tag->symbol);
-	if(CdocOptionsOutput() == OUT_HTML) {
+	if(CdocOptionsFormat() == OUT_HTML) {
 		printf("<a href = \"#%s:", division_strings[DIV_TAG]);
 		encode(tag->length, tag->from);
 		printf("\">");
@@ -497,7 +497,7 @@ OUT(see_typedef) {
 	const struct Token *const def = *ptoken;
 	assert(tokens && def && def->symbol == SEE_TYPEDEF && !a);
 	style_prepare_output(def->symbol);
-	if(CdocOptionsOutput() == OUT_HTML) {
+	if(CdocOptionsFormat() == OUT_HTML) {
 		printf("<a href = \"#%s:", division_strings[DIV_TYPEDEF]);
 		encode(def->length, def->from);
 		printf("\">");
@@ -517,7 +517,7 @@ OUT(see_data) {
 	const struct Token *const data = *ptoken;
 	assert(tokens && data && data->symbol == SEE_DATA && !a);
 	style_prepare_output(data->symbol);
-	if(CdocOptionsOutput() == OUT_HTML) {
+	if(CdocOptionsFormat() == OUT_HTML) {
 		printf("<a href = \"#%s:", division_strings[DIV_DATA]);
 		encode(data->length, data->from);
 		printf("\">");
@@ -537,7 +537,7 @@ OUT(math_begin) { /* Math and code. */
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == MATH_BEGIN && !a);
 	style_prepare_output(t->symbol);
-	printf(CdocOptionsOutput() == OUT_HTML ? "<code>" : "`");
+	printf(CdocOptionsFormat() == OUT_HTML ? "<code>" : "`");
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -545,7 +545,7 @@ OUT(math_end) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == MATH_END && !a);
 	style_prepare_output(t->symbol);
-	printf(CdocOptionsOutput() == OUT_HTML ? "</code>" : "`");
+	printf(CdocOptionsFormat() == OUT_HTML ? "</code>" : "`");
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -553,7 +553,7 @@ OUT(em_begin) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == EM_BEGIN && !a);
 	style_prepare_output(t->symbol);
-	printf(CdocOptionsOutput() == OUT_HTML ? "<em>" : "_");
+	printf(CdocOptionsFormat() == OUT_HTML ? "<em>" : "_");
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -561,7 +561,7 @@ OUT(em_end) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == EM_END && !a);
 	style_prepare_output(t->symbol);
-	printf(CdocOptionsOutput() == OUT_HTML ? "</em>" : "_");
+	printf(CdocOptionsFormat() == OUT_HTML ? "</em>" : "_");
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -570,18 +570,18 @@ OUT(em_end) {
 /* fixme: complete all the following. */
 OUT(link) {
 	const struct Token *const t = *ptoken, *text, *turl;
-	const enum Output o = CdocOptionsOutput();
+	const enum Format f = CdocOptionsFormat();
 	assert(tokens && t && t->symbol == LINK_START && !a);
 	style_prepare_output(t->symbol);
 	for(turl = TokenArrayNext(tokens, t);;turl = TokenArrayNext(tokens, turl)) {
 		if(!turl) goto catch;
 		if(turl->symbol == URL) break;
 	}
-	if(o == OUT_HTML) printf("<a href = \"%.*s\">", turl->length, turl->from);
+	if(f == OUT_HTML) printf("<a href = \"%.*s\">", turl->length, turl->from);
 	else printf("[");
 	for(text = TokenArrayNext(tokens, t); text->symbol != URL; )
 		if(!(text = print_token(tokens, text))) goto catch;
-	if(o == OUT_HTML) printf("</a>");
+	if(f == OUT_HTML) printf("</a>");
 	else printf("](%.*s)", turl->length, turl->from);
 	*ptoken = TokenArrayNext(tokens, turl);
 	return 1;
@@ -591,20 +591,20 @@ catch:
 }
 OUT(image) {
 	const struct Token *const t = *ptoken, *text, *turl;
-	const enum Output o = CdocOptionsOutput();
+	const enum Format f = CdocOptionsFormat();
 	assert(tokens && t && t->symbol == IMAGE_START && !a);
 	style_prepare_output(t->symbol);
 	for(turl = TokenArrayNext(tokens, t);;turl = TokenArrayNext(tokens, turl)) {
 		if(!turl) goto catch;
 		if(turl->symbol == URL) break;
 	}
-	if(o == OUT_HTML)
+	if(f == OUT_HTML)
 		printf("<img src = \"%.*s\" alt = \"", turl->length, turl->from);
 	else
 		printf("![");
 	for(text = TokenArrayNext(tokens, t); text->symbol != URL; )
 		if(!(text = print_token(tokens, text))) goto catch;
-	if(o == OUT_HTML) {
+	if(f == OUT_HTML) {
 		unsigned width, height;
 		char fn[256];
 		printf("\"");
@@ -690,9 +690,9 @@ OUT(cdot) {
 OUT(list) {
 	const struct StyleText *const peek = style_text_peek();
 	const struct Token *const t = *ptoken;
-	const enum Output o = CdocOptionsOutput();
-	const struct StyleText *const li = o == OUT_HTML ? &html_li : &md_li,
-		*const ul = o == OUT_HTML ? &html_ul : &md_ul;
+	const enum Format f = CdocOptionsFormat();
+	const struct StyleText *const li = f == OUT_HTML ? &html_li : &md_li,
+		*const ul = f == OUT_HTML ? &html_ul : &md_ul;
 	assert(tokens && t && t->symbol == LIST_ITEM && peek && !a);
 	if(peek == li) {
 		style_pop_push();
@@ -706,9 +706,9 @@ OUT(list) {
 OUT(pre) {
 	const struct StyleText *const peek = style_text_peek();
 	const struct Token *const t = *ptoken;
-	const enum Output o = CdocOptionsOutput();
-	const struct StyleText *const line = o == OUT_HTML ? &html_pre_line
-		: &md_pre_line, *const pref = o == OUT_HTML ? &html_pre : &md_pre;
+	const enum Format f = CdocOptionsFormat();
+	const struct StyleText *const line = f == OUT_HTML ? &html_pre_line
+		: &md_pre_line, *const pref = f == OUT_HTML ? &html_pre : &md_pre;
 	assert(tokens && t && t->symbol == PREFORMATTED && peek && !a);
 	if(peek != line) {
 		style_pop_level();
