@@ -197,17 +197,17 @@ static int is_suffix(const char *const string, const char *const suffix) {
 	const size_t str_len = strlen(string), suf_len = strlen(suffix);
 	assert(string && suffix);
 	if(str_len < suf_len) return 0;
-	return !strncmp(string - str_len - suf_len, suffix, suf_len);
+	return !strncmp(string + str_len - suf_len, suffix, suf_len);
 }
 
 /** @return What output was specified. If there was no output specified,
  guess. */
 enum Format CdocOptionsFormat(void) {
 	if(args.format == OUT_UNSPECIFIED) {
-		if(args.out_fn && (is_suffix(args.out_fn, ".html")
-			|| is_suffix(args.out_fn, ".htm")))
-			args.format = OUT_HTML;
+		if(args.out_fn && (fprintf(stderr, "format: %s\n", args.out_fn), is_suffix(args.out_fn, ".html")
+			|| is_suffix(args.out_fn, ".htm"))) args.format = OUT_HTML;
 		else args.format = OUT_MD;
+		fprintf(stderr, "Guess format is %s.\n", format_strings[args.format]);
 	}
 	return args.format;
 }
