@@ -9,7 +9,7 @@
  @fixme Eg, fixme with no args disappears; we should NOT check if the string is
  empty. */
 
-#include <string.h> /* size_t strncpy sprintf */
+#include <string.h> /* size_t strncpy sprintf strrchr */
 #include <limits.h> /* INT_MAX */
 #include <stdio.h>  /* sprintf */
 #include "Division.h"
@@ -352,15 +352,24 @@ int ReportNotify(void) {
 		break;
 	case LOCAL_INCLUDE: /* Include file. */
 		assert(sorter.state == S_CODE);
+		/* Eg, fn_parent = "src/code/foo.c" and included "foo.h" we would
+		 actually include "src/code/foo.h". */
 		{
-			const char *const from = ScannerFrom(), *const to = ScannerTo();
+			const char *const from = ScannerFrom(), *const to = ScannerTo(),
+				*const fn_parent = ScannerFilename(),
+				*const fn_base = strrchr(fn_parent, '/');
+			size_t base_no = fn_base ? fn_base + 1 - fn_parent : 0;
 			char fn[256];
 			int success = 0;
-			assert(from && from <= to);
-			if(from + sizeof fn <= to) return fprintf(stderr,
-				"%s: too long to open file.\n", oops()), errno = EILSEQ, 0;
-			strncpy(fn, from, to - from), fn[to - from] = '\0';
-			fprintf(stderr, "Report: include directive %s; cut.\n", fn);
+			assert(fn_parent && from && from <= to);
+			if(from + sizeof fn - base_no <= to) return fprintf(stderr,
+				"%s: buffer insufficient length to open file.\n", oops()),
+				errno = EILSEQ, 0;
+			memcpy(fn, fn_parent, base_no);
+			memcpy(fn + base_no, from, to - from);
+			fn[base_no + to - from] = '\0';
+			/* Cut a segment across files. */
+			fprintf(stderr, "\nParent %s; included %s\n\n", fn_parent, fn);
 			cut_segment_here(&sorter.segment);
 			if(!Scanner(fn, &ReportNotify)) goto include_catch;
 			cut_segment_here(&sorter.segment);
@@ -439,13 +448,15 @@ include_finally:
 static const char *pos(const struct Token *const token) {
 	static char p[128];
 	if(!token) {
-		sprintf(p, "<Unknown position>");
+		sprintf(p, "Unknown position in report");
 	} else {
-		const int max_size = 32,
-			is_truncated = token->length > max_size ? 1 : 0,
-			len = is_truncated ? max_size : token->length;
-		sprintf(p, "%.32s:%lu, %s \"%.*s\"", token->fn,
-			(unsigned long)token->line, symbols[token->symbol], len,
+		const int max_size = 16,
+			tok_len = (token->length > max_size) ? max_size : token->length;
+		const size_t fn_size = strlen(token->fn) + 1;
+		const char *const fn = token->fn
+			+ (fn_size > (size_t)max_size ? fn_size - max_size : 0);
+		sprintf(p, "%.32s:%lu, %s \"%.*s\"", fn,
+			(unsigned long)token->line, symbols[token->symbol], tok_len,
 			token->from);
 	}
 	return p;

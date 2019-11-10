@@ -36,7 +36,7 @@ struct Scanner {
 	int indent_level;
 	int ignore_block;
 	size_t line, doc_line;
-	char fn[6];
+	struct CharArray fn;
 };
 
 static struct Scanner *cur;
@@ -45,15 +45,17 @@ static struct Scanner *cur;
 static const char *pos(void) {
 	static char p[128];
 	if(!cur) {
-		sprintf(p, "No file loaded");
+		sprintf(p, "No scanner loaded");
 	} else {
-		const int max_size = 32,
-			is_truncated = (cur->from + max_size < cur->cursor) ? 1 : 0,
-			len = is_truncated ? max_size :
+		const int max_size = 16,
+			from_len = (cur->from + max_size < cur->cursor) ? max_size :
 			(int)(cur->cursor - cur->from);
+		const size_t fn_size = CharArraySize(&cur->fn);
+		const char *fn = CharArrayGet(&cur->fn)
+			+ (fn_size > (size_t)max_size ? fn_size - max_size : 0);
 		assert(cur->from <= cur->cursor);
-		sprintf(p, "%s:%lu, %s \"%.*s\" state %d", cur->fn,
-			(unsigned long)cur->line, symbols[cur->symbol], len,
+		sprintf(p, "%s:%lu, %s \"%.*s\" state %d", fn,
+			(unsigned long)cur->line, symbols[cur->symbol], from_len,
 			cur->from, cur->state);
 	}
 	return p;
@@ -378,13 +380,14 @@ static void zero_scanner(struct Scanner *const scanner) {
 	scanner->indent_level = 0;
 	scanner->ignore_block = 0;
 	scanner->line = scanner->doc_line = 0;
-	*scanner->fn = '\0';
+	CharArray(&scanner->fn);
 }
 
 /** Unloads scanner from memory. */
 void Scanner_(struct Scanner *const scanner) {
 	if(!scanner) return;
 	CharArray_(&scanner->buffer);
+	CharArray_(&scanner->fn);
 	zero_scanner(scanner);
 }
 
@@ -399,17 +402,15 @@ struct Scanner *Scanner(const char *const fn, int (*const notify)(void)) {
 	FILE *fp = 0;
 	const size_t granularity = 1024;
 	char *read_here, *zero;
-	size_t nread, zero_len;
+	size_t nread, zero_len, fn_size;
 	struct Scanner *scanner = 0, *previous;
 	if(!notify || !fn) { errno = EDOM; goto catch; }
 	if(!(scanner = malloc(sizeof *scanner))) goto catch;
 	zero_scanner(scanner);
-	{ /* Truncate to the end, that's the highest infomation density. */
-		const size_t fn_len = strlen(fn);
-		const char *const fn_cpy = (fn_len < sizeof scanner->fn) ? fn :
-			fn + fn_len - sizeof scanner->fn + 1;
-		strcpy(scanner->fn, fn_cpy);
-	}
+	/* Copy the filename. */
+	if(!(fn_size = strlen(fn) + 1, CharArrayBuffer(&scanner->fn, fn_size))
+		|| !(memcpy(CharArrayGet(&scanner->fn), fn, fn_size),
+		CharArrayExpand(&scanner->fn, fn_size))) goto catch;
 	if(!(fp = fopen(fn, "r"))) goto catch;
 	/* Read all contents at once. */
 	do {
@@ -473,6 +474,8 @@ const char *ScannerTo(void) {
 	errno = EDOM;
 	return 0;
 }
-const char *ScannerFilename(void) { return cur ? cur->fn : "nofile"; }
+const char *ScannerFilename(void) {
+	return cur ? CharArrayGet(&cur->fn) : "nofile";
+}
 size_t ScannerLine(void) { return cur ? cur->line : 0; }
 int ScannerIndentLevel(void) { return cur ? cur->indent_level : 0; }

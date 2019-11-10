@@ -218,9 +218,18 @@ int main(int argc, char **argv) {
 	struct Scanner *scanner = 0;
 	int exit_code = EXIT_FAILURE, i;
 
+	/* Parse args. Expecting something more? */
 	for(i = 1; i < argc; i++) if(!parse_arg(argv[i])) goto catch;
-	if(args.expect) goto catch; /* Expecting something more. */
+	if(args.expect) goto catch;
+
+	/* This prints to `stdout`. If the args have specified that it goes into a
+	 file, then redirect. */
+	if(args.out_fn && !freopen(args.out_fn, "r", stdin)) goto catch;
+
+	/* Open the input file and parse. */
 	if(!(scanner = Scanner(args.in_fn, &ReportNotify))) goto catch;
+
+	/* Output the results. */
 	ReportWarn();
 	ReportCull();
 	if(!ReportOut()) goto catch;
@@ -229,7 +238,7 @@ int main(int argc, char **argv) {
 	
 catch:
 	if(errno) {
-		perror(args.in_fn ? args.in_fn : "(no file specified)");
+		perror(args.in_fn ? args.in_fn : "(no file)");
 	} else {
 		usage();
 	}
