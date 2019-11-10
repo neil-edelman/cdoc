@@ -362,6 +362,7 @@ int ReportNotify(void) {
 			char fn[256];
 			int success = 0;
 			assert(fn_parent && from && from <= to);
+			/* fixme: there is no reason why this is an error. */
 			if(from + sizeof fn - base_no <= to) return fprintf(stderr,
 				"%s: buffer insufficient length to open file.\n", oops()),
 				errno = EILSEQ, 0;
@@ -369,7 +370,6 @@ int ReportNotify(void) {
 			memcpy(fn + base_no, from, to - from);
 			fn[base_no + to - from] = '\0';
 			/* Cut a segment across files. */
-			fprintf(stderr, "\nParent %s; included %s\n\n", fn_parent, fn);
 			cut_segment_here(&sorter.segment);
 			if(!Scanner(fn, &ReportNotify)) goto include_catch;
 			cut_segment_here(&sorter.segment);

@@ -224,7 +224,7 @@ int main(int argc, char **argv) {
 
 	/* This prints to `stdout`. If the args have specified that it goes into a
 	 file, then redirect. */
-	if(args.out_fn && !freopen(args.out_fn, "r", stdin)) goto catch;
+	if(args.out_fn && !freopen(args.out_fn, "w", stdout)) goto catch;
 
 	/* Open the input file and parse. */
 	if(!(scanner = Scanner(args.in_fn, &ReportNotify))) goto catch;
