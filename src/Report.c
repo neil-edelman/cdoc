@@ -291,6 +291,8 @@ static int cat_into(char *const result, const size_t result_size,
 	memcpy(result, s1, s1l);
 	memcpy(result + s1l, s2, s2l);
 	result[s1l + s2l] = '\0';
+	fprintf(stderr, "cat_into: \"%.*s\" + \"%.*s\" = \"%s\"\n", s1l, s1, s2l,
+		s2, result);
 	return 1;
 }
 
@@ -384,7 +386,6 @@ int ReportNotify(void) {
 			if(!cat_into(fn, sizeof fn, fn_parent, base_fn_length(fn_parent),
 				fn_local, fn_local_length))
 				{ errno = ERANGE; goto include_catch; }
-			fprintf(stderr, "Include: \"%s\".\n", fn);
 			/* Cut a segment across files. */
 			cut_segment_here(&sorter.segment);
 			if(!Scanner(fn, &ReportNotify)) goto include_catch;
