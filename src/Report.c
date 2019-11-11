@@ -374,7 +374,6 @@ int ReportNotify(void) {
 		break;
 	case LOCAL_INCLUDE: /* Include file. */
 		assert(sorter.state == S_CODE);
-		fprintf(stderr, "******Include!!!!\n");
 		{
 			char fn[256];
 			int success = 0;
@@ -385,6 +384,7 @@ int ReportNotify(void) {
 			if(!cat_into(fn, sizeof fn, fn_parent, base_fn_length(fn_parent),
 				fn_local, fn_local_length))
 				{ errno = ERANGE; goto include_catch; }
+			fprintf(stderr, "Include: \"%s\".\n", fn);
 			/* Cut a segment across files. */
 			cut_segment_here(&sorter.segment);
 			if(!Scanner(fn, &ReportNotify)) goto include_catch;
