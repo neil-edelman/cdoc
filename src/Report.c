@@ -272,24 +272,6 @@ static const char *oops(void) {
 	return p;
 }
 
-/* Eg, `fn_parent` is "src/code/foo.c" and `from` until `length` is "foo.h"
- gives "src/code/foo.h" in `fn` with `fn_size`.
- @return Success.
- @throws[0] `fn_size` is not enough. */
-static int splice_filenames(const char *const fn_parent,
-	const char *const from, const size_t length,
-	char *const fn, const size_t fn_size) {
-	const char *const fn_base = strrchr(fn_parent, '/');
-	const size_t base_no = fn_base ? fn_base - fn_parent + 1 : 0;
-	assert(fn_parent && length >= 0 && from && fn);
-	if(base_no + length + 1 > fn_size) return fprintf(stderr,
-		"%s: buffer insufficient length to open file.\n", oops()), 0;
-	memcpy(fn, fn_parent, base_no);
-	memcpy(fn + base_no, from, length);
-	fn[base_no + length] = '\0';
-	return 1;
-}
-
 /** @return The base filename size, which could be zero, but not more then
  string length. */
 static size_t base_fn_length(const char *const fn) {
@@ -308,7 +290,7 @@ static int cat_into(char *const result, const size_t result_size,
 	if(s1l + s2l + 1 > result_size) return 0;
 	memcpy(result, s1, s1l);
 	memcpy(result + s1l, s2, s2l);
-	result[s1l + s2l + 1] = '\0';
+	result[s1l + s2l] = '\0';
 	return 1;
 }
 
@@ -402,10 +384,6 @@ int ReportNotify(void) {
 			assert(fn_parent);
 			if(!cat_into(fn, sizeof fn, fn_parent, base_fn_length(fn_parent),
 				fn_local, fn_local_length))
-				{ errno = ERANGE; goto include_catch; }
-			fprintf(stderr, "***With cat %s\n", fn);
-			if(!splice_filenames(ScannerFilename(), ScannerFrom(),
-				ScannerTo() - ScannerFrom(), fn, sizeof fn))
 				{ errno = ERANGE; goto include_catch; }
 			/* Cut a segment across files. */
 			cut_segment_here(&sorter.segment);

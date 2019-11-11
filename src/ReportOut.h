@@ -565,14 +565,13 @@ OUT(em_end) {
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
-
-
-/* fixme: complete all the following. */
+/* fixme: this needs to be fixed!!! */
 OUT(link) {
 	const struct Token *const t = *ptoken, *text, *turl;
 	const enum Format f = CdocOptionsFormat();
 	assert(tokens && t && t->symbol == LINK_START && !a);
 	style_prepare_output(t->symbol);
+	/* The expected format is LINK_START [^URL]* URL. */
 	for(turl = TokenArrayNext(tokens, t);;turl = TokenArrayNext(tokens, turl)) {
 		if(!turl) goto catch;
 		if(turl->symbol == URL) break;
@@ -592,35 +591,40 @@ catch:
 OUT(image) {
 	const struct Token *const t = *ptoken, *text, *turl;
 	const enum Format f = CdocOptionsFormat();
+	char fn[256];
 	assert(tokens && t && t->symbol == IMAGE_START && !a);
 	style_prepare_output(t->symbol);
-	for(turl = TokenArrayNext(tokens, t);;turl = TokenArrayNext(tokens, turl)) {
-		if(!turl) goto catch;
-		if(turl->symbol == URL) break;
-	}
-	if(f == OUT_HTML) printf("<img alt = \""); else printf("![");
+	/* The expected format is IMAGE_START [^URL]* URL. */
+	for(turl = TokenArrayNext(tokens, t); turl->symbol != URL;
+		turl = TokenArrayNext(tokens, turl)) if(!turl) goto catch;
+	printf("%s", f == OUT_HTML ? "<img alt = \"" : "![");
 	for(text = TokenArrayNext(tokens, t); text->symbol != URL; )
 		if(!(text = print_token(tokens, text))) goto catch;
+	/* Combine the base name of this file with the url if it opens locally. */
+	if(!cat_into(fn, sizeof fn, t->fn, base_fn_length(t->fn),
+		turl->from, turl->length)) goto raw;
 	if(f == OUT_HTML) {
 		unsigned width, height;
-		char fn[256];
-		printf("\" src = \"%.*s\"", turl->length, turl->from);
-		if(!splice_filenames(t->fn, turl->from, turl->length, fn, sizeof fn))
-			goto dimensionless;
-		printf("\"");
-		/* Detailed exceptions inside; it's really a warning, skip it. */
-		if(!ImageDimension(fn, &width, &height)) goto dimensionless;
-		printf(" width = %u height = %u", width, height);
-dimensionless:
-		printf(">");
+		if(!ImageDimension(fn, &width, &height)) goto raw;
+		printf("\" src = \"%s\" width = %u height = %u>", fn, width, height);
 	} else {
-		printf("](%.*s)", turl->length, turl->from);
+		FILE *fp;
+		if(!(fp = fopen(fn, "r"))) { perror(fn); goto raw; }
+		fclose(fp);
+		printf("](%s)", fn);
 	}
-	*ptoken = TokenArrayNext(tokens, turl);
-	return 1;
+	goto finally;
+raw:
+	/* Maybe it's an external link? */
+	printf("%s%.*s%s", f == OUT_HTML ? "\" src = \"" : "](",
+		turl->length, turl->from, f == OUT_HTML ? "\">" : ")");
+	goto finally;
 catch:
 	fprintf(stderr, "%s: expected `[description](url)`.\n", pos(t));
 	return 0;
+finally:
+	*ptoken = TokenArrayNext(tokens, turl);
+	return 1;
 }
 OUT(nbsp) {
 	const struct Token *const t = *ptoken;
