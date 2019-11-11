@@ -272,6 +272,24 @@ static const char *oops(void) {
 	return p;
 }
 
+/* Eg, `fn_parent` is "src/code/foo.c" and `from` until `length` is "foo.h"
+ gives "src/code/foo.h" in `fn` with `fn_size`.
+ @return Success.
+ @throws[0] `fn_size` is not enought. */
+static int splice_filenames(const char *const fn_parent,
+	const char *const from, const size_t length,
+	char *const fn, const size_t fn_size) {
+	const char *const fn_base = strrchr(fn_parent, '/');
+	const size_t base_no = fn_base ? fn_base - fn_parent + 1 : 0;
+	assert(fn_parent && length >= 0 && from && fn);
+	if(base_no + length + 1 > fn_size) return fprintf(stderr,
+		"%s: buffer insufficient length to open file.\n", oops()), 0;
+	memcpy(fn, fn_parent, base_no);
+	memcpy(fn + base_no, from, length);
+	fn[base_no + length] = '\0';
+	return 1;
+}
+
 /** This appends the current token based on the state it was last in.
  @return Success.
  @fixme Doesn't work sometimes. Have a state machine. */
@@ -352,23 +370,12 @@ int ReportNotify(void) {
 		break;
 	case LOCAL_INCLUDE: /* Include file. */
 		assert(sorter.state == S_CODE);
-		/* Eg, fn_parent = "src/code/foo.c" and included "foo.h" we would
-		 actually include "src/code/foo.h". */
 		{
-			const char *const from = ScannerFrom(), *const to = ScannerTo(),
-				*const fn_parent = ScannerFilename(),
-				*const fn_base = strrchr(fn_parent, '/');
-			size_t base_no = fn_base ? fn_base + 1 - fn_parent : 0;
 			char fn[256];
 			int success = 0;
-			assert(fn_parent && from && from <= to);
-			/* fixme: there is no reason why this is an error. */
-			if(from + sizeof fn - base_no <= to) return fprintf(stderr,
-				"%s: buffer insufficient length to open file.\n", oops()),
-				errno = EILSEQ, 0;
-			memcpy(fn, fn_parent, base_no);
-			memcpy(fn + base_no, from, to - from);
-			fn[base_no + to - from] = '\0';
+			if(!splice_filenames(ScannerFilename(), ScannerFrom(),
+				ScannerTo() - ScannerFrom(), fn, sizeof fn))
+				{ errno = ERANGE; goto include_catch; }
 			/* Cut a segment across files. */
 			cut_segment_here(&sorter.segment);
 			if(!Scanner(fn, &ReportNotify)) goto include_catch;
