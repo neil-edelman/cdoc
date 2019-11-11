@@ -598,15 +598,13 @@ OUT(image) {
 		if(!turl) goto catch;
 		if(turl->symbol == URL) break;
 	}
-	if(f == OUT_HTML)
-		printf("<img src = \"%.*s\" alt = \"", turl->length, turl->from);
-	else
-		printf("![");
+	if(f == OUT_HTML) printf("<img alt = \""); else printf("![");
 	for(text = TokenArrayNext(tokens, t); text->symbol != URL; )
 		if(!(text = print_token(tokens, text))) goto catch;
 	if(f == OUT_HTML) {
 		unsigned width, height;
 		char fn[256];
+		printf("\" src = \"%.*s\"", turl->length, turl->from);
 		if(!splice_filenames(t->fn, turl->from, turl->length, fn, sizeof fn))
 			goto dimensionless;
 		printf("\"");

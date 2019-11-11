@@ -275,7 +275,7 @@ static const char *oops(void) {
 /* Eg, `fn_parent` is "src/code/foo.c" and `from` until `length` is "foo.h"
  gives "src/code/foo.h" in `fn` with `fn_size`.
  @return Success.
- @throws[0] `fn_size` is not enought. */
+ @throws[0] `fn_size` is not enough. */
 static int splice_filenames(const char *const fn_parent,
 	const char *const from, const size_t length,
 	char *const fn, const size_t fn_size) {
@@ -287,6 +287,28 @@ static int splice_filenames(const char *const fn_parent,
 	memcpy(fn, fn_parent, base_no);
 	memcpy(fn + base_no, from, length);
 	fn[base_no + length] = '\0';
+	return 1;
+}
+
+/** @return The base filename size, which could be zero, but not more then
+ string length. */
+static size_t base_fn_length(const char *const fn) {
+	const char *const base = strrchr(fn, '/');
+	assert(fn);
+	return base ? base - fn + 1 : 0;
+}
+
+/** Concatenates `s1` up to `s1l` with `s2` up to `s2l` in `result` with
+ `result_size` and terminates with a null.
+ @return Success, or `result_size` is not enough. */
+static int cat_into(char *const result, const size_t result_size,
+	const char *const s1, const size_t s1l,
+	const char *const s2, const size_t s2l) {
+	assert(result && s1 && s2);
+	if(s1l + s2l + 1 > result_size) return 0;
+	memcpy(result, s1, s1l);
+	memcpy(result + s1l, s2, s2l);
+	result[s1l + s2l + 1] = '\0';
 	return 1;
 }
 
@@ -370,9 +392,18 @@ int ReportNotify(void) {
 		break;
 	case LOCAL_INCLUDE: /* Include file. */
 		assert(sorter.state == S_CODE);
+		fprintf(stderr, "******Include!!!!\n");
 		{
 			char fn[256];
 			int success = 0;
+			const char *const fn_parent = ScannerFilename(),
+				*const fn_local = ScannerFrom();
+			const size_t fn_local_length = ScannerTo() - fn_local;
+			assert(fn_parent);
+			if(!cat_into(fn, sizeof fn, fn_parent, base_fn_length(fn_parent),
+				fn_local, fn_local_length))
+				{ errno = ERANGE; goto include_catch; }
+			fprintf(stderr, "***With cat %s\n", fn);
 			if(!splice_filenames(ScannerFilename(), ScannerFrom(),
 				ScannerTo() - ScannerFrom(), fn, sizeof fn))
 				{ errno = ERANGE; goto include_catch; }
