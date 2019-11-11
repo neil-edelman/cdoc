@@ -606,19 +606,12 @@ OUT(image) {
 		if(!(text = print_token(tokens, text))) goto catch;
 	if(f == OUT_HTML) {
 		unsigned width, height;
-		const char *const fn_parent = ScannerFilename(),
-			*const fn_base = strrchr(fn_parent, '/');
 		char fn[256];
-		assert(fn_parent);
+		if(!splice_filenames(t->fn, turl->from, turl->length, fn, sizeof fn))
+			goto dimensionless;
 		printf("\"");
-		if((size_t)turl->length >= sizeof fn) { fprintf(stderr,
-			"%s: path is too big %d to find dimensions.\n", pos(t),
-			turl->length); goto dimensionless; }
-		memcpy(fn, turl->from, turl->length);
-		fn[turl->length] = '\0';
 		/* Detailed exceptions inside; it's really a warning, skip it. */
-		if(!ImageDimension(fn, &width, &height))
-			{ errno = 0; goto dimensionless; }
+		if(!ImageDimension(fn, &width, &height)) goto dimensionless;
 		printf(" width = %u height = %u", width, height);
 dimensionless:
 		printf(">");
