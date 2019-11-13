@@ -111,21 +111,22 @@ static void warn_internal_link(const struct Token *const token) {
 	}
 	/* Encode the link text. */
 	encode_s(token->length, token->from, &a);
-	/* Search for it. fixme: this builds up labels from scratch, then discards
-	 them, over and over. */
+	/* Search for it. Not really efficient as it builds up labels from scratch,
+	 then discards them, over and over. */
 	while((segment = SegmentArrayNext(&report, segment))) {
 		const struct Token *compare;
+		/* The "title" is `code[code_params[0]]`. */
 		if(segment->division != division
 			|| !(fun_index = IndexArrayNext(&segment->code_params, 0))
 			|| *fun_index >= TokenArraySize(&segment->code)) continue;
 		compare = TokenArrayGet(&segment->code) + *fun_index;
-		/* fixme: returns false error at end of tokens! */
 		if(!print_token_s(&segment->code, compare, &b))
 			{ fprintf(stderr,
 			"%s: length was too long or end of tokens to compare with %s.\n",
 			pos(token), a); continue; }
 		if(!strcmp(a, b))
-			{ /*fprintf(stderr, "%s: link okay.\n", pos(token));*/ return; }
+			{ if(CdocOptionsDebug()) fprintf(stderr, "%s: link okay.\n",
+				pos(token)); return; }
 	}
 	fprintf(stderr, "%s: link broken.\n", pos(token));
 }
@@ -244,7 +245,7 @@ static void warn_segment(const struct Segment *const segment) {
 			unused_attribute(segment, ATT_ALLOW);
 		break;
 	default:
-		assert((fprintf(stderr, "Can not happen.\n"), 0));
+		assert(0);
 	}
 }
 
@@ -252,6 +253,4 @@ void ReportWarn(void) {
 	struct Segment *segment = 0;
 	while((segment = SegmentArrayNext(&report, segment)))
 		warn_segment(segment);
-	/* fixme: warn if segments with the same data have the same name?
-	 It would be better to merge them into a hash. */
 }

@@ -1,7 +1,7 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT). */
 
-#include <stdio.h>  /* printf sprintf */
+#include <stdio.h>  /* .printf */
 #include <string.h> /* memset strchr strlen */
 #include <stdlib.h> /* malloc free */
 /* #define NDEBUG */

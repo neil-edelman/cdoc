@@ -1,4 +1,4 @@
-#include <stdio.h>  /* [f]printf fopen fclose fread */
+#include <stdio.h>  /* printf fopen fclose fread */
 #include <assert.h> /* assert */
 #include <errno.h>  /* errno */
 #include "../src/ImageDimension.h"

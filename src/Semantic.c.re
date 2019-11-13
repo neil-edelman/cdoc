@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include "../src/Cdoc.h"
 #include "../src/Report.h"
 #include "../src/Semantic.h"
 
@@ -318,8 +319,9 @@ int Semantic(const struct TokenArray *const code) {
 	/* Now with the {}[] removed. */
 	effectively_typedef_fn_ptr(buffer);
 	if(!parse()) return 0;
-	/*fprintf(stderr, "%s:%lu: \"%s\" -> %s.\n", semantic.fn,
-		(unsigned long)semantic.line, buffer, divisions[semantic.division]);*/
+	if(CdocOptionsDebug()) fprintf(stderr, "%s:%lu: \"%s\" -> %s.\n",
+		semantic.fn, (unsigned long)semantic.line, buffer,
+		divisions[semantic.division]);
 	/* It has been determined to be `divisions[semantic.division]`. */
 	return 1;
 }

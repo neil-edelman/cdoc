@@ -9,9 +9,9 @@
  @fixme Eg, fixme with no args disappears; we should NOT check if the string is
  empty. */
 
-#include <string.h> /* size_t strncpy sprintf strrchr */
+#include <string.h> /* size_t strncpy strrchr */
 #include <limits.h> /* INT_MAX */
-#include <stdio.h>  /* sprintf */
+#include <stdio.h>  /* .printf */
 #include "Division.h"
 #include "Format.h"
 #include "Scanner.h"

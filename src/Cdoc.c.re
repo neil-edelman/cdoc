@@ -39,7 +39,11 @@
  \* `\<typedef:\<typedef\>\>`: typedef reference;
  \* `\<data:\<identifier\>\>`: data reference;
  \* `\[The link text\](url)`: link;
- \* `\!\[Caption text\](url.image)`: image; fixme.
+ \* `\!\[Caption text\](url.image)`: image;
+
+ As well, if a local include directive has a documentation comment immediately
+ after that reads only `\include`, it will also be included in the
+ documentation.
 
  Each-block-tags separate the documentation until the next paragraph or until
  the next each-block-tag, and specify a specific documentation structure.
