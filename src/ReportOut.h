@@ -603,6 +603,7 @@ OUT(image) {
 	/* Combine the base name of this file with the url if it opens locally. */
 	if(!cat_into(fn, sizeof fn, t->fn, base_fn_length(t->fn),
 		turl->from, turl->length)) goto raw;
+	fprintf(stderr, "PATH: %s SHOUD BE %s?\n", fn, PathsFromOutput(turl->length, turl->from));
 	if(f == OUT_HTML) {
 		unsigned width, height;
 		if(!ImageDimension(fn, &width, &height)) goto raw;

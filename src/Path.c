@@ -205,22 +205,39 @@ int Paths(const char *const in_fn, const char *const out_fn) {
 	return 1;
 }
 
+/** Helper; clobbers the working path buffer. */
+static int append_working_path(const size_t fn_len, const char *const fn) {
+	char *workfn;
+	assert(fn);
+	CharArrayClear(&paths.working.buffer);
+	if(!CharArrayBuffer(&paths.working.buffer, fn_len + 1)) return 0;
+	workfn = CharArrayGet(&paths.working.buffer);
+	memcpy(workfn, fn, fn_len), workfn[fn_len] = '\0';
+	if(!relative_path(workfn) || !sep_path(&paths.working.path, workfn))
+		return 0;
+	return 1;
+}
+
 /** Appends output directory to `fn`:`fn_name`, (if it exists.)
  @return A temporary path, invalid on calling any path function.
  @throws[malloc] */
 const char *PathsFromHere(const size_t fn_len, const char *const fn) {
-	CharArrayClear(&paths.working.buffer), PathArrayClear(&paths.working.path);
-	cat_path(&paths.working.path, &paths.input.path);
-	if(fn) {
-		char *workfn;
-		/* Copy the argument. */
-		if(!CharArrayBuffer(&paths.working.buffer, fn_len + 1)) return 0;
-		workfn = CharArrayGet(&paths.working.buffer);
-		memcpy(workfn, fn, fn_len), workfn[fn_len] = '\0';
-		/* Break it up and stick it on the path. */
-		if(!relative_path(workfn) || !sep_path(&paths.working.path, workfn))
-			return 0;
-	}
+	PathArrayClear(&paths.working.path);
+	if(!cat_path(&paths.working.path, &paths.input.path)
+		|| (fn && !append_working_path(fn_len, fn))) return 0;
+	simplify_path(&paths.working.path);
+	return path_to_string(&paths.result, &paths.working.path);
+}
+
+/** Appends inverse output directory and input directory to `fn`:`fn_name`, (if
+ it exists.)
+ @return A temporary path, invalid on calling any path function.
+ @throws[malloc] */
+const char *PathsFromOutput(const size_t fn_len, const char *const fn) {
+	PathArrayClear(&paths.working.path);
+	if(!cat_path(&paths.working.path, &paths.outinv)
+		|| !cat_path(&paths.working.path, &paths.input.path)
+		|| (fn && !append_working_path(fn_len, fn))) return 0;
 	simplify_path(&paths.working.path);
 	return path_to_string(&paths.result, &paths.working.path);
 }

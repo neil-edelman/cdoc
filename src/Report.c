@@ -304,6 +304,7 @@ int ReportNotify(void) {
 	const enum Symbol symbol = ScannerSymbol();
 	const char symbol_mark = symbol_marks[symbol];
 	int is_differed_cut = 0;
+	const char *fn;
 	static struct {
 		enum { S_CODE, S_DOC, S_ARGS } state;
 		size_t last_doc_line;
@@ -312,7 +313,6 @@ int ReportNotify(void) {
 		unsigned space, newline;
 		int is_code_ignored, is_semantic_set;
 	} sorter = { 0, 0, 0, 0, 0, 0, 0, 0 };
-	/*errno = 0;*/
 	/* These symbols require special consideration. */
 	switch(symbol) {
 	case DOC_BEGIN:
@@ -377,29 +377,10 @@ int ReportNotify(void) {
 		break;
 	case LOCAL_INCLUDE: /* Include file. */
 		assert(sorter.state == S_CODE);
-		{
-			const char *f = PathsFromHere(ScannerTo() - ScannerFrom(), ScannerFrom());
-			char fn[256];
-			int success = 0;
-			const char *const fn_parent = ScannerFilename(),
-				*const fn_local = ScannerFrom();
-			const size_t fn_local_length = ScannerTo() - fn_local;
-			assert(fn_parent);
-			fprintf(stderr, "The better alternative is %s.\n", f);
-			if(!cat_into(fn, sizeof fn, fn_parent, base_fn_length(fn_parent),
-				fn_local, fn_local_length))
-				{ errno = ERANGE; goto include_catch; }
-			/* Cut a segment across files. */
-			cut_segment_here(&sorter.segment);
-			if(!Scanner(fn, &ReportNotify)) goto include_catch;
-			cut_segment_here(&sorter.segment);
-			success = 1;
-			goto include_finally;
-include_catch:
-			perror(fn);
-include_finally:
-			return success;
-		}
+		if(!(fn = PathsFromHere(ScannerTo() - ScannerFrom(), ScannerFrom()))
+			|| !(cut_segment_here(&sorter.segment), Scanner(fn, &ReportNotify)))
+			return perror("including"), 0;
+		cut_segment_here(&sorter.segment);
 	default: break;
 	}
 
