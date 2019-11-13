@@ -592,6 +592,7 @@ OUT(image) {
 	const struct Token *const t = *ptoken, *text, *turl;
 	const enum Format f = CdocOptionsFormat();
 	const char *fn;
+	unsigned width = 1, height = 1;
 	assert(tokens && t && t->symbol == IMAGE_START && !a);
 	style_prepare_output(t->symbol);
 	/* The expected format is IMAGE_START [^URL]* URL. */
@@ -600,18 +601,22 @@ OUT(image) {
 	printf("%s", f == OUT_HTML ? "<img alt = \"" : "![");
 	for(text = TokenArrayNext(tokens, t); text->symbol != URL; )
 		if(!(text = print_token(tokens, text))) goto catch;
-	/* Combine the base name of this file with the url if it opens locally. */
-	errno = 0; if(!(fn = PathsFromHere(turl->length, turl->from)))
+	/* We want to open this file. */
+	if(!(errno = 0, fn = PathsFromHere(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
-	fprintf(stderr, "PATH: %s?\n", fn);
+	fprintf(stderr, "HERE PATH: %s?\n", fn);
 	if(f == OUT_HTML) {
-		unsigned width, height;
 		if(!ImageDimension(fn, &width, &height)) goto raw;
-		printf("\" src = \"%s\" width = %u height = %u>", fn, width, height);
 	} else {
 		FILE *fp;
 		if(!(fp = fopen(fn, "r"))) { perror(fn); goto raw; }
 		fclose(fp);
+	}
+	if(!(errno = 0, fn = PathsFromOutput(turl->length, turl->from)))
+		{ if(errno) goto catch; else goto raw; }
+	if(f == OUT_HTML) {
+		printf("\" src = \"%s\" width = %u height = %u>", fn, width, height);
+	} else {
 		printf("](%s)", fn);
 	}
 	goto finally;

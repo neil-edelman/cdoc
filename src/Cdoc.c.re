@@ -117,7 +117,9 @@
  @fixme `cat file1 file2 > cdoc` is not cutting it because line numbers. Should
  be easy to load files individually.
  @fixme 80-characters _per_ line limit; I've got it working, just need to apply
- to this code. Needs buffering. */
+ to this code. Needs buffering.
+ @fixme "samples/foo.c:37: classifying unknown statement as a general
+ declaration." on include? */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */

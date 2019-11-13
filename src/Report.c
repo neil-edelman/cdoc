@@ -384,8 +384,12 @@ int ReportNotify(void) {
 	case LOCAL_INCLUDE: /* Include file. */
 		assert(sorter.state == S_CODE);
 		if(!(fn = PathsFromHere(ScannerTo() - ScannerFrom(), ScannerFrom()))
-			|| !(cut_segment_here(&sorter.segment), Scanner(fn, &ReportNotify)))
-			return perror("including"), 0;
+			|| !(cut_segment_here(&sorter.segment),
+			Scanner(fn, &ReportNotify))) {
+			if(errno) perror("including");
+			else fprintf(stderr, "%s: couldn't resove name.\n", oops());
+			return 0;
+		}
 		cut_segment_here(&sorter.segment);
 	default: break;
 	}
