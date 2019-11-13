@@ -19,18 +19,6 @@ static const char *const twodots = "..", *const dot = ".", dirsep = '/',
 #define ARRAY_TYPE char
 #include "Array.h"
 
-/* fixme: delete */
-static void print_path(const struct PathArray *const path, FILE *const fp) {
-	const char **p;
-	assert(fp);
-	if(!path || !(p = PathArrayNext(path, 0))) return;
-	for( ; ; ) {
-		fputs(*p, fp);
-		if(!(p = PathArrayNext(path, p))) break;
-		fputc(dirsep, fp);
-	}
-}
-
 /** Renders the `path` to `str`.
  @param[str] The path container.
  @param[path] The path.
@@ -182,7 +170,6 @@ static int extra_path(struct PathExtra *const extra, const char *const string) {
 	if(!sep_path(&extra->path, CharArrayGet(&extra->buffer))) return 0;
 	strip_path(&extra->path);
 	simplify_path(&extra->path);
-	fputs("Path from extra_path: ", stderr), print_path(&extra->path, stderr), fputc('\n', stderr);
 	return 1;
 }
 
@@ -195,16 +182,9 @@ void Paths_(void) {
 /** Sets up `in_fn` and `out_fn` as directories.
  @return Success. */
 int Paths(const char *const in_fn, const char *const out_fn) {
-	fprintf(stderr, "Paths(\"%s\", \"%s\")\n", in_fn, out_fn);
 	if(!extra_path(&paths.input, in_fn) || !extra_path(&paths.output, out_fn)
 		|| (!inverse_path(&paths.outinv, &paths.output.path) && errno))
 		return clear_paths(), 0;
-	fputs("Input: ", stderr), print_path(&paths.input.path, stderr),
-		fputc('\n', stderr);
-	fputs("Output: ", stderr), print_path(&paths.output.path, stderr),
-		fputc('\n', stderr);
-	fputs("OutInv: ", stderr), print_path(&paths.outinv, stderr),
-		fputc('\n', stderr);
 	return 1;
 }
 
