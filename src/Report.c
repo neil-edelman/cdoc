@@ -277,32 +277,6 @@ static const char *oops(void) {
 	return p;
 }
 
-/** fixme: delete
- @return The base filename size, which could be zero, but not more then
- string length. */
-static size_t base_fn_length(const char *const fn) {
-	const char *const base = strrchr(fn, '/');
-	assert(fn);
-	return base ? base - fn + 1 : 0;
-}
-
-/** fixme: delete
- Concatenates `s1` up to `s1l` with `s2` up to `s2l` in `result` with
- `result_size` and terminates with a null.
- @return Success, or `result_size` is not enough. */
-static int cat_into(char *const result, const size_t result_size,
-	const char *const s1, const size_t s1l,
-	const char *const s2, const size_t s2l) {
-	assert(result && s1 && s2);
-	if(s1l + s2l + 1 > result_size) return 0;
-	memcpy(result, s1, s1l);
-	memcpy(result + s1l, s2, s2l);
-	result[s1l + s2l] = '\0';
-	fprintf(stderr, "cat_into: \"%.*s\" + \"%.*s\" = \"%s\"\n", (int)s1l, s1,
-		(int)s2l, s2, result);
-	return 1;
-}
-
 /** This appends the current token based on the state it was last in.
  @return Success.
  @fixme Doesn't work sometimes. Have a state machine. */
