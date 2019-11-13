@@ -56,7 +56,11 @@ static int token_compare(const struct Token *const a,
 #define ARRAY_TYPE struct Token
 #define ARRAY_TO_STRING &token_to_string
 #include "Array.h"
-/** This is used in `Semantic.c.re` to get the first line for error info. */
+/** This is used in `Semantic.c.re` to get the first file:line for error. */
+const char *TokensFirstFilename(const struct TokenArray *const tokens) {
+	const struct Token *const first = TokenArrayNext(tokens, 0);
+	return first ? first->fn : "no file";
+}
 size_t TokensFirstLine(const struct TokenArray *const tokens) {
 	const struct Token *const first = TokenArrayNext(tokens, 0);
 	return first ? first->line : 0;
@@ -273,7 +277,8 @@ static const char *oops(void) {
 	return p;
 }
 
-/** @return The base filename size, which could be zero, but not more then
+/** fixme: delete
+ @return The base filename size, which could be zero, but not more then
  string length. */
 static size_t base_fn_length(const char *const fn) {
 	const char *const base = strrchr(fn, '/');
@@ -281,7 +286,8 @@ static size_t base_fn_length(const char *const fn) {
 	return base ? base - fn + 1 : 0;
 }
 
-/** Concatenates `s1` up to `s1l` with `s2` up to `s2l` in `result` with
+/** fixme: delete
+ Concatenates `s1` up to `s1l` with `s2` up to `s2l` in `result` with
  `result_size` and terminates with a null.
  @return Success, or `result_size` is not enough. */
 static int cat_into(char *const result, const size_t result_size,

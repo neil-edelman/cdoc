@@ -83,6 +83,7 @@ static struct {
 	struct CharArray buffer, work;
 	enum Division division;
 	struct IndexArray params;
+	const char *fn;
 	size_t line;
 } semantic;
 
@@ -92,8 +93,9 @@ static int add_param(const char *const label) {
 	size_t *param;
 	const char *const acceptable = "x123";
 	if(!label || !strchr(acceptable, *label)) return fprintf(stderr,
-		"Line %lu: param is '%c', not %s.\n", (unsigned long)semantic.line,
-		label ? *label : '0', acceptable), errno = EILSEQ, 0;
+		"%s:%lu: param is '%c', not %s.\n", semantic.fn,
+		(unsigned long)semantic.line, label ? *label : '0', acceptable),
+		errno = EILSEQ, 0;
 	if(!(param = IndexArrayNew(&semantic.params))) return 0;
 	*param = (size_t)(label - CharArrayGet(&semantic.buffer));
 	return 1;
@@ -220,8 +222,8 @@ params:
 	* { goto unable; }
 */
 unable:
-	fprintf(stderr, "Line %lu: unable to extract parameter list from %s.\n",
-		(unsigned long)semantic.line, buffer);
+	fprintf(stderr, "%s:%lu: unable to extract parameter list from %s.\n",
+		semantic.fn, (unsigned long)semantic.line, buffer);
 	return 1;
 }
 
@@ -289,6 +291,7 @@ int Semantic(const struct TokenArray *const code) {
 	CharArrayClear(&semantic.buffer);
 	semantic.division = DIV_DATA;
 	IndexArrayClear(&semantic.params);
+	semantic.fn = TokensFirstFilename(code);
 	semantic.line = TokensFirstLine(code);
 
 	/* Make a string from `symbol_marks` and allocate maximum memory. */
@@ -304,8 +307,8 @@ int Semantic(const struct TokenArray *const code) {
 		int checks = 0;
 		if(!check_symbols(&checks)) return 0;
 		if(!checks) return fprintf(stderr,
-			"Line %lu: classifying unknown statement as a general declaration."
-			"\n", (unsigned long)semantic.line), 1;
+			"%s:%lu: classifying unknown statement as a general declaration.\n",
+			semantic.fn, (unsigned long)semantic.line), 1;
 	}
 
 	/* Git rid of code. (Shouldn't happen!) */
@@ -315,7 +318,7 @@ int Semantic(const struct TokenArray *const code) {
 	/* Now with the {}[] removed. */
 	effectively_typedef_fn_ptr(buffer);
 	if(!parse()) return 0;
-	/*fprintf(stderr, "Line %lu: \"%s\" -> %s.\n",
+	/*fprintf(stderr, "%s:%lu: \"%s\" -> %s.\n", semantic.fn,
 		(unsigned long)semantic.line, buffer, divisions[semantic.division]);*/
 	/* It has been determined to be `divisions[semantic.division]`. */
 	return 1;

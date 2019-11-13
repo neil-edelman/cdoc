@@ -3,6 +3,7 @@
 
 struct TokenArray;
 
+const char *TokensFirstFilename(const struct TokenArray *const tokens);
 size_t TokensFirstLine(const struct TokenArray *const tokens);
 size_t TokensMarkSize(const struct TokenArray *const tokens);
 void TokensMark(const struct TokenArray *const tokens, char *const marks);

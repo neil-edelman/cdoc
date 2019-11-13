@@ -19,6 +19,7 @@ static const char *const twodots = "..", *const dot = ".", dirsep = '/',
 #define ARRAY_TYPE char
 #include "Array.h"
 
+/* fixme: delete */
 static void print_path(const struct PathArray *const path, FILE *const fp) {
 	const char **p;
 	assert(fp);
@@ -205,7 +206,8 @@ int Paths(const char *const in_fn, const char *const out_fn) {
 	return 1;
 }
 
-/** Helper; clobbers the working path buffer. */
+/** Helper; clobbers the working path buffer.
+ @return It may not set `errno` and return 0 if the path is messed. */
 static int append_working_path(const size_t fn_len, const char *const fn) {
 	char *workfn;
 	assert(fn);
@@ -230,7 +232,7 @@ const char *PathsFromHere(const size_t fn_len, const char *const fn) {
 }
 
 /** Appends inverse output directory and input directory to `fn`:`fn_name`, (if
- it exists.)
+ it exists.) It may return 0 if the path is weird, set `errno` before.
  @return A temporary path, invalid on calling any path function.
  @throws[malloc] */
 const char *PathsFromOutput(const size_t fn_len, const char *const fn) {

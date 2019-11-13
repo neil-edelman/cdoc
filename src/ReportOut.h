@@ -591,7 +591,7 @@ catch:
 OUT(image) {
 	const struct Token *const t = *ptoken, *text, *turl;
 	const enum Format f = CdocOptionsFormat();
-	char fn[256];
+	const char *fn;
 	assert(tokens && t && t->symbol == IMAGE_START && !a);
 	style_prepare_output(t->symbol);
 	/* The expected format is IMAGE_START [^URL]* URL. */
@@ -601,9 +601,9 @@ OUT(image) {
 	for(text = TokenArrayNext(tokens, t); text->symbol != URL; )
 		if(!(text = print_token(tokens, text))) goto catch;
 	/* Combine the base name of this file with the url if it opens locally. */
-	if(!cat_into(fn, sizeof fn, t->fn, base_fn_length(t->fn),
-		turl->from, turl->length)) goto raw;
-	fprintf(stderr, "PATH: %s SHOUD BE %s?\n", fn, PathsFromOutput(turl->length, turl->from));
+	errno = 0; if(!(fn = PathsFromHere(turl->length, turl->from)))
+		{ if(errno) goto catch; else goto raw; }
+	fprintf(stderr, "PATH: %s?\n", fn);
 	if(f == OUT_HTML) {
 		unsigned width, height;
 		if(!ImageDimension(fn, &width, &height)) goto raw;
