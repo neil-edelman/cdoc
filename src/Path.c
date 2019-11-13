@@ -114,6 +114,8 @@ static int cat_path(struct PathArray *const path,
 	return PathArraySplice(path, 0, 0, cat);
 }
 
+/** I think we can only do this, but paths will be, in `foo`, `../foo/bar`, but
+ that is probably using more information? */
 static void simplify_path(struct PathArray *const path) {
 	const char **p0 = 0, **p1, **p2;
 	assert(path);
