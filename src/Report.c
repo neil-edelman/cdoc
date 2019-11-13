@@ -391,6 +391,7 @@ int ReportNotify(void) {
 			return 0;
 		}
 		cut_segment_here(&sorter.segment);
+		return 1;
 	default: break;
 	}
 

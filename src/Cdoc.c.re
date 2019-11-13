@@ -210,7 +210,8 @@ enum Format CdocOptionsFormat(void) {
 		if(args.out_fn && (fprintf(stderr, "format: %s\n", args.out_fn), is_suffix(args.out_fn, ".html")
 			|| is_suffix(args.out_fn, ".htm"))) args.format = OUT_HTML;
 		else args.format = OUT_MD;
-		fprintf(stderr, "Guess format is %s.\n", format_strings[args.format]);
+		if(args.debug) fprintf(stderr, "Guess format is %s.\n",
+			format_strings[args.format]);
 	}
 	return args.format;
 }
