@@ -17,6 +17,7 @@
 #include "Scanner.h"
 #include "Semantic.h"
 #include "UrlEncode.h"
+#include "Path.h"
 #include "ImageDimension.h"
 #include "Cdoc.h"
 #include "Report.h"
@@ -377,12 +378,14 @@ int ReportNotify(void) {
 	case LOCAL_INCLUDE: /* Include file. */
 		assert(sorter.state == S_CODE);
 		{
+			const char *f = PathsFromHere(ScannerTo() - ScannerFrom(), ScannerFrom());
 			char fn[256];
 			int success = 0;
 			const char *const fn_parent = ScannerFilename(),
 				*const fn_local = ScannerFrom();
 			const size_t fn_local_length = ScannerTo() - fn_local;
 			assert(fn_parent);
+			fprintf(stderr, "The better alternative is %s.\n", f);
 			if(!cat_into(fn, sizeof fn, fn_parent, base_fn_length(fn_parent),
 				fn_local, fn_local_length))
 				{ errno = ERANGE; goto include_catch; }

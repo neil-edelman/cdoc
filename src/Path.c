@@ -8,7 +8,8 @@
 #include <assert.h>
 #include "Path.h"
 
-static const char *const twodots = "..", *const dot = ".", dirsep = '/';
+static const char *const twodots = "..", *const dot = ".", dirsep = '/',
+	*const notallowed = "//";
 
 #define ARRAY_NAME Path
 #define ARRAY_TYPE const char *
@@ -21,13 +22,43 @@ static const char *const twodots = "..", *const dot = ".", dirsep = '/';
 static void print_path(const struct PathArray *const path, FILE *const fp) {
 	const char **p;
 	assert(fp);
-	if(!path) return;
-	if(!(p = PathArrayNext(path, 0))) return;
+	if(!path || !(p = PathArrayNext(path, 0))) return;
 	for( ; ; ) {
 		fputs(*p, fp);
-		if(!PathArrayNext(path, p)) break;
+		if(!(p = PathArrayNext(path, p))) break;
 		fputc(dirsep, fp);
 	}
+}
+
+/** Renders the `path` to `str`.
+ @param[str] The path container.
+ @param[path] The path.
+ @return The string representing the path.
+ @throws[malloc] */
+static const char *path_to_string(struct CharArray *const str,
+	const struct PathArray *const path) {
+	const char **p = 0;
+	char *buf;
+	size_t len;
+	assert(str && path);
+	CharArrayClear(str);
+	if(!(p = PathArrayNext(path, 0))) goto terminate;
+	for( ; ; ) {
+		/* Print the next part. */
+		if((len = strlen(*p))) {
+			if(!(buf = CharArrayBuffer(str, len))) return 0;
+			memcpy(buf, *p, len), CharArrayExpand(str, len);
+		}
+		/* Is it at the end. */
+		if(!(p = PathArrayNext(path, p))) break;
+		/* Otherwise stick a `dirsep`. */
+		if(!(buf = CharArrayNew(str))) return 0;
+		*buf = dirsep;
+	}
+terminate:
+	if(!(buf = CharArrayNew(str))) return 0;
+	*buf = '\0';
+	return CharArrayGet(str);
 }
 
 static int relative_path(const char *string) {
@@ -44,6 +75,11 @@ static int relative_path(const char *string) {
 		string++;
 	}
 	return 1;
+}
+
+static int looks_like_path(const char *string) {
+	assert(string);
+	return !strstr(string, notallowed);
 }
 
 /** Appends `path` split on `dirsep` to `args`.
@@ -71,10 +107,10 @@ static void strip_path(struct PathArray *const args) {
 	PathArrayPop(args);
 }
 
-static int cat_path(struct PathArray *const args,
+static int cat_path(struct PathArray *const path,
 	const struct PathArray *const cat) {
-	assert(args && cat);
-	return PathArraySplice(args, 0, 0, cat);
+	assert(path && cat);
+	return PathArraySplice(path, 0, 0, cat);
 }
 
 static void simplify_path(struct PathArray *const path) {
@@ -134,8 +170,8 @@ static int extra_path(struct PathExtra *const extra, const char *const string) {
 	assert(extra);
 	PathArrayClear(&extra->path), CharArrayClear(&extra->buffer);
 	if(!string) return 1;
-	if(!relative_path(string)) return fprintf(stderr,
-		"%s: does not appear to be a relative string.\n", string), 1;
+	if(!looks_like_path(string)) return fprintf(stderr,
+		"%s: does not appear to be a path.\n", string), 1;
 	string_size = strlen(string) + 1;
 	if(!CharArrayBuffer(&extra->buffer, string_size)) return 0;
 	memcpy(CharArrayGet(&extra->buffer), string, string_size);
@@ -143,7 +179,14 @@ static int extra_path(struct PathExtra *const extra, const char *const string) {
 	if(!sep_path(&extra->path, CharArrayGet(&extra->buffer))) return 0;
 	strip_path(&extra->path);
 	simplify_path(&extra->path);
+	fputs("Path from extra_path: ", stderr), print_path(&extra->path, stderr), fputc('\n', stderr);
 	return 1;
+}
+
+/** Clears all the data. */
+void Paths_(void) {
+	fprintf(stderr, "Paths_()\n");
+	clear_paths();
 }
 
 /** Sets up `in_fn` and `out_fn` as directories.
@@ -162,8 +205,22 @@ int Paths(const char *const in_fn, const char *const out_fn) {
 	return 1;
 }
 
-/** Clears all the data. */
-void Paths_(void) {
-	fprintf(stderr, "Paths_()\n");
-	clear_paths();
+/** Appends output directory to `fn`:`fn_name`, (if it exists.)
+ @return A temporary path, invalid on calling any path function.
+ @throws[malloc] */
+const char *PathsFromHere(const size_t fn_len, const char *const fn) {
+	CharArrayClear(&paths.working.buffer), PathArrayClear(&paths.working.path);
+	cat_path(&paths.working.path, &paths.input.path);
+	if(fn) {
+		char *workfn;
+		/* Copy the argument. */
+		if(!CharArrayBuffer(&paths.working.buffer, fn_len + 1)) return 0;
+		workfn = CharArrayGet(&paths.working.buffer);
+		memcpy(workfn, fn, fn_len), workfn[fn_len] = '\0';
+		/* Break it up and stick it on the path. */
+		if(!relative_path(workfn) || !sep_path(&paths.working.path, workfn))
+			return 0;
+	}
+	simplify_path(&paths.working.path);
+	return path_to_string(&paths.result, &paths.working.path);
 }
