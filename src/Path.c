@@ -50,25 +50,16 @@ terminate:
 	return CharArrayGet(str);
 }
 
-static int relative_path(const char *string) {
-	int is_last_slash = 1;
-	assert(string);
-	while(*string != '\0') {
-		/* Must be something between slashes. */
-		if(*string == dirsep) {
-			if(is_last_slash) return 0;
-			is_last_slash = 1;
-		} else {
-			is_last_slash = 0;
-		}
-		string++;
-	}
-	return 1;
-}
-
+/** Checks for not "//", which is not a path. */
 static int looks_like_path(const char *string) {
 	assert(string);
 	return !strstr(string, notallowed);
+}
+
+/** Checks for not "//" as well as not "/" at the beginning. */
+static int looks_like_relative_path(const char *string) {
+	assert(string);
+	return string[0] == '\0' || (string[0] != '/' && looks_like_path(string));
 }
 
 /** Appends `path` split on `dirsep` to `args`.
@@ -174,10 +165,7 @@ static int extra_path(struct PathExtra *const extra, const char *const string) {
 }
 
 /** Clears all the data. */
-void Paths_(void) {
-	fprintf(stderr, "Paths_()\n");
-	clear_paths();
-}
+void Paths_(void) { clear_paths(); }
 
 /** Sets up `in_fn` and `out_fn` as directories.
  @return Success. */
@@ -197,7 +185,7 @@ static int append_working_path(const size_t fn_len, const char *const fn) {
 	if(!CharArrayBuffer(&paths.working.buffer, fn_len + 1)) return 0;
 	workfn = CharArrayGet(&paths.working.buffer);
 	memcpy(workfn, fn, fn_len), workfn[fn_len] = '\0';
-	if(!relative_path(workfn) || !sep_path(&paths.working.path, workfn))
+	if(!looks_like_relative_path(workfn) || !sep_path(&paths.working.path, workfn))
 		return 0;
 	return 1;
 }

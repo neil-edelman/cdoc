@@ -88,14 +88,11 @@ static void unused_attribute(const struct Segment *const segment,
 	const enum Symbol symbol) {
 	const struct AttributeArray *const attributes = &segment->attributes;
 	struct Attribute *attribute = 0;
-	char a[12], b[12];
 	assert(segment && attributes && symbol);
-	segment_to_string(segment, &a);
 	while((attribute = AttributeArrayNext(attributes, attribute))) {
 		if(attribute->token.symbol != symbol) continue;
-		attribute_to_string(attribute, &b);
-		fprintf(stderr, "%s: %s attribute not used in %s.\n",
-			pos(&attribute->token), b, a);
+		fprintf(stderr, "%s: attribute not used in %s.\n",
+			pos(&attribute->token), divisions[segment->division]);
 	}
 }
 

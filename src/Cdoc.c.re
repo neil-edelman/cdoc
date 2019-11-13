@@ -207,7 +207,7 @@ static int is_suffix(const char *const string, const char *const suffix) {
  guess. */
 enum Format CdocOptionsFormat(void) {
 	if(args.format == OUT_UNSPECIFIED) {
-		if(args.out_fn && (fprintf(stderr, "format: %s\n", args.out_fn), is_suffix(args.out_fn, ".html")
+		if(args.out_fn && (is_suffix(args.out_fn, ".html")
 			|| is_suffix(args.out_fn, ".htm"))) args.format = OUT_HTML;
 		else args.format = OUT_MD;
 		if(args.debug) fprintf(stderr, "Guess format is %s.\n",
