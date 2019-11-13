@@ -601,17 +601,12 @@ OUT(image) {
 	printf("%s", f == OUT_HTML ? "<img alt = \"" : "![");
 	for(text = TokenArrayNext(tokens, t); text->symbol != URL; )
 		if(!(text = print_token(tokens, text))) goto catch;
-	/* We want to open this file. */
+	/* We want to open this file to check if it's on the up-and-up. */
 	if(!(errno = 0, fn = PathsFromHere(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
-	fprintf(stderr, "HERE PATH: %s?\n", fn);
-	if(f == OUT_HTML) {
-		if(!ImageDimension(fn, &width, &height)) goto raw;
-	} else {
-		FILE *fp;
-		if(!(fp = fopen(fn, "r"))) { perror(fn); goto raw; }
-		fclose(fp);
-	}
+	if(!ImageDimension(fn, &width, &height)) goto raw;
+	/* Because of directory structutre, the file we include in the output is
+	 maybe different */
 	if(!(errno = 0, fn = PathsFromOutput(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
 	if(f == OUT_HTML) {
