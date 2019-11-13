@@ -291,8 +291,8 @@ static int cat_into(char *const result, const size_t result_size,
 	memcpy(result, s1, s1l);
 	memcpy(result + s1l, s2, s2l);
 	result[s1l + s2l] = '\0';
-	fprintf(stderr, "cat_into: \"%.*s\" + \"%.*s\" = \"%s\"\n", s1l, s1, s2l,
-		s2, result);
+	fprintf(stderr, "cat_into: \"%.*s\" + \"%.*s\" = \"%s\"\n", (int)s1l, s1,
+		(int)s2l, s2, result);
 	return 1;
 }
 

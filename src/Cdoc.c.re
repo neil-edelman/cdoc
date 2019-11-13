@@ -124,6 +124,7 @@
 #include <string.h> /* strcmp */
 #include <errno.h>  /* errno */
 #include <assert.h> /* assert */
+#include "../src/Path.h"
 #include "../src/Scanner.h"
 #include "../src/Report.h"
 #include "../src/Semantic.h"
@@ -137,7 +138,7 @@ static void usage(void) {
 		"  -f | --format (html | md) Overrides built-in guessing.\n"
 		"  -o | --output <filename>  Stick the output file in this.\n"
 		"Given <input-file>, a C file with encoded documentation,\n"
-		"outputs that documentation.\n");
+		"outputs that documentation. Output path must \n");
 }
 
 static struct {
@@ -212,6 +213,10 @@ enum Format CdocOptionsFormat(void) {
 	return args.format;
 }
 
+const char *CdocOptionsOutput(void) {
+	return args.out_fn;
+}
+
 /** @param[argc, argv] Argument vectors. */
 int main(int argc, char **argv) {
 	FILE *fp = 0;
@@ -225,6 +230,9 @@ int main(int argc, char **argv) {
 	/* This prints to `stdout`. If the args have specified that it goes into a
 	 file, then redirect. */
 	if(args.out_fn && !freopen(args.out_fn, "w", stdout)) goto catch;
+
+	/* Set up the paths. */
+	if(!Paths(args.in_fn, args.out_fn)) goto catch;
 
 	/* Open the input file and parse. */
 	if(!(scanner = Scanner(args.in_fn, &ReportNotify))) goto catch;
@@ -244,6 +252,7 @@ catch:
 	}
 	
 finally:
+	Paths_();
 	Report_();
 	Scanner_(scanner);
 	if(fp) fclose(fp);

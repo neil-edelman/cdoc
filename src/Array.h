@@ -1,40 +1,41 @@
-/** 2016 Neil Edelman, distributed under the terms of the MIT License; see
- \url{ https://opensource.org/licenses/MIT }.
+/** @license 2016 Neil Edelman, distributed under the terms of the
+ [MIT License](https://opensource.org/licenses/MIT).
 
- {<T>Array} is a dynamic contiguous array that stores {<T>}, which must be set
- using {ARRAY_TYPE}. The capacity is greater then or equal to the size, and
- resizing incurs amortised cost. When adding new elements, the elements may
- change memory location to fit, it is therefore unstable; any pointers to this
- memory become stale and unusable.
+ `<T>Array` is a dynamic contiguous array that stores `<T>`, which must be set
+ using `ARRAY_TYPE`. To ensure that the capacity is greater then or equal to
+ the size, resizing may be necessary and incurs amortised cost. When adding new
+ elements, the elements may change memory location to fit. It is therefore
+ unstable; any pointers to this memory may become stale and unusable when
+ expanding.
 
- {<T>Array} is not synchronised. Errors are returned with {errno}. The
+ `<T>Array` is not synchronised. Errors are returned with `errno`. The
  parameters are preprocessor macros, and are all undefined at the end of the
- file for convenience. {assert.h} is included in this file; to stop the
- debug assertions, use {#define NDEBUG} before inclusion.
+ file for convenience. `assert.h` is included in this file; to stop the
+ debug assertions, use `#define NDEBUG` before inclusion.
 
- @param ARRAY_NAME, ARRAY_TYPE
- The name that literally becomes {<T>}, and a valid type associated therewith,
+ ![States](web/states.png)
+
+ @param[ARRAY_NAME, ARRAY_TYPE]
+ The name that literally becomes `<T>`, and a valid type associated therewith,
  accessible to the compiler at the time of inclusion; should be conformant to
  naming and to the maximum available length of identifiers. Must each be
  present before including.
 
- @param ARRAY_STACK
- Doesn't define removal functions except \see{<T>ArrayPop}, making it a stack.
+ @param[ARRAY_STACK]
+ Doesn't define removal functions except <fn:<T>ArrayPop>, making it a stack.
 
- @param ARRAY_TO_STRING
- Optional print function implementing {<T>ToString}; makes available
- \see{<T>ArrayToString}.
+ @param[ARRAY_TO_STRING]
+ Optional print function implementing <typedef:<PT>ToString>; makes available
+ <fn:<T>ArrayToString>.
 
- @param ARRAY_TEST
- Unit testing framework using {<T>ArrayTest}, included in a separate header,
- {../test/ArrayTest.h}. Must be defined equal to a (random) filler function,
- satisfying {<T>Action}. Requires {ARRAY_TO_STRING} and not {NDEBUG}.
+ @param[ARRAY_TEST]
+ Unit testing framework using `<T>ArrayTest`, included in a separate header,
+ `../test/ArrayTest.h`. Must be defined equal to a (random) filler function,
+ satisfying <typedef:<PT>Action>. Requires `ARRAY_TO_STRING` and not `NDEBUG`.
 
- @title		Array.h
- @std		C89
- @author	Neil
- @version	2019-05 Added \see{<T>ArrayReplace} and \see{<T>ArrayBuffer}.
- @since		2018-03 Renamed {Pool} to {Array}. Took out migrate. */
+ @title Contiguous Dynamic Parameterised Array
+ @std C89
+ @author Neil */
 
 
 
@@ -64,7 +65,7 @@
 
 
 /* Generics using the preprocessor;
- \url{ http://stackoverflow.com/questions/16522341/pseudo-generics-in-c }. */
+ <http://stackoverflow.com/questions/16522341/pseudo-generics-in-c>. */
 #ifdef CAT
 #undef CAT
 #endif
@@ -93,32 +94,34 @@
 #define T_(thing) CAT(ARRAY_NAME, thing)
 #define PT_(thing) PCAT(array, PCAT(ARRAY_NAME, thing))
 
-/* Troubles with this line? check to ensure that {ARRAY_TYPE} is a valid type,
- whose definition is placed above {#include "Array.h"}. */
+/* Troubles with this line? check to ensure that `ARRAY_TYPE` is a valid type,
+ whose definition is placed above `#include "Array.h"`. */
 typedef ARRAY_TYPE PT_(Type);
 #define T PT_(Type)
 
 
 
 #ifdef ARRAY_TO_STRING /* <-- string */
-/** Responsible for turning {<T>} (the first argument) into a 12 {char}
- null-terminated output string (the second.) Used for {ARRAY_TO_STRING}. */
+/** Responsible for turning `<T>` (the first argument) into a 12 `char`
+ null-terminated output string (the second.) Private; must re-declare. Used for
+ `ARRAY_TO_STRING`. */
 typedef void (*PT_(ToString))(const T *, char (*const)[12]);
-/* Check that {ARRAY_TO_STRING} is a function implementing {<PT>ToString},
- whose definition is placed above {#include "Array.h"}. */
+/* Check that `ARRAY_TO_STRING` is a function implementing
+ <typedef:<PT>ToString>, whose definition is placed above
+ `#include "Array.h"`. */
 static const PT_(ToString) PT_(to_string) = (ARRAY_TO_STRING);
 #endif /* string --> */
 
-/* Operates by side-effects on {data} only. */
+/** Operates by side-effects on `data` only. Private; must re-declare. */
 typedef void (*PT_(Action))(T *const data);
 
-/* Given constant {data}, returns a boolean. */
+/** Given constant `data`, returns a boolean. Private; must re-declare. */
 typedef int (*PT_(Predicate))(const T *const data);
 
 
 
 /** The array. Zeroed data is a valid state. To instantiate explicitly, see
- \see{<T>Array} or initialise it with `ARRAY_INIT` or `{0}` (C99.) */
+ <fn:<T>Array> or initialise it with `ARRAY_INIT` or `{0}` (C99.) */
 struct T_(Array);
 struct T_(Array) {
 	T *data;
@@ -135,11 +138,12 @@ struct T_(Array) {
 
 
 
-/** Ensures capacity.
- @param update_ptr: Must be in the array or null.
- @return Success; otherwise, {errno} may be set.
- @throws ERANGE: Tried allocating more then can fit in {size_t}.
- @throws {realloc} errors: {IEEE Std 1003.1-2001}. */
+/** Ensures `min_capacity` of `a`.
+ @param[update_ptr] Must be in the array or null, it updates this value.
+ @return Success; otherwise, `errno` may be set.
+ @throws[ERANGE] Tried allocating more then can fit in `size_t`.
+ @throws[realloc] [IEEE Std 1003.1-2001
+ ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html). */
 static int PT_(reserve)(struct T_(Array) *const a,
 	const size_t min_capacity, T **const update_ptr) {
 	size_t c0, c1;
@@ -171,13 +175,13 @@ static int PT_(reserve)(struct T_(Array) *const a,
 	return 1;
 }
 
-/** Converts {anchor} and {range} à la Python and stores them in the pointers
- {p0} and {p1} {s.t} {*p0, *p1 \in [0, a.size], *p0 <= *p1}.
- @param anchor: An element in the array or null to indicate past the end.
+/** In `a`, converts `anchor` and `range` à la Python and stores them in the
+ pointers `p0` and `p1` _st_ `*p0, *p1 \in [0, a.size], *p0 <= *p1`.
+ @param[anchor] An element in the array or null to indicate past the end.
  @return Success.
- @throws ERANGE: {anchor} is not null and not in {a}.
- @throws ERANGE: {range} is greater then +/-65534.
- @throws ERANGE: `size_t` overflow. */
+ @throws[ERANGE] `anchor` is not null and not in `a`.
+ @throws[ERANGE] `range` is greater then +/-65534.
+ @throws[ERANGE] `size_t` overflow. */
 static int PT_(range)(const struct T_(Array) *const a, const T *anchor,
 	const long range, size_t *const p0, size_t *const p1) {
 	size_t i0, i1;
@@ -197,7 +201,8 @@ static int PT_(range)(const struct T_(Array) *const a, const T *anchor,
 	return 1;
 }
 
-/** Replace: does the work. */
+/** Replace: does the work. With `a`, array indices `i0` (inclusive) to `i1`
+ (exclusive) will be replaced with `b`. */
 static int PT_(replace)(struct T_(Array) *const a, const size_t i0,
 	const size_t i1, const struct T_(Array) *const b) {
 	const size_t a_range = i1 - i0, b_range = b ? b->size : 0;
@@ -216,9 +221,9 @@ static int PT_(replace)(struct T_(Array) *const a, const size_t i0,
 	return 1;
 }
 
-/** Zeros {a} except for {ARRAY_MIGRATE_ALL} which is initialised in the
- containing function, and not {!ARRAY_FREE_LIST}, which is initialised in
- \see{<PT>_reserve}. */
+/** Zeros `a` except for `ARRAY_MIGRATE_ALL` which is initialised in the
+ containing function, and not `!ARRAY_FREE_LIST`, which is initialised in
+ <fn:<PT>reserve>. */
 static void PT_(array)(struct T_(Array) *const a) {
 	assert(a);
 	a->data          = 0;
@@ -227,9 +232,9 @@ static void PT_(array)(struct T_(Array) *const a) {
 	a->size          = 0;
 }
 
-/** Destructor for {a}; returns an initialised {a} to the empty state where it
- takes no memory.
- @param a: If null, does nothing.
+/** Destructor for `a`; returns an initialised `a` to the empty state where it
+ takes no dynamic memory.
+ @param[a] If null, does nothing.
  @order \Theta(1)
  @allow */
 static void T_(Array_)(struct T_(Array) *const a) {
@@ -238,7 +243,7 @@ static void T_(Array_)(struct T_(Array) *const a) {
 	PT_(array)(a);
 }
 
-/** Initialises {a} to be empty.
+/** Initialises `a` to be empty.
  @order \Theta(1)
  @allow */
 static void T_(Array)(struct T_(Array) *const a) {
@@ -246,7 +251,8 @@ static void T_(Array)(struct T_(Array) *const a) {
 	PT_(array)(a);
 }
 
-/** @return The size.
+/** @param[a] If null, returns zero.
+ @return The size of `a`.
  @order O(1)
  @allow */
 static size_t T_(ArraySize)(const struct T_(Array) *const a) {
@@ -256,13 +262,13 @@ static size_t T_(ArraySize)(const struct T_(Array) *const a) {
 
 #ifndef ARRAY_STACK /* <-- !stack */
 
-/** Removes {data} from {a}.
- @param a, data: If null, returns false.
- @param data: Will be removed; data will remain the same but be updated to the
+/** Removes `data` from `a`.
+ @param[a, data] If null, returns false.
+ @param[data] Will be removed; data will remain the same but be updated to the
  next element, or if this was the last element, the pointer will be past the
  end.
- @return Success, otherwise {errno} will be set for valid input.
- @throws EDOM: {data} is not part of {a}.
+ @return Success, otherwise `errno` will be set for valid input.
+ @throws[EDOM] `data` is not part of `a`.
  @order O(n).
  @allow */
 static int T_(ArrayRemove)(struct T_(Array) *const a, T *const data) {
@@ -274,16 +280,16 @@ static int T_(ArrayRemove)(struct T_(Array) *const a, T *const data) {
 	return 1;
 }
 
-/** Removes {data} from {a} and replaces the spot it was in with the tail.
- @param a, data: If null, returns false.
- @param data: Will be removed; data will remain the same but be updated to the
+/** Removes `data` from `a` and replaces the spot it was in with the tail.
+ @param[a, data] If null, returns false.
+ @param[data] Will be removed; data will remain the same but be updated to the
  last element, or if this was the last element, the pointer will be past the
  end.
- @return Success, otherwise {errno} will be set for valid input.
- @throws EDOM: {data} is not part of {a}.
+ @return Success, otherwise `errno` will be set for valid input.
+ @throws[EDOM] `data` is not part of `a`.
  @order O(1).
  @allow */
-static int T_(ArrayTailRemove)(struct T_(Array) *const a, T *const data) {
+static int T_(ArrayLazyRemove)(struct T_(Array) *const a, T *const data) {
 	size_t n;
 	if(!a || !data) return 0;
 	if(data < a->data
@@ -294,10 +300,10 @@ static int T_(ArrayTailRemove)(struct T_(Array) *const a, T *const data) {
 
 #endif /* !stack --> */
 
-/** Sets the size of {a} to zero, effectively removing all the elements, but
+/** Sets the size of `a` to zero, effectively removing all the elements, but
  leaves the capacity alone, (the only thing that will free memory allocation
- is \see{<T>Array_}.)
- @param a: If null, does nothing.
+ is <fn:<T>Array_>.)
+ @param[a] If null, does nothing.
  @order \Theta(1)
  @allow */
 static void T_(ArrayClear)(struct T_(Array) *const a) {
@@ -305,19 +311,19 @@ static void T_(ArrayClear)(struct T_(Array) *const a) {
 	a->size = 0;
 }
 
-/** Causing something to be added to the {<T>Array} may invalidate this
- pointer, see \see{<T>ArrayUpdateNew}.
- @param a: If null, returns null.
- @return A pointer to the {a}'s data, indexable up to the {a}'s size.
+/** Causing something to be added to the `<T>Array` may invalidate this
+ pointer, see <fn:<T>ArrayUpdateNew>.
+ @param[a] If null, returns null.
+ @return A pointer to the `a`'s data, indexable up to the `a`'s size.
  @order \Theta(1)
  @allow */
 static T *T_(ArrayGet)(const struct T_(Array) *const a) {
 	return a ? a->data : 0;
 }
 
-/** Causing something to be added to the {<T>Array} may invalidate this
- pointer, see \see{<T>ArrayUpdateNew}.
- @param a: If null, returns null.
+/** Causing something to be added to the `<T>Array` may invalidate this
+ pointer, see <fn:<T>ArrayUpdateNew>.
+ @param[a] If null, returns null.
  @return One past the end of the array; take care when dereferencing, as it is
  not part of the array.
  @order \Theta(1)
@@ -326,9 +332,9 @@ static T *T_(ArrayEnd)(const struct T_(Array) *const a) {
 	return a ? a->data + a->size : 0;
 }
 
-/** Gets an index given {data}.
- @param a: Must be a valid object.
- @param data: If the element is not part of the {a}, behaviour is undefined.
+/** Gets an index given `data`.
+ @param[a] Must be a valid object that stores `data`.
+ @param[data] If the element is not part of the `a`, behaviour is undefined.
  @return An index.
  @order \Theta(1)
  @fixme Untested.
@@ -338,9 +344,9 @@ static size_t T_(ArrayIndex)(const struct T_(Array) *const a,
 	return data - a->data;
 }
 
-/** @param a: If null, returns null.
+/** @param[a] If null, returns null.
  @return The last element or null if the a is empty. Causing something to be
- added to the {a} may invalidate this pointer.
+ added to the `a` may invalidate this pointer.
  @order \Theta(1)
  @fixme Untested.
  @allow */
@@ -349,11 +355,11 @@ static T *T_(ArrayPeek)(const struct T_(Array) *const a) {
 	return a->data + a->size - 1;
 }
 
-/** The same value as \see{<T>ArrayPeek}.
- @param a: If null, returns null.
- @return Value from the the top of the {a} that is removed or null if the
- stack is empty. Causing something to be added to the {a} may invalidate
- this pointer. See \see{<T>ArrayUpdateNew}.
+/** The same value as <fn:<T>ArrayPeek>.
+ @param[a] If null, returns null.
+ @return Value from the the top of the `a` that is removed or null if the
+ stack is empty. Causing something to be added to the `a` may invalidate
+ this pointer. See <fn:<T>ArrayUpdateNew>.
  @order \Theta(1)
  @allow */
 static T *T_(ArrayPop)(struct T_(Array) *const a) {
@@ -361,9 +367,9 @@ static T *T_(ArrayPop)(struct T_(Array) *const a) {
 	return a->data + --a->size;
 }
 
-/** Iterate through {a} backwards.
- @param a: The array; if null, returns null.
- @param here: Set it to null to get the last element, if it exists.
+/** Iterate through `a` backwards.
+ @param[a] The array; if null, returns null.
+ @param[here] Set it to null to get the last element, if it exists.
  @return A pointer to the previous element or null if it does not exist.
  @order \Theta(1)
  @allow */
@@ -380,11 +386,11 @@ static T *T_(ArrayBack)(const struct T_(Array) *const a, const T *const here) {
 	return a->data + idx - 1;
 }
 
-/** Iterate through {a}. It is safe to add using \see{<T>ArrayUpdateNew} with
- the return value as {update}. Removing an element causes the pointer to go to
+/** Iterate through `a`. It is safe to add using <fn:<T>ArrayUpdateNew> with
+ the return value as `update`. Removing an element causes the pointer to go to
  the next element, if it exists.
- @param a: The array; if null, returns null.
- @param here: Set it to null to get the first element, if it exists.
+ @param[a] The array; if null, returns null.
+ @param[here] Set it to null to get the first element, if it exists.
  @return A pointer to the next element or null if there are no more.
  @order \Theta(1)
  @allow */
@@ -402,19 +408,21 @@ static T *T_(ArrayNext)(const struct T_(Array) *const a, const T *const here) {
 	return idx < a->size ? (T *)data : 0;
 }
 
-/** Called from \see{<T>ArrayNew} and \see{<T>ArrayUpdateNew}. */
+/** With `a`, and optional `update_ptr`, adds one to the size. Called from
+ <fn:<T>ArrayNew> and <fn:<T>ArrayUpdateNew>. */
 static T *PT_(new)(struct T_(Array) *const a, T **const update_ptr) {
 	assert(a);
 	if(!PT_(reserve)(a, a->size + 1, update_ptr)) return 0;
 	return a->data + a->size++;
 }
 
-/** Gets an uninitialised new element. May move the {a} to a new memory
+/** Gets an uninitialised new element. May move the `a` to a new memory
  location to fit the new size.
- @param a: If is null, returns null.
- @return A new, un-initialised, element, or null and {errno} may be set.
- @throws ERANGE: Tried allocating more then can fit in {size_t} objects.
- @throws {realloc} errors: {IEEE Std 1003.1-2001}.
+ @param[a] If is null, returns null.
+ @return A new, un-initialised, element, or null and `errno` may be set.
+ @throws[ERANGE] Tried allocating more then can fit in `size_t` objects.
+ @throws[realloc] [IEEE Std 1003.1-2001
+ ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
  @order Amortised O(1).
  @allow */
 static T *T_(ArrayNew)(struct T_(Array) *const a) {
@@ -422,15 +430,14 @@ static T *T_(ArrayNew)(struct T_(Array) *const a) {
 	return PT_(new)(a, 0);
 }
 
-/** Gets an uninitialised new element and updates the {update_ptr} if it is
- within the memory region that was changed to accomodate new space. For
- example, when iterating a pointer and new element is needed that could change
- the pointer.
- @param a: If null, returns null.
- @param update_ptr: Pointer to update on memory move.
- @return A new, un-initialised, element, or null and {errno} may be set.
- @throws ERANGE: Tried allocating more then can fit in {size_t}.
- @throws {realloc} errors: {IEEE Std 1003.1-2001}.
+/** Gets an uninitialised new element in `a` and updates the `update_ptr` if it
+ is within the memory region that was changed to accomodate new space.
+ @param[a] If null, returns null.
+ @param[update_ptr] Pointer to update on memory move. If null, does nothing.
+ @return A new, un-initialised, element, or null and `errno` may be set.
+ @throws[ERANGE] Tried allocating more then can fit in `size_t`.
+ @throws[realloc] [IEEE Std 1003.1-2001
+ ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
  @order amortised O(1)
  @fixme Untested.
  @allow */
@@ -440,14 +447,15 @@ static T *T_(ArrayUpdateNew)(struct T_(Array) *const a,
 	return PT_(new)(a, update_ptr);
 }
 
-/** Ensures that {a} array is {buffer} capacity beyond the elements in the
+/** Ensures that `a` array is `buffer` capacity beyond the elements in the
  array.
- @param a: If is null, returns null.
- @param buffer: If this is zero, returns null.
- @return One past the end of the array, or null and {errno} may be set.
- @throws ERANGE
- @throws realloc
- @order Amortised O({buffer}).
+ @param[a] If is null, returns null.
+ @param[buffer] If this is zero, returns null.
+ @return One past the end of the array, or null and `errno` may be set.
+ @throws[ERANGE] Tried allocating more then can fit in `size_t`.
+ @throws[realloc] [IEEE Std 1003.1-2001
+ ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
+ @order Amortised O(`buffer`).
  @fixme Test.
  @allow */
 static T *T_(ArrayBuffer)(struct T_(Array) *const a, const size_t buffer) {
@@ -455,10 +463,10 @@ static T *T_(ArrayBuffer)(struct T_(Array) *const a, const size_t buffer) {
 	return a->data + a->size;
 }
 
-/** Adds {add} to the size in {a}.
+/** Adds `add` to the size in `a`.
  @return Success.
- @throws ERANGE: The size added is greater than the capacity. To avoid this,
- call \see{<T>ArrayBuffer} before.
+ @throws[ERANGE] The size added is greater than the capacity. To avoid this,
+ call <fn:<T>ArrayBuffer> before.
  @order O(1)
  @fixme Test.
  @allow */
@@ -470,11 +478,11 @@ static int T_(ArrayExpand)(struct T_(Array) *const a, const size_t add) {
 	return 1;
 }
 
-/** Iterates through {a} and calls {action} on all the elements. The topology of
+/** Iterates through `a` and calls `action` on all the elements. The topology of
  the list can not change while in this function. That is, don't call
- \see{<T>ArrayNew}, \see{<T>ArrayRemove}, {etc} in {action}.
- @param a, action: If null, does nothing.
- @order O({size} \times {action})
+ <fn:<T>ArrayNew>, <fn:<T>ArrayRemove>, _etc_ in `action`.
+ @param[a, action] If null, does nothing.
+ @order O(`size` \times `action`)
  @fixme Untested.
  @fixme Sequence interface.
  @allow */
@@ -485,11 +493,11 @@ static void T_(ArrayEach)(struct T_(Array) *const a,
 	for(t = a->data, end = t + a->size; t < end; t++) action(t);
 }
 
-/** Iterates through {a} and calls {action} on all the elements for which
- {predicate} returns true. The topology of the list can not change while in
+/** Iterates through `a` and calls `action` on all the elements for which
+ `predicate` returns true. The topology of the list can not change while in
  this function.
- @param a, predicate, action: If null, does nothing.
- @order O({size} \times {action})
+ @param[a, predicate, action] If null, does nothing.
+ @order O(`size` \times `action`)
  @fixme Untested.
  @fixme Sequence interface.
  @allow */
@@ -501,11 +509,11 @@ static void T_(ArrayIfEach)(struct T_(Array) *const a,
 		if(predicate(t)) action(t);
 }
 
-/** Iterates through {a} and calls {predicate} until it returns true.
- @param a, predicate: If null, returns null.
- @return The first {predicate} that returned true, or, if the statement is
+/** Iterates through `a` and calls `predicate` until it returns true.
+ @param[a, predicate] If null, returns null.
+ @return The first `predicate` that returned true, or, if the statement is
  false on all, null.
- @order O({size} \times {action})
+ @order O(`size` \times `action`)
  @fixme Untested.
  @fixme Sequence interface.
  @allow */
@@ -518,10 +526,10 @@ static T *T_(ArrayAny)(const struct T_(Array) *const a,
 	return 0;
 }
 
-/** For all elements of {a}, calls {keep}, and for each element, if the return
+/** For all elements of `a`, calls `keep`, and for each element, if the return
  value is false, lazy deletes that item.
- @param a, keep: If null, does nothing.
- @order O({size})
+ @param[a, keep] If null, does nothing.
+ @order O(`size`)
  @allow */
 static void T_(ArrayKeepIf)(struct T_(Array) *const a,
 	const PT_(Predicate) keep) {
@@ -557,9 +565,9 @@ static void T_(ArrayKeepIf)(struct T_(Array) *const a,
 	a->size = erase - a->data;
 }
 
-/** Removes at either end of {a} of things that {predicate} returns true.
- @param a, predicate: If null, does nothing.
- @order O({size})
+/** Removes at either end of `a` of things that `predicate` returns true.
+ @param[a, predicate] If null, does nothing.
+ @order O(`size`)
  @allow */
 static void T_(ArrayTrim)(struct T_(Array) *const a,
 	const PT_(Predicate) predicate) {
@@ -572,24 +580,27 @@ static void T_(ArrayTrim)(struct T_(Array) *const a,
 	memmove(a->data, a->data + i, sizeof *a->data * i), a->size -= i;
 }
 
-/** In {a}, replaces the elements from {anchor} up to {range} with a copy of
- {b}.
- @param a: If null, returns zero.
- @param anchor: Beginning of the replaced value, inclusive. If null, appends to
+/** In `a`, replaces the elements from `anchor` up to `range` with a copy of
+ `b`.
+ @param[a] If null, returns zero.
+ @param[anchor] Beginning of the replaced value, inclusive. If null, appends to
  the end.
- @param range: How many replaced values; negative values are implicitly plus
- the length of the array; clamped at the minimum and maximum.
- @param b: The replacement array. If null, deletes without replacing.
+ @param[range] How many replaced values in the original; negative values are
+ implicitly plus the length of the array; clamped at the minimum and maximum.
+ @param[b] The replacement array. If null, deletes without replacing. It is
+ more efficient than individual <fn:<T>ArrayRemove> to delete several
+ consecutive values.
  @return Success.
- @throws EDOM: {a} and {b} are not null and the same.
- @throws ERANGE: {anchor} is not null and not in {a}.
- @throws ERANGE: {range} is greater then 65535 or smaller then -65534.
- @throws ERANGE: {b} would cause the array to overflow.
- @throws {realloc}.
- @order \Theta({b.size}) if the elements have the same size, otherwise,
- amortised O({a.size} + {b.size}).
+ @throws[EDOM] `a` and `b` are not null and the same.
+ @throws[ERANGE] `anchor` is not null and not in `a`.
+ @throws[ERANGE] `range` is greater then 65535 or smaller then -65534.
+ @throws[ERANGE] `b` would cause the array to overflow.
+ @throws[realloc] [IEEE Std 1003.1-2001
+ ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
+ @order \Theta(`b.size`) if the elements have the same size, otherwise,
+ amortised O(`a.size` + `b.size`).
  @allow */
-static int T_(ArrayReplace)(struct T_(Array) *const a, const T *anchor,
+static int T_(ArraySplice)(struct T_(Array) *const a, const T *anchor,
 	const long range, const struct T_(Array) *const b) {
 	size_t i0, i1;
 	if(!a) return 0;
@@ -598,21 +609,22 @@ static int T_(ArrayReplace)(struct T_(Array) *const a, const T *anchor,
 	return PT_(replace)(a, i0, i1, b);
 }
 
-/** In {a}, replaces the elements from indices {i0} (inclusive) to {i1}
- (exclusive) with a copy of {b}.
- @param a: If null, returns zero.
- @param i0, i1: The replacement indices, {[i0, i1)}, such that
- {0 <= i0 <= i1 <= a.size}.
- @param b: The replacement array. If null, deletes without replacing.
+/** In `a`, replaces the elements from indices `i0` (inclusive) to `i1`
+ (exclusive) with a copy of `b`.
+ @param[a] If null, returns zero.
+ @param[i0, i1] The replacement indices, `[i0, i1)`, such that
+ `0 <= i0 <= i1 <= a.size`.
+ @param[b] The replacement array. If null, deletes without replacing.
  @return Success.
- @throws EDOM: {a} and {b} are not null and the same.
- @throws EDOM: {i0} or {i1} are out-of-bounds or {i0 > i1}.
- @throws ERANGE: {b} would cause the array to overflow.
- @throws {realloc}.
- @order \Theta({b.size}) if the elements have the same size, otherwise,
- amortised O({a.size} + {b.size}).
+ @throws[EDOM] `a` and `b` are not null and the same.
+ @throws[EDOM] `i0` or `i1` are out-of-bounds or `i0 > i1`.
+ @throws[ERANGE] `b` would cause the array to overflow.
+ @throws[realloc] [IEEE Std 1003.1-2001
+ ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
+ @order \Theta(`b.size`) if the elements have the same size, otherwise,
+ amortised O(`a.size` + `b.size`).
  @allow */
-static int T_(ArrayIndexReplace)(struct T_(Array) *const a, const size_t i0,
+static int T_(ArrayIndexSplice)(struct T_(Array) *const a, const size_t i0,
 	const size_t i1, const struct T_(Array) *const b) {
 	if(!a) return 0;
 	if(a == b || i0 > i1 || i1 > a->size) return errno = EDOM, 0;
@@ -636,6 +648,7 @@ struct Array_SuperCat {
 	size_t left;
 	int is_truncated;
 };
+/** Initialises `cat` to a static array `print` and `print_size`. */
 static void array_super_cat_init(struct Array_SuperCat *const cat,
 	char *const print, const size_t print_size) {
 	cat->print = cat->cursor = print;
@@ -643,6 +656,7 @@ static void array_super_cat_init(struct Array_SuperCat *const cat,
 	cat->is_truncated = 0;
 	print[0] = '\0';
 }
+/** `append`s the string to `cat` */
 static void array_super_cat(struct Array_SuperCat *const cat,
 	const char *const append) {
 	size_t lu_took; int took;
@@ -657,9 +671,9 @@ static void array_super_cat(struct Array_SuperCat *const cat,
 #endif /* once --> */
 
 /** Can print 4 things at once before it overwrites. One must a
- {ARRAY_TO_STRING} to a function implementing {<T>ToString} to get this
- functionality.
- @return Prints {a} in a static buffer.
+ `ARRAY_TO_STRING` to a function implementing <typedef:<PT>ToString> to get
+ this functionality.
+ @return Prints `a` in a static buffer.
  @order \Theta(1); it has a 255 character limit; every element takes some of it.
  @fixme ToString interface.
  @allow */
@@ -702,14 +716,14 @@ static const char *T_(ArrayToString)(const struct T_(Array) *const a) {
 static void PT_(unused_coda)(void);
 /** This silences unused function warnings from the pre-processor, but allows
  optimisation, (hopefully.)
- \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
+ <http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code> */
 static void PT_(unused_set)(void) {
 	T_(Array_)(0);
 	T_(Array)(0);
 	T_(ArraySize)(0);
 #ifndef ARRAY_STACK /* <-- !stack */
 	T_(ArrayRemove)(0, 0);
-	T_(ArrayTailRemove)(0, 0);
+	T_(ArrayLazyRemove)(0, 0);
 #endif /* !stack --> */
 	T_(ArrayClear)(0);
 	T_(ArrayGet)(0);
@@ -728,14 +742,14 @@ static void PT_(unused_set)(void) {
 	T_(ArrayAny)(0, 0);
 	T_(ArrayKeepIf)(0, 0);
 	T_(ArrayTrim)(0, 0);
-	T_(ArrayReplace)(0, 0, 0, 0);
-	T_(ArrayIndexReplace)(0, 0, 0, 0);
+	T_(ArraySplice)(0, 0, 0, 0);
+	T_(ArrayIndexSplice)(0, 0, 0, 0);
 #ifdef ARRAY_TO_STRING
 	T_(ArrayToString)(0);
 #endif
 	PT_(unused_coda)();
 }
-/** {clang}'s pre-processor is not fooled if you have one function. */
+/** `clang`'s pre-processor is not fooled if you have one function. */
 static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 
 
@@ -743,8 +757,8 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 /* Un-define all macros. */
 #undef ARRAY_NAME
 #undef ARRAY_TYPE
-/* Undocumented; allows nestled inclusion so long as: {CAT_}, {CAT}, {PCAT},
- {PCAT_} conform, and {T} is not used. */
+/* Undocumented; allows nestled inclusion so long as: `CAT_`, `CAT`, `PCAT`,
+ `PCAT_` conform, and `T` is not used. */
 #ifdef ARRAY_SUBTYPE /* <-- sub */
 #undef ARRAY_SUBTYPE
 #else /* sub --><-- !sub */
