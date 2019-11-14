@@ -101,29 +101,24 @@
  \* internal underscores are emphasis except in math/code mode;
  \* A `cool' word in a `nice' sentence must be escaped.
 
+ Note that it does not validate html; nothing stops one from writing eg, a link,
+ or emphasis, in the title.
+
  @title Main.c
  @author Neil
  @std C89
  @depend [re2c](http://re2c.org/)
- @fixme Nothing prevents invalid html from being output, for example, having a
- link in the title. Switch to md if that happens?
  @fixme Trigraph support, (haha.)
  @fixme Old-style function support.
- @fixme `re2c` appends a comma at the end of the enumeration list, not
- compliant with C90.
  @fixme Hide `const` on params when it can not affect function calls.
  @fixme Prototypes and functions are the same thing; this will confuse it. Hash
  map will be faster and more precise.
  @fixme Links to non-documented code which sometimes doesn't show up, work
  without error, and create broken links.
  @fixme Sometimes it's an error, sometimes it's a warning, seemingly at random.
- Make all the errors on-line.
- @fixme `cat file1 file2 > cdoc` is not cutting it because line numbers. Should
- be easy to load files individually.
+ Make all the errors on-line?
  @fixme 80-characters _per_ line limit; I've got it working, just need to apply
- to this code. Needs buffering.
- @fixme "samples/foo.c:37: classifying unknown statement as a general
- declaration." on include? */
+ to this code. Needs buffering. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */

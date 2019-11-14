@@ -587,15 +587,16 @@ OUT(link) {
 	if(!(errno = 0, fn = PathsFromOutput(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
 	fn_len = strlen(fn);
+	assert(fn_len < INT_MAX);
 	if(CdocOptionsDebug())
-		fprintf(stderr, "%s: local link %.*s.\n", pos(t), fn_len, fn);
+		fprintf(stderr, "%s: local link %.*s.\n", pos(t), (int)fn_len, fn);
 	goto output;
 raw:
 	/* Maybe it's an external link? Just put it unmolested. */
 	fn = turl->from;
 	fn_len = turl->length;
 	if(CdocOptionsDebug())
-		fprintf(stderr, "%s: external link %.*s.\n", pos(t), fn_len, fn);
+		fprintf(stderr, "%s: external link %.*s.\n", pos(t), (int)fn_len, fn);
 output:
 	assert(fn_len <= INT_MAX);
 	if(f == OUT_HTML) printf("<a href = \"%.*s\">", (int)fn_len, fn);
@@ -806,10 +807,6 @@ static void print_tokens(const struct TokenArray *const tokens) {
 }
 
 
-
-
-/* Lambdas would be nice! fixme: this needs rewriting and simplifying in light
- of modes. It should be simpler. */
 
 typedef int (*DivisionPredicate)(const enum Division);
 
@@ -1171,7 +1168,6 @@ int ReportOut(void) {
 			params = TokenArrayGet(&segment->code);
 			assert(idxs[0] < TokenArraySize(&segment->code));
 			style_prepare_output(END);
-			/* fixme: tag type? */
 			printf("<a href = \"#%s:", division_strings[DIV_TAG]);
 			print_token(&segment->code, params + idxs[0]);
 			printf("\">");
@@ -1342,7 +1338,7 @@ int ReportOut(void) {
 		div_att_print(&is_div_preamble, ATT_LICENSE, SHOW_TEXT);
 		style_pop_push();
 		style_push(&plain_see_license), style_push(&plain_text);
-		/* fixme: if a segment has multiple licenses, they will show multiple
+		/* fixme: If a segment has multiple licenses, they will show multiple
 		 times. */
 		div_att_print(&is_not_div_preamble, ATT_LICENSE, SHOW_WHERE);
 		style_pop_level();
