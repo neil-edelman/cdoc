@@ -587,11 +587,15 @@ OUT(link) {
 	if(!(errno = 0, fn = PathsFromOutput(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
 	fn_len = strlen(fn);
+	if(CdocOptionsDebug())
+		fprintf(stderr, "%s: local link %.*s.\n", pos(t), fn_len, fn);
 	goto output;
 raw:
 	/* Maybe it's an external link? Just put it unmolested. */
 	fn = turl->from;
 	fn_len = turl->length;
+	if(CdocOptionsDebug())
+		fprintf(stderr, "%s: external link %.*s.\n", pos(t), fn_len, fn);
 output:
 	assert(fn_len <= INT_MAX);
 	if(f == OUT_HTML) printf("<a href = \"%.*s\">", (int)fn_len, fn);
@@ -629,6 +633,8 @@ OUT(image) {
 	/* We want the path to print, now. */
 	if(!(errno = 0, fn = PathsFromOutput(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
+	if(CdocOptionsDebug())
+		fprintf(stderr, "%s: local image %s.\n", pos(t), fn);
 	if(f == OUT_HTML) {
 		printf("\" src = \"%s\" width = %u height = %u>", fn, width, height);
 	} else {
@@ -638,6 +644,8 @@ OUT(image) {
 	goto finally;
 raw:
 	/* Maybe it's an external link? */
+	if(CdocOptionsDebug()) fprintf(stderr, "%s: remote image %.*s.\n",
+		pos(t), turl->length, turl->from);
 	printf("%s%.*s%s", f == OUT_HTML ? "\" src = \"" : "](",
 		turl->length, turl->from, f == OUT_HTML ? "\">" : ")");
 	success = 1;
