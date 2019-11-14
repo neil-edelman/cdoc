@@ -8,8 +8,24 @@
 #include <assert.h>
 #include "Path.h"
 
-static const char *const twodots = "..", *const dot = ".", dirsep = '/',
-	*const notallowed = "//";
+#define XSTR(s) STR(s)
+#define STR(s) #s
+
+/* POSIX and URI -- may need to change if necessary. */
+#define DIRSEP /
+#define OTHER_CHARS ?#
+#define TWODOTS ..
+#define DOT .
+
+const char
+	*const dirsepstr = XSTR(DIRSEP),
+	*const othercharsstr = XSTR(OTHER_CHARS),
+	*const searchdirsep = XSTR(DIRSEP) XSTR(OTHER_CHARS),
+	*const notallowed = XSTR(DIRSEP) XSTR(DIRSEP),
+	*const twodots = XSTR(TWODOTS),
+	*const dot = XSTR(DOT);
+
+/* XSTR(#DIRSEP ## #OTHER_CHARS), crashes clang, hmm. */
 
 #define ARRAY_NAME Path
 #define ARRAY_TYPE const char *
@@ -42,7 +58,7 @@ static const char *path_to_string(struct CharArray *const str,
 		if(!(p = PathArrayNext(path, p))) break;
 		/* Otherwise stick a `dirsep`. */
 		if(!(buf = CharArrayNew(str))) return 0;
-		*buf = dirsep;
+		*buf = dirsepstr[0];
 	}
 terminate:
 	if(!(buf = CharArrayNew(str))) return 0;
@@ -50,16 +66,20 @@ terminate:
 	return CharArrayGet(str);
 }
 
-/** Checks for not "//", which is not a path. */
+/** Checks for not "//", which is not a path, except after '?#'. */
 static int looks_like_path(const char *string) {
+	const char *s, *q;
 	assert(string);
-	return !strstr(string, notallowed);
+	if(!(s = strstr(string, notallowed))) return 1;
+	if(!(q = strpbrk(string, othercharsstr))) return 0;
+	return s < q ? 0 : 1;
 }
 
 /** Checks for not "//" as well as not "/" at the beginning. */
 static int looks_like_relative_path(const char *string) {
 	assert(string);
-	return string[0] == '\0' || (string[0] != '/' && looks_like_path(string));
+	return string[0] == '\0'
+		|| (string[0] != dirsepstr[0] && looks_like_path(string));
 }
 
 /** Appends `path` split on `dirsep` to `args`.
@@ -74,7 +94,8 @@ static int sep_path(struct PathArray *const path, char *string) {
 	for( ; ; ) {
 		if(!(arg = PathArrayNew(path))) return 0;
 		*arg = p;
-		if(!(p = strchr(p, dirsep))) break;
+		/* This searches for '/' until hitting a '?#'. */
+		if(!(p = strpbrk(p, searchdirsep)) || strchr(othercharsstr, *p)) break;
 		*p++ = '\0';
 	}
 	return 1;
@@ -185,18 +206,34 @@ static int append_working_path(const size_t fn_len, const char *const fn) {
 	if(!CharArrayBuffer(&paths.working.buffer, fn_len + 1)) return 0;
 	workfn = CharArrayGet(&paths.working.buffer);
 	memcpy(workfn, fn, fn_len), workfn[fn_len] = '\0';
-	if(!looks_like_relative_path(workfn) || !sep_path(&paths.working.path, workfn))
-		return 0;
+	if(!looks_like_relative_path(workfn)
+		|| !sep_path(&paths.working.path, workfn)) return 0;
 	return 1;
 }
 
-/** Appends output directory to `fn`:`fn_name`, (if it exists.)
+/* ?# are special url encoding things, so make sure they're not included in
+ the filename if we are going to open it. */
+static size_t strip_query_fragment(const size_t uri_len, const char *const uri)
+{
+	const char *u = uri;
+	size_t without = 0;
+	assert(uri);
+	while(without < uri_len) {
+		if(!*u) { assert(0); break; } /* Cannot happen on well-formed input. */
+		if(strchr(othercharsstr, *u)) break;
+		u++, without++;
+	}
+	return without;
+}
+
+/** Appends output directory to `fn`:`fn_name`, (if it exists.) For opening.
  @return A temporary path, invalid on calling any path function.
  @throws[malloc] */
 const char *PathsFromHere(const size_t fn_len, const char *const fn) {
 	PathArrayClear(&paths.working.path);
 	if(!cat_path(&paths.working.path, &paths.input.path)
-		|| (fn && !append_working_path(fn_len, fn))) return 0;
+		|| (fn && !append_working_path(strip_query_fragment(fn_len, fn), fn)))
+		return 0;
 	simplify_path(&paths.working.path);
 	return path_to_string(&paths.result, &paths.working.path);
 }

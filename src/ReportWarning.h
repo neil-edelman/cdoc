@@ -131,7 +131,6 @@ static void warn_internal_link(const struct Token *const token) {
 	fprintf(stderr, "%s: link broken.\n", pos(token));
 }
 
-/** @fixme Should be like Report. */
 static void warn_segment(const struct Segment *const segment) {
 	struct Attribute *attribute = 0;
 	const size_t *code_param;

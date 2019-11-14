@@ -418,6 +418,7 @@ OUT(url) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == URL && !a);
 	style_prepare_output(t->symbol);
+	/* I think it can't contain '<>()\"' by parser. */
 	if(CdocOptionsFormat() == OUT_HTML) {
 		printf("<a href = \"%.*s\">", t->length, t->from);
 		encode(t->length, t->from);
@@ -425,7 +426,6 @@ OUT(url) {
 	} else {
 		printf("[");
 		encode(t->length, t->from);
-		/* fixme: What if it contains ()? */
 		printf("](%.*s)", t->length, t->from);
 	}
 	*ptoken = TokenArrayNext(tokens, t);
@@ -565,10 +565,14 @@ OUT(em_end) {
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
-/* fixme: this needs to be fixed!!! */
+/* fixme: Links to local resources don't work! Do like image. */
 OUT(link) {
 	const struct Token *const t = *ptoken, *text, *turl;
 	const enum Format f = CdocOptionsFormat();
+	const char *fn;
+	size_t fn_len;
+	FILE *fp;
+	int success = 0;
 	assert(tokens && t && t->symbol == LINK_START && !a);
 	style_prepare_output(t->symbol);
 	/* The expected format is LINK_START [^URL]* URL. */
@@ -576,23 +580,42 @@ OUT(link) {
 		if(!turl) goto catch;
 		if(turl->symbol == URL) break;
 	}
-	if(f == OUT_HTML) printf("<a href = \"%.*s\">", turl->length, turl->from);
+	/* We want to open this file to check if it's on the up-and-up. */
+	if(!(errno = 0, fn = PathsFromHere(turl->length, turl->from)))
+		{ if(errno) goto catch; else goto raw; }
+	fprintf(stderr, "PathsFromHere: %s\n", fn);
+	if(!(fp = fopen(fn, "r"))) { perror(fn); errno = 0; goto raw; } fclose(fp);
+	/* Actually use the entire path. */
+	if(!(errno = 0, fn = PathsFromOutput(turl->length, turl->from)))
+		{ if(errno) goto catch; else goto raw; }
+	fprintf(stderr, "PathsFromOutput: %s\n", fn);
+	fn_len = strlen(fn);
+	goto output;
+raw:
+	/* Maybe it's an external link? */
+	fn = turl->from;
+	fn_len = turl->length;
+output:
+	if(f == OUT_HTML) printf("<a href = \"%.*s\">", fn_len, fn);
 	else printf("[");
 	for(text = TokenArrayNext(tokens, t); text->symbol != URL; )
 		if(!(text = print_token(tokens, text))) goto catch;
 	if(f == OUT_HTML) printf("</a>");
-	else printf("](%.*s)", turl->length, turl->from);
-	*ptoken = TokenArrayNext(tokens, turl);
-	return 1;
+	else printf("](%.*s)", fn_len, fn);
+	success = 1;
+	goto finally;
 catch:
 	fprintf(stderr, "%s: expected `[description](url)`.\n", pos(t));
-	return 0;
+finally:
+	*ptoken = TokenArrayNext(tokens, turl);
+	return success;
 }
 OUT(image) {
 	const struct Token *const t = *ptoken, *text, *turl;
 	const enum Format f = CdocOptionsFormat();
 	const char *fn;
 	unsigned width = 1, height = 1;
+	int success = 0;
 	assert(tokens && t && t->symbol == IMAGE_START && !a);
 	style_prepare_output(t->symbol);
 	/* The expected format is IMAGE_START [^URL]* URL. */
@@ -605,8 +628,7 @@ OUT(image) {
 	if(!(errno = 0, fn = PathsFromHere(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
 	if(!ImageDimension(fn, &width, &height)) goto raw;
-	/* Because of directory structutre, the file we include in the output is
-	 maybe different */
+	/* We want the path to print, now. */
 	if(!(errno = 0, fn = PathsFromOutput(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
 	if(f == OUT_HTML) {
@@ -614,18 +636,19 @@ OUT(image) {
 	} else {
 		printf("](%s)", fn);
 	}
+	success = 1;
 	goto finally;
 raw:
 	/* Maybe it's an external link? */
 	printf("%s%.*s%s", f == OUT_HTML ? "\" src = \"" : "](",
 		turl->length, turl->from, f == OUT_HTML ? "\">" : ")");
+	success = 1;
 	goto finally;
 catch:
 	fprintf(stderr, "%s: expected `[description](url)`.\n", pos(t));
-	return 0;
 finally:
 	*ptoken = TokenArrayNext(tokens, turl);
-	return 1;
+	return success;
 }
 OUT(nbsp) {
 	const struct Token *const t = *ptoken;

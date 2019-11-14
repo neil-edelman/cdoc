@@ -3,9 +3,6 @@
 
  Organises tokens into sections, each section can have some documentation,
  code, and maybe attributes.
- @fixme The two-above rule isn't working.
- @fixme Report error if two top-level braces are in the same segment.
- @fixme A hash would be better.
  @fixme Eg, fixme with no args disappears; we should NOT check if the string is
  empty. */
 
@@ -278,8 +275,7 @@ static const char *oops(void) {
 }
 
 /** This appends the current token based on the state it was last in.
- @return Success.
- @fixme Doesn't work sometimes. Have a state machine. */
+ @return Success. */
 int ReportNotify(void) {
 	const enum Symbol symbol = ScannerSymbol();
 	const char symbol_mark = symbol_marks[symbol];
