@@ -565,7 +565,6 @@ OUT(em_end) {
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
-/* fixme: Links to local resources don't work! Do like image. */
 OUT(link) {
 	const struct Token *const t = *ptoken, *text, *turl;
 	const enum Format f = CdocOptionsFormat();
@@ -583,25 +582,24 @@ OUT(link) {
 	/* We want to open this file to check if it's on the up-and-up. */
 	if(!(errno = 0, fn = PathsFromHere(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
-	fprintf(stderr, "PathsFromHere: %s\n", fn);
 	if(!(fp = fopen(fn, "r"))) { perror(fn); errno = 0; goto raw; } fclose(fp);
 	/* Actually use the entire path. */
 	if(!(errno = 0, fn = PathsFromOutput(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
-	fprintf(stderr, "PathsFromOutput: %s\n", fn);
 	fn_len = strlen(fn);
 	goto output;
 raw:
-	/* Maybe it's an external link? */
+	/* Maybe it's an external link? Just put it unmolested. */
 	fn = turl->from;
 	fn_len = turl->length;
 output:
-	if(f == OUT_HTML) printf("<a href = \"%.*s\">", fn_len, fn);
+	assert(fn_len <= INT_MAX);
+	if(f == OUT_HTML) printf("<a href = \"%.*s\">", (int)fn_len, fn);
 	else printf("[");
 	for(text = TokenArrayNext(tokens, t); text->symbol != URL; )
 		if(!(text = print_token(tokens, text))) goto catch;
 	if(f == OUT_HTML) printf("</a>");
-	else printf("](%.*s)", fn_len, fn);
+	else printf("](%.*s)", (int)fn_len, fn);
 	success = 1;
 	goto finally;
 catch:
