@@ -690,7 +690,7 @@ OUT(mathcalo) {
 	/* Omicron. It looks like a stylised "O"? The actual is "&#120030;" but
 	 good luck finding a font that supports that. If one was using JavaScript
 	 and had a constant connection, we could use MathJax. */
-	printf("&#927" /* "O" */);
+	printf("&#927;" /* "O" */);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -706,9 +706,9 @@ OUT(comega) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == COMEGA && !a);
 	style_prepare_output(t->symbol);
-	if(CdocGetFormat() == OUT_MD)
-		printf("&Omega;"); /* Doesn't work with Markdown, somehow. */
-	else
+	/*if(CdocGetFormat() == OUT_MD)
+		printf("&Omega;");*/ /* Doesn't work with Markdown, somehow. */
+	/*else*/
 		printf("&#937;" /* "&Omega;" */);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
