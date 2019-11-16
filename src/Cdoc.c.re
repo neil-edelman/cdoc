@@ -18,17 +18,17 @@
  This supports a stripped-down version of `Markdown` that is much stricter.
  Embedded inline in the documentation,
 
- \* `\\` escapes these `\*\_\`\~\!\\\@\<\>\[\]` but one only needed when
+ \* `\\` escapes these `\*\_\\\`\~\!\\\@\<\>\[\]` but one only needed when
     ambiguous;
  \* start lists with `[ ]\\*[ ]` and end with a new paragraph; these are
     simple, can be anywhere and don't nest;
  \* `\\"` (and optionally a space) causes all the line after to be
     pre-formatted;
- \* Escapes included for convenience: `\\,` non-breaking thin space,
-    `\\O` \O Bachmann–Landau notation, (but really capital omicron because
-    fonts,) `\\Theta` \Theta, `\\Omega` \Omega, `\\times` \times,
+ \* Escapes included for convenience: `\\,` "\," non-breaking thin space,
+    `\\O` "\O" Bachmann–Landau notation, (but really capital omicron because
+    fonts,) `\\Theta` "\Theta", `\\Omega` "\Omega", `\\times` "\times",
     `\\cdot` \cdot.
- \* `\~` non-breaking space;
+ \* `\~` "~" non-breaking space;
  \* \_emphasised\_: _emphasised_;
  \* \`code/math\`: `code/math`;
  \* `\<url\>`: supports absolute URIs; relative URIs must have a slash or a dot
