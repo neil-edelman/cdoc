@@ -706,7 +706,10 @@ OUT(comega) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == COMEGA && !a);
 	style_prepare_output(t->symbol);
-	printf("&#937;" /* "&Omega;" */);
+	if(CdocGetFormat() != OUT_MD)
+		printf("&#937;" /* "&Omega;" */);
+	else
+		printf("&Omega;"); /* Doesn't work with Markdown, somehow. */
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -1097,6 +1100,8 @@ int ReportOut(void) {
 		is_license = attribute_exists(ATT_LICENSE);
 	const struct Segment *segment = 0;
 	const int f = CdocGetFormatIndex(), format = CdocGetFormat();
+	struct TokenArray fixed = ARRAY_ZERO;
+	char fixed_buffer[128];
 
 	/* Set `errno` here so that we don't have to test output each time. */
 	errno = 0;
@@ -1147,6 +1152,8 @@ int ReportOut(void) {
 	/* TOC. */
 	style_push(&styles[ST_UL][f]), style_push(&styles[ST_LI][f]);
 	if(is_preamble) {
+		/* name(const struct TokenArray *const tokens, \
+			 const struct Token **ptoken, char (*const a)[256]) */
 		style_prepare_output(END);
 		printf("<a href = \"#%s:\">Preamble</a>",
 			division_strings[DIV_PREAMBLE]);

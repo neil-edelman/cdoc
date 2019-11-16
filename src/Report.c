@@ -2,9 +2,7 @@
  [MIT License](https://opensource.org/licenses/MIT).
 
  Organises tokens into sections, each section can have some documentation,
- code, and maybe attributes.
- @fixme Eg, fixme with no args disappears; we should NOT check if the string is
- empty. */
+ code, and maybe attributes. */
 
 #include <string.h> /* size_t strncpy strrchr */
 #include <limits.h> /* INT_MAX */

@@ -118,7 +118,14 @@
  @fixme Sometimes it's an error, sometimes it's a warning, seemingly at random.
  Make all the errors on-line?
  @fixme 80-characters _per_ line limit; I've got it working, just need to apply
- to this code. Needs buffering. */
+ to this code. Needs buffering.
+ @fixme Eg, fixme with no args disappears; we should NOT check if the string is
+ empty.
+ @fixme For md, have a field in `Style` that says whether we should escape all,
+ or just some, (eg, inside a \`\` the md changes.)
+ @fixme Complete md-ising eg table.
+ @fixme `A``B` doesn't do what one expects in md.
+ @fixme &#927 is not reconised. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
