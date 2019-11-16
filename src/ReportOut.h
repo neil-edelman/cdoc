@@ -965,13 +965,15 @@ static void dl_segment_att(const struct Segment *const segment,
 /** This is used in preamble for attributes inside a `dl`.
  @param[is_recursive]  */
 static void dl_preamble_att(const enum Symbol attribute,
-	const enum AttShow show) {
+	const enum AttShow show, const struct StyleText *const style) {
 	const int f = CdocGetFormatIndex();
-	if(f == OUT_HTML) sprintf(title, "\t<dt>%.128s:</dt>\n"
+	const enum Format format = CdocGetFormat();
+	assert(style);
+	if(format == OUT_HTML) sprintf(title, "\t<dt>%.128s:</dt>\n"
 		"\t<dd>", symbol_attribute_titles[attribute]);
 	else
 		sprintf(title, " * %.128s:  \n   ", symbol_attribute_titles[attribute]);
-	style_push(&styles[ST_DESC][f]), style_push(&plain_csv),
+	style_push(&styles[ST_DESC][f]), style_push(style),
 		style_push(&plain_text);
 	div_att_print(&is_div_preamble, attribute, SHOW_TEXT);
 	style_pop(), style_push(&plain_parenthetic), style_push(&plain_csv),
@@ -1098,43 +1100,43 @@ int ReportOut(void) {
 
 	/* Set `errno` here so that we don't have to test output each time. */
 	errno = 0;
-	if(format != OUT_HTML) goto end_head;
-	printf("<!doctype html public \"-//W3C//DTD HTML 4.01//EN\" "
-		"\"http://www.w3.org/TR/html4/strict.dtd\">\n\n"
-		"<html>\n\n"
-		"<head>\n"
-		"<meta http-equiv = \"Content-Type\""
-		" content = \"text/html;charset=UTF-8\">\n"
-		"<!-- Steal these colour values from JavaDocs. -->\n"
-		"<style type = \"text/css\">\n"
-		"\ta:link,  a:visited { color: #4a6782; }\n"
-		"\ta:hover, a:focus   { color: #bb7a2a; }\n"
-		"\ta:active           { color: #4A6782; }\n"
-		"\ttr:nth-child(even) { background: #dee3e9; }\n"
-		"\tdiv {\n"
-		"\t\tmargin:  4px 0;\n"
-		"\t\tpadding: 0 4px 4px 4px;\n");
-	printf("\t}\n"
-		"\ttable      { width: 100%%; }\n"
-		"\ttd         { padding: 4px; }\n"
-		"\th3, h1 {\n"
-		"\t\tcolor: #2c4557;\n"
-		"\t\tbackground-color: #dee3e9;\n"
-		"\t\tpadding:          4px;\n"
-		"\t}\n"
-		"\th3 {\n"
-		"\t\tmargin:           0 -4px;\n"
-		"\t\tpadding:          4px;\n"
-		"\t}\n"
-		"</style>\n");
-	style_push(&html_title), style_push(&plain_ssv), style_push(&plain_text);
-	div_att_print(&is_div_preamble, ATT_TITLE, SHOW_TEXT);
-	style_pop_level();
-	assert(!StyleArraySize(&mode.styles));
-	printf("</head>\n\n"
-		"<body>\n\n");
-
-end_head:
+	if(format == OUT_HTML) {
+		printf("<!doctype html public \"-//W3C//DTD HTML 4.01//EN\" "
+			"\"http://www.w3.org/TR/html4/strict.dtd\">\n\n"
+			"<html>\n\n"
+			"<head>\n"
+			"<meta http-equiv = \"Content-Type\""
+			" content = \"text/html;charset=UTF-8\">\n"
+			"<!-- Steal these colour values from JavaDocs. -->\n"
+			"<style type = \"text/css\">\n"
+			"\ta:link,  a:visited { color: #4a6782; }\n"
+			"\ta:hover, a:focus   { color: #bb7a2a; }\n"
+			"\ta:active           { color: #4A6782; }\n"
+			"\ttr:nth-child(even) { background: #dee3e9; }\n"
+			"\tdiv {\n"
+			"\t\tmargin:  4px 0;\n"
+			"\t\tpadding: 0 4px 4px 4px;\n");
+		printf("\t}\n"
+			"\ttable      { width: 100%%; }\n"
+			"\ttd         { padding: 4px; }\n"
+			"\th3, h1 {\n"
+			"\t\tcolor: #2c4557;\n"
+			"\t\tbackground-color: #dee3e9;\n"
+			"\t\tpadding:          4px;\n"
+			"\t}\n"
+			"\th3 {\n"
+			"\t\tmargin:           0 -4px;\n"
+			"\t\tpadding:          4px;\n"
+			"\t}\n"
+			"</style>\n");
+		style_push(&html_title), style_push(&plain_ssv),
+			style_push(&plain_text);
+		div_att_print(&is_div_preamble, ATT_TITLE, SHOW_TEXT);
+		style_pop_level();
+		assert(!StyleArraySize(&mode.styles));
+		printf("</head>\n\n"
+			"<body>\n\n");
+	}
 	/* Title. */
 	style_push(&styles[ST_H1][f]), style_push(&plain_ssv),
 		style_push(&plain_text);
@@ -1260,10 +1262,10 @@ end_head:
 				dl_segment_specific_att(att);
 			}
 		}
-		dl_preamble_att(ATT_AUTHOR, SHOW_ALL);
-		dl_preamble_att(ATT_STD, SHOW_ALL);
-		dl_preamble_att(ATT_DEPEND, SHOW_ALL);
-		dl_preamble_att(ATT_FIXME, SHOW_WHERE);
+		dl_preamble_att(ATT_AUTHOR, SHOW_ALL, &plain_csv);
+		dl_preamble_att(ATT_STD, SHOW_ALL, &plain_csv);
+		dl_preamble_att(ATT_DEPEND, SHOW_ALL, &plain_csv);
+		dl_preamble_att(ATT_FIXME, SHOW_WHERE, &plain_text);
 		/* `ATT_RETURN`, `ATT_THROWS`, `ATT_IMPLEMENTS`, `ATT_ORDER`,
 		 `ATT_ALLOW` have warnings. `ATT_LICENSE` is below. */
 		style_pop_level();
