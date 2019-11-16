@@ -190,7 +190,7 @@ static int parse_arg(const char *const string) {
 
 /** @return Whether the command-line option to print the scanner on `stderr`
  was set. */
-int CdocOptionsDebug(void) {
+int CdocGetDebug(void) {
 	return args.debug;
 }
 
@@ -202,9 +202,7 @@ static int is_suffix(const char *const string, const char *const suffix) {
 	return !strncmp(string + str_len - suf_len, suffix, suf_len);
 }
 
-/** @return What output was specified. If there was no output specified,
- guess. */
-enum Format CdocOptionsFormat(void) {
+static void guess(void) {
 	if(args.format == OUT_UNSPECIFIED) {
 		if(args.out_fn && (is_suffix(args.out_fn, ".html")
 			|| is_suffix(args.out_fn, ".htm"))) args.format = OUT_HTML;
@@ -212,10 +210,23 @@ enum Format CdocOptionsFormat(void) {
 		if(args.debug) fprintf(stderr, "Guess format is %s.\n",
 			format_strings[args.format]);
 	}
+}
+
+/** @return What format the output was specified to be int. If there was no
+ output specified, guess before from the output filename. */
+enum Format CdocGetFormat(void) {
+	guess();
 	return args.format;
 }
 
-const char *CdocOptionsOutput(void) {
+int CdocGetFormatIndex(void) {
+	guess();
+	assert(args.format > 0 && args.format <= 2);
+	return args.format - 1;
+}
+
+/** @return The output filename. */
+const char *CdocGetOutput(void) {
 	return args.out_fn;
 }
 

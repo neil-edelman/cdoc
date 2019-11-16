@@ -446,7 +446,7 @@ struct Scanner *Scanner(const char *const fn, int (*const notify)(void)) {
 	errno = 0;
 	previous = cur, cur = scanner;
 	while((scanner->symbol = scan()) && notify())
-		if(CdocOptionsDebug()) fprintf(stderr, "%s.\n", pos());
+		if(CdocGetDebug()) fprintf(stderr, "%s.\n", pos());
 	cur = previous;
 	if(errno) goto catch;
 	goto finally;

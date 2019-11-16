@@ -1,5 +1,6 @@
 #include "Format.h"
 
-int CdocOptionsDebug(void);
-enum Format CdocOptionsFormat(void);
-const char *CdocOptionsOutput(void);
+int CdocGetDebug(void);
+enum Format CdocGetFormat(void);
+int CdocGetFormatIndex(void);
+const char *CdocGetOutput(void);

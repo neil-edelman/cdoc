@@ -125,7 +125,7 @@ static void warn_internal_link(const struct Token *const token) {
 			"%s: length was too long or end of tokens to compare with %s.\n",
 			pos(token), a); continue; }
 		if(!strcmp(a, b))
-			{ if(CdocOptionsDebug()) fprintf(stderr, "%s: link okay.\n",
+			{ if(CdocGetDebug()) fprintf(stderr, "%s: link okay.\n",
 				pos(token)); return; }
 	}
 	fprintf(stderr, "%s: link broken.\n", pos(token));

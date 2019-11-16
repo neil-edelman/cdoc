@@ -319,7 +319,7 @@ int Semantic(const struct TokenArray *const code) {
 	/* Now with the {}[] removed. */
 	effectively_typedef_fn_ptr(buffer);
 	if(!parse()) return 0;
-	if(CdocOptionsDebug()) fprintf(stderr, "%s:%lu: \"%s\" -> %s.\n",
+	if(CdocGetDebug()) fprintf(stderr, "%s:%lu: \"%s\" -> %s.\n",
 		semantic.fn, (unsigned long)semantic.line, buffer,
 		divisions[semantic.division]);
 	/* It has been determined to be `divisions[semantic.division]`. */
