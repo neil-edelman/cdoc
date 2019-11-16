@@ -125,7 +125,8 @@
  or just some, (eg, inside a \`\` the md changes.)
  @fixme Complete md-ising eg table.
  @fixme `A``B` doesn't do what one expects in md.
- @fixme &#927 is not reconised. */
+ @fixme &#927 is not reconised.
+ @fixme FormatIndex is stupid; just create a zero in the front. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */

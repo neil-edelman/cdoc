@@ -706,10 +706,10 @@ OUT(comega) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == COMEGA && !a);
 	style_prepare_output(t->symbol);
-	if(CdocGetFormat() != OUT_MD)
-		printf("&#937;" /* "&Omega;" */);
-	else
+	if(CdocGetFormat() == OUT_MD)
 		printf("&Omega;"); /* Doesn't work with Markdown, somehow. */
+	else
+		printf("&#937;" /* "&Omega;" */);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
