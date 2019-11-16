@@ -1,4 +1,4 @@
- # Main\.c #
+ # Cdoc #
 
  * <a href = "#preamble:">Preamble</a>
  * <a href = "#summary:">Function Summary</a>
@@ -124,7 +124,7 @@ Note that it does not validate html; nothing stops one from writing eg, a link, 
 `enum Format<strong> CdocGetFormat</strong>\(void\)`
 
  - Return:  
-   What format the output was specified to be int\. If there was no output specified, guess before from the output filename\.
+   What format the output was specified to be in `enum Format`\. If there was no output specified, guess before from the output filename\.
 
 
 
@@ -133,6 +133,10 @@ Note that it does not validate html; nothing stops one from writing eg, a link, 
  ### CdocGetFormatIndex ###
 
 `int<strong> CdocGetFormatIndex</strong>\(void\)`
+
+ - Return:  
+   What the format is in an index\.
+
 
 
 

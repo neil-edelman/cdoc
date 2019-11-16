@@ -104,7 +104,7 @@
  Note that it does not validate html; nothing stops one from writing eg, a link,
  or emphasis, in the title.
 
- @title Main.c
+ @title Cdoc
  @author Neil
  @std C89
  @depend [re2c](http://re2c.org/)
@@ -149,28 +149,30 @@ static struct {
 	int debug;
 } args;
 
-static int parse_arg(const char *const string) {
-	const char *s = string, *m = s;
+/** Parses the one `argument`; global state may be modified.
+ @return Success. */
+static int parse_arg(const char *const argument) {
+	const char *a = argument, *m = a;
 	switch(args.expect) {
 	case EXPECT_NOTHING: break;
 	case EXPECT_OUT: assert(!args.out_fn); args.expect = EXPECT_NOTHING;
-		args.out_fn = string; return 1;
+		args.out_fn = argument; return 1;
 	case EXPECT_FORMAT: assert(!args.format); args.expect = EXPECT_NOTHING;
-		if(!strcmp("md", string)) args.format = OUT_MD;
-		else if(!strcmp("html", string)) args.format = OUT_HTML;
+		if(!strcmp("md", argument)) args.format = OUT_MD;
+		else if(!strcmp("html", argument)) args.format = OUT_HTML;
 		else return 0;
 		return 1;
 	}
 /*!re2c
 	re2c:define:YYCTYPE = char;
-	re2c:define:YYCURSOR = s;
+	re2c:define:YYCURSOR = a;
 	re2c:define:YYMARKER = m;
 	re2c:yyfill:enable = 0;
 	end = "\x00";
 	// If it's not any other, it's probably an input filename?
 	* {
 		if(args.in_fn) return 0;
-		args.in_fn = string;
+		args.in_fn = argument;
 		return 1;
 	}
 	("-h" | "--help") end { usage(); exit(EXIT_SUCCESS); }
@@ -212,13 +214,14 @@ static void guess(void) {
 	}
 }
 
-/** @return What format the output was specified to be int. If there was no
- output specified, guess before from the output filename. */
+/** @return What format the output was specified to be in `enum Format`. If
+ there was no output specified, guess before from the output filename. */
 enum Format CdocGetFormat(void) {
 	guess();
 	return args.format;
 }
 
+/** @return What the format is in an index. */
 int CdocGetFormatIndex(void) {
 	guess();
 	assert(args.format > 0 && args.format <= 2);
