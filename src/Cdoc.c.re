@@ -6,7 +6,7 @@
  just very basic text-parsing.
  
  Documentation commands are `/``**…` and are ended with `*…/`, but not
- `/``*…*``/`; one can still use this as a code break. You can have an
+ `/``*…*``/`; one can still use this as a code break. One can have an
  asterisk at the front, like Kernel comments, or asterisks all over like some
  crazy ASCII art.  All documentation goes at most two lines above what it
  documents or it's appended to the header. Multiple documentation on the same
@@ -50,8 +50,8 @@
  Each-block-tags that overlap are concatenated in the file order. Not all of
  these are applicable for all segments of text. These are:
 
- \* `\@title`: only makes sense for preamble, (multiple are concatenated with a
-    semicolon);
+ \* `\@title`: only makes sense for preamble, (it doesn't matter what case one
+    write it, but multiple are concatenated using semicolons);
  \* `\@param[<param1>[, ...]]`: parameters, (should be sentence case);
  \* `\@author` (multiple are concatenated using commas);
  \* `\@std`: standard, eg, `\@std GNU-C99`, (multiple are concatenated using
@@ -68,15 +68,17 @@
     `(int (*)(const void *, const void *))` implements `bsearch` and `qsort`,
     (multiple are concatenated using commas);
  \* `\@order`: comments about the run-time or space, (if multiple are
-    concatenated, use sentence case, but, eg, \O(n) is probably fine);
+    concatenated, use sentence case, but, one single, eg, \O(`arg`) is
+    encouraged);
  \* and `\@allow`, the latter being to allow `static` functions or data in the
-    documentation, which are usually culled.
+    documentation, which are usually culled; one will be warned if this has any
+    text.
 
  Strict regular expressions that are much easier to parse have limited state
  and thus no notion of contextual position; as a result, tokens can be
  anywhere. Differences in `Markdown` from `Doxygen`,
 
- \* no headers;
+ \* no text headers;
  \* no block-quotes `> `;
  \* no four spaces or tab; use `\\"` for preformatted;
  \* no lists with `*`, `+`, numbered, or multi-level;
@@ -132,7 +134,8 @@
  @fixme `A``B` doesn't do what one expects in md.
  @fixme &#927 is not reconised.
  @fixme FormatIndex is stupid; just create a zero in the front.
- @fixme h2 style. */
+ @fixme h2 style.
+ @fixme Remove author as that's legally in license. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */

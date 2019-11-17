@@ -10,7 +10,7 @@
 
 This is a context\-sensitive lexer intended to process parts of a `C` compilation unit and extract documentation\. This does not do any compiling, just very basic text\-parsing\.
 
-Documentation commands are `/``\*\*…` and are ended with `\*…/`, but not `/``\*…\*``/`; one can still use this as a code break\. You can have an asterisk at the front, like Kernel comments, or asterisks all over like some crazy ASCII art\. All documentation goes at most two lines above what it documents or it's appended to the header\. Multiple documentation on the same command is appended, including in the command\. Two hard returns is a paragraph\. One can document typedefs, tags \(struct, enum, union,\) data, and functions; everything else is automatically inserted into the preamble\. The macro `A\_B\_\(Foo,Bar\)` is transformed into `<A>Foo<B>Bar`\.
+Documentation commands are `/``\*\*…` and are ended with `\*…/`, but not `/``\*…\*``/`; one can still use this as a code break\. One can have an asterisk at the front, like Kernel comments, or asterisks all over like some crazy ASCII art\. All documentation goes at most two lines above what it documents or it's appended to the header\. Multiple documentation on the same command is appended, including in the command\. Two hard returns is a paragraph\. One can document typedefs, tags \(struct, enum, union,\) data, and functions; everything else is automatically inserted into the preamble\. The macro `A\_B\_\(Foo,Bar\)` is transformed into `<A>Foo<B>Bar`\.
 
 This supports a stripped\-down version of `Markdown` that is much stricter\. Embedded inline in the documentation,
 
@@ -34,7 +34,7 @@ As well, if a local include directive has a documentation comment immediately af
 
 Each\-block\-tags separate the documentation until the next paragraph or until the next each\-block\-tag, and specify a specific documentation structure\. Each\-block\-tags that overlap are concatenated in the file order\. Not all of these are applicable for all segments of text\. These are:
 
- * `@title`: only makes sense for preamble, \(multiple are concatenated with a semicolon\);
+ * `@title`: only makes sense for preamble, \(it doesn't matter what case one write it, but multiple are concatenated using semicolons\);
  * `@param\[<param1>\[, \.\.\.\]\]`: parameters, \(should be sentence case\);
  * `@author` \(multiple are concatenated using commas\);
  * `@std`: standard, eg, `@std GNU\-C99`, \(multiple are concatenated using semicolons\);
@@ -43,12 +43,12 @@ Each\-block\-tags separate the documentation until the next paragraph or until t
  * `@return`: normal function return, \(should be sentence case\);
  * `@throws\[<exception1>\[, \.\.\.\]\]`: exceptional function return; `C` doesn't have native exceptions, so `@throws` means whatever one desires; perhaps a null pointer or false is returned and `errno` is set to `exception1`, \(should be sentence case\);
  * `@implements`: `C` doesn't have the concept of implements, but we would say that a function having a prototype of `\(int \(\*\)\(const void \*, const void \*\)\)` implements `bsearch` and `qsort`, \(multiple are concatenated using commas\);
- * `@order`: comments about the run\-time or space, \(if multiple are concatenated, use sentence case, but, eg, &#927;\(n\) is probably fine\);
- * and `@allow`, the latter being to allow `static` functions or data in the documentation, which are usually culled\.
+ * `@order`: comments about the run\-time or space, \(if multiple are concatenated, use sentence case, but, one single, eg, &#927;\(`arg`\) is encouraged\);
+ * and `@allow`, the latter being to allow `static` functions or data in the documentation, which are usually culled; one will be warned if this has any text\.
 
 Strict regular expressions that are much easier to parse have limited state and thus no notion of contextual position; as a result, tokens can be anywhere\. Differences in `Markdown` from `Doxygen`,
 
- * no headers;
+ * no text headers;
  * no block\-quotes `> `;
  * no four spaces or tab; use `\\"` for preformatted;
  * no lists with `\*`, `\+`, numbered, or multi\-level;
@@ -82,7 +82,7 @@ Note that it does not validate html; nothing stops one from writing eg, a link, 
  * Dependancy:  
    [re2c](http://re2c.org/)
  * Caveat:  
-   Trigraph support, \(haha\.\) Old\-style function support\. Hide `const` on params when it can not affect function calls\. Prototypes and functions are the same thing; this will confuse it\. Hash map will be faster and more precise\. Links to non\-documented code which sometimes doesn't show up, work without error, and create broken links\. Sometimes it's an error, sometimes it's a warning, seemingly at random\. Make all the errors on\-line? 80\-characters _per_ line limit; I've got it working, just need to apply to this code\. Needs buffering\. Eg, fixme with no args disappears; we should NOT check if the string is empty\. For md, have a field in `Style` that says whether we should escape all, or just some, \(eg, inside a \`\` the md changes\.\) Complete md\-ising eg table\. `A``B` doesn't do what one expects in md\. &\#927 is not reconised\. FormatIndex is stupid; just create a zero in the front\. h2 style\.
+   Trigraph support, \(haha\.\) Old\-style function support\. Hide `const` on params when it can not affect function calls\. Prototypes and functions are the same thing; this will confuse it\. Hash map will be faster and more precise\. Links to non\-documented code which sometimes doesn't show up, work without error, and create broken links\. Sometimes it's an error, sometimes it's a warning, seemingly at random\. Make all the errors on\-line? 80\-characters _per_ line limit; I've got it working, just need to apply to this code\. Needs buffering\. Eg, fixme with no args disappears; we should NOT check if the string is empty\. For md, have a field in `Style` that says whether we should escape all, or just some, \(eg, inside a \`\` the md changes\.\) Complete md\-ising eg table\. `A``B` doesn't do what one expects in md\. &\#927 is not reconised\. FormatIndex is stupid; just create a zero in the front\. h2 style\. Remove author as that's legally in license\.
 
 
 
