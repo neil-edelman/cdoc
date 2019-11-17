@@ -14,7 +14,7 @@ Documentation commands are `/``\*\*…` and are ended with `\*…/`, but not `/`
 
 This supports a stripped\-down version of `Markdown` that is much stricter\. Embedded inline in the documentation,
 
- * `\\` escapes these `\*\_\\\`~\!\\@<>\[\]` but one only needed when ambiguous;
+ * `\\` escapes these `\*\_\`~\!\\@<>\[\]` but one only needed when ambiguous;
  * start lists with `\[ \]\\\*\[ \]` and end with a new paragraph; these are simple, can be anywhere and don't nest;
  * `\\"` \(and optionally a space\) causes all the line after to be pre\-formatted;
  * Escapes included for convenience: `\\,` "&#8239;" non\-breaking thin space, `\\O` "&#927;" Bachmann–Landau notation, \(but really capital omicron because fonts,\) `\\Theta` "&#920;", `\\Omega` "&#937;", `\\times` "&#215;", `\\cdot` &#183;\.
@@ -34,16 +34,16 @@ As well, if a local include directive has a documentation comment immediately af
 
 Each\-block\-tags separate the documentation until the next paragraph or until the next each\-block\-tag, and specify a specific documentation structure\. Each\-block\-tags that overlap are concatenated in the file order\. Not all of these are applicable for all segments of text\. These are:
 
- * `@title`: only makes sense for preamble; multiple are concatenated;
- * `@param\[<param1>\[, \.\.\.\]\]`: parameters;
- * `@author`;
- * `@std`: standard, eg, `@std GNU\-C99`;
- * `@depend`: dependancy;
- * `@fixme`: something doesn't work as expected;
- * `@return`: normal function return;
- * `@throws\[<exception1>\[, \.\.\.\]\]`: exceptional function return; `C` doesn't have native exceptions, so `@throws` means whatever one desires; perhaps a null pointer or false is returned and `errno` is set to this `exception1`;
- * `@implements`: `C` doesn't have the concept of implement, but we would say that a function having a prototype of `\(int \(\*\)\(const void \*, const void \*\)\)` implements `bsearch` and `qsort`;
- * `@order`: comments about the run\-time or space;
+ * `@title`: only makes sense for preamble, \(multiple are concatenated with a semicolon\);
+ * `@param\[<param1>\[, \.\.\.\]\]`: parameters, \(should be sentence case\);
+ * `@author` \(multiple are concatenated using commas\);
+ * `@std`: standard, eg, `@std GNU\-C99`, \(multiple are concatenated using semicolons\);
+ * `@depend`: dependancy, \(multiple are concatenated using semicolons\);
+ * `@fixme`: something doesn't work as expected, \(should be sentence case\);
+ * `@return`: normal function return, \(should be sentence case\);
+ * `@throws\[<exception1>\[, \.\.\.\]\]`: exceptional function return; `C` doesn't have native exceptions, so `@throws` means whatever one desires; perhaps a null pointer or false is returned and `errno` is set to `exception1`, \(should be sentence case\);
+ * `@implements`: `C` doesn't have the concept of implements, but we would say that a function having a prototype of `\(int \(\*\)\(const void \*, const void \*\)\)` implements `bsearch` and `qsort`, \(multiple are concatenated using commas\);
+ * `@order`: comments about the run\-time or space, \(if multiple are concatenated, use sentence case, but, eg, &#927;\(n\) is probably fine\);
  * and `@allow`, the latter being to allow `static` functions or data in the documentation, which are usually culled\.
 
 Strict regular expressions that are much easier to parse have limited state and thus no notion of contextual position; as a result, tokens can be anywhere\. Differences in `Markdown` from `Doxygen`,
@@ -82,7 +82,7 @@ Note that it does not validate html; nothing stops one from writing eg, a link, 
  * Dependancy:  
    [re2c](http://re2c.org/)
  * Caveat:  
-   Trigraph support, \(haha\.\) Old\-style function support\. Hide `const` on params when it can not affect function calls\. Prototypes and functions are the same thing; this will confuse it\. Hash map will be faster and more precise\. Links to non\-documented code which sometimes doesn't show up, work without error, and create broken links\. Sometimes it's an error, sometimes it's a warning, seemingly at random\. Make all the errors on\-line? 80\-characters _per_ line limit; I've got it working, just need to apply to this code\. Needs buffering\. Eg, fixme with no args disappears; we should NOT check if the string is empty\. For md, have a field in `Style` that says whether we should escape all, or just some, \(eg, inside a \`\` the md changes\.\) Complete md\-ising eg table\. `A``B` doesn't do what one expects in md\. &\#927 is not reconised\. FormatIndex is stupid; just create a zero in the front\.
+   Trigraph support, \(haha\.\) Old\-style function support\. Hide `const` on params when it can not affect function calls\. Prototypes and functions are the same thing; this will confuse it\. Hash map will be faster and more precise\. Links to non\-documented code which sometimes doesn't show up, work without error, and create broken links\. Sometimes it's an error, sometimes it's a warning, seemingly at random\. Make all the errors on\-line? 80\-characters _per_ line limit; I've got it working, just need to apply to this code\. Needs buffering\. Eg, fixme with no args disappears; we should NOT check if the string is empty\. For md, have a field in `Style` that says whether we should escape all, or just some, \(eg, inside a \`\` the md changes\.\) Complete md\-ising eg table\. `A``B` doesn't do what one expects in md\. &\#927 is not reconised\. FormatIndex is stupid; just create a zero in the front\. h2 style\.
 
 
 

@@ -18,7 +18,7 @@
  This supports a stripped-down version of `Markdown` that is much stricter.
  Embedded inline in the documentation,
 
- \* `\\` escapes these `\*\_\\\`\~\!\\\@\<\>\[\]` but one only needed when
+ \* `\\` escapes these `\*\_\`\~\!\\\@\<\>\[\]` but one only needed when
     ambiguous;
  \* start lists with `[ ]\\*[ ]` and end with a new paragraph; these are
     simple, can be anywhere and don't nest;
@@ -50,20 +50,25 @@
  Each-block-tags that overlap are concatenated in the file order. Not all of
  these are applicable for all segments of text. These are:
 
- \* `\@title`: only makes sense for preamble; multiple are concatenated;
- \* `\@param[<param1>[, ...]]`: parameters;
- \* `\@author`;
- \* `\@std`: standard, eg, `\@std GNU-C99`;
- \* `\@depend`: dependancy;
- \* `\@fixme`: something doesn't work as expected;
- \* `\@return`: normal function return;
+ \* `\@title`: only makes sense for preamble, (multiple are concatenated with a
+    semicolon);
+ \* `\@param[<param1>[, ...]]`: parameters, (should be sentence case);
+ \* `\@author` (multiple are concatenated using commas);
+ \* `\@std`: standard, eg, `\@std GNU-C99`, (multiple are concatenated using
+     semicolons);
+ \* `\@depend`: dependancy, (multiple are concatenated using semicolons);
+ \* `\@fixme`: something doesn't work as expected, (should be sentence case);
+ \* `\@return`: normal function return, (should be sentence case);
  \* `\@throws[<exception1>[, ...]]`: exceptional function return; `C` doesn't
     have native exceptions, so `@throws` means whatever one desires; perhaps a
-    null pointer or false is returned and `errno` is set to this `exception1`;
- \* `\@implements`: `C` doesn't have the concept of implement, but we
+    null pointer or false is returned and `errno` is set to `exception1`,
+    (should be sentence case);
+ \* `\@implements`: `C` doesn't have the concept of implements, but we
     would say that a function having a prototype of
-    `(int (*)(const void *, const void *))` implements `bsearch` and `qsort`;
- \* `\@order`: comments about the run-time or space;
+    `(int (*)(const void *, const void *))` implements `bsearch` and `qsort`,
+    (multiple are concatenated using commas);
+ \* `\@order`: comments about the run-time or space, (if multiple are
+    concatenated, use sentence case, but, eg, \O(n) is probably fine);
  \* and `\@allow`, the latter being to allow `static` functions or data in the
     documentation, which are usually culled.
 
@@ -126,7 +131,8 @@
  @fixme Complete md-ising eg table.
  @fixme `A``B` doesn't do what one expects in md.
  @fixme &#927 is not reconised.
- @fixme FormatIndex is stupid; just create a zero in the front. */
+ @fixme FormatIndex is stupid; just create a zero in the front.
+ @fixme h2 style. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
