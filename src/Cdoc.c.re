@@ -134,7 +134,8 @@
  @fixme &#927 is not reconised.
  @fixme FormatIndex is stupid; just create a zero in the front.
  @fixme h2 style.
- @fixme Remove author as that's legally in license. */
+ @fixme Remove author as that's legally in license.
+ @fixme Change Preamble to Desciption? */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
