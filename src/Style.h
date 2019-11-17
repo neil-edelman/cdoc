@@ -32,7 +32,10 @@ styles[][2] = {
 	{ { "pre",  "<pre>\n", "", "</pre>\n\n", 1 }, { "pre", "", "", "\n", 1 } },
 	{ { "preline", "", "\n", "\n", 0 }, { "preline", "", "\n    ", "\n", 0 } },
 	/* fixme test */
-	{ { "h1", "<h1>", "", "</h1>\n\n", 1 }, { "h1", " # ", "", " #\n\n", 1 } },
+	{ { "h1", "<h1>", "", "</h1>\n\n", 1 },
+		{ "h1", " # ", "", " #\n\n", 1 } },
+	{ { "h2", "<h2>", "", "</h2>\n\n", 1 },
+		{ "h2", " ## ", "", " ##\n\n", 1 } },
 	{ { "h3", "<h3>", "", "</h3>\n\n", 1 },
 		{ "h3", " ### ", "", " ###\n\n", 1 } },
 	{ { "dl", "<dl>\n", "", "</dl>\n\n", 1 }, { "dl", "", "", "\n\n", 1 } },
@@ -43,8 +46,8 @@ styles[][2] = {
 };
 
 /* This is a hack. Don't change the styles without changing this. */
-enum { ST_DIV, ST_P, ST_UL, ST_LI, ST_CODE, ST_PRE, ST_PRELINE, ST_H1, ST_H3,
-	ST_DL, ST_DT, ST_DD, ST_DESC, ST_EM };
+enum { ST_DIV, ST_P, ST_UL, ST_LI, ST_CODE, ST_PRE, ST_PRELINE,
+	ST_H1, ST_H2, ST_H3, ST_DL, ST_DT, ST_DD, ST_DESC, ST_EM };
 
 /* This does a delayed lazy unencoded surrounding text. Popping a `Style` and
  pushing another one, then printing, will cause a end-separator-start-print.
