@@ -131,8 +131,8 @@
  or just some, (eg, inside a \`\` the md changes.)
  @fixme Complete md-ising eg table.
  @fixme `A``B` doesn't do what one expects in md.
- @fixme FormatIndex is stupid; just create a zero in the front.
- @fixme h2 style. */
+ @fixme: If a segment has multiple licenses, they will show multiple times.
+ @fixme: `Style.h` should really go in it's own C. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
@@ -232,14 +232,8 @@ static void guess(void) {
  there was no output specified, guess before from the output filename. */
 enum Format CdocGetFormat(void) {
 	guess();
-	return args.format;
-}
-
-/** @return What the format is in an index. */
-int CdocGetFormatIndex(void) {
-	guess();
 	assert(args.format > 0 && args.format <= 2);
-	return args.format - 1;
+	return args.format;
 }
 
 /** @return The output filename. */

@@ -64,7 +64,7 @@ size_t TokensFirstLine(const struct TokenArray *const tokens) {
  `tokens`. */
 size_t TokensMarkSize(const struct TokenArray *const tokens) {
 	if(!tokens) return 0;
-	return TokenArraySize(tokens) + 1; /* Fixme: overflow? */
+	return TokenArraySize(tokens) + 1;
 }
 /** @param[tokens] The `TokenArray` that converts to a string.
  @param[marks] Must be an at-least <fn:TokensMarkSize> buffer, or null.

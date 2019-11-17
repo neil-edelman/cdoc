@@ -22,27 +22,53 @@ plain_see_license = { "see", "(See license details ", ", ", ".)", 0 },
 plain_csv = { "csv", "", ", ", "", 0 },
 plain_ssv = { "ssv", "", "; ", "", 0 },
 html_title = { "title", "<title>", "", "</title>\n", 1 },
-styles[][2] = {
-	{ { "div", "<div>", "", "</div>\n\n", 1}, { "div", "", "", "\n\n", 1 } },
-	{ { "para", "<p>", " ", "</p>\n\n", 1 }, { "para", "", " ", "\n\n", 1 } },
-	{ { "ul", "<ul>\n", "", "</ul>\n\n", 1 }, { "ul", "", "",  "\n", 1 } },
-	{ { "li", "\t<li>", " ", "</li>\n", 0 }, { "li", " * ", " ", "\n", 0 } },
-	{ { "code", "<code>", /*"&nbsp;"*/" ", "</code>", 0},
+styles[][3] = {
+	{ { 0, 0, 0, 0, 0 },
+		{ "div", "<div>", "", "</div>\n\n", 1},
+		{ "div", "", "", "\n\n", 1 } },
+	{ { 0, 0, 0, 0, 0 },
+		{ "para", "<p>", " ", "</p>\n\n", 1 },
+		{ "para", "", " ", "\n\n", 1 } },
+	{ { 0, 0, 0, 0, 0 },
+		{ "ul", "<ul>\n", "", "</ul>\n\n", 1 },
+		{ "ul", "", "",  "\n", 1 } },
+	{ { 0, 0, 0, 0, 0 },
+		{ "li", "\t<li>", " ", "</li>\n", 0 },
+		{ "li", " * ", " ", "\n", 0 } },
+	{ { 0, 0, 0, 0, 0 },
+		{ "code", "<code>", /*"&nbsp;"*/" ", "</code>", 0},
 		{ "code", "`", " ", "`", 0 } },
-	{ { "pre",  "<pre>\n", "", "</pre>\n\n", 1 }, { "pre", "", "", "\n", 1 } },
-	{ { "preline", "", "\n", "\n", 0 }, { "preline", "", "\n    ", "\n", 0 } },
+	{ { 0, 0, 0, 0, 0 },
+		{ "pre",  "<pre>\n", "", "</pre>\n\n", 1 },
+		{ "pre", "", "", "\n", 1 } },
+	{ { 0, 0, 0, 0, 0 },
+		{ "preline", "", "\n", "\n", 0 },
+		{ "preline", "", "\n    ", "\n", 0 } },
 	/* fixme test */
-	{ { "h1", "<h1>", "", "</h1>\n\n", 1 },
+	{ { 0, 0, 0, 0, 0 },
+		{ "h1", "<h1>", "", "</h1>\n\n", 1 },
 		{ "h1", " # ", "", " #\n\n", 1 } },
-	{ { "h2", "<h2>", "", "</h2>\n\n", 1 },
+	{ { 0, 0, 0, 0, 0 },
+		{ "h2", "<h2>", "", "</h2>\n\n", 1 },
 		{ "h2", " ## ", "", " ##\n\n", 1 } },
-	{ { "h3", "<h3>", "", "</h3>\n\n", 1 },
+	{ { 0, 0, 0, 0, 0 },
+		{ "h3", "<h3>", "", "</h3>\n\n", 1 },
 		{ "h3", " ### ", "", " ###\n\n", 1 } },
-	{ { "dl", "<dl>\n", "", "</dl>\n\n", 1 }, { "dl", "", "", "\n\n", 1 } },
-	{ { "dt", "\t<dt>", "", "</dt>\n", 0 }, { "dt", " - ", "", "  \n", 0 } },
-	{ { "dd",   "\t<dd>", "", "</dd>\n", 0 }, { "dd", "   ", "", "\n", 0 } },
-	{ { "desc", title, "", "</dd>\n", 0 }, { "desc", title, "", "\n", 0 } },
-	{ { "em", "<em>", "", "</em>", 0 }, { "em", "_", "", "_", 0 } }
+	{ { 0, 0, 0, 0, 0 },
+		{ "dl", "<dl>\n", "", "</dl>\n\n", 1 },
+		{ "dl", "", "", "\n\n", 1 } },
+	{ { 0, 0, 0, 0, 0 },
+		{ "dt", "\t<dt>", "", "</dt>\n", 0 },
+		{ "dt", " - ", "", "  \n", 0 } },
+	{ { 0, 0, 0, 0, 0 },
+		{ "dd",   "\t<dd>", "", "</dd>\n", 0 },
+		{ "dd", "   ", "", "\n", 0 } },
+	{ { 0, 0, 0, 0, 0 },
+		{ "desc", title, "", "</dd>\n", 0 },
+		{ "desc", title, "", "\n", 0 } },
+	{ { 0, 0, 0, 0, 0 },
+		{ "em", "<em>", "", "</em>", 0 },
+		{ "em", "_", "", "_", 0 } }
 };
 
 /* This is a hack. Don't change the styles without changing this. */
@@ -55,7 +81,7 @@ enum { ST_DIV, ST_P, ST_UL, ST_LI, ST_CODE, ST_PRE, ST_PRELINE,
  `symbol_after_sep` both true. Eg, say the stack is: { h1, p -> } and we have
  not printed anything, it will be empty. Then we print "foo", it will output
  "<h1><p>foo", then "bar", "<h1><p>foobar", pop "<h1><p>foobar</p>\n\n", pop
- "<h1><p>foobar</p>\n\n</h1>\n\n".  */
+ "<h1><p>foobar</p>\n\n</h1>\n\n". */
 struct Style {
 	const struct StyleText *text;
 	enum { BEGIN, ITEM, SEPARATE } lazy;
