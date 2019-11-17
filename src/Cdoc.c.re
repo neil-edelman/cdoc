@@ -131,7 +131,6 @@
  or just some, (eg, inside a \`\` the md changes.)
  @fixme Complete md-ising eg table.
  @fixme `A``B` doesn't do what one expects in md.
- @fixme &#927 is not reconised.
  @fixme FormatIndex is stupid; just create a zero in the front.
  @fixme h2 style.
  @fixme Remove author as that's legally in license.

@@ -493,5 +493,6 @@ void ReportCull(void) {
 	SegmentArrayKeepIf(&report, &keep_segment);
 }
 
+#include "Style.h"
 #include "ReportOut.h"
 #include "ReportWarning.h"
