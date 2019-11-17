@@ -33,16 +33,16 @@ As well, if a local include directive has a documentation comment immediately af
 
 Each\-block\-tags separate the documentation until the next paragraph or until the next each\-block\-tag, and specify a specific documentation structure\. Each\-block\-tags that overlap are concatenated in the file order\. Not all of these are applicable for all segments of text\. These are:
 
- * `@title`: only makes sense for preamble, \(it doesn't matter what case one write it, but multiple are concatenated using semicolons\);
- * `@param\[<param1>\[, \.\.\.\]\]`: parameters, \(should be sentence case\);
- * `@author` \(multiple are concatenated using commas\);
- * `@std`: standard, eg, `@std GNU\-C99`, \(multiple are concatenated using semicolons\);
- * `@depend`: dependancy, \(multiple are concatenated using semicolons\);
- * `@fixme`: something doesn't work as expected, \(should be sentence case\);
- * `@return`: normal function return, \(should be sentence case\);
- * `@throws\[<exception1>\[, \.\.\.\]\]`: exceptional function return; `C` doesn't have native exceptions, so `@throws` means whatever one desires; perhaps a null pointer or false is returned and `errno` is set to `exception1`, \(should be sentence case\);
- * `@implements`: `C` doesn't have the concept of implements, but we would say that a function having a prototype of `\(int \(\*\)\(const void \*, const void \*\)\)` implements `bsearch` and `qsort`, \(multiple are concatenated using commas\);
- * `@order`: comments about the run\-time or space, \(if multiple are concatenated, use sentence case, but, one single, eg, &#927;\(`arg`\) is encouraged\);
+ * `@title`: only makes sense for preamble, \(it doesn't matter what case one writes it, but multiple are concatenated using semicolons\);
+ * `@param\[<param1>\[, \.\.\.\]\]`: parameters, \(multiple are concatenated using spaces, so this really should be sentence case\);
+ * `@author` \(commas\);
+ * `@std`: standard, eg, `@std GNU\-C99`, \(semicolons\);
+ * `@depend`: dependancy, \(semicolons\);
+ * `@fixme`: something doesn't work as expected, \(spaces\);
+ * `@return`: normal function return, \(spaces\);
+ * `@throws\[<exception1>\[, \.\.\.\]\]`: exceptional function return; `C` doesn't have native exceptions, so `@throws` means whatever one desires; perhaps a null pointer or false is returned and `errno` is set to `exception1`, \(spaces\);
+ * `@implements`: `C` doesn't have the concept of implements, but we would say that a function having a prototype of `\(int \(\*\)\(const void \*, const void \*\)\)` implements `bsearch` and `qsort`, \(commas\);
+ * `@order`: comments about the run\-time or space, \(one single, eg, &#927;\(`arg`\) is encouraged, but spaces are used if multiple are concatenated\);
  * and `@allow`, the latter being to allow `static` functions or data in the documentation, which are usually culled; one will be warned if this has any text\.
 
 Strict regular expressions that are much easier to parse have limited state and thus no notion of contextual position; as a result, tokens can be anywhere\. Differences in `Markdown` from `Doxygen`,
@@ -72,7 +72,7 @@ Strict regular expressions that are much easier to parse have limited state and 
  * internal underscores are emphasis except in math/code mode;
  * A `cool' word in a `nice' sentence must be escaped\.
 
-Note that it does not validate html; nothing stops one from writing eg, a link, or emphasis, in the title\.
+Note that it does not validate html; nothing stops one from writing, eg, a link, or emphasis, in the title\.
 
  * Author:  
    Neil
