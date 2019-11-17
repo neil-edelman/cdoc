@@ -1250,9 +1250,8 @@ int ReportOut(void) {
 	if(is_preamble) {
 		style_push(&styles[ST_DIV][f]);
 		style_prepare_output(END);
-		printf("<a name = \"%s:\"><!-- --></a>\n"
-			   "<h2>Preamble</h2>\n\n",
-			   division_strings[DIV_PREAMBLE]);
+		printf("<h2><a name = \"%s:\">Preamble</a></h2>\n\n",
+			division_strings[DIV_PREAMBLE]);
 		while((segment = SegmentArrayNext(&report, segment))) {
 			if(segment->division != DIV_PREAMBLE) continue;
 			style_push(&styles[ST_P][f]);

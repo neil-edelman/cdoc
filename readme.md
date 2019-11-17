@@ -5,8 +5,7 @@
  * <a href = "#fn:">Function Definitions</a>
  * <a href = "#license:">License</a>
 
-<a name = "preamble:"><!-- --></a>
-<h2>Preamble</h2>
+<h2><a name = "preamble:">Preamble</a></h2>
 
 This is a context\-sensitive lexer intended to process parts of a `C` compilation unit and extract documentation\. This does not do any compiling, just very basic text\-parsing\.
 
