@@ -40,7 +40,7 @@
 	X(ATT_PARAM,      '@', 0, 0, 0, "Parameter"), \
 	X(ATT_AUTHOR,     '@', 0, 0, 0, "Author"), \
 	X(ATT_STD,        '@', 0, 0, 0, "Standard"), \
-	X(ATT_DEPEND,     '@', 0, 0, 0, "Dependancy"), \
+	X(ATT_DEPEND,     '@', 0, 0, 0, "Dependancies"), \
 	X(ATT_FIXME,      '@', 0, 0, 0, "Caveat"), \
 	X(ATT_RETURN,     '@', 0, 0, 0, "Return"), \
 	X(ATT_THROWS,     '@', 0, 0, 0, "Exceptional Return"), \
