@@ -132,9 +132,7 @@
  @fixme Complete md-ising eg table.
  @fixme `A``B` doesn't do what one expects in md.
  @fixme FormatIndex is stupid; just create a zero in the front.
- @fixme h2 style.
- @fixme Remove author as that's legally in license.
- @fixme Change Preamble to Desciption? */
+ @fixme h2 style. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
