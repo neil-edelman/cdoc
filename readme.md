@@ -70,7 +70,7 @@ Strict regular expressions that are much easier to parse have limited state and 
  * `\\def`: no documenting macros;
  * instead of `\\fn`, just insert the documentation comment above the function; use `<fn:<function>>` to reference;
  * internal underscores are emphasis except in math/code mode;
- * A `cool' word in a `nice' sentence must be escaped\.
+ * A \`cool' word in a \`nice' sentence must be escaped\.
 
 Note that it does not validate html; nothing stops one from writing, eg, a link, or emphasis, in the title\.
 
