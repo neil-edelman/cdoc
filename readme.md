@@ -86,7 +86,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 
 
-<a name = "summary:"><!-- --></a><h2>Function Summary</h2>
+ ## <a name = "summary:">Function Summary</a> ##
 
 <table>
 
@@ -104,7 +104,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 
 
-<a name = "fn:"><!-- --></a><h2>Function Definitions</h2>
+ ## <a name = "fn:">Function Definitions</a> ##
 
 <a name = "fn:CdocGetDebug"><!-- --></a>
  ### CdocGetDebug ###
@@ -152,8 +152,8 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 
 
-<a name = "license:"><!-- --></a>
-<h2>License</h2>
+ ## <a name = "license:">License</a>
+ ##
 
 2019 Neil Edelman, distributed under the terms of the [MIT License](https://opensource.org/licenses/MIT)\.
 

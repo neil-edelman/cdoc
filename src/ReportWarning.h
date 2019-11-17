@@ -96,6 +96,19 @@ static void unused_attribute(const struct Segment *const segment,
 	}
 }
 
+static void preamble_used_attribute(const enum Symbol symbol) {
+	const struct Segment *segment = 0;
+	while((segment = SegmentArrayNext(&report, segment))) {
+		const struct AttributeArray *const attributes = &segment->attributes;
+		struct Attribute *attribute = 0;
+		if(segment->division != DIV_PREAMBLE) continue;
+		while((attribute = AttributeArrayNext(attributes, attribute)))
+			if(attribute->token.symbol == symbol) return;
+	}
+	fprintf(stderr, "No attribute %s in %s.\n", symbols[symbol],
+		divisions[DIV_PREAMBLE]);
+}
+
 static void warn_internal_link(const struct Token *const token) {
 	enum Division division;
 	char a[256], b[256];
@@ -252,4 +265,7 @@ void ReportWarn(void) {
 	struct Segment *segment = 0;
 	while((segment = SegmentArrayNext(&report, segment)))
 		warn_segment(segment);
+	preamble_used_attribute(ATT_AUTHOR);
+	preamble_used_attribute(ATT_TITLE);
+	preamble_used_attribute(ATT_LICENSE);
 }
