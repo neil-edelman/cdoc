@@ -999,13 +999,14 @@ int ReportOut(void) {
 	style_pop_level();
 	assert(!StyleArraySize(&mode.styles));
 
-	/* Preamble contents; it shows up as "desciption" but I didn't want to type
-	 that much. */
+	/* Preamble contents; it shows up as the more-aptly nammed "desciption" but
+	 I didn't want to type that much. */
 	if(is_preamble) {
-		style_push(&styles[ST_DIV][f]);
+		style_push(&styles[ST_DIV][f]), style_push(&styles[ST_H2][f]);
 		style_prepare_output(END);
-		printf("<h2><a name = \"%s:\">Description</a></h2>\n\n",
+		printf("<a name = \"%s:\">Description</a>",
 			division_strings[DIV_PREAMBLE]);
+		style_pop();
 		/* fixme: all. */
 		while((segment = SegmentArrayNext(&report, segment))) {
 			if(segment->division != DIV_PREAMBLE) continue;
