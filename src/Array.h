@@ -13,7 +13,7 @@
  file for convenience. `assert.h` is included in this file; to stop the
  debug assertions, use `#define NDEBUG` before inclusion.
 
- ![States](web/states.png)
+ ![States](../web/states.png)
 
  @param[ARRAY_NAME, ARRAY_TYPE]
  The name that literally becomes `<T>`, and a valid type associated therewith,
@@ -395,17 +395,10 @@ static T *T_(ArrayBack)(const struct T_(Array) *const a, const T *const here) {
  @order \Theta(1)
  @allow */
 static T *T_(ArrayNext)(const struct T_(Array) *const a, const T *const here) {
-	const T *data;
 	size_t idx;
 	if(!a) return 0;
-	if(!here) {
-		data = a->data;
-		idx = 0;
-	} else {
-		data = here + 1;
-		idx = (size_t)(data - a->data);
-	}
-	return idx < a->size ? (T *)data : 0;
+	idx = here ? (size_t)(here - a->data + 1) : 0;
+	return idx < a->size ? a->data + idx : 0;
 }
 
 /** With `a`, and optional `update_ptr`, adds one to the size. Called from
