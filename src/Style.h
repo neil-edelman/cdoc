@@ -190,9 +190,9 @@ static void style_separate(void) {
 }
 
 /** Only used with md. */
-static int style_suppress_escapes(const char c) {
+static int style_suppress_escapes(void) {
 	struct Style *style = 0;
-	if(c == '`') return 0; /* The '`' is always escaped? */
+	/* if(c == '`') return 0; *//* The '`' is always escaped? More complex. */
 	fprintf(stderr, "%s: ", StyleArrayToString(&mode.styles));
 	while((style = StyleArrayNext(&mode.styles, style))) {
 		if(style->text->is_suppress_escapes) return fprintf(stderr, "true.\n"), 1;
@@ -206,6 +206,7 @@ static int style_suppress_escapes(const char c) {
  @param[a] If specified, prints it to the string. */
 static void encode_s(int length, const char *from, char (*const a)[256]) {
 	char *build = *a;
+	int suppress;
 	assert(length >= 0 && from && ((a && *a) || !a));
 
 	switch(CdocGetFormat()) {
@@ -238,6 +239,7 @@ terminate_html:
 	return;
 	
 md_encode_string:
+	suppress = style_suppress_escapes();
 	while(length) {
 		switch(*from) {
 		case '\0':
@@ -245,7 +247,7 @@ md_encode_string:
 		case '\\': case '`': case '*': case '_': case '{': case '}': case '[':
 		case ']': case '(': case ')': case '#': case '+': case '-': case '.':
 		case '!':
-			if(!style_suppress_escapes(*from)) {
+			if(!suppress) {
 				if((size_t)(build - *a) >= sizeof *a - 2) goto terminate_md;
 				*build++ = '\\'; *build++ = *from; break;
 			}
@@ -273,6 +275,7 @@ html_encode_print:
 	return;
 	
 md_encode_print:
+	suppress = style_suppress_escapes();
 	while(length) {
 		switch(*from) {
 		case '\0': fprintf(stderr, "Encoded null with %d left.\n", length);
@@ -280,8 +283,7 @@ md_encode_print:
 		case '\\': case '`': case '*': case '_': case '{': case '}': case '[':
 		case ']': case '(': case ')': case '#': case '+': case '-': case '.':
 		case '!':
-			if(!style_suppress_escapes(*from)) { printf("\\%c", *from); break; }
-			fprintf(stderr, "Suppress %.20s\n", from);
+			if(!suppress) { printf("\\%c", *from); break; }
 		default: fputc(*from, stdout); break;
 		}
 		from++, length--;

@@ -2,9 +2,9 @@
 
  ## <a name = "preamble:">Description</a> ##
 
-Naked code `\ { } [ ] ( ) # + - . !`
-
-`\``
+ * Naked code `\ { } [ ] ( ) # + - . !`
+ * Naked text \\ \{ \} \[ \] \( \) \# \+ \- \. \!
+ * Escaped text \\ \` \_ \[ \] \! ~
 
 
 
