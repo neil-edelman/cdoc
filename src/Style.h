@@ -182,8 +182,11 @@ static void style_separate(void) {
 /** Only used with md. */
 static int style_suppress_escapes(void) {
 	struct Style *style = 0;
-	while((style = StyleArrayNext(&mode.styles, style)))
+	while((style = StyleArrayNext(&mode.styles, style))) {
+		fprintf(stderr, "{%s, %s, %s}\n", style->text->begin, style->text->sep, style->text->end);
 		if(style->text->is_suppress_escapes) return 1;
+	}
+	fprintf(stderr, "No suppress.\n");
 	return 0;
 }
 
