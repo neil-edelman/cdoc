@@ -30,7 +30,7 @@ static int jpeg_dim(FILE *const fp, unsigned *const width,
 		for( ; ; ) {
 			if(fread(f, 1, 1, fp) != 1) return 0;
 			if(f[0] == 0xFF) break;
-			if(no_discarded) (*no_discarded)++;
+			if(no_discarded) (*no_discarded)++; else return errno = EISEQ, 0;
 		}
 		/* Discard up until the last `0xFF`. */
 		do { if(fread(f, 1, 1, fp) != 1) return 0; } while(f[0] == 0xFF);
