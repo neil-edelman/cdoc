@@ -18,7 +18,7 @@
  This supports a stripped-down version of `Markdown` that is much stricter.
  Embedded inline in the documentation,
 
- \* `\` escapes `\\`` `\_\`\~\!\\\@\<\>\[\]` but one only needed when
+ \* `\\` escapes `\_\`\~\!\\\@\<\>\[\]` but one only needed when
     ambiguous (in paragraph mode, need `\`` and `\_`);
  \* start lists with `[ ]\\*[ ]` and end with a new paragraph; these are
     simple, can be anywhere and don't nest;
@@ -106,7 +106,6 @@
     function; use `\<fn:\<function\>\>` to reference;
  \* internal underscores are emphasis except in math/code mode;
  \* a \`cool' word in a \`nice' sentence must be escaped;
- \* a `\`` cannot be represented in code.
 
  Note that it does not validate html; nothing stops one from writing, eg, a
  link, or emphasis, in the title.
