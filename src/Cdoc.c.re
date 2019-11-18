@@ -23,7 +23,7 @@
  This supports a stripped-down version of `Markdown` that is much stricter.
  Embedded inline in the documentation,
 
- \* `\\` escapes these `\_\`\~\!\\\@\<\>\[\]` but one only needed when
+ \* `\` escapes `\\`` `\_\`\~\!\\\@\<\>\[\]` but one only needed when
     ambiguous (in paragraph mode, need `\`` and `\_`);
  \* start lists with `[ ]\\*[ ]` and end with a new paragraph; these are
     simple, can be anywhere and don't nest;
