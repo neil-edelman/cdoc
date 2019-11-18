@@ -9,8 +9,8 @@
 
 This is a context\-sensitive lexer intended to process parts of a `C` compilation unit and extract documentation\. This does not do any compiling, just very basic text\-parsing\.
 
- * Naked text \\ \{ \} \[ \] \( \) \# \+ \- \. \!
- * Escaped text \\ \` \_ \\\{ \\\} \[ \] \\\( \\\) \\\# \\\+ \\\- \\\. \!
+ * Naked text \\ \{ \} \[ \] \( \) \# \+ \- &nbsp; \. \!
+ * Escaped text \\ \` \_ \[ \] \! ~
  * Naked code `\\ \{ \} \[ \] \( \) \# \+ \- \. \!`
  * Escaped code `\\ \` \* \_ \\\{ \\\} \[ \] \\\( \\\) \\\# \\\+ \\\- \\\. \!`
 
