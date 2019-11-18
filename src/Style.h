@@ -190,8 +190,9 @@ static void style_separate(void) {
 }
 
 /** Only used with md. */
-static int style_suppress_escapes(void) {
+static int style_suppress_escapes(const char c) {
 	struct Style *style = 0;
+	if(c == '`') return 0; /* The '`' is always escaped? */
 	fprintf(stderr, "%s: ", StyleArrayToString(&mode.styles));
 	while((style = StyleArrayNext(&mode.styles, style))) {
 		if(style->text->is_suppress_escapes) return fprintf(stderr, "true.\n"), 1;
@@ -244,7 +245,7 @@ md_encode_string:
 		case '\\': case '`': case '*': case '_': case '{': case '}': case '[':
 		case ']': case '(': case ')': case '#': case '+': case '-': case '.':
 		case '!':
-			if(!style_suppress_escapes()) {
+			if(!style_suppress_escapes(*from)) {
 				if((size_t)(build - *a) >= sizeof *a - 2) goto terminate_md;
 				*build++ = '\\'; *build++ = *from; break;
 			}
@@ -279,7 +280,7 @@ md_encode_print:
 		case '\\': case '`': case '*': case '_': case '{': case '}': case '[':
 		case ']': case '(': case ')': case '#': case '+': case '-': case '.':
 		case '!':
-			if(!style_suppress_escapes()) { printf("\\%c", *from); break; }
+			if(!style_suppress_escapes(*from)) { printf("\\%c", *from); break; }
 			fprintf(stderr, "Suppress %.20s\n", from);
 		default: fputc(*from, stdout); break;
 		}

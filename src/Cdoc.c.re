@@ -105,7 +105,8 @@
  \* instead of `\\fn`, just insert the documentation comment above the
     function; use `\<fn:\<function\>\>` to reference;
  \* internal underscores are emphasis except in math/code mode;
- \* A \`cool' word in a \`nice' sentence must be escaped.
+ \* a \`cool' word in a \`nice' sentence must be escaped;
+ \* a `\`` cannot be represented in code.
 
  Note that it does not validate html; nothing stops one from writing, eg, a
  link, or emphasis, in the title.
