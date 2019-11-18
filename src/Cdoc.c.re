@@ -5,10 +5,10 @@
  compilation unit and extract documentation. This does not do any compiling,
  just very basic text-parsing.
 
- Naked text \ { } [ ] ( ) # + - . !
- Escaped text \\ \` \* \_ \{ \} \[ \] \( \) \# \+ \- \. \!
- Naked code `\ { } [ ] ( ) # + - . !`
- Escaped code `\\ \` \* \_ \{ \} \[ \] \( \) \# \+ \- \. \!`
+ \* Naked text \ { } [ ] ( ) # + - . !
+ \* Escaped text \\ \` \_ \{ \} \[ \] \( \) \# \+ \- \. \!
+ \* Naked code `\ { } [ ] ( ) # + - . !`
+ \* Escaped code `\\ \` \* \_ \{ \} \[ \] \( \) \# \+ \- \. \!`
 
  Documentation commands are `/` `**…` (together) and are ended with `*…/`, but
  not `/` `*…*` `/`; one can still use this as a code break. One can have an
@@ -23,8 +23,8 @@
  This supports a stripped-down version of `Markdown` that is much stricter.
  Embedded inline in the documentation,
 
- \* `\\` escapes these `\*\_\`\~\!\\\@\<\>\[\]` but one only needed when
-    ambiguous;
+ \* `\\` escapes these `\_\`\~\!\\\@\<\>\[\]` but one only needed when
+    ambiguous (in paragraph mode, need `\`` and `\_`);
  \* start lists with `[ ]\\*[ ]` and end with a new paragraph; these are
     simple, can be anywhere and don't nest;
  \* `\\"` (and optionally a space) causes all the line after to be

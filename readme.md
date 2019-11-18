@@ -9,15 +9,16 @@
 
 This is a context\-sensitive lexer intended to process parts of a `C` compilation unit and extract documentation\. This does not do any compiling, just very basic text\-parsing\.
 
-Naked text \\ \{ \} \[ \] \( \) \# \+ \- \. \! Escaped text \\ \`
-
- * \_ \\\{ \\\} \[ \] \\\( \\\) \\\# \\\+ \\\- \\\. \! Naked code `\\ \{ \} \[ \] \( \) \# \+ \- \. \!` Escaped code `\\ \` \* \_ \\\{ \\\} \[ \] \\\( \\\) \\\# \\\+ \\\- \\\. \!`
+ * Naked text \\ \{ \} \[ \] \( \) \# \+ \- \. \!
+ * Escaped text \\ \` \_ \\\{ \\\} \[ \] \\\( \\\) \\\# \\\+ \\\- \\\. \!
+ * Naked code `\\ \{ \} \[ \] \( \) \# \+ \- \. \!`
+ * Escaped code `\\ \` \* \_ \\\{ \\\} \[ \] \\\( \\\) \\\# \\\+ \\\- \\\. \!`
 
 Documentation commands are `/` `\*\*…` \(together\) and are ended with `\*…/`, but not `/` `\*…\*` `/`; one can still use this as a code break\. One can have an asterisk at the front, like Kernel comments, or asterisks all over like some crazy ASCII art\. All documentation goes at most two lines above what it documents or it's appended to the header\. Multiple documentation on the same command is appended, including in the command\. Two hard returns is a paragraph\. One can document typedefs, tags \(struct, enum, union,\) data, and functions; everything else is automatically inserted into the preamble\. The macro `A\_B\_\(Foo,Bar\)` is transformed into `<A>Foo<B>Bar`\.
 
 This supports a stripped\-down version of `Markdown` that is much stricter\. Embedded inline in the documentation,
 
- * `\\` escapes these `\*\_\`~\!\\@<>\[\]` but one only needed when ambiguous;
+ * `\\` escapes these `\_\`~\!\\@<>\[\]` but one only needed when ambiguous \(in paragraph mode, need `\`` and `\_`\);
  * start lists with `\[ \]\\\*\[ \]` and end with a new paragraph; these are simple, can be anywhere and don't nest;
  * `\\"` \(and optionally a space\) causes all the line after to be pre\-formatted;
  * Escapes included for convenience: `\\,` "&#8239;" non\-breaking thin space, `\\O` "&#927;" Bachmann–Landau notation, \(but really capital omicron because fonts,\) `\\Theta` "&#920;", `\\Omega` "&#937;", `\\times` "&#215;", `\\cdot` &#183;\.
