@@ -9,7 +9,11 @@
 
 This is a context\-sensitive lexer intended to process parts of a `C` compilation unit and extract documentation\. This does not do any compiling, just very basic text\-parsing\.
 
-Documentation commands are `/``\*\*…` and are ended with `\*…/`, but not `/``\*…\*``/`; one can still use this as a code break\. One can have an asterisk at the front, like Kernel comments, or asterisks all over like some crazy ASCII art\. All documentation goes at most two lines above what it documents or it's appended to the header\. Multiple documentation on the same command is appended, including in the command\. Two hard returns is a paragraph\. One can document typedefs, tags \(struct, enum, union,\) data, and functions; everything else is automatically inserted into the preamble\. The macro `A\_B\_\(Foo,Bar\)` is transformed into `<A>Foo<B>Bar`\.
+Naked text \\ \{ \} \[ \] \( \) \# \+ \- \. \! Escaped text \\ \`
+
+ * \_ \\\{ \\\} \[ \] \\\( \\\) \\\# \\\+ \\\- \\\. \! Naked code `\\ \{ \} \[ \] \( \) \# \+ \- \. \!` Escaped code `\\ \` \* \_ \\\{ \\\} \[ \] \\\( \\\) \\\# \\\+ \\\- \\\. \!`
+
+Documentation commands are `/` `\*\*…` \(together\) and are ended with `\*…/`, but not `/` `\*…\*` `/`; one can still use this as a code break\. One can have an asterisk at the front, like Kernel comments, or asterisks all over like some crazy ASCII art\. All documentation goes at most two lines above what it documents or it's appended to the header\. Multiple documentation on the same command is appended, including in the command\. Two hard returns is a paragraph\. One can document typedefs, tags \(struct, enum, union,\) data, and functions; everything else is automatically inserted into the preamble\. The macro `A\_B\_\(Foo,Bar\)` is transformed into `<A>Foo<B>Bar`\.
 
 This supports a stripped\-down version of `Markdown` that is much stricter\. Embedded inline in the documentation,
 
@@ -81,7 +85,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
  * Dependancies:  
    [re2c](http://re2c.org/)
  * Caveat:  
-   Trigraph support, \(haha\.\) Old\-style function support\. Hide `const` on params when it can not affect function calls\. Prototypes and functions are the same thing; this will confuse it\. Hash map will be faster and more precise\. Links to non\-documented code which sometimes doesn't show up, work without error, and create broken links\. Sometimes it's an error, sometimes it's a warning, seemingly at random\. Make all the errors on\-line? 80\-characters _per_ line limit; I've got it working, just need to apply to this code\. Needs buffering\. Eg, fixme with no args disappears; we should NOT check if the string is empty\. For md, have a field in `Style` that says whether we should escape all, or just some, \(eg, inside a \`\` the md changes\.\) Complete md\-ising eg table\. `A``B` doesn't do what one expects in md\. FormatIndex is stupid; just create a zero in the front\. h2 style\.
+   Trigraph support, \(haha\.\) Old\-style function support\. Hide `const` on params when it can not affect function calls\. Prototypes and functions are the same thing; this will confuse it\. Hash map will be faster and more precise\. Links to non\-documented code which sometimes doesn't show up, work without error, and create broken links\. Sometimes it's an error, sometimes it's a warning, seemingly at random\. Make all the errors on\-line? 80\-characters _per_ line limit; I've got it working, just need to apply to this code\. Needs buffering\. Eg, fixme with no args disappears; we should NOT check if the string is empty\. For md, have a field in `Style` that says whether we should escape all, or just some, \(eg, inside a \`\` the md changes\.\) Complete md\-ising eg table\. `A``B` doesn't do what one expects in md\. : If a segment has multiple licenses, they will show multiple times\. : `Style\.h` should really go in it's own C\.
 
 
 
@@ -95,8 +99,6 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 <tr><td align = right>int</td><td><a href = "#fn:CdocGetDebug">CdocGetDebug</a></td><td></td></tr>
 
 <tr><td align = right>enum Format</td><td><a href = "#fn:CdocGetFormat">CdocGetFormat</a></td><td></td></tr>
-
-<tr><td align = right>int</td><td><a href = "#fn:CdocGetFormatIndex">CdocGetFormatIndex</a></td><td></td></tr>
 
 <tr><td align = right>const char \*</td><td><a href = "#fn:CdocGetOutput">CdocGetOutput</a></td><td></td></tr>
 
@@ -124,17 +126,6 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
  - Return:  
    What format the output was specified to be in `enum Format`\. If there was no output specified, guess before from the output filename\.
-
-
-
-
-<a name = "fn:CdocGetFormatIndex"><!-- --></a>
- ### CdocGetFormatIndex ###
-
-`int<strong> CdocGetFormatIndex</strong>\(void\)`
-
- - Return:  
-   What the format is in an index\.
 
 
 

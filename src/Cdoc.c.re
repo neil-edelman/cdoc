@@ -4,9 +4,14 @@
  This is a context-sensitive lexer intended to process parts of a `C`
  compilation unit and extract documentation. This does not do any compiling,
  just very basic text-parsing.
- 
- Documentation commands are `/``**…` and are ended with `*…/`, but not
- `/``*…*``/`; one can still use this as a code break. One can have an
+
+ Naked text \ { } [ ] ( ) # + - . !
+ Escaped text \\ \` \* \_ \{ \} \[ \] \( \) \# \+ \- \. \!
+ Naked code `\ { } [ ] ( ) # + - . !`
+ Escaped code `\\ \` \* \_ \{ \} \[ \] \( \) \# \+ \- \. \!`
+
+ Documentation commands are `/` `**…` (together) and are ended with `*…/`, but
+ not `/` `*…*` `/`; one can still use this as a code break. One can have an
  asterisk at the front, like Kernel comments, or asterisks all over like some
  crazy ASCII art.  All documentation goes at most two lines above what it
  documents or it's appended to the header. Multiple documentation on the same
