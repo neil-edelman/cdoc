@@ -8,7 +8,7 @@
  @param[width, height] Pointers that get overwritten on success; required.
  @param[no_discarded] Optional discarded bytes pointer.
  @return Success, otherwise `errno` will (probably) be set.
- @throws[EILSEQ] Not valid PNG data.
+ @throws[EILSEQ] Not a valid jpeg.
  @throws[fread]
  @license <http://www.faqs.org/faqs/jpeg-faq/part1/> said to look up
  [rdjpgcom.c](https://github.com/ImageMagick/jpeg-turbo/blob/master/rdjpgcom.c),
@@ -30,7 +30,7 @@ static int jpeg_dim(FILE *const fp, unsigned *const width,
 		for( ; ; ) {
 			if(fread(f, 1, 1, fp) != 1) return 0;
 			if(f[0] == 0xFF) break;
-			if(no_discarded) (*no_discarded)++; else return errno = EISEQ, 0;
+			if(no_discarded) (*no_discarded)++; else return errno = EILSEQ, 0;
 		}
 		/* Discard up until the last `0xFF`. */
 		do { if(fread(f, 1, 1, fp) != 1) return 0; } while(f[0] == 0xFF);

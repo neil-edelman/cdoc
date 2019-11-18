@@ -13,62 +13,61 @@ static char title[256];
  be printed around literals. Block and can appear alone elements have
  `is_next_level`. */
 static const struct StyleText {
-	const char *name, *begin, *sep, *end;
+	const char *begin, *sep, *end;
 	int is_next_level;
-} no_style = { "no style", "", "", "", 0 },
-plain_text = { "text",  "", " ", "", 0 },
-plain_parenthetic = { "parenthetic", "(", " ", ")", 0 },
-plain_see_license = { "see", "(See license details ", ", ", ".)", 0 },
-plain_csv = { "csv", "", ", ", "", 0 },
-plain_ssv = { "ssv", "", "; ", "", 0 },
-html_title = { "title", "<title>", "", "</title>\n", 1 },
+} no_style = { "", "", "", 0 },
+plain_text = { "", " ", "", 0 },
+plain_parenthetic = { "(", " ", ")", 0 },
+plain_see_license = { "(See license details ", ", ", ".)", 0 },
+plain_csv = { "", ", ", "", 0 },
+plain_ssv = { "", "; ", "", 0 },
+html_title = { "<title>", "", "</title>\n", 1 },
 styles[][3] = {
-	{ { 0, 0, 0, 0, 0 },
-		{ "div", "<div>", "", "</div>\n\n", 1},
-		{ "div", "", "", "\n\n", 1 } },
-	{ { 0, 0, 0, 0, 0 },
-		{ "para", "<p>", " ", "</p>\n\n", 1 },
-		{ "para", "", " ", "\n\n", 1 } },
-	{ { 0, 0, 0, 0, 0 },
-		{ "ul", "<ul>\n", "", "</ul>\n\n", 1 },
-		{ "ul", "", "",  "\n", 1 } },
-	{ { 0, 0, 0, 0, 0 },
-		{ "li", "\t<li>", " ", "</li>\n", 0 },
-		{ "li", " * ", " ", "\n", 0 } },
-	{ { 0, 0, 0, 0, 0 },
-		{ "code", "<code>", /*"&nbsp;"*/" ", "</code>", 0},
-		{ "code", "`", " ", "`", 0 } },
-	{ { 0, 0, 0, 0, 0 },
-		{ "pre",  "<pre>\n", "", "</pre>\n\n", 1 },
-		{ "pre", "", "", "\n", 1 } },
-	{ { 0, 0, 0, 0, 0 },
-		{ "preline", "", "\n", "\n", 0 },
-		{ "preline", "", "\n    ", "\n", 0 } },
-	/* fixme test */
-	{ { 0, 0, 0, 0, 0 },
-		{ "h1", "<h1>", "", "</h1>\n\n", 1 },
-		{ "h1", " # ", "", " #\n\n", 1 } },
-	{ { 0, 0, 0, 0, 0 },
-		{ "h2", "<h2>", "", "</h2>\n\n", 1 },
-		{ "h2", " ## ", "", " ##\n\n", 1 } },
-	{ { 0, 0, 0, 0, 0 },
-		{ "h3", "<h3>", "", "</h3>\n\n", 1 },
-		{ "h3", " ### ", "", " ###\n\n", 1 } },
-	{ { 0, 0, 0, 0, 0 },
-		{ "dl", "<dl>\n", "", "</dl>\n\n", 1 },
-		{ "dl", "", "", "\n\n", 1 } },
-	{ { 0, 0, 0, 0, 0 },
-		{ "dt", "\t<dt>", "", "</dt>\n", 0 },
-		{ "dt", " - ", "", "  \n", 0 } },
-	{ { 0, 0, 0, 0, 0 },
-		{ "dd",   "\t<dd>", "", "</dd>\n", 0 },
-		{ "dd", "   ", "", "\n", 0 } },
-	{ { 0, 0, 0, 0, 0 },
-		{ "desc", title, "", "</dd>\n", 0 },
-		{ "desc", title, "", "\n", 0 } },
-	{ { 0, 0, 0, 0, 0 },
-		{ "em", "<em>", "", "</em>", 0 },
-		{ "em", "_", "", "_", 0 } }
+	{ { 0, 0, 0, 0 },
+		{ "<div>", "", "</div>\n\n", 1},
+		{ "", "", "\n\n", 1 } },
+	{ { 0, 0, 0, 0 },
+		{ "<p>", " ", "</p>\n\n", 1 },
+		{ "", " ", "\n\n", 1 } },
+	{ { 0, 0, 0, 0 },
+		{ "<ul>\n", "", "</ul>\n\n", 1 },
+		{ "", "",  "\n", 1 } },
+	{ { 0, 0, 0, 0 },
+		{ "\t<li>", " ", "</li>\n", 0 },
+		{ " * ", " ", "\n", 0 } },
+	{ { 0, 0, 0, 0 },
+		{ "<code>", /*"&nbsp;"*/" ", "</code>", 0},
+		{ "`", " ", "`", 0 } },
+	{ { 0, 0, 0, 0 },
+		{ "<pre>\n", "", "</pre>\n\n", 1 },
+		{ "", "", "\n", 1 } },
+	{ { 0, 0, 0, 0 },
+		{ "", "\n", "\n", 0 },
+		{ "", "\n    ", "\n", 0 } },
+	{ { 0, 0, 0, 0 },
+		{ "<h1>", "", "</h1>\n\n", 1 },
+		{ " # ", "", " #\n\n", 1 } },
+	{ { 0, 0, 0, 0 },
+		{ "<h2>", "", "</h2>\n\n", 1 },
+		{ " ## ", "", " ##\n\n", 1 } },
+	{ { 0, 0, 0, 0 },
+		{ "<h3>", "", "</h3>\n\n", 1 },
+		{ " ### ", "", " ###\n\n", 1 } },
+	{ { 0, 0, 0, 0 },
+		{ "<dl>\n", "", "</dl>\n\n", 1 },
+		{ "", "", "\n\n", 1 } },
+	{ { 0, 0, 0, 0 },
+		{ "\t<dt>", "", "</dt>\n", 0 },
+		{ " - ", "", "  \n", 0 } },
+	{ { 0, 0, 0, 0 },
+		{ "\t<dd>", "", "</dd>\n", 0 },
+		{ "   ", "", "\n", 0 } },
+	{ { 0, 0, 0, 0 },
+		{ title, "", "</dd>\n", 0 },
+		{ title, "", "\n", 0 } },
+	{ { 0, 0, 0, 0 },
+		{ "<em>", "", "</em>", 0 },
+		{ "_", "", "_", 0 } }
 };
 
 /* This is a hack. Don't change the styles without changing this. */
@@ -87,13 +86,8 @@ struct Style {
 	enum { BEGIN, ITEM, SEPARATE } lazy;
 };
 
-static void style_to_string(const struct Style *s, char (*const a)[12]) {
-	sprintf(*a, "%.11s", s->text->name);
-}
-
 #define ARRAY_NAME Style
 #define ARRAY_TYPE struct Style
-#define ARRAY_TO_STRING &style_to_string
 #define ARRAY_STACK
 #include "Array.h"
 
