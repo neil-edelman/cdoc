@@ -299,32 +299,46 @@ OUT(see_data) {
 OUT(math_begin) { /* Math and code. */
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == MATH_BEGIN && !a);
-	style_prepare_output(t->symbol);
-	printf(CdocGetFormat() == OUT_HTML ? "<code>" : "`");
+	style_push(&styles[ST_CODE][CdocGetFormat()]);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
 OUT(math_end) {
 	const struct Token *const t = *ptoken;
+	const struct StyleText *const st = style_text_peek(),
+		*const st_expect = &styles[ST_CODE][CdocGetFormat()];
 	assert(tokens && t && t->symbol == MATH_END && !a);
-	style_prepare_output(t->symbol);
-	printf(CdocGetFormat() == OUT_HTML ? "</code>" : "`");
+	if(st != st_expect) {
+		char st_str[12], st_expect_str[12];
+		style_text_to_string(st, &st_str);
+		style_text_to_string(st_expect, &st_expect_str);
+		return fprintf(stderr, "Expected %s but got %s.\n",
+			st_expect_str, st_str), 0;
+	}
+	style_pop();
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
 OUT(em_begin) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == EM_BEGIN && !a);
-	style_prepare_output(t->symbol);
-	printf(CdocGetFormat() == OUT_HTML ? "<em>" : "_");
+	style_push(&styles[ST_EM][CdocGetFormat()]);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
 OUT(em_end) {
 	const struct Token *const t = *ptoken;
+	const struct StyleText *const st = style_text_peek(),
+		*const st_expect = &styles[ST_EM][CdocGetFormat()];
 	assert(tokens && t && t->symbol == EM_END && !a);
-	style_prepare_output(t->symbol);
-	printf(CdocGetFormat() == OUT_HTML ? "</em>" : "_");
+	if(st != st_expect) {
+		char st_str[12], st_expect_str[12];
+		style_text_to_string(st, &st_str);
+		style_text_to_string(st_expect, &st_expect_str);
+		return fprintf(stderr, "Expected %s but got %s.\n",
+			st_expect_str, st_str), 0;
+	}
+	style_pop();
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -459,10 +473,7 @@ OUT(comega) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == COMEGA && !a);
 	style_prepare_output(t->symbol);
-	/*if(CdocGetFormat() == OUT_MD)
-		printf("&Omega;");*/ /* Doesn't work with Markdown, somehow. */
-	/*else*/
-		printf("&#937;" /* "&Omega;" */);
+	printf("&#937;" /* "&Omega;" */);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }

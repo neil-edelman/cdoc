@@ -13,61 +13,61 @@ static char title[256];
  be printed around literals. Block and can appear alone elements have
  `is_next_level`. */
 static const struct StyleText {
-	const char *begin, *sep, *end;
+	const char *name, *begin, *sep, *end;
 	int is_next_level, is_suppress_escapes;
-} no_style = { "", "", "", 0, 0 },
-plain_text = { "", " ", "", 0, 0 },
-plain_parenthetic = { "(", " ", ")", 0, 0 },
-plain_see_license = { "(See license details ", ", ", ".)", 0, 0 },
-plain_csv = { "", ", ", "", 0, 0 },
-plain_ssv = { "", "; ", "", 0, 0 },
-html_title = { "<title>", "", "</title>\n", 1, 0 },
+} no_style = { "nosty", "", "", "", 0, 0 },
+plain_text = { "plain", "", " ", "", 0, 0 },
+plain_parenthetic = { "paren", "(", " ", ")", 0, 0 },
+plain_see_license = { "license", "(See license details ", ", ", ".)", 0, 0 },
+plain_csv = { "csv", "", ", ", "", 0, 0 },
+plain_ssv = { "ssv", "", "; ", "", 0, 0 },
+html_title = { "title", "<title>", "", "</title>\n", 1, 0 },
 styles[][3] = {
-	{ { 0, 0, 0, 0, 0 },
-		{ "<div>", "", "</div>\n\n", 1, 0 },
-		{ "", "", "\n\n", 1, 0 } },
-	{ { 0, 0, 0, 0, 0 },
-		{ "<p>", " ", "</p>\n\n", 1, 0 },
-		{ "", " ", "\n\n", 1, 0 } },
-	{ { 0, 0, 0, 0, 0 },
-		{ "<ul>\n", "", "</ul>\n\n", 1, 0 },
-		{ "", "",  "\n", 1, 0 } },
-	{ { 0, 0, 0, 0, 0 },
-		{ "\t<li>", " ", "</li>\n", 0, 0 },
-		{ " * ", " ", "\n", 0, 0 } },
-	{ { 0, 0, 0, 0, 0 },
-		{ "<code>", /*"&nbsp;"*/" ", "</code>", 0, 0 },
-		{ "`", " ", "`", 0, 1 } },
-	{ { 0, 0, 0, 0, 0 },
-		{ "<pre>\n", "", "</pre>\n\n", 1, 0 },
-		{ "", "", "\n", 1, 1 } },
-	{ { 0, 0, 0, 0, 0 },
-		{ "", "\n", "\n", 0, 0 },
-		{ "", "\n    ", "\n", 0, 0 } },
-	{ { 0, 0, 0, 0, 0 },
-		{ "<h1>", "", "</h1>\n\n", 1, 0 },
-		{ " # ", "", " #\n\n", 1, 0 } },
-	{ { 0, 0, 0, 0, 0 },
-		{ "<h2>", "", "</h2>\n\n", 1, 0 },
-		{ " ## ", "", " ##\n\n", 1, 0 } },
-	{ { 0, 0, 0, 0, 0 },
-		{ "<h3>", "", "</h3>\n\n", 1, 0 },
-		{ " ### ", "", " ###\n\n", 1, 0 } },
-	{ { 0, 0, 0, 0, 0 },
-		{ "<dl>\n", "", "</dl>\n\n", 1, 0 },
-		{ "", "", "\n\n", 1, 0 } },
-	{ { 0, 0, 0, 0, 0 },
-		{ "\t<dt>", "", "</dt>\n", 0, 0 },
-		{ " - ", "", "  \n", 0, 0 } },
-	{ { 0, 0, 0, 0, 0 },
-		{ "\t<dd>", "", "</dd>\n", 0, 0 },
-		{ "   ", "", "\n", 0, 0 } },
-	{ { 0, 0, 0, 0, 0 },
-		{ title, "", "</dd>\n", 0, 0 },
-		{ title, "", "\n", 0, 0 } },
-	{ { 0, 0, 0, 0, 0 },
-		{ "<em>", "", "</em>", 0, 0 },
-		{ "_", "", "_", 0, 0 } }
+	{ { "", 0, 0, 0, 0, 0 },
+		{ "div", "<div>", "", "</div>\n\n", 1, 0 },
+		{ "div", "", "", "\n\n", 1, 0 } },
+	{ { "", 0, 0, 0, 0, 0 },
+		{ "p", "<p>", " ", "</p>\n\n", 1, 0 },
+		{ "p", "", " ", "\n\n", 1, 0 } },
+	{ { "", 0, 0, 0, 0, 0 },
+		{ "ul", "<ul>\n", "", "</ul>\n\n", 1, 0 },
+		{ "ul", "", "",  "\n", 1, 0 } },
+	{ { "", 0, 0, 0, 0, 0 },
+		{ "li", "\t<li>", " ", "</li>\n", 0, 0 },
+		{ "li", " * ", " ", "\n", 0, 0 } },
+	{ { "", 0, 0, 0, 0, 0 },
+		{ "code", "<code>", /*"&nbsp;"*/" ", "</code>", 0, 0 },
+		{ "code", "`", " ", "`", 0, 1 } },
+	{ { "", 0, 0, 0, 0, 0 },
+		{ "pre", "<pre>\n", "", "</pre>\n\n", 1, 0 },
+		{ "pre", "", "", "\n", 1, 1 } },
+	{ { "", 0, 0, 0, 0, 0 },
+		{ "pretext", "", "\n", "\n", 0, 0 },
+		{ "pretext", "", "\n    ", "\n", 0, 0 } },
+	{ { "", 0, 0, 0, 0, 0 },
+		{ "h1", "<h1>", "", "</h1>\n\n", 1, 0 },
+		{ "h1", " # ", "", " #\n\n", 1, 0 } },
+	{ { "", 0, 0, 0, 0, 0 },
+		{ "h2", "<h2>", "", "</h2>\n\n", 1, 0 },
+		{ "h2", " ## ", "", " ##\n\n", 1, 0 } },
+	{ { "", 0, 0, 0, 0, 0 },
+		{ "h3", "<h3>", "", "</h3>\n\n", 1, 0 },
+		{ "h3", " ### ", "", " ###\n\n", 1, 0 } },
+	{ { "", 0, 0, 0, 0, 0 },
+		{ "dl", "<dl>\n", "", "</dl>\n\n", 1, 0 },
+		{ "dl", "", "", "\n\n", 1, 0 } },
+	{ { "", 0, 0, 0, 0, 0 },
+		{ "dt", "\t<dt>", "", "</dt>\n", 0, 0 },
+		{ "dt", " - ", "", "  \n", 0, 0 } },
+	{ { "", 0, 0, 0, 0, 0 },
+		{ "dd", "\t<dd>", "", "</dd>\n", 0, 0 },
+		{ "dd", "   ", "", "\n", 0, 0 } },
+	{ { "", 0, 0, 0, 0, 0 },
+		{ "ddtitle", title, "", "</dd>\n", 0, 0 },
+		{ "ddtitle", title, "", "\n", 0, 0 } },
+	{ { "", 0, 0, 0, 0, 0 },
+		{ "em", "<em>", "", "</em>", 0, 0 },
+		{ "em", "_", "", "_", 0, 0 } }
 };
 
 /* This is a hack. Don't change the styles without changing this. */
@@ -86,8 +86,18 @@ struct Style {
 	enum { BEGIN, ITEM, SEPARATE } lazy;
 };
 
+static void style_text_to_string(const struct StyleText *st,
+	char (*const a)[12]) {
+	strcpy(*a, st->name);
+}
+
+static void style_to_string(const struct Style *s, char (*const a)[12]) {
+	style_text_to_string(s->text, a);
+}
+
 #define ARRAY_NAME Style
 #define ARRAY_TYPE struct Style
+#define ARRAY_TO_STRING &style_to_string
 #define ARRAY_STACK
 #include "Array.h"
 
@@ -182,11 +192,11 @@ static void style_separate(void) {
 /** Only used with md. */
 static int style_suppress_escapes(void) {
 	struct Style *style = 0;
+	fprintf(stderr, "%s: ", StyleArrayToString(&mode.styles));
 	while((style = StyleArrayNext(&mode.styles, style))) {
-		fprintf(stderr, "{%s, %s, %s}\n", style->text->begin, style->text->sep, style->text->end);
-		if(style->text->is_suppress_escapes) return 1;
+		if(style->text->is_suppress_escapes) return fprintf(stderr, "true.\n"), 1;
 	}
-	fprintf(stderr, "No suppress.\n");
+	fprintf(stderr, "false.\n");
 	return 0;
 }
 
