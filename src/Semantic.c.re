@@ -14,10 +14,10 @@
 /** `right` is in the string `buffer`. Has assumed <fn:remove_recursive> has
  been called to eliminate `[]`. Very ad-hoc.
  @return What looks like a type starting at the right. */
-static char *type_from_right(const char *const buffer, const char *const right,
+static char *type_from_right(const char *const buffer, char *const right,
 	const int is_eager) {
 	int is_type = 0;
-	const char *left = 0, *ch = right;
+	char *left = 0, *ch = right;
 	assert(buffer && right);
 	if(right < buffer) return 0;
 	if(*ch == 'v') is_type = 1, left = ch; /* `void` sans-qualifier. */
@@ -35,15 +35,16 @@ static char *type_from_right(const char *const buffer, const char *const right,
 		/* Very lazy; if the thing doesn't look like a tag, id, or operator. */
 		if(!strchr("sx*", *ch)) break;
 		is_type = 1;
-		if(is_eager && *ch == 'x') { left = ch; break;}
+		if(is_eager && *ch == 'x') { left = ch; break; }
 	} while(left = ch, --ch >= buffer);
-	return is_type ? (char *)left : 0;
+	return is_type ? left : 0;
 }
 
 /* Make sure to <fn:check_symbols> before using; it assumes parentheses are
  well-formed and <fn:remove_recursive> has been called to eliminate `[]`. */
 static void effectively_typedef_fn_ptr(char *const buffer) {
-	char *middle, *prefix, *suffix, *operator, *ret_type;
+	char *middle, *prefix, *suffix, *operator;
+	char *ret_type;
 	int level;
 	assert(buffer);
 	for(middle = buffer; (middle = strstr(middle, ")(")); middle += 2) {
@@ -102,7 +103,7 @@ static int add_param(const char *const label) {
 	return 1;
 }
 
-/*!stags:re2c format = 'const char *@@;'; */
+/*!stags:re2c format = 'char *@@;'; */
 
 /*!re2c
 re2c:yyfill:enable   = 0;
@@ -142,9 +143,8 @@ argument = ("_" | "*" | "s" | "x" | generic)+;
 */
 
 static int parse(void) {
-	char *const buffer = CharArrayGet(&semantic.buffer);
-	const char *cursor = buffer, *marker = cursor;
-	const char *args = 0, *label = 0, *begin;
+	char *const buffer = CharArrayGet(&semantic.buffer), *cursor = buffer,
+		*marker = cursor, *args = 0, *begin, *label = 0;
 	int parens = 0;
 	int is_not_likely = 0;
 
