@@ -179,13 +179,21 @@ static void style_separate(void) {
 	if(top->lazy == ITEM) top->lazy = SEPARATE;
 }
 
+/** Only used with md. */
+static int style_suppress_escapes(void) {
+	struct Style *style = 0;
+	while((style = StyleArrayNext(&mode.styles, style)))
+		if(style->text->is_suppress_escapes) return 1;
+	return 0;
+}
+
 /** Encode a bunch of arbitrary text `from` to `length` as whatever the options
  were.
  @param[a] If specified, prints it to the string. */
 static void encode_s(int length, const char *from, char (*const a)[256]) {
 	char *build = *a;
 	assert(length >= 0 && from && ((a && *a) || !a));
-	
+
 	switch(CdocGetFormat()) {
 	case OUT_HTML:
 		if(a) goto html_encode_string;
@@ -218,13 +226,15 @@ terminate_html:
 md_encode_string:
 	while(length) {
 		switch(*from) {
+		case '\0':
+			goto terminate_md;
 		case '\\': case '`': case '*': case '_': case '{': case '}': case '[':
 		case ']': case '(': case ')': case '#': case '+': case '-': case '.':
 		case '!':
-			if((size_t)(build - *a) >= sizeof *a - 2) goto terminate_md;
-			*build++ = '\\'; *build++ = *from; break;
-		case '\0':
-			goto terminate_md;
+			if(!style_suppress_escapes()) {
+				if((size_t)(build - *a) >= sizeof *a - 2) goto terminate_md;
+				*build++ = '\\'; *build++ = *from; break;
+			}
 		default: if((size_t)(build - *a) >= sizeof *a - 1) goto terminate_md;
 			*build++ = *from; break;
 		}
@@ -251,12 +261,12 @@ html_encode_print:
 md_encode_print:
 	while(length) {
 		switch(*from) {
+		case '\0': fprintf(stderr, "Encoded null with %d left.\n", length);
+			return;
 		case '\\': case '`': case '*': case '_': case '{': case '}': case '[':
 		case ']': case '(': case ')': case '#': case '+': case '-': case '.':
 		case '!':
-			printf("\\%c", *from); break;
-		case '\0': fprintf(stderr, "Encoded null with %d left.\n", length);
-			return;
+			if(!style_suppress_escapes()) { printf("\\%c", *from); break; }
 		default: fputc(*from, stdout); break;
 		}
 		from++, length--;

@@ -112,7 +112,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 <a name = "fn:CdocGetDebug"><!-- --></a>
  ### CdocGetDebug ###
 
-`int<strong> CdocGetDebug</strong>\(void\)`
+`int<strong> CdocGetDebug</strong>(void)`
 
  - Return:  
    Whether the command\-line option to print the scanner on `stderr` was set\.
@@ -123,7 +123,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 <a name = "fn:CdocGetFormat"><!-- --></a>
  ### CdocGetFormat ###
 
-`enum Format<strong> CdocGetFormat</strong>\(void\)`
+`enum Format<strong> CdocGetFormat</strong>(void)`
 
  - Return:  
    What format the output was specified to be in `enum Format`\. If there was no output specified, guess before from the output filename\.
@@ -134,7 +134,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 <a name = "fn:CdocGetOutput"><!-- --></a>
  ### CdocGetOutput ###
 
-`const char \*<strong>CdocGetOutput</strong>\(void\)`
+`const char *<strong>CdocGetOutput</strong>(void)`
 
  - Return:  
    The output filename\.
