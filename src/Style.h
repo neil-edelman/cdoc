@@ -267,6 +267,7 @@ md_encode_print:
 		case ']': case '(': case ')': case '#': case '+': case '-': case '.':
 		case '!':
 			if(!style_suppress_escapes()) { printf("\\%c", *from); break; }
+			fprintf(stderr, "Suppress %.20s\n", from);
 		default: fputc(*from, stdout); break;
 		}
 		from++, length--;

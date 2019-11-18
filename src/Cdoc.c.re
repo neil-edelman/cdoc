@@ -5,11 +5,6 @@
  compilation unit and extract documentation. This does not do any compiling,
  just very basic text-parsing.
 
- \* Naked text \ { } [ ] ( ) # + - . !
- \* Escaped text \\ \` \_ \[ \] \! \~
- \* Naked code `\ { } [ ] ( ) # + - . !`
- \* Escaped code `\\ \` \* \_ \{ \} \[ \] \( \) \# \+ \- \. \! \~`
-
  Documentation commands are `/` `**…` (together) and are ended with `*…/`, but
  not `/` `*…*` `/`; one can still use this as a code break. One can have an
  asterisk at the front, like Kernel comments, or asterisks all over like some
