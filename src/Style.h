@@ -192,12 +192,10 @@ static void style_separate(void) {
 /** Only used with md. */
 static int style_suppress_escapes(void) {
 	struct Style *style = 0;
-	/* if(c == '`') return 0; *//* The '`' is always escaped? More complex. */
-	fprintf(stderr, "%s: ", StyleArrayToString(&mode.styles));
+	/*fprintf(stderr, "%s.\n", StyleArrayToString(&mode.styles));*/
 	while((style = StyleArrayNext(&mode.styles, style))) {
-		if(style->text->is_suppress_escapes) return fprintf(stderr, "true.\n"), 1;
+		if(style->text->is_suppress_escapes) return 1;
 	}
-	fprintf(stderr, "false.\n");
 	return 0;
 }
 

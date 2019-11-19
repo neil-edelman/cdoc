@@ -27,7 +27,7 @@ This supports a stripped\-down version of `Markdown` that is much stricter\. Emb
  * `<typedef:<typedef>>` : typedef reference;
  * `<data:<identifier>>` : data reference;
  * `[The link text](url)` : link;
- * `![Caption text](url.image)` : image;
+ * `![Caption text](url.image)` : image\.
 
 As well, if a local include directive has a documentation comment immediately after that reads only `\include` , it will also be included in the documentation\.
 
@@ -52,7 +52,7 @@ Strict regular expressions that are much easier to parse have limited state and 
  * no four spaces or tab; use `\"` for preformatted;
  * no lists with `*` , `+` , numbered, or multi\-level;
  * no horizontal rules;
- * no emphasis by `*` , `**` , `__` , bold;
+ * no emphasis by `*` , `**` , `__` , bold; \(fixme\!\)
  * no strikethrough;
  * no code spans by ```` , _etc_ ;
  * no table of contents;
@@ -63,7 +63,7 @@ Strict regular expressions that are much easier to parse have limited state and 
  * no `\brief` ;
  * `/` `*!<` , `/` `**<` , `//!<` , `///<` : not needed; automatically concatenates;
  * no `[in]` , `[out]` , one should be able to tell from `const` ;
- * no `\param c1` or `@param a` \-\- this probably is the most departure from normal documentation generators, but it's confusing having the text and the variable be indistinguishable;
+ * no `\param c1` or `@param a` \-\- this probably is the most departure from `Doxygen` , but it's confusing having the text and the variable be indistinguishable;
  * no titles with `![Caption text](/path/to/img.jpg "Image title")` HTML4;
  * no titles with `[The link text](http://example.net/ "Link title")` HTML4;
  * instead of `\struct` , `\union` , `\enum` , `\var` , `\typedef` , just insert the documentation comment above the thing; use `<data:<thing>>` to reference;
