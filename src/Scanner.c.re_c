@@ -209,8 +209,8 @@ scan:
 	<comment, macro_comment, string, character> * { goto scan; }
 	// Everything stops at EOF.
 	<*> "\x00" {
-		if(cur->state != yyccode || cur->indent_level)
-			fprintf(stderr, "%s: unexpected EOF.\n", pos()),
+		if(cur->indent_level) fprintf(stderr,
+			"%s: unexpected EOF while %d deep.\n", pos(), cur->indent_level),
 			errno = EILSEQ;
 		return END;
 	}
@@ -448,6 +448,8 @@ struct Scanner *Scanner(const char *const fn, int (*const notify)(void)) {
 	previous = cur, cur = scanner;
 	while((scanner->symbol = scan()) && notify())
 		if(CdocGetDebug()) fprintf(stderr, "%s.\n", pos());
+	if(cur->state != yyccode) { fprintf(stderr, "%s: not code mode at eof.\n",
+		pos()); errno = EILSEQ; goto catch; }
 	cur = previous;
 	if(errno) goto catch;
 	goto finally;
@@ -469,6 +471,7 @@ int ScannerBrief(const char *string, int (*const notify)(void),
 	if(!string || !notify || !print) return 0;
 	if(!(scanner = malloc(sizeof *scanner))) goto catch;
 	zero_scanner(scanner);
+	scanner->state = yycdoc; /* `yyccode` is the default. */
 	scanner->marker = scanner->ctx_marker = scanner->from = scanner->cursor
 		= string;
 	scanner->line = scanner->doc_line = 1;
@@ -478,6 +481,8 @@ int ScannerBrief(const char *string, int (*const notify)(void),
 	previous = cur, cur = scanner;
 	while((scanner->symbol = scan()) && (fprintf(stderr, "scan did %s.\n", symbols[scanner->symbol]), notify()))
 		if(CdocGetDebug()) fprintf(stderr, "%s: sub-scanner.\n", pos());
+	if(cur->state != yycdoc) { fprintf(stderr,
+		"%s: not document mode at end.\n", pos()); errno = EILSEQ; goto catch; }
 	cur = previous;
 	print();
 	if(errno) goto catch;

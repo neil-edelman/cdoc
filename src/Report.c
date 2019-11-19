@@ -442,7 +442,7 @@ int ReportNotify(void) {
 	return 1;
 }
 
-/** Used for temporary things. */
+/** Used for temporary things. fixme: does code hard-coded, switch. */
 static int brief_notify(void) {
 	struct Segment *segment;
 	if(!(segment = SegmentArrayBack(&brief, 0))
