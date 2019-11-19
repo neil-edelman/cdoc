@@ -198,6 +198,7 @@ static enum Symbol scan(void) {
 	assert(cur);
 	cur->sub0 = cur->sub1 = 0;
 	cur->doc_line = cur->line;
+	fprintf(stderr, "scan: %.10s\n", cur->cursor);
 reset:
 	cur->from = cur->cursor;
 scan:
@@ -442,7 +443,7 @@ struct Scanner *Scanner(const char *const fn, int (*const notify)(void)) {
 			"\n", (unsigned long)zero_len,
 			(unsigned long)CharArraySize(&scanner->buffer) - 1); goto catch; }
 	}
-	/* Scans all. */
+	/* Scans all. `cur` is static. */
 	errno = 0;
 	previous = cur, cur = scanner;
 	while((scanner->symbol = scan()) && notify())
@@ -457,14 +458,34 @@ finally:
 	return scanner;
 }
 
-/*struct Scanner *ScannerString(const char *string, int (*const notify)(void)) {
+/** This gets a sub-scanner of a `string` and calls `notify` and `print` when
+ it's over.
+ @return Success.
+ @throws[malloc] */
+int ScannerBrief(const char *string, int (*const notify)(void),
+	void (*const print)(void)) {
 	struct Scanner *scanner = 0, *previous;
-	if(!notify || !fn) { errno = EDOM; goto catch; }
+	int success = 0;
+	if(!string || !notify || !print) return 0;
 	if(!(scanner = malloc(sizeof *scanner))) goto catch;
 	zero_scanner(scanner);
-	while((scanner->symbol = scan()) && notify())
-		if(CdocGetDebug()) fprintf(stderr, "%s.\n", pos());
-}*/
+	scanner->marker = scanner->ctx_marker = scanner->from = scanner->cursor
+		= string;
+	scanner->line = scanner->doc_line = 1;
+	errno = 0;
+	fprintf(stderr, "ScannerBrief with %s.\n", string);
+	/* `cur` is static. */
+	previous = cur, cur = scanner;
+	while((scanner->symbol = scan()) && (fprintf(stderr, "scan did %s.\n", symbols[scanner->symbol]), notify()))
+		if(CdocGetDebug()) fprintf(stderr, "%s: sub-scanner.\n", pos());
+	cur = previous;
+	print();
+	if(errno) goto catch;
+	success = 1;
+catch:
+	Scanner_(scanner), scanner = 0;
+	return 1;
+}
 
 enum Symbol ScannerSymbol(void) {
 	if(!cur) return END;

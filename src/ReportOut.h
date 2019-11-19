@@ -870,8 +870,7 @@ int ReportOut(void) {
 		is_license = attribute_exists(ATT_LICENSE);
 	const struct Segment *segment = 0;
 	const enum Format format = CdocGetFormat();
-	struct TokenArray fixed = ARRAY_ZERO;
-	char fixed_buffer[128], output_buffer[256];
+	char buffer[128];
 
 	/* Set `errno` here so that we don't have to test output each time. */
 	errno = 0;
@@ -925,8 +924,8 @@ int ReportOut(void) {
 		/* name(const struct TokenArray *const tokens, \
 			 const struct Token **ptoken, char (*const a)[256]) */
 		style_prepare_output(END);
-		/*sprintf(fixed_buffer, "Description#%s", division_strings[DIV_PREAMBLE]);
-		strcpy(fixed_buffer, );*/
+		sprintf(buffer, "wtf [Description](#%s)", division_strings[DIV_PREAMBLE]);
+		if(!ScannerBrief(buffer, &brief_notify, &brief_print)) return 0;
 		printf("<a href = \"#%s:\">Preamble</a>",
 			division_strings[DIV_PREAMBLE]);
 		style_pop_push();

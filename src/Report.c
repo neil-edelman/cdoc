@@ -153,7 +153,7 @@ static const struct Token *param_no(const struct Segment *const segment,
 
 
 /** Top-level static document. */
-static struct SegmentArray report;
+static struct SegmentArray report, brief;
 
 
 
@@ -161,7 +161,12 @@ static struct SegmentArray report;
  tokens. */
 void Report_(void) {
 	struct Segment *segment;
-	/* Destroy the report. */
+	/* Destroy the `brief`. */
+	while((segment = SegmentArrayPop(&brief)))
+		TokenArray_(&segment->doc), TokenArray_(&segment->code),
+		IndexArray_(&segment->code_params), attributes_(&segment->attributes);
+	SegmentArray_(&brief);
+	/* Destroy the `report`. */
 	while((segment = SegmentArrayPop(&report)))
 		TokenArray_(&segment->doc), TokenArray_(&segment->code),
 		IndexArray_(&segment->code_params), attributes_(&segment->attributes);
@@ -170,10 +175,12 @@ void Report_(void) {
 	Semantic(0);
 }
 
-/** @return A new empty segment, defaults to the preamble, or null on error. */
-static struct Segment *new_segment(void) {
+/** @return A new empty segment from `segments`, defaults to the preamble, or
+ null on error. */
+static struct Segment *new_segment(struct SegmentArray *const segments) {
 	struct Segment *segment;
-	if(!(segment = SegmentArrayNew(&report))) return 0;
+	assert(segments);
+	if(!(segment = SegmentArrayNew(segments))) return 0;
 	segment->division = DIV_PREAMBLE; /* Default. */
 	TokenArray(&segment->doc);
 	TokenArray(&segment->code);
@@ -384,7 +391,7 @@ int ReportNotify(void) {
 
 	/* Make a new segment if needed. */
 	if(!sorter.segment) {
-		if(!(sorter.segment = new_segment())) return 0;
+		if(!(sorter.segment = new_segment(&report))) return 0;
 		sorter.attribute = 0;
 		sorter.space = sorter.newline = 0;
 		sorter.is_code_ignored = sorter.is_semantic_set = 0;
@@ -433,6 +440,19 @@ int ReportNotify(void) {
 	if(is_differed_cut) cut_segment_here(&sorter.segment);
 
 	return 1;
+}
+
+/** Used for temporary things. */
+static int brief_notify(void) {
+	struct Segment *segment;
+	if(!(segment = SegmentArrayBack(&brief, 0))
+		&& (!(fprintf(stderr, ""), segment = new_segment(&brief))
+		|| !new_token(&segment->doc, ScannerSymbol()))) return fprintf(stderr, "brief_notify something's wrong.\n"), 0;
+	fprintf(stderr, "??? new segment\n");
+	return 1;
+}
+static void brief_print(void) {
+	fprintf(stderr, "brief??? %s\n", SegmentArrayToString(&brief));
 }
 
 /* Output. */

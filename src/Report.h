@@ -20,6 +20,7 @@ void Report_(void);
 void ReportDivision(const enum Division division);
 void ReportLastSegmentDebug(void);
 int ReportNotify(void);
+int ReportBriefNotify(void);
 void ReportCull(void);
 void ReportWarn(void);
 int ReportOut(void);
