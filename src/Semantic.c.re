@@ -72,8 +72,13 @@ static void effectively_typedef_fn_ptr(char *const buffer) {
 	}
 }
 
+static void index_to_string(const size_t *i, char (*const a)[12]) {
+	sprintf(*a, "%lu", *(unsigned long *)i % 100000000000u);
+}
+
 #define ARRAY_NAME Index
 #define ARRAY_TYPE size_t
+#define ARRAY_TO_STRING &index_to_string
 #include "../src/Array.h"
 
 /* Define {CharArray}, a vector of characters -- (again!) */
@@ -229,17 +234,32 @@ unable:
 }
 
 /** From `buffer` it removes all between `left` and `right` and replaces the
- characters with underscore. */
+ characters with `output` respecting hierarchy. */
 static void remove_recursive(char *const buffer,
 	const char left, const char right, const char output) {
 	char *b;
-	int level;
+	int level = 0;
 	assert(buffer && left && right && output);
-	for(level = 0, b = buffer; *b != '\0'; b++) {
+	for(b = buffer; *b != '\0'; b++) {
 		if(*b == left)  level++;
 		if(!level) continue;
 		if(*b == right) level--;
 		*b = output;
+	}
+}
+
+/** From `buffer` it removes `left` and `right` and replaces them by `output`
+ from all the bottom levels but  */
+static void remove_bottom_levels(char *const buffer,
+	const char left, const char right, const char output) {
+	char *b;
+	int level = 0;
+	for(b = buffer; *b != '\0'; b++) {
+		if(*b        == left) {
+			if(++level > 1) *b = output;
+		} else if(*b == right) {
+			if(level-- > 1) *b = output;
+		}
 	}
 }
 
@@ -318,10 +338,15 @@ int Semantic(const struct TokenArray *const code) {
 	remove_recursive(buffer, '[', ']', '_');
 	/* Now with the {}[] removed. */
 	effectively_typedef_fn_ptr(buffer);
+	/* Get rid of all parentheses after the first level. This is sketchy, but
+	 allows parameters `int (*a)[2]`, however it will break something. */
+	remove_bottom_levels(buffer, '(', ')', '_');
 	if(!parse()) return 0;
-	if(CdocGetDebug()) fprintf(stderr, "%s:%lu: \"%s\" -> %s.\n",
-		semantic.fn, (unsigned long)semantic.line, buffer,
-		divisions[semantic.division]);
+	if(CdocGetDebug()) {
+		fprintf(stderr, "%s:%lu: \"%s\" -> %s with params %s.\n",
+			semantic.fn, (unsigned long)semantic.line, buffer,
+			divisions[semantic.division], IndexArrayToString(&semantic.params));
+	}
 	/* It has been determined to be `divisions[semantic.division]`. */
 	return 1;
 }

@@ -1135,7 +1135,7 @@ int ReportOut(void) {
 	if(is_license) {
 		style_push(&styles[ST_DIV][format]), style_push(&styles[ST_H2][format]);
 		style_prepare_output(END);
-		printf("<a name = \"license:\">License</a>\n");
+		printf("<a name = \"license:\">License</a>");
 		style_pop(); /* h2 */
 		style_push(&styles[ST_P][format]);
 		div_att_print(&is_div_preamble, ATT_LICENSE, SHOW_TEXT);

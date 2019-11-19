@@ -2,7 +2,10 @@
  [MIT License](https://opensource.org/licenses/MIT).
 
  Organises tokens into sections, each section can have some documentation,
- code, and maybe attributes. */
+ code, and maybe attributes.
+
+ @title Report
+ @author Neil */
 
 #include <string.h> /* size_t strncpy strrchr */
 #include <limits.h> /* INT_MAX */
@@ -67,7 +70,7 @@ size_t TokensMarkSize(const struct TokenArray *const tokens) {
 	return TokenArraySize(tokens) + 1;
 }
 /** @param[tokens] The `TokenArray` that converts to a string.
- @param[marks] Must be an at-least <fn:TokensMarkSize> buffer, or null.
+ @param[marks] Must be an at-least `TokensMarkSize` buffer, or null.
  @return The size of the string, including null. */
 void TokensMark(const struct TokenArray *const tokens, char *const marks) {
 	struct Token *token = 0;
@@ -90,7 +93,7 @@ static void index_to_string(const size_t *const n, char (*const a)[12]) {
 
 
 /** `Attribute` is a specific structure of array of `Token` representing
- each-attributes, "@param ...". */
+ each-attributes, "\@param ...". */
 struct Attribute {
 	struct Token token;
 	struct TokenArray header;
@@ -235,32 +238,36 @@ static int semantic(struct Segment *const segment) {
 
 
 
+/** Prints `segment` to `stderr`. */
+static void print_segment_debug(const struct Segment *const segment) {
+	struct Attribute *att = 0;
+	struct Token *doc, *code;
+	if(!CdocGetDebug()) return;
+	code = TokenArrayNext(&segment->code, 0);
+	doc  = TokenArrayNext(&segment->doc,  0);
+	fprintf(stderr, "Segment division %s:\n"
+		"%s:%lu code: %s;\n"
+		"of which params: %s;\n"
+		"%s:%lu doc: %s.\n",
+		divisions[segment->division],
+		code ? code->fn : "N/A", code ? code->line : 0,
+		TokenArrayToString(&segment->code),
+		IndexArrayToString(&segment->code_params),
+		doc ? doc->fn : "N/A", doc ? doc->line : 0,
+		TokenArrayToString(&segment->doc));
+	while((att = AttributeArrayNext(&segment->attributes, att)))
+		fprintf(stderr, "%s{%s} %s.\n", symbols[att->token.symbol],
+		TokenArrayToString(&att->header),
+		TokenArrayToString(&att->contents));
+}
+
 /** Helper for next. Note that if it stops on a preamble command, this is not
  printed. */
 static void cut_segment_here(struct Segment **const psegment) {
 	const struct Segment *segment = 0;
-	struct Attribute *att = 0;
-	struct Token *doc, *code;
 	assert(psegment);
 	if(!(segment = *psegment)) return;
-	if(CdocGetDebug()) {
-		code = TokenArrayNext(&segment->code, 0);
-		doc  = TokenArrayNext(&segment->doc,  0);
-		fprintf(stderr, "Segment division %s:\n"
-			"%s:%lu code: %s;\n"
-			"of which params: %s;\n"
-			"%s:%lu doc: %s.\n",
-			divisions[segment->division],
-			code ? code->fn : "N/A", code ? code->line : 0,
-			TokenArrayToString(&segment->code),
-			IndexArrayToString(&segment->code_params),
-			doc ? doc->fn : "N/A", doc ? doc->line : 0,
-			TokenArrayToString(&segment->doc));
-		while((att = AttributeArrayNext(&segment->attributes, att)))
-			fprintf(stderr, "%s{%s} %s.\n", symbols[att->token.symbol],
-			TokenArrayToString(&att->header),
-			TokenArrayToString(&att->contents));
-	}
+	print_segment_debug(segment);
 	*psegment = 0;
 }
 
@@ -270,6 +277,12 @@ static const char *oops(void) {
 	sprintf(p, "%s:%lu, %s", ScannerFilename(), (unsigned long)ScannerLine(),
 		symbols[ScannerSymbol()]);
 	return p;
+}
+
+void ReportLastSegmentDebug(void) {
+	const struct Segment *const segment = SegmentArrayBack(&report, 0);
+	if(!segment) return;
+	print_segment_debug(segment);
 }
 
 /** This appends the current token based on the state it was last in.
