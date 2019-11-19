@@ -442,7 +442,7 @@ int ReportNotify(void) {
 	return 1;
 }
 
-/** Used for temporary things. fixme: does code hard-coded, switch. */
+/** Used for temporary things in doc mode. */
 static int brief_notify(void) {
 	struct Segment *segment;
 	if(!(segment = SegmentArrayBack(&brief, 0))
@@ -450,9 +450,6 @@ static int brief_notify(void) {
 		|| !new_token(&segment->doc, ScannerSymbol()))) return fprintf(stderr, "brief_notify something's wrong.\n"), 0;
 	fprintf(stderr, "??? new segment\n");
 	return 1;
-}
-static void brief_print(void) {
-	fprintf(stderr, "brief??? %s\n", SegmentArrayToString(&brief));
 }
 
 /* Output. */

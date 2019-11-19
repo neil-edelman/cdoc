@@ -591,6 +591,16 @@ static void print_tokens(const struct TokenArray *const tokens) {
 
 
 
+/** Prints the doc and clears it. */
+static void brief_print(void) {
+	struct Segment *segment = 0;
+	fprintf(stderr, "print_brief: %s\n", SegmentArrayToString(&brief));
+	while((segment = SegmentArrayNext(&brief, segment)))
+		fprintf(stderr, "print_brief: %s\n", TokenArrayToString(&segment->doc)), print_tokens(&segment->doc), print_segment_debug(segment);
+}
+
+
+
 typedef int (*DivisionPredicate)(const enum Division);
 
 /** @implements DivisionPredicate */
@@ -924,7 +934,7 @@ int ReportOut(void) {
 		/* name(const struct TokenArray *const tokens, \
 			 const struct Token **ptoken, char (*const a)[256]) */
 		style_prepare_output(END);
-		sprintf(buffer, "wtf [Description](#%s)", division_strings[DIV_PREAMBLE]);
+		sprintf(buffer, "lala [Description](#%s) lalala", division_strings[DIV_PREAMBLE]);
 		if(!ScannerBrief(buffer, &brief_notify, &brief_print)) return 0;
 		printf("<a href = \"#%s:\">Preamble</a>",
 			division_strings[DIV_PREAMBLE]);
