@@ -457,6 +457,15 @@ finally:
 	return scanner;
 }
 
+/*struct Scanner *ScannerString(const char *string, int (*const notify)(void)) {
+	struct Scanner *scanner = 0, *previous;
+	if(!notify || !fn) { errno = EDOM; goto catch; }
+	if(!(scanner = malloc(sizeof *scanner))) goto catch;
+	zero_scanner(scanner);
+	while((scanner->symbol = scan()) && notify())
+		if(CdocGetDebug()) fprintf(stderr, "%s.\n", pos());
+}*/
+
 enum Symbol ScannerSymbol(void) {
 	if(!cur) return END;
 	return cur->symbol;
