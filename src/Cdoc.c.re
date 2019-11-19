@@ -28,8 +28,8 @@
     pre-formatted;
  \* Escapes included for convenience: `\\,` "\," non-breaking thin space,
     `\\O` "\O" Bachmann–Landau notation, (but really capital omicron because
-    fonts,) `\\Theta` "\Theta", `\\Omega` "\Omega", `\\times` "\times",
-    `\\cdot` \cdot.
+    not many fonts have a shape for code-point 120030,) `\\Theta` "\Theta",
+    `\\Omega` "\Omega", `\\times` "\times", `\\cdot` \cdot.
  \* `\~` "~" non-breaking space;
  \* \_emphasised\_: _emphasised_;
  \* \`code/math\`: `code/math`;
