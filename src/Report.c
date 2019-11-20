@@ -16,6 +16,7 @@
 #include "Semantic.h"
 #include "UrlEncode.h"
 #include "Path.h"
+#include "Text.h"
 #include "ImageDimension.h"
 #include "Cdoc.h"
 #include "Report.h"
@@ -26,7 +27,7 @@ struct Token {
 	enum Symbol symbol;
 	const char *from;
 	int length;
-	const char *fn;
+	const char *label;
 	size_t line;
 };
 static void token_to_string(const struct Token *t, char (*const a)[12]) {
@@ -55,9 +56,9 @@ static int token_compare(const struct Token *const a,
 #define ARRAY_TO_STRING &token_to_string
 #include "Array.h"
 /** This is used in `Semantic.c.re` to get the first file:line for error. */
-const char *TokensFirstFilename(const struct TokenArray *const tokens) {
+const char *TokensFirstLabel(const struct TokenArray *const tokens) {
 	const struct Token *const first = TokenArrayNext(tokens, 0);
-	return first ? first->fn : "no file";
+	return first ? first->label : "unlabelled";
 }
 size_t TokensFirstLine(const struct TokenArray *const tokens) {
 	const struct Token *const first = TokenArrayNext(tokens, 0);
@@ -200,7 +201,7 @@ static int init_token(struct Token *const token,
 	token->symbol = ScannerSymbol(scan);
 	token->from = from;
 	token->length = (int)(to - from);
-	token->fn = ScannerFilename(scan);
+	token->label = ScannerLabel(scan);
 	token->line = ScannerLine(scan);
 	return 1;
 }
@@ -261,10 +262,10 @@ static void print_segment_debug(const struct Segment *const segment) {
 		"of which params: %s;\n"
 		"%s:%lu doc: %s.\n",
 		divisions[segment->division],
-		code ? code->fn : "N/A", code ? code->line : 0,
+		code ? code->label : "N/A", code ? code->line : 0,
 		TokenArrayToString(&segment->code),
 		IndexArrayToString(&segment->code_params),
-		doc ? doc->fn : "N/A", doc ? doc->line : 0,
+		doc ? doc->label : "N/A", doc ? doc->line : 0,
 		TokenArrayToString(&segment->doc));
 	while((att = AttributeArrayNext(&segment->attributes, att)))
 		fprintf(stderr, "%s{%s} %s.\n", symbols[att->token.symbol],
@@ -286,7 +287,7 @@ static void cut_segment_here(struct Segment **const psegment) {
 static const char *oops(const struct Scanner *const scan) {
 	static char p[128];
 	assert(scan);
-	sprintf(p, "%s:%lu, %s", ScannerFilename(scan),
+	sprintf(p, "%.32s:%lu, %s", ScannerLabel(scan),
 		(unsigned long)ScannerLine(scan), symbols[ScannerSymbol(scan)]);
 	return p;
 }
@@ -303,7 +304,6 @@ int ReportNotify(const struct Scanner *const scan) {
 	const enum Symbol symbol = ScannerSymbol(scan);
 	const char symbol_mark = symbol_marks[symbol];
 	int is_differed_cut = 0;
-	const char *fn;
 	static struct {
 		enum { S_CODE, S_DOC, S_ARGS } state;
 		size_t last_doc_line;
@@ -378,16 +378,28 @@ int ReportNotify(const struct Scanner *const scan) {
 		break;
 	case LOCAL_INCLUDE: /* Include file. */
 		assert(sorter.state == S_CODE);
-		if(!(fn = PathsFromHere(ScannerTo(scan) - ScannerFrom(scan),
-			ScannerFrom(scan))) || !(cut_segment_here(&sorter.segment),
-			ScannerFile(fn, &ReportNotify))) {
-			/* /\ fixme memory leak? */
+		{
+			const char *fn = 0;
+			struct Scanner *subscan = 0;
+			struct Text *text = 0;
+			int success = 0;
+			if(!(fn = PathsFromHere(ScannerTo(scan) - ScannerFrom(scan),
+				ScannerFrom(scan)))) goto include_catch;
+			if(!(text = Text(fn))) goto include_catch;
+			cut_segment_here(&sorter.segment);
+			if(!(subscan = Scanner(TextBaseName(text), TextGet(text),
+				&ReportNotify))) goto include_catch;
+			cut_segment_here(&sorter.segment);
+			success = 1;
+			goto include_finally;
+include_catch:
 			if(errno) perror("including");
 			else fprintf(stderr, "%s: couldn't resove name.\n", oops(scan));
-			return 0;
+include_finally:
+			Scanner_(&subscan);
+			Text_(&text);
+			return success;
 		}
-		cut_segment_here(&sorter.segment);
-		return 1;
 	default: break;
 	}
 
@@ -475,10 +487,7 @@ static const char *pos(const struct Token *const token) {
 	} else {
 		const int max_size = 16,
 			tok_len = (token->length > max_size) ? max_size : token->length;
-		const size_t fn_size = token->fn ? strlen(token->fn) + 1 : 1;
-		const char *const fn = token->fn ? token->fn : "~"
-			+ (fn_size > (size_t)max_size ? fn_size - max_size : 0);
-		sprintf(p, "%.32s:%lu, %s \"%.*s\"", fn,
+		sprintf(p, "%.32s:%lu, %s \"%.*s\"", token->label,
 			(unsigned long)token->line, symbols[token->symbol], tok_len,
 			token->from);
 	}

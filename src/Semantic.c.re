@@ -90,7 +90,7 @@ static struct {
 	struct CharArray buffer, work;
 	enum Division division;
 	struct IndexArray params;
-	const char *fn;
+	const char *label;
 	size_t line;
 } semantic;
 
@@ -100,7 +100,7 @@ static int add_param(const char *const label) {
 	size_t *param;
 	const char *const acceptable = "x123";
 	if(!label || !strchr(acceptable, *label)) return fprintf(stderr,
-		"%s:%lu: param is '%c', not %s.\n", semantic.fn,
+		"%.32s:%lu: param is '%c', not %s.\n", semantic.label,
 		(unsigned long)semantic.line, label ? *label : '0', acceptable),
 		errno = EILSEQ, 0;
 	if(!(param = IndexArrayNew(&semantic.params))) return 0;
@@ -228,8 +228,8 @@ params:
 	* { goto unable; }
 */
 unable:
-	fprintf(stderr, "%s:%lu: unable to extract parameter list from %s.\n",
-		semantic.fn, (unsigned long)semantic.line, buffer);
+	fprintf(stderr, "%.32s:%lu: unable to extract parameter list from %s.\n",
+		semantic.label, (unsigned long)semantic.line, buffer);
 	return 1;
 }
 
@@ -312,7 +312,7 @@ int Semantic(const struct TokenArray *const code) {
 	CharArrayClear(&semantic.buffer);
 	semantic.division = DIV_DATA;
 	IndexArrayClear(&semantic.params);
-	semantic.fn = TokensFirstFilename(code);
+	semantic.label = TokensFirstLabel(code);
 	semantic.line = TokensFirstLine(code);
 
 	/* Make a string from `symbol_marks` and allocate maximum memory. */
@@ -328,8 +328,8 @@ int Semantic(const struct TokenArray *const code) {
 		int checks = 0;
 		if(!check_symbols(&checks)) return 0;
 		if(!checks) return fprintf(stderr,
-			"%s:%lu: classifying unknown statement as a general declaration.\n",
-			semantic.fn, (unsigned long)semantic.line), 1;
+		"%.32s:%lu: classifying unknown statement as a general declaration.\n",
+			semantic.label, (unsigned long)semantic.line), 1;
 	}
 
 	/* Git rid of code. (Shouldn't happen!) */
@@ -343,8 +343,8 @@ int Semantic(const struct TokenArray *const code) {
 	remove_bottom_levels(buffer, '(', ')', '_');
 	if(!parse()) return 0;
 	if(CdocGetDebug()) {
-		fprintf(stderr, "%s:%lu: \"%s\" -> %s with params %s.\n",
-			semantic.fn, (unsigned long)semantic.line, buffer,
+		fprintf(stderr, "%.32s:%lu: \"%s\" -> %s with params %s.\n",
+			semantic.label, (unsigned long)semantic.line, buffer,
 			divisions[semantic.division], IndexArrayToString(&semantic.params));
 	}
 	/* It has been determined to be `divisions[semantic.division]`. */

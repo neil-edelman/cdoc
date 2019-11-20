@@ -249,12 +249,7 @@ int main(int argc, char **argv) {
 	FILE *fp = 0;
 	struct Scanner *scanner = 0;
 	int exit_code = EXIT_FAILURE, i;
-	struct Text *b;
-
-	/* Test. */
-	if(!(b = Text("/Users/neil/Movies/Cdoc/C.c"))) { perror("C.c"); return 1; }
-	fprintf(stderr, "Text: fn:%s, base:%s length:%lu contents:%s.\n", TextName(b), TextBaseName(b), TextSize(b), TextGet(b));
-	Text_(&b);
+	struct Text *text = 0;
 
 	/* Parse args. Expecting something more? */
 	for(i = 1; i < argc; i++) if(!parse_arg(argv[i])) goto catch;
@@ -267,8 +262,11 @@ int main(int argc, char **argv) {
 	/* Set up the paths. */
 	if(!Paths(args.in_fn, args.out_fn)) goto catch;
 
+	/* Buffer the file. */
+	if(!(text = Text(args.in_fn))) goto catch;
+
 	/* Open the input file and parse. The last segment is on-going. */
-	if(!(scanner = ScannerFile(args.in_fn, &ReportNotify))) goto catch;
+	if(!(scanner = Scanner(TextBaseName(text), TextGet(text), &ReportNotify))) goto catch;
 	ReportLastSegmentDebug();
 
 	/* Output the results. */
@@ -286,9 +284,10 @@ catch:
 	}
 	
 finally:
-	Paths_();
+	Scanner_(&scanner);
+	Text_(&text);
 	Report_();
-	Scanner_(scanner);
+	Paths_();
 	if(fp) fclose(fp);
 
 	return exit_code;
