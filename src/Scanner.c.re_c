@@ -402,7 +402,10 @@ void Scanner_(struct Scanner *const scanner) {
  @return The scanner which must be passed to <fn:Scanner_>.
  @throws[malloc, fopen, fread]
  @throws[EILSEQ] File has embedded nulls.
- @throws[EDOM] Passed null. */
+ @throws[EDOM] Passed null.
+ @fixme ScannerFile and ScannerString should be merged and should just accept a
+ buffer and the name of a buffer; `CharArray` should not exist. This is not
+ Scanner's responsibility. */
 struct Scanner *ScannerFile(const char *const fn,
 	const ScannerPredicate notify) {
 	FILE *fp = 0;
