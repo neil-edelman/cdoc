@@ -248,6 +248,11 @@ int main(int argc, char **argv) {
 	FILE *fp = 0;
 	struct Scanner *scanner = 0;
 	int exit_code = EXIT_FAILURE, i;
+	File *f;
+
+	/* Test. */
+	if(!(f = File("C.c"))) perror("C.c");
+	File_();
 
 	/* Parse args. Expecting something more? */
 	for(i = 1; i < argc; i++) if(!parse_arg(argv[i])) goto catch;
