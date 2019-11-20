@@ -1,5 +1,6 @@
 #include "Division.h"
 #include "Symbol.h"
+#include "Scanner.h"
 
 struct TokenArray;
 
@@ -17,7 +18,7 @@ void ReportCurrentReset(void);
 void Report_(void);
 void ReportDivision(const enum Division division);
 void ReportLastSegmentDebug(void);
-int ReportNotify(void);
+int ReportNotify(const struct Scanner *const scan);
 void ReportCull(void);
 void ReportWarn(void);
 int ReportOut(void);

@@ -189,29 +189,30 @@ static struct Segment *new_segment(struct SegmentArray *const segments) {
 	return segment;
 }
 
-/** Initialises `token` with `symbol` and the most recent scanner location.
+/** Initialises `token` with `scan`.
  @return Success.
  @throws[EILSEQ] The token cannot be represented as an `int` offset. */
-static int init_token(struct Token *const token, const enum Symbol symbol) {
-	const char *const from = ScannerFrom(), *const to = ScannerTo();
-	assert(token && from && from <= to);
+static int init_token(struct Token *const token,
+	const struct Scanner *const scan) {
+	const char *const from = ScannerFrom(scan), *const to = ScannerTo(scan);
+	assert(scan && token && from && from <= to);
 	if(from + INT_MAX < to) return errno = EILSEQ, 0;
-	token->symbol = symbol;
+	token->symbol = ScannerSymbol(scan);
 	token->from = from;
 	token->length = (int)(to - from);
-	token->fn = ScannerFilename();
-	token->line = ScannerLine();
+	token->fn = ScannerFilename(scan);
+	token->line = ScannerLine(scan);
 	return 1;
 }
 
 /** @return A new `Attribute` on `segment` with `symbol`, (should be a
  attribute symbol.) Null on error. */
-static struct Attribute *new_attribute(struct Segment *const
-	segment, const enum Symbol symbol) {
+static struct Attribute *new_attribute(struct Segment *const segment,
+	const struct Scanner *const scan) {
 	struct Attribute *att;
-	assert(segment);
+	assert(scan && segment);
 	if(!(att = AttributeArrayNew(&segment->attributes))) return 0;
-	init_token(&att->token, symbol);
+	init_token(&att->token, scan);
 	TokenArray(&att->header);
 	TokenArray(&att->contents);
 	return att;
@@ -219,11 +220,14 @@ static struct Attribute *new_attribute(struct Segment *const
 
 /** Creates a new token from `tokens` and fills it with `symbol` and the
  most recent scanner location.
- @return Success. */
-static int new_token(struct TokenArray *const tokens, const enum Symbol symbol)
-{
+ @return Token or failure. */
+static struct Token *new_token(struct TokenArray *const tokens,
+	const struct Scanner *const scan) {
 	struct Token *token;
-	return !!(token = TokenArrayNew(tokens)) && init_token(token, symbol);
+	if(!(token = TokenArrayNew(tokens))) return 0;
+	init_token(token, scan);
+	fprintf(stderr, "new_token: %s %.*s\n", symbols[token->symbol], token->length, token->from);
+	return token;
 }
 
 /** Wrapper for `Semantic.h`; extracts semantic information from `segment`. */
@@ -279,10 +283,11 @@ static void cut_segment_here(struct Segment **const psegment) {
 }
 
 /** Prints line info into a static buffer. */
-static const char *oops(void) {
+static const char *oops(const struct Scanner *const scan) {
 	static char p[128];
-	sprintf(p, "%s:%lu, %s", ScannerFilename(), (unsigned long)ScannerLine(),
-		symbols[ScannerSymbol()]);
+	assert(scan);
+	sprintf(p, "%s:%lu, %s", ScannerFilename(scan),
+		(unsigned long)ScannerLine(scan), symbols[ScannerSymbol(scan)]);
 	return p;
 }
 
@@ -294,8 +299,8 @@ void ReportLastSegmentDebug(void) {
 
 /** This appends the current token based on the state it was last in.
  @return Success. */
-int ReportNotify(void) {
-	const enum Symbol symbol = ScannerSymbol();
+int ReportNotify(const struct Scanner *const scan) {
+	const enum Symbol symbol = ScannerSymbol(scan);
 	const char symbol_mark = symbol_marks[symbol];
 	int is_differed_cut = 0;
 	const char *fn;
@@ -311,7 +316,8 @@ int ReportNotify(void) {
 	switch(symbol) {
 	case DOC_BEGIN:
 		if(sorter.state != S_CODE) return fprintf(stderr,
-			"%s: sneak path; was expecting code.\n", oops()), errno = EDOM, 0;
+			"%s: sneak path; was expecting code.\n",
+			oops(scan)), errno = EDOM, 0;
 		sorter.state = S_DOC;
 		/* Reset attribute. */
 		sorter.attribute = 0;
@@ -322,35 +328,36 @@ int ReportNotify(void) {
 		return 1;
 	case DOC_END:
 		if(sorter.state != S_DOC) return fprintf(stderr,
-			"%s: sneak path; was expecting doc.\n", oops()), errno = EDOM, 0;
+			"%s: sneak path; was expecting doc.\n",
+			oops(scan)), errno = EDOM, 0;
 		sorter.state = S_CODE;
-		sorter.last_doc_line = ScannerLine();
+		sorter.last_doc_line = ScannerLine(scan);
 		return 1;
 	case DOC_LEFT:
 		if(sorter.state != S_DOC || !sorter.segment || !sorter.attribute)
 			return fprintf(stderr,
-			"%s: sneak path; was expecting doc with attribute.\n", oops()),
+			"%s: sneak path; was expecting doc with attribute.\n", oops(scan)),
 			errno = EDOM, 0;
 		sorter.state = S_ARGS;
 		return 1;
 	case DOC_RIGHT:
 		if(sorter.state != S_ARGS || !sorter.segment || !sorter.attribute)
 			return fprintf(stderr,
-			"%s: sneak path; was expecting args with attribute.\n", oops()),
+			"%s: sneak path; was expecting args with attribute.\n", oops(scan)),
 			errno = EDOM, 0;
 		sorter.state = S_DOC;
 		return 1;
 	case DOC_COMMA: /* @arg[,,] */
 		if(sorter.state != S_ARGS || !sorter.segment || !sorter.attribute)
 			return fprintf(stderr,
-			"%s: sneak path; was expecting args with attribute.\n", oops()),
+			"%s: sneak path; was expecting args with attribute.\n", oops(scan)),
 			errno = EDOM, 0;
 		return 1;
 	case SPACE:   sorter.space++; return 1;
 	case NEWLINE: sorter.newline++; return 1;
 	case SEMI:
 		/* Break on global semicolons only. */
-		if(ScannerIndentLevel() != 0 || !sorter.segment) break;
+		if(ScannerIndentLevel(scan) != 0 || !sorter.segment) break;
 		/* Find out what this line means if one hasn't already. */
 		if(!sorter.is_semantic_set && !semantic(sorter.segment)) return 0;
 		sorter.is_semantic_set = 1;
@@ -358,7 +365,7 @@ int ReportNotify(void) {
 		break;
 	case LBRACE:
 		/* If it's a leading brace, see what the Semantic says about it. */
-		if(ScannerIndentLevel() != 1 || sorter.is_semantic_set
+		if(ScannerIndentLevel(scan) != 1 || sorter.is_semantic_set
 			|| !sorter.segment) break;
 		if(!semantic(sorter.segment)) return 0;
 		sorter.is_semantic_set = 1;
@@ -366,16 +373,17 @@ int ReportNotify(void) {
 		break;
 	case RBRACE:
 		/* Functions don't have ';' to end them. */
-		if(ScannerIndentLevel() != 0 || !sorter.segment) break;
+		if(ScannerIndentLevel(scan) != 0 || !sorter.segment) break;
 		if(sorter.segment->division == DIV_FUNCTION) is_differed_cut = 1;
 		break;
 	case LOCAL_INCLUDE: /* Include file. */
 		assert(sorter.state == S_CODE);
-		if(!(fn = PathsFromHere(ScannerTo() - ScannerFrom(), ScannerFrom()))
-			|| !(cut_segment_here(&sorter.segment),
-			Scanner(fn, &ReportNotify))) {
+		if(!(fn = PathsFromHere(ScannerTo(scan) - ScannerFrom(scan),
+			ScannerFrom(scan))) || !(cut_segment_here(&sorter.segment),
+			ScannerFile(fn, &ReportNotify))) {
+			/* /\ fixme memory leak? */
 			if(errno) perror("including");
-			else fprintf(stderr, "%s: couldn't resove name.\n", oops());
+			else fprintf(stderr, "%s: couldn't resove name.\n", oops(scan));
 			return 0;
 		}
 		cut_segment_here(&sorter.segment);
@@ -386,7 +394,7 @@ int ReportNotify(void) {
 	/* Code that starts far away from docs goes in it's own segment. */
 	if(sorter.segment && symbol_mark != '~' && symbol_mark != '@'
 		&& !TokenArraySize(&sorter.segment->code) && sorter.last_doc_line
-		&& sorter.last_doc_line + 2 < ScannerLine())
+		&& sorter.last_doc_line + 2 < ScannerLine(scan))
 		cut_segment_here(&sorter.segment);
 
 	/* Make a new segment if needed. */
@@ -405,34 +413,37 @@ int ReportNotify(void) {
 			struct TokenArray *selected = sorter.attribute
 				? (sorter.state == S_ARGS ? &sorter.attribute->header
 				: &sorter.attribute->contents) : &sorter.segment->doc;
+			struct Token *tok;
 			const int is_para = sorter.newline > 1,
-			is_space = sorter.space || sorter.newline,
-			is_doc_empty = !TokenArraySize(&sorter.segment->doc),
-			is_selected_empty = !TokenArraySize(selected);
+				is_space = sorter.space || sorter.newline,
+				is_doc_empty = !TokenArraySize(&sorter.segment->doc),
+				is_selected_empty = !TokenArraySize(selected);
 			sorter.space = sorter.newline = 0;
 			if(is_para) {
 				/* Switch out of attribute when on new paragraph. */
 				sorter.attribute = 0, sorter.state = S_DOC;
 				selected = &sorter.segment->doc;
-				if(!is_doc_empty
-				   && !new_token(&sorter.segment->doc, NEWLINE)) return 0;
-			} else if(is_space) {
-				if(!is_selected_empty
-				   && !new_token(selected, SPACE)) return 0;
+				if(!is_doc_empty) {
+					if(!(tok = new_token(selected, scan))) return 0;
+					tok->symbol = NEWLINE; /* Override whatever's there. */
+				}
+			} else if(is_space && !is_selected_empty) {
+				if(!(tok = new_token(selected, scan))) return 0;
+				tok->symbol = SPACE; /* Override. */
 			}
-			if(!new_token(selected, symbol)) return 0;
+			if(!new_token(selected, scan)) return 0;
 		}
 		break;
 	case '@': /* An attribute marker. */
 		assert(sorter.state == S_DOC);
-		if(!(sorter.attribute = new_attribute(sorter.segment, symbol)))
+		if(!(sorter.attribute = new_attribute(sorter.segment, scan)))
 			return 0;
 		sorter.space = sorter.newline = 0; /* Also reset this for attributes. */
 		break;
 	default: /* Code. */
 		assert(sorter.state == S_CODE);
 		if(sorter.is_code_ignored) break;
-		if(!new_token(&sorter.segment->code, symbol)) return 0;
+		if(!new_token(&sorter.segment->code, scan)) return 0;
 		break;
 	}
 
@@ -443,12 +454,14 @@ int ReportNotify(void) {
 }
 
 /** Used for temporary things in doc mode. */
-static int brief_notify(void) {
+static int brief_notify(const struct Scanner *const scan) {
 	struct Segment *segment;
-	if(!(segment = SegmentArrayBack(&brief, 0))
-		&& (!(fprintf(stderr, ""), segment = new_segment(&brief))
-		|| !new_token(&segment->doc, ScannerSymbol()))) return fprintf(stderr, "brief_notify something's wrong.\n"), 0;
-	fprintf(stderr, "??? new segment\n");
+	struct Token *tok;
+	assert(scan);
+	if((!(segment = SegmentArrayBack(&brief, 0))
+		&& !(segment = new_segment(&brief)))
+		|| !(tok = new_token(&segment->doc, scan))) fprintf(stderr,
+		"%s: something is wrong with this operation.\n", oops(scan)), 0;
 	return 1;
 }
 
@@ -462,8 +475,8 @@ static const char *pos(const struct Token *const token) {
 	} else {
 		const int max_size = 16,
 			tok_len = (token->length > max_size) ? max_size : token->length;
-		const size_t fn_size = strlen(token->fn) + 1;
-		const char *const fn = token->fn
+		const size_t fn_size = token->fn ? strlen(token->fn) + 1 : 1;
+		const char *const fn = token->fn ? token->fn : "~"
 			+ (fn_size > (size_t)max_size ? fn_size - max_size : 0);
 		sprintf(p, "%.32s:%lu, %s \"%.*s\"", fn,
 			(unsigned long)token->line, symbols[token->symbol], tok_len,

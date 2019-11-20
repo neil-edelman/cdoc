@@ -360,7 +360,7 @@ OUT(link) {
 	if(!(errno = 0, fn = PathsFromHere(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
 	if(!(fp = fopen(fn, "r"))) { perror(fn); errno = 0; goto raw; } fclose(fp);
-	/* Actually use the entire path. */
+	/* Actually use the entire path. (fixme: this does not work with #) */
 	if(!(errno = 0, fn = PathsFromOutput(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
 	fn_len = strlen(fn);
@@ -591,12 +591,11 @@ static void print_tokens(const struct TokenArray *const tokens) {
 
 
 
-/** Prints the doc and clears it. */
+/** Prints the `brief.doc`. */
 static void brief_print(void) {
 	struct Segment *segment = 0;
-	fprintf(stderr, "print_brief: %s\n", SegmentArrayToString(&brief));
 	while((segment = SegmentArrayNext(&brief, segment)))
-		fprintf(stderr, "print_brief: %s\n", TokenArrayToString(&segment->doc)), print_tokens(&segment->doc), print_segment_debug(segment);
+		print_tokens(&segment->doc);
 }
 
 
@@ -880,6 +879,7 @@ int ReportOut(void) {
 		is_license = attribute_exists(ATT_LICENSE);
 	const struct Segment *segment = 0;
 	const enum Format format = CdocGetFormat();
+	struct Scanner *scan_str;
 	char buffer[128];
 
 	/* Set `errno` here so that we don't have to test output each time. */
@@ -934,8 +934,11 @@ int ReportOut(void) {
 		/* name(const struct TokenArray *const tokens, \
 			 const struct Token **ptoken, char (*const a)[256]) */
 		style_prepare_output(END);
-		sprintf(buffer, "lala [Description](#%s) lalala", division_strings[DIV_PREAMBLE]);
-		if(!ScannerBrief(buffer, &brief_notify, &brief_print)) return 0;
+		sprintf(buffer, "lala [Description](#%s) lalala",
+			division_strings[DIV_PREAMBLE]);
+		if(!(scan_str = ScannerString(buffer, &brief_notify))) return 0;
+		brief_print();
+		Scanner_(scan_str);
 		printf("<a href = \"#%s:\">Preamble</a>",
 			division_strings[DIV_PREAMBLE]);
 		style_pop_push();
