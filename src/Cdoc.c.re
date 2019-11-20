@@ -142,6 +142,7 @@
 #include <errno.h>  /* errno */
 #include <assert.h> /* assert */
 #include "../src/Path.h"
+#include "../src/Text.h"
 #include "../src/Scanner.h"
 #include "../src/Report.h"
 #include "../src/Semantic.h"
@@ -248,11 +249,12 @@ int main(int argc, char **argv) {
 	FILE *fp = 0;
 	struct Scanner *scanner = 0;
 	int exit_code = EXIT_FAILURE, i;
-	File *f;
+	struct Text *b;
 
 	/* Test. */
-	if(!(f = File("C.c"))) perror("C.c");
-	File_();
+	if(!(b = Text("/Users/neil/Movies/Cdoc/C.c"))) { perror("C.c"); return 1; }
+	fprintf(stderr, "Text: fn:%s, base:%s length:%lu contents:%s.\n", TextName(b), TextBaseName(b), TextSize(b), TextGet(b));
+	Text_(&b);
 
 	/* Parse args. Expecting something more? */
 	for(i = 1; i < argc; i++) if(!parse_arg(argv[i])) goto catch;
