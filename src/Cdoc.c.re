@@ -266,7 +266,8 @@ int main(int argc, char **argv) {
 	if(!(text = Text(args.in_fn))) goto catch;
 
 	/* Open the input file and parse. The last segment is on-going. */
-	if(!(scanner = Scanner(TextBaseName(text), TextGet(text), &ReportNotify))) goto catch;
+	if(!(scanner = Scanner(TextBaseName(text), TextGet(text), &ReportNotify,
+		SSCODE))) goto catch;
 	ReportLastSegmentDebug();
 
 	/* Output the results. */

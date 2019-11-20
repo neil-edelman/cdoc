@@ -360,6 +360,16 @@ scan:
 */
 }
 
+static enum ScanState scanner_to_scan_state(const enum ScannerState
+	scanner_state) {
+	switch(scanner_state) {
+	case SSCODE: return yyccode;
+	case SSDOC:  return yycdoc;
+	}
+	assert(0);
+	return yyccode;
+}
+
 static void zero_scanner(struct Scanner *const scanner) {
 	assert(scanner);
 	scanner->marker = scanner->ctx_marker = scanner->from = scanner->cursor = 0;
@@ -395,24 +405,27 @@ void Scanner_(struct Scanner **const pscanner) {
  buffer and the name of a buffer; `CharArray` should not exist. This is not
  Scanner's responsibility. */
 struct Scanner *Scanner(const char *const label, const char *const buffer,
-	const ScannerPredicate notify) {
+	const ScannerPredicate notify, const enum ScannerState state) {
 	struct Scanner *scan = 0;
+	const enum ScanState underlying_state = scanner_to_scan_state(state);
 	if(!label || !buffer || !notify) goto catch;
 	if(!(scan = malloc(sizeof *scan))) goto catch;
 	zero_scanner(scan);
-	scan->label = label;
+	scan->label  = label;
 	scan->buffer = buffer;
 	/* Point these toward the first char; `buffer` is necessarily done
 	 growing, or we could not do this. */
 	scan->marker = scan->ctx_marker = scan->from = scan->cursor = buffer;
 	scan->line = scan->doc_line = 1;
+	scan->state = underlying_state;
 	/* Scans all. */
 	errno = 0;
 	while((scan->symbol = scan_next(scan)) && notify(scan))
 		if(CdocGetDebug()) fprintf(stderr, "%s.\n", pos(scan));
 	if(errno) goto catch;
 	/* fixme!!! */
-	if(scan->state != yyccode) { fprintf(stderr, "%s: not code mode at eof.\n",
+	if(scan->state != underlying_state) {
+		fprintf(stderr, "%s: enexpected mode at end of buffer.\n",
 		pos(scan)); errno = EILSEQ; goto catch; }
 	goto finally;
 catch:

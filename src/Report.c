@@ -388,7 +388,7 @@ int ReportNotify(const struct Scanner *const scan) {
 			if(!(text = Text(fn))) goto include_catch;
 			cut_segment_here(&sorter.segment);
 			if(!(subscan = Scanner(TextBaseName(text), TextGet(text),
-				&ReportNotify))) goto include_catch;
+				&ReportNotify, SSCODE))) goto include_catch;
 			cut_segment_here(&sorter.segment);
 			success = 1;
 			goto include_finally;

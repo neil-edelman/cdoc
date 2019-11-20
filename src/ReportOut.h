@@ -936,7 +936,7 @@ int ReportOut(void) {
 		style_prepare_output(END);
 		sprintf(buffer, "lala [Description](#%s) lalala",
 			division_strings[DIV_PREAMBLE]);
-		if(!(scan_str = Scanner("constant", buffer, &brief_notify))) return 0;
+		if(!(scan_str = Scanner("constant", buffer, &brief_notify, SSDOC))) return 0;
 		brief_print();
 		Scanner_(&scan_str);
 		printf("<a href = \"#%s:\">Preamble</a>",
