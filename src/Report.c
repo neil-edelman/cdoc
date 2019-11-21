@@ -134,6 +134,22 @@ static void segment_to_string(const struct Segment *seg, char (*const a)[12]) {
 #define ARRAY_TYPE struct Segment
 #define ARRAY_TO_STRING &segment_to_string
 #include "../src/Array.h"
+static void segment_array_(struct SegmentArray *const sa) {
+	struct Segment *segment;
+	if(!sa) return;
+	while((segment = SegmentArrayPop(sa)))
+		TokenArray_(&segment->doc), TokenArray_(&segment->code),
+		IndexArray_(&segment->code_params), attributes_(&segment->attributes);
+	SegmentArray_(sa);
+}
+static void segment_array_clear(struct SegmentArray *const sa) {
+	struct Segment *segment;
+	if(!sa) return;
+	while((segment = SegmentArrayPop(sa)))
+		TokenArrayClear(&segment->doc), TokenArrayClear(&segment->code),
+		IndexArrayClear(&segment->code_params),
+		attributes_(&segment->attributes);
+}
 static const struct Token *param_no(const struct Segment *const segment,
 	const size_t param) {
 	size_t *pidx;
@@ -161,18 +177,8 @@ static struct SegmentArray report, brief;
 /** Destructor for the static document. Also destucts the string used for
  tokens. */
 void Report_(void) {
-	struct Segment *segment;
-	/* Destroy the `brief`. */
-	while((segment = SegmentArrayPop(&brief)))
-		TokenArray_(&segment->doc), TokenArray_(&segment->code),
-		IndexArray_(&segment->code_params), attributes_(&segment->attributes);
-	SegmentArray_(&brief);
-	/* Destroy the `report`. */
-	while((segment = SegmentArrayPop(&report)))
-		TokenArray_(&segment->doc), TokenArray_(&segment->code),
-		IndexArray_(&segment->code_params), attributes_(&segment->attributes);
-	SegmentArray_(&report);
-	/* Destroy the semantic buffer. */
+	segment_array_(&brief);
+	segment_array_(&report);
 	Semantic(0);
 }
 
@@ -227,7 +233,8 @@ static struct Token *new_token(struct TokenArray *const tokens,
 	struct Token *token;
 	if(!(token = TokenArrayNew(tokens))) return 0;
 	init_token(token, scan);
-	fprintf(stderr, "new_token: %s %.*s\n", symbols[token->symbol], token->length, token->from);
+	/*fprintf(stderr, "new_token: %s %.*s\n", symbols[token->symbol],
+		token->length, token->from); <- If one really wants spam. */
 	return token;
 }
 
@@ -466,14 +473,14 @@ include_finally:
 }
 
 /** Used for temporary things in doc mode. */
-static int brief_notify(const struct Scanner *const scan) {
+static int notify_brief(const struct Scanner *const scan) {
 	struct Segment *segment;
 	struct Token *tok;
 	assert(scan);
 	if((!(segment = SegmentArrayBack(&brief, 0))
 		&& !(segment = new_segment(&brief)))
 		|| !(tok = new_token(&segment->doc, scan))) fprintf(stderr,
-		"%s: something is wrong with this operation.\n", oops(scan)), 0;
+		"%s: something went wrong with this operation.\n", oops(scan)), 0;
 	return 1;
 }
 

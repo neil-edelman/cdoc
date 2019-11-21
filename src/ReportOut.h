@@ -359,6 +359,7 @@ OUT(link) {
 	/* We want to open this file to check if it's on the up-and-up. */
 	if(!(errno = 0, fn = PathsFromHere(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
+	fprintf(stderr, "***%s***\n", fn);
 	if(!(fp = fopen(fn, "r"))) { perror(fn); errno = 0; goto raw; } fclose(fp);
 	/* Actually use the entire path. (fixme: this does not work with #) */
 	if(!(errno = 0, fn = PathsFromOutput(turl->length, turl->from)))
@@ -591,11 +592,12 @@ static void print_tokens(const struct TokenArray *const tokens) {
 
 
 
-/** Prints the `brief.doc`. */
-static void brief_print(void) {
+/** Prints the documentation part of `brief` and erases it. */
+static void print_brief(void) {
 	struct Segment *segment = 0;
 	while((segment = SegmentArrayNext(&brief, segment)))
 		print_tokens(&segment->doc);
+	segment_array_clear(&brief);
 }
 
 
@@ -867,6 +869,17 @@ static void best_guess_at_modifiers(const struct Segment *const segment) {
 	}
 }
 
+/** Takes `buffer`. */
+/*int buffer_output_doc() {
+	style_prepare_output(END);
+	sprintf(buffer, "[%s](#%s)",
+		division_desc[DIV_PREAMBLE], division_strings[DIV_PREAMBLE]);
+	if(!(scan_str = Scanner(division_strings[DIV_PREAMBLE], buffer,
+		&notify_brief, SSDOC))) return 0;
+	print_brief();
+	Scanner_(&scan_str);
+}*/
+
 /** Outputs a report.
  @throws[EILSEQ] Sequence error.
  @return Success. */
@@ -931,20 +944,21 @@ int ReportOut(void) {
 	/* TOC. */
 	style_push(&styles[ST_UL][format]), style_push(&styles[ST_LI][format]);
 	if(is_preamble) {
-		/* name(const struct TokenArray *const tokens, \
-			 const struct Token **ptoken, char (*const a)[256]) */
 		style_prepare_output(END);
-		sprintf(buffer, "lala [Description](#%s) lalala",
-			division_strings[DIV_PREAMBLE]);
-		if(!(scan_str = Scanner("constant", buffer, &brief_notify, SSDOC))) return 0;
-		brief_print();
+		sprintf(buffer, "[%s](#%s)",
+			division_desc[DIV_PREAMBLE], division_strings[DIV_PREAMBLE]);
+		if(!(scan_str = Scanner(division_strings[DIV_PREAMBLE], buffer,
+			&notify_brief, SSDOC))) return 0;
+		print_brief();
 		Scanner_(&scan_str);
-		printf("<a href = \"#%s:\">Preamble</a>",
-			division_strings[DIV_PREAMBLE]);
 		style_pop_push();
 	}
 	if(is_typedef) {
 		style_prepare_output(END);
+		sprintf(buffer, "[%s](#%s)",
+			division_desc[DIV_TYPEDEF], division_strings[DIV_TYPEDEF]);
+		if(!(scan_str = Scanner(division_strings[DIV_TYPEDEF], buffer,
+			&notify_brief, SSDOC))) return 0;
 		printf("<a href = \"#%s:\">Typedef Aliases</a>: ",
 			division_strings[DIV_TYPEDEF]);
 		style_push(&plain_csv), style_push(&no_style);
@@ -1021,6 +1035,12 @@ int ReportOut(void) {
 		printf("<a href = \"#summary:\">Function Summary</a>");
 		style_pop_push();
 		style_prepare_output(END);
+		sprintf(buffer, "[%s](#%s)",
+			division_desc[DIV_FUNCTION], division_strings[DIV_FUNCTION]);
+		if(!(scan_str = Scanner(division_strings[DIV_FUNCTION], buffer,
+			&notify_brief, SSDOC))) return 0;
+		print_brief();
+		Scanner_(&scan_str);
 		printf("<a href = \"#%s:\">Function Definitions</a>",
 			division_strings[DIV_FUNCTION]);
 		style_pop_push();

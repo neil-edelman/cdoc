@@ -211,10 +211,10 @@ static int append_working_path(const size_t fn_len, const char *const fn) {
 	char *workfn;
 	assert(fn);
 	CharArrayClear(&paths.working.buffer);
-	if(!CharArrayBuffer(&paths.working.buffer, fn_len + 1)) return 0;
-	workfn = CharArrayGet(&paths.working.buffer);
+	if(!(workfn = CharArrayBuffer(&paths.working.buffer, fn_len + 1))) return 0;
 	memcpy(workfn, fn, fn_len), workfn[fn_len] = '\0';
-	if(!looks_like_relative_path(workfn)
+	CharArrayExpand(&paths.working.buffer, fn_len + 1);
+	if(!looks_like_relative_path(workfn) || looks_like_fragment(workfn)
 		|| !sep_path(&paths.working.path, workfn)) return 0;
 	return 1;
 }
@@ -238,7 +238,6 @@ static size_t strip_query_fragment(const size_t uri_len, const char *const uri)
  @return A temporary path, invalid on calling any path function.
  @throws[malloc] */
 const char *PathsFromHere(const size_t fn_len, const char *const fn) {
-	if(looks_like_fragment(fn)) return fn;
 	PathArrayClear(&paths.working.path);
 	if(!cat_path(&paths.working.path, &paths.input.path)
 		|| (fn && !append_working_path(strip_query_fragment(fn_len, fn), fn)))
@@ -252,7 +251,6 @@ const char *PathsFromHere(const size_t fn_len, const char *const fn) {
  @return A temporary path, invalid on calling any path function.
  @throws[malloc] */
 const char *PathsFromOutput(const size_t fn_len, const char *const fn) {
-	if(looks_like_fragment(fn)) return fn;
 	PathArrayClear(&paths.working.path);
 	if(!cat_path(&paths.working.path, &paths.outinv)
 		|| !cat_path(&paths.working.path, &paths.input.path)
