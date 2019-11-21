@@ -82,14 +82,6 @@ static int looks_like_relative_path(const char *const string) {
 		|| (string[0] != dirsepstr[0] && looks_like_path(string));
 }
 
-/** Checks that # or ? are the first thing. */
-static int looks_like_fragment(const char *const string) {
-	size_t i, i_end = strlen(othercharsstr);
-	assert(string);
-	for(i = 0; i < i_end; i++) if(string[0] == othercharsstr[i]) return 1;
-	return 0;
-}
-
 /** Appends `path` split on `dirsep` to `args`.
  @param[string] Modified and referenced; if it goes out-of-scope or changes,
  undefined behaviour will result.
@@ -214,7 +206,7 @@ static int append_working_path(const size_t fn_len, const char *const fn) {
 	if(!(workfn = CharArrayBuffer(&paths.working.buffer, fn_len + 1))) return 0;
 	memcpy(workfn, fn, fn_len), workfn[fn_len] = '\0';
 	CharArrayExpand(&paths.working.buffer, fn_len + 1);
-	if(!looks_like_relative_path(workfn) || looks_like_fragment(workfn)
+	if(!looks_like_relative_path(workfn)
 		|| !sep_path(&paths.working.path, workfn)) return 0;
 	return 1;
 }
@@ -234,10 +226,16 @@ static size_t strip_query_fragment(const size_t uri_len, const char *const uri)
 	return without;
 }
 
+static int looks_like_fragment(const size_t fn_len, const char *const fn) {
+	if(!fn_len) return 0;
+	return !!strchr(othercharsstr, fn[0]);
+}
+
 /** Appends output directory to `fn`:`fn_name`, (if it exists.) For opening.
  @return A temporary path, invalid on calling any path function.
  @throws[malloc] */
 const char *PathsFromHere(const size_t fn_len, const char *const fn) {
+	if(looks_like_fragment(fn_len, fn)) return 0;
 	PathArrayClear(&paths.working.path);
 	if(!cat_path(&paths.working.path, &paths.input.path)
 		|| (fn && !append_working_path(strip_query_fragment(fn_len, fn), fn)))
@@ -251,6 +249,7 @@ const char *PathsFromHere(const size_t fn_len, const char *const fn) {
  @return A temporary path, invalid on calling any path function.
  @throws[malloc] */
 const char *PathsFromOutput(const size_t fn_len, const char *const fn) {
+	if(looks_like_fragment(fn_len, fn)) return 0;
 	PathArrayClear(&paths.working.path);
 	if(!cat_path(&paths.working.path, &paths.outinv)
 		|| !cat_path(&paths.working.path, &paths.input.path)

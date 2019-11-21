@@ -357,13 +357,16 @@ OUT(link) {
 		if(turl->symbol == URL) break;
 	}
 	/* We want to open this file to check if it's on the up-and-up. */
+	fprintf(stderr, "***PathsFromHere with %.*s.\n", turl->length, turl->from);
 	if(!(errno = 0, fn = PathsFromHere(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
-	fprintf(stderr, "***%s***\n", fn);
+	fprintf(stderr, "***%s***Now opening?\n", fn);
 	if(!(fp = fopen(fn, "r"))) { perror(fn); errno = 0; goto raw; } fclose(fp);
-	/* Actually use the entire path. (fixme: this does not work with #) */
+	fprintf(stderr, "***Opened!\n");
+	/* Actually use the entire path. */
 	if(!(errno = 0, fn = PathsFromOutput(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
+	fprintf(stderr, "***now %s\n", fn);
 	fn_len = strlen(fn);
 	assert(fn_len < INT_MAX);
 	if(CdocGetDebug())
