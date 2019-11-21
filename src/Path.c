@@ -67,7 +67,7 @@ terminate:
 }
 
 /** Checks for not "//", which is not a path, except after '?#'. */
-static int looks_like_path(const char *string) {
+static int looks_like_path(const char *const string) {
 	const char *s, *q;
 	assert(string);
 	if(!(s = strstr(string, notallowed))) return 1;
@@ -76,10 +76,18 @@ static int looks_like_path(const char *string) {
 }
 
 /** Checks for not "//" as well as not "/" at the beginning. */
-static int looks_like_relative_path(const char *string) {
+static int looks_like_relative_path(const char *const string) {
 	assert(string);
 	return string[0] == '\0'
 		|| (string[0] != dirsepstr[0] && looks_like_path(string));
+}
+
+/** Checks that # or ? are the first thing. */
+static int looks_like_fragment(const char *const string) {
+	size_t i, i_end = strlen(othercharsstr);
+	assert(string);
+	for(i = 0; i < i_end; i++) if(string[0] == othercharsstr[i]) return 1;
+	return 0;
 }
 
 /** Appends `path` split on `dirsep` to `args`.
@@ -230,6 +238,7 @@ static size_t strip_query_fragment(const size_t uri_len, const char *const uri)
  @return A temporary path, invalid on calling any path function.
  @throws[malloc] */
 const char *PathsFromHere(const size_t fn_len, const char *const fn) {
+	if(looks_like_fragment(fn)) return fn;
 	PathArrayClear(&paths.working.path);
 	if(!cat_path(&paths.working.path, &paths.input.path)
 		|| (fn && !append_working_path(strip_query_fragment(fn_len, fn), fn)))
@@ -243,6 +252,7 @@ const char *PathsFromHere(const size_t fn_len, const char *const fn) {
  @return A temporary path, invalid on calling any path function.
  @throws[malloc] */
 const char *PathsFromOutput(const size_t fn_len, const char *const fn) {
+	if(looks_like_fragment(fn)) return fn;
 	PathArrayClear(&paths.working.path);
 	if(!cat_path(&paths.working.path, &paths.outinv)
 		|| !cat_path(&paths.working.path, &paths.input.path)

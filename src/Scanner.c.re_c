@@ -393,17 +393,13 @@ void Scanner_(struct Scanner **const pscanner) {
 /** Scans all the `buffer`.
  @param[label] The label of the scanner; must be valid throughout the scanners
  lifetime; if null, returns null.
- @param[buffer] The buffer of the scanner that it goes through; if null,
- returns null.
+ @param[buffer] The buffer of the scanner that it goes through; must be valid
+ throughout the scanners lifetime; if null, returns null.
  @param[notify] The function that is notified when it gets a match. It
  interprets return of false for error; if null, returns null.
  @return The scanner which must be passed to <fn:Scanner_>.
  @throws[malloc, fopen, fread]
- @throws[EILSEQ] File has embedded nulls.
- @throws[EDOM] Passed null.
- @fixme ScannerFile and ScannerString should be merged and should just accept a
- buffer and the name of a buffer; `CharArray` should not exist. This is not
- Scanner's responsibility. */
+ @throws[EILSEQ] File has embedded nulls. */
 struct Scanner *Scanner(const char *const label, const char *const buffer,
 	const ScannerPredicate notify, const enum ScannerState state) {
 	struct Scanner *scan = 0;
