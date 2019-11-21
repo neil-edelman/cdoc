@@ -41,11 +41,10 @@
  \* `\<typedef:\<typedef\>\>`: typedef reference;
  \* `\<data:\<identifier\>\>`: data reference;
  \* `\[The link text\](url)`: link;
- \* `\!\[Caption text\](url.image)`: image.
-
- As well, if a local include directive has a documentation comment immediately
- after that reads only `\include`, it will also be included in the
- documentation.
+ \* `\!\[Caption text\](url.image)`: image;
+ \* a local include directive has a documentation comment immediately
+    after that reads only `\include`, it will also be included in the
+    documentation.
 
  Each-block-tags separate the documentation until the next paragraph or until
  the next each-block-tag, and specify a specific documentation structure.
@@ -129,12 +128,11 @@
  to this code. Needs buffering.
  @fixme Eg, fixme with no args disappears; we should NOT check if the string is
  empty.
- @fixme For md, have a field in `Style` that says whether we should escape all,
- or just some, (eg, inside a \`\` the md changes.)
  @fixme Complete md-ising eg table.
  @fixme `A``B` doesn't do what one expects in md.
  @fixme If a segment has multiple licenses, they will show multiple times.
- @fixme `Style.h` should really go in it's own C. */
+ @fixme `Style.h` should really go in it's own C.
+ @fixme `<code>` should not set `is_space`. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
