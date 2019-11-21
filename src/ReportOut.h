@@ -357,16 +357,12 @@ OUT(link) {
 		if(turl->symbol == URL) break;
 	}
 	/* We want to open this file to check if it's on the up-and-up. */
-	fprintf(stderr, "***PathsFromHere with %.*s.\n", turl->length, turl->from);
 	if(!(errno = 0, fn = PathsFromHere(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
-	fprintf(stderr, "***%s***Now opening?\n", fn);
 	if(!(fp = fopen(fn, "r"))) { perror(fn); errno = 0; goto raw; } fclose(fp);
-	fprintf(stderr, "***Opened!\n");
 	/* Actually use the entire path. */
 	if(!(errno = 0, fn = PathsFromOutput(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
-	fprintf(stderr, "***now %s\n", fn);
 	fn_len = strlen(fn);
 	assert(fn_len < INT_MAX);
 	if(CdocGetDebug())
@@ -377,7 +373,7 @@ raw:
 	fn = turl->from;
 	fn_len = turl->length;
 	if(CdocGetDebug())
-		fprintf(stderr, "%s: external link %.*s.\n", pos(t), (int)fn_len, fn);
+		fprintf(stderr, "%s: fixed link %.*s.\n", pos(t), (int)fn_len, fn);
 output:
 	assert(fn_len <= INT_MAX);
 	if(f == OUT_HTML) printf("<a href = \"%.*s\">", (int)fn_len, fn);
@@ -872,16 +868,19 @@ static void best_guess_at_modifiers(const struct Segment *const segment) {
 	}
 }
 
-/** Takes `buffer`. */
-/*int buffer_output_doc() {
+/** Takes `url` and `desc` and makes a link. Don't go overboard on the buffer,
+ only for fixed links. */
+static int output_internal_link(const char *const label,
+	const char *const desc) {
+	struct Scanner *scan_str;
+	char buffer[128];
 	style_prepare_output(END);
-	sprintf(buffer, "[%s](#%s)",
-		division_desc[DIV_PREAMBLE], division_strings[DIV_PREAMBLE]);
-	if(!(scan_str = Scanner(division_strings[DIV_PREAMBLE], buffer,
-		&notify_brief, SSDOC))) return 0;
+	sprintf(buffer, "[%s](#%s:)", desc, label);
+	if(!(scan_str = Scanner(label, buffer, &notify_brief, SSDOC))) return 0;
 	print_brief();
 	Scanner_(&scan_str);
-}*/
+	return 1;
+}
 
 /** Outputs a report.
  @throws[EILSEQ] Sequence error.
@@ -895,8 +894,6 @@ int ReportOut(void) {
 		is_license = attribute_exists(ATT_LICENSE);
 	const struct Segment *segment = 0;
 	const enum Format format = CdocGetFormat();
-	struct Scanner *scan_str;
-	char buffer[128];
 
 	/* Set `errno` here so that we don't have to test output each time. */
 	errno = 0;
@@ -947,23 +944,14 @@ int ReportOut(void) {
 	/* TOC. */
 	style_push(&styles[ST_UL][format]), style_push(&styles[ST_LI][format]);
 	if(is_preamble) {
-		style_prepare_output(END);
-		sprintf(buffer, "[%s](#%s)",
-			division_desc[DIV_PREAMBLE], division_strings[DIV_PREAMBLE]);
-		if(!(scan_str = Scanner(division_strings[DIV_PREAMBLE], buffer,
-			&notify_brief, SSDOC))) return 0;
-		print_brief();
-		Scanner_(&scan_str);
+		if(!output_internal_link(division_strings[DIV_PREAMBLE],
+			division_desc[DIV_PREAMBLE])) return 0;
 		style_pop_push();
 	}
 	if(is_typedef) {
-		style_prepare_output(END);
-		sprintf(buffer, "[%s](#%s)",
-			division_desc[DIV_TYPEDEF], division_strings[DIV_TYPEDEF]);
-		if(!(scan_str = Scanner(division_strings[DIV_TYPEDEF], buffer,
-			&notify_brief, SSDOC))) return 0;
-		printf("<a href = \"#%s:\">Typedef Aliases</a>: ",
-			division_strings[DIV_TYPEDEF]);
+		if(!output_internal_link(division_strings[DIV_TYPEDEF],
+			division_desc[DIV_TYPEDEF])) return 0;
+		printf(": ");
 		style_push(&plain_csv), style_push(&no_style);
 		while((segment = SegmentArrayNext(&report, segment))) {
 			size_t *idxs;
@@ -986,9 +974,9 @@ int ReportOut(void) {
 		style_pop_push();
 	}
 	if(is_tag) {
-		style_prepare_output(END);
-		printf("<a href = \"#%s:\">Struct, Union, and Enum Definitions</a>: ",
-			division_strings[DIV_TAG]);
+		if(!output_internal_link(division_strings[DIV_TAG],
+			division_desc[DIV_TAG])) return 0;
+		printf(": ");
 		style_push(&plain_csv), style_push(&no_style);
 		while((segment = SegmentArrayNext(&report, segment))) {
 			size_t *idxs;
@@ -1010,9 +998,9 @@ int ReportOut(void) {
 		style_pop_push();
 	}
 	if(is_data) {
-		style_prepare_output(END);
-		printf("<a href = \"#%s:\">General Declarations</a>: ",
-			division_strings[DIV_DATA]);
+		if(!output_internal_link(division_strings[DIV_DATA],
+			division_desc[DIV_DATA])) return 0;
+		printf(": ");
 		style_push(&plain_csv), style_push(&no_style);
 		while((segment = SegmentArrayNext(&report, segment))) {
 			size_t *idxs;
@@ -1034,22 +1022,14 @@ int ReportOut(void) {
 		style_pop_push();
 	}
 	if(is_function) {
-		style_prepare_output(END);
-		printf("<a href = \"#summary:\">Function Summary</a>");
+		if(!output_internal_link("summary", "Function Summary")) return 0;
 		style_pop_push();
-		style_prepare_output(END);
-		sprintf(buffer, "[%s](#%s)",
-			division_desc[DIV_FUNCTION], division_strings[DIV_FUNCTION]);
-		if(!(scan_str = Scanner(division_strings[DIV_FUNCTION], buffer,
-			&notify_brief, SSDOC))) return 0;
-		print_brief();
-		Scanner_(&scan_str);
-		printf("<a href = \"#%s:\">Function Definitions</a>",
-			division_strings[DIV_FUNCTION]);
+		if(!output_internal_link(division_strings[DIV_FUNCTION],
+			division_desc[DIV_FUNCTION])) return 0;
 		style_pop_push();
 	}
-	if(is_license) style_prepare_output(END),
-		printf("<a href = \"#license:\">License</a>"), style_pop_push();
+	if(is_license) output_internal_link("license", "Licence"),
+		style_pop_push();
 	style_pop_level();
 	assert(!StyleArraySize(&mode.styles));
 
