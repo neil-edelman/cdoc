@@ -804,7 +804,7 @@ static void segment_print_all(const struct Segment *const segment) {
 		print_token(&segment->code, param);
 		style_pop_level();
 		style_push(&styles[ST_P][format]), style_push(&styles[ST_CODE][format]);
-		highlight_tokens(&segment->code, 0/*&segment->code_params*/);
+		highlight_tokens(&segment->code, &segment->code_params);
 		style_pop_level();
 	} else {
 		style_push(&styles[ST_H3][format]);
