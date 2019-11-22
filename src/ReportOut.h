@@ -7,20 +7,17 @@ static const struct Token *print_token(const struct TokenArray *const tokens,
 
 /** Selects `token` out of `tokens` and prints it and returns the next token. */
 typedef int (*OutFn)(const struct TokenArray *const tokens,
-	const struct Token **const ptoken, const struct StyleText *const st,
-	char (*const a)[256]);
+	const struct Token **const ptoken, char (*const a)[256]);
 /* @param[ptoken] Is an [in/out] variable, it should get updated unless the
  return value is false.
  @return Success.
  @implements <Attribute>Predicate */
 #define OUT(name) static int name(const struct TokenArray *const tokens, \
-	const struct Token **ptoken, const struct StyleText *const st, \
-	char (*const a)[256])
+	const struct Token **ptoken, char (*const a)[256])
 
 OUT(ws) {
 	const struct Token *const space = *ptoken;
 	assert(tokens && space && space->symbol == SPACE && !a);
-	(void)st;
 	style_separate();
 	*ptoken = TokenArrayNext(tokens, space);
 	return 1;
@@ -29,7 +26,7 @@ OUT(par) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == NEWLINE && !a);
 	style_pop_level();
-	style_push(&styles[ST_P][CdocGetFormat()], st);
+	style_push(&styles[ST_P][CdocGetFormat()]);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -224,7 +221,6 @@ OUT(see_fn) {
 	assert(tokens && fn && fn->symbol == SEE_FN && !a);
 	style_prepare_output(fn->symbol);
 	if(CdocGetFormat() == OUT_HTML) {
-		/* fixme? */
 		printf("<a href = \"#%s:", division_strings[DIV_FUNCTION]);
 		encode(fn->length, fn->from);
 		printf("\">");
@@ -245,7 +241,6 @@ OUT(see_tag) {
 	assert(tokens && tag && tag->symbol == SEE_TAG && !a);
 	style_prepare_output(tag->symbol);
 	if(CdocGetFormat() == OUT_HTML) {
-		/* fixme? */
 		printf("<a href = \"#%s:", division_strings[DIV_TAG]);
 		encode(tag->length, tag->from);
 		printf("\">");
@@ -304,20 +299,18 @@ OUT(see_data) {
 OUT(math_begin) { /* Math and code. */
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == MATH_BEGIN && !a);
-	if(st) fprintf(stderr, "%s: ignoring highlighted on math begin.\n", pos(t));
 	style_push(&styles[ST_CODE][CdocGetFormat()]);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
 OUT(math_end) {
 	const struct Token *const t = *ptoken;
-	const struct StyleText *const sty = style_text_peek(),
+	const struct StyleText *const st = style_text_peek(),
 		*const st_expect = &styles[ST_CODE][CdocGetFormat()];
 	assert(tokens && t && t->symbol == MATH_END && !a);
-	if(st) fprintf(stderr, "%s: ignoring highlighted on math end.\n", pos(t));
-	if(sty != st_expect) {
+	if(st != st_expect) {
 		char st_str[12], st_expect_str[12];
-		style_text_to_string(sty, &st_str);
+		style_text_to_string(st, &st_str);
 		style_text_to_string(st_expect, &st_expect_str);
 		return fprintf(stderr, "Expected %s but got %s.\n",
 			st_expect_str, st_str), 0;
@@ -329,20 +322,18 @@ OUT(math_end) {
 OUT(em_begin) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == EM_BEGIN && !a);
-	if(st) fprintf(stderr, "%s: ignoring highlighted on em begin.\n", pos(t));
 	style_push(&styles[ST_EM][CdocGetFormat()]);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
 OUT(em_end) {
 	const struct Token *const t = *ptoken;
-	const struct StyleText *const st2 = style_text_peek(),
+	const struct StyleText *const st = style_text_peek(),
 		*const st_expect = &styles[ST_EM][CdocGetFormat()];
 	assert(tokens && t && t->symbol == EM_END && !a);
-	if(st) fprintf(stderr, "%s: ignoring highlighted on em end.\n", pos(t));
-	if(st2 != st_expect) {
+	if(st != st_expect) {
 		char st_str[12], st_expect_str[12];
-		style_text_to_string(st2, &st_str);
+		style_text_to_string(st, &st_str);
 		style_text_to_string(st_expect, &st_expect_str);
 		return fprintf(stderr, "Expected %s but got %s.\n",
 			st_expect_str, st_str), 0;
@@ -549,31 +540,19 @@ static const OutFn symbol_outs[] = { SYMBOL(PARAM6C) };
  tokens (variable names) support this.
  @throws[EILSEQ] Sequence error. Must detect with `errno`.
  @return The next token. */
-static const struct Token *print_token_s_s(
-	const struct TokenArray *const tokens, const struct Token *token,
-	const struct StyleText *const st, char (*const a)[256]) {
+static const struct Token *print_token_s(const struct TokenArray *const tokens,
+	const struct Token *token, char (*const a)[256]) {
 	const OutFn sym_out = symbol_outs[token->symbol];
 	assert(tokens && token);
 	if(!sym_out) return fprintf(stderr, "%s: symbol output undefined.\n",
 		pos(token)), TokenArrayNext(tokens, token);
-	if(!sym_out(tokens, &token, st, a)) { errno = EILSEQ; return 0; }
+	if(!sym_out(tokens, &token, a)) { errno = EILSEQ; return 0; }
 	return token;
-}
-
-static const struct Token *print_token_s(const struct TokenArray *const tokens,
-	const struct Token *token, char (*const a)[256]) {
-	return print_token_s_s(tokens, token, 0, a);
 }
 
 static const struct Token *print_token(const struct TokenArray *const tokens,
 	const struct Token *token) {
 	return print_token_s(tokens, token, 0);
-}
-
-static const struct Token *print_token_highlight(
-	const struct TokenArray *const tokens, const struct Token *token,
-	const struct StyleText *const st) {
-	return print_token_s_s(tokens, token, st, 0);
 }
 
 /** @param[highlights] Must be sorted if not null, creates an emphasis on those
@@ -594,9 +573,15 @@ static void highlight_tokens(const struct TokenArray *const tokens,
 		} else {
 			is_highlight = 0;
 		}
-		token = print_token_highlight(tokens, token, is_highlight ?
-			&styles[is_first_highlight ? ST_CODE_STRONG : ST_CODE_EM][f] : 0);
-		if(is_highlight) is_first_highlight = 0;
+		if(is_highlight) style_push(&styles[is_first_highlight
+			? ST_CODE_STRONG : ST_CODE_EM][f]);
+		token = print_token(tokens, token);
+		if(is_highlight) {
+			assert(style_text_peek() == &styles[is_first_highlight
+				? ST_CODE_STRONG : ST_CODE_EM][f]);
+			style_pop();
+			is_first_highlight = 0;
+		}
 	}
 }
 
@@ -819,7 +804,7 @@ static void segment_print_all(const struct Segment *const segment) {
 		print_token(&segment->code, param);
 		style_pop_level();
 		style_push(&styles[ST_P][format]), style_push(&styles[ST_CODE][format]);
-		highlight_tokens(&segment->code, &segment->code_params);
+		highlight_tokens(&segment->code, 0/*&segment->code_params*/);
 		style_pop_level();
 	} else {
 		style_push(&styles[ST_H3][format]);
