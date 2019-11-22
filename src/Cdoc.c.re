@@ -122,8 +122,7 @@
  map will be faster and more precise.
  @fixme Links to non-documented code which sometimes doesn't show up, work
  without error, and create broken links.
- @fixme Sometimes it's an error, sometimes it's a warning, seemingly at random.
- Make all the errors on-line?
+ @fixme Make all the errors on-line?
  @fixme 80-characters _per_ line limit; I've got it working, just need to apply
  to this code. Needs buffering.
  @fixme Eg, fixme with no args disappears; we should NOT check if the string is
