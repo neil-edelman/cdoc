@@ -1,9 +1,9 @@
  # Cdoc #
 
- * <a href = "#preamble:">Preamble</a>
- * <a href = "#summary:">Function Summary</a>
- * <a href = "#fn:">Function Definitions</a>
- * <a href = "#license:">License</a>
+ * [Desciption](#preamble:)
+ * [Function Summary](#summary:)
+ * [Function Definitions](#fn:)
+ * [Licence](#license:)
 
  ## <a name = "preamble:">Description</a> ##
 
@@ -27,9 +27,8 @@ This supports a stripped\-down version of `Markdown` that is much stricter\. Emb
  * `<typedef:<typedef>>` : typedef reference;
  * `<data:<identifier>>` : data reference;
  * `[The link text](url)` : link;
- * `![Caption text](url.image)` : image\.
-
-As well, if a local include directive has a documentation comment immediately after that reads only `\include` , it will also be included in the documentation\.
+ * `![Caption text](url.image)` : image;
+ * a local include directive has a documentation comment immediately after that reads only `\include` , it will also be included in the documentation\.
 
 Each\-block\-tags separate the documentation until the next paragraph or until the next each\-block\-tag, and specify a specific documentation structure\. Each\-block\-tags that overlap are concatenated in the file order\. Not all of these are applicable for all segments of text\. These are:
 
@@ -81,7 +80,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
  * Dependancies:  
    [re2c](http://re2c.org/)
  * Caveat:  
-   Trigraph support, \(haha\.\) Old\-style function support\. Hide `const` on params when it can not affect function calls\. Prototypes and functions are the same thing; this will confuse it\. Hash map will be faster and more precise\. Links to non\-documented code which sometimes doesn't show up, work without error, and create broken links\. Sometimes it's an error, sometimes it's a warning, seemingly at random\. Make all the errors on\-line? 80\-characters _per_ line limit; I've got it working, just need to apply to this code\. Needs buffering\. Eg, fixme with no args disappears; we should NOT check if the string is empty\. For md, have a field in `Style` that says whether we should escape all, or just some, \(eg, inside a \`\` the md changes\.\) Complete md\-ising eg table\. `A` `B` doesn't do what one expects in md\. : If a segment has multiple licenses, they will show multiple times\. : `Style.h` should really go in it's own C\.
+   Trigraph support, \(haha\.\) Old\-style function support\. Hide `const` on params when it can not affect function calls\. Prototypes and functions are the same thing; this will confuse it\. Hash map will be faster and more precise\. Links to non\-documented code which sometimes doesn't show up, work without error, and create broken links\. Sometimes it's an error, sometimes it's a warning, seemingly at random\. Make all the errors on\-line? 80\-characters _per_ line limit; I've got it working, just need to apply to this code\. Needs buffering\. Eg, fixme with no args disappears; we should NOT check if the string is empty\. Complete md\-ising eg table\. `A` `B` doesn't do what one expects in md\. If a segment has multiple licenses, they will show multiple times\. `Style.h` should really go in it's own C\. `<code>` should not set `is_space` \.
 
 
 
@@ -139,8 +138,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 
 
- ## <a name = "license:">License</a>
- ##
+ ## <a name = "license:">License</a> ##
 
 2019 Neil Edelman, distributed under the terms of the [MIT License](https://opensource.org/licenses/MIT)\.
 
