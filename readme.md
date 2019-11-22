@@ -1,11 +1,11 @@
  # Cdoc #
 
- * [Desciption](#preamble:)
+ * [Desciption](#preamble)
  * [Function Summary](#summary:)
  * [Function Definitions](#fn:)
  * [Licence](#license:)
 
- ## [Description](#preamble:) ##
+ ## [Description](#preamble) ##
 
 This is a context\-sensitive lexer intended to process parts of a `C` compilation unit and extract documentation\. This does not do any compiling, just very basic text\-parsing\.
 
