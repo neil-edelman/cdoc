@@ -132,7 +132,6 @@
  @fixme `A``B` doesn't do what one expects in md.
  @fixme If a segment has multiple licenses, they will show multiple times.
  @fixme `Style.h` should really go in it's own C.
- @fixme `<code>` should not set `is_space`.
  @fixme Github-flavoured broken links.
  @fixme Now \include is not working, again. */
 

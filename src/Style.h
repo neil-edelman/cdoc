@@ -117,8 +117,13 @@ static struct {
 	int is_before_sep;
 } mode;
 
+static struct {
+	const struct StyleText *style;
+	int on;
+} style_highlight;
+
 static void style_clear(void) {
-	assert(!StyleArraySize(&mode.styles));
+	assert(!StyleArraySize(&mode.styles) && !style_highlight.on);
 	StyleArray_(&mode.styles);
 	mode.is_before_sep = 0;
 }
@@ -190,6 +195,21 @@ static void style_prepare_output(const enum Symbol symbol) {
 	if(mode.is_before_sep && symbol_before_sep[symbol])
 		fputs(top->text->sep, stdout);
 	mode.is_before_sep = symbol_after_sep[symbol];
+	/* Now do the highlight. */
+	if(style_highlight.style && !style_highlight.on)
+		fputs(style_highlight.style->begin, stdout), style_highlight.on = 1;
+}
+
+static void style_highlight_on(const struct StyleText *const style) {
+	assert(!style_highlight.style && !style_highlight.on);
+	style_highlight.style = style;
+}
+
+static void style_highlight_off(void) {
+	assert(style_highlight.style);
+	if(style_highlight.on)
+		fputs(style_highlight.style->end, stdout), style_highlight.on = 0;
+	style_highlight.style = 0;
 }
 
 /** Differed space. */

@@ -573,15 +573,10 @@ static void highlight_tokens(const struct TokenArray *const tokens,
 		} else {
 			is_highlight = 0;
 		}
-		if(is_highlight) style_push(&styles[is_first_highlight
+		if(is_highlight) style_highlight_on(&styles[is_first_highlight
 			? ST_CODE_STRONG : ST_CODE_EM][f]);
 		token = print_token(tokens, token);
-		if(is_highlight) {
-			assert(style_text_peek() == &styles[is_first_highlight
-				? ST_CODE_STRONG : ST_CODE_EM][f]);
-			style_pop();
-			is_first_highlight = 0;
-		}
+		if(is_highlight) style_highlight_off(), is_first_highlight = 0;
 	}
 }
 
