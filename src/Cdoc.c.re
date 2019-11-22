@@ -132,7 +132,9 @@
  @fixme `A``B` doesn't do what one expects in md.
  @fixme If a segment has multiple licenses, they will show multiple times.
  @fixme `Style.h` should really go in it's own C.
- @fixme `<code>` should not set `is_space`. */
+ @fixme `<code>` should not set `is_space`.
+ @fixme Github-flavoured broken links.
+ @fixme Now \include is not working, again. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
@@ -153,15 +155,17 @@ static void usage(void) {
 		"  -d | --debug              Prints a lot of debug information.\n"
 		"  -f | --format (html | md) Overrides built-in guessing.\n"
 		"  -o | --output <filename>  Stick the output file in this.\n"
+		"  -g | --github             Prefix anchored links by 'user-content-'."
+		"\n"
 		"Given <input-file>, a C file with encoded documentation,\n"
-		"outputs that documentation. Output path must \n");
+		"outputs that documentation.\n");
 }
 
 static struct {
 	enum { EXPECT_NOTHING, EXPECT_OUT, EXPECT_FORMAT } expect;
 	const char *in_fn, *out_fn;
 	enum Format format;
-	int debug;
+	int debug, github;
 } args;
 
 /** Parses the one `argument`; global state may be modified.
@@ -192,6 +196,7 @@ static int parse_arg(const char *const argument) {
 	}
 	("-h" | "--help") end { usage(); exit(EXIT_SUCCESS); }
 	("-d" | "--debug") end { args.debug = 1; return 1; }
+	("-g" | "--github") end { args.github = 1; return 1; }
 	("-f" | "--format") end {
 		if(args.format) return 0;
 		args.expect = EXPECT_FORMAT;
@@ -209,6 +214,11 @@ static int parse_arg(const char *const argument) {
  was set. */
 int CdocGetDebug(void) {
 	return args.debug;
+}
+
+/** @return Whether it's in Github mode. */
+int CdocGetGithub(void) {
+	return args.github;
 }
 
 /** @return True if `suffix` is a suffix of `string`. */

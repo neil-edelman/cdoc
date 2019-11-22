@@ -92,7 +92,7 @@ enum { ST_DIV, ST_P, ST_UL, ST_LI, ST_CODE, ST_PRE, ST_PRELINE,
  "<h1><p>foo", then "bar", "<h1><p>foobar", pop "<h1><p>foobar</p>\n\n", pop
  "<h1><p>foobar</p>\n\n</h1>\n\n". */
 struct Style {
-	const struct StyleText *text;
+	const struct StyleText *text, *highlight;
 	enum { BEGIN, ITEM, SEPARATE } lazy;
 };
 
@@ -123,7 +123,8 @@ static void style_clear(void) {
 	mode.is_before_sep = 0;
 }
 
-static void style_push(const struct StyleText *const text) {
+static void style_push(const struct StyleText *const text,
+	const struct StyleText *const highlight) {
 	struct Style *const push = StyleArrayNew(&mode.styles);
 	assert(text);
 	/* There's so many void functions that rely on this function and it's such
@@ -132,6 +133,7 @@ static void style_push(const struct StyleText *const text) {
 	if(!push) { perror("Unrecoverable"), exit(EXIT_FAILURE); return; }
 	/*printf("<!-- push %s -->", text->name);*/
 	push->text = text;
+	push->highlight = highlight;
 	push->lazy = BEGIN;
 }
 
@@ -142,6 +144,7 @@ static void style_pop(void) {
 	/*printf("<!-- pop %s -->", pop->text->name);*/
 	if(pop->lazy == BEGIN) return;
 	/* Was used. */
+	if(0);
 	fputs(pop->text->end, stdout);
 	if(top) assert(top->lazy != BEGIN), top->lazy = SEPARATE;
 }
@@ -161,7 +164,7 @@ static void style_pop_push(void) {
 	struct Style *const peek = StyleArrayPeek(&mode.styles);
 	assert(peek);
 	style_pop();
-	style_push(peek->text);
+	style_push(peek->text, peek->highlight);
 }
 
 /** Some of the elements require looking at the style on top. */
@@ -200,7 +203,7 @@ static void style_separate(void) {
 }
 
 /** Only used with md. */
-static int style_suppress_escapes(void) {
+static int style_is_suppress_escapes(void) {
 	struct Style *style = 0;
 	/*fprintf(stderr, "%s.\n", StyleArrayToString(&mode.styles));*/
 	while((style = StyleArrayNext(&mode.styles, style))) {
@@ -247,7 +250,7 @@ terminate_html:
 	return;
 	
 md_encode_string:
-	suppress = style_suppress_escapes();
+	suppress = style_is_suppress_escapes();
 	while(length) {
 		switch(*from) {
 		case '\0':
@@ -283,7 +286,7 @@ html_encode_print:
 	return;
 	
 md_encode_print:
-	suppress = style_suppress_escapes();
+	suppress = style_is_suppress_escapes();
 	while(length) {
 		switch(*from) {
 		case '\0': fprintf(stderr, "Encoded null with %d left.\n", length);

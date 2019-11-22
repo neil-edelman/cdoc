@@ -6,6 +6,7 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
+#include "Cdoc.h"
 #include "Path.h"
 
 #define XSTR(s) STR(s)
@@ -256,4 +257,13 @@ const char *PathsFromOutput(const size_t fn_len, const char *const fn) {
 		|| (fn && !append_working_path(fn_len, fn))) return 0;
 	simplify_path(&paths.working.path);
 	return path_to_string(&paths.result, &paths.working.path);
+}
+
+/** Anchored names are transformed but links are not, leading to broken links.
+ Inverse transform the links so that they match the anchors. */
+const char *PathsGithubInverseTransform(const size_t fn_len,
+	const char *const fn) {
+	if(!CdocGetGithub() || !looks_like_fragment(fn_len, fn)) return fn;
+	fprintf(stderr, "fixme: invert %.*s.\n", (int)fn_len, fn);
+	return 0;
 }
