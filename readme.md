@@ -1,7 +1,7 @@
  # Cdoc #
 
  * [wtf](#wtf)
- * [Desciption](#user-content-preamble:)
+ * [Desciption](#user-content--preamble)
  * [Function Summary](#summary:)
  * [Function Definitions](#fn:)
  * [Licence](#license:)
@@ -9,7 +9,7 @@
 
 # wtf
 
- ## <a name = "preamble:">Description</a> ##
+ ## <a name = "-preamble">Description</a> ##
 
 This is a context\-sensitive lexer intended to process parts of a `C` compilation unit and extract documentation\. This does not do any compiling, just very basic text\-parsing\.
 
