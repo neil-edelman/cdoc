@@ -7,7 +7,7 @@ static const int symbol_after_sep[]  = { SYMBOL(PARAM6E) };
 #define HTML_LT  "&lt;"
 
 /* Hack `sprintf` titles. */
-static char title[256];
+static char style_title[256];
 
 /* Every `StyleText` can have a beginning, a separator, and an end, which will
  be printed around literals. Block and can appear alone elements have
@@ -63,8 +63,8 @@ styles[][3] = {
 		{ "dd", "\t<dd>", "", "</dd>\n", 0, 0 },
 		{ "dd", "   ", "", "\n", 0, 0 } },
 	{ { "", 0, 0, 0, 0, 0 },
-		{ "ddtitle", title, "", "</dd>\n", 0, 0 },
-		{ "ddtitle", title, "", "\n", 0, 0 } },
+		{ "ddtitle", style_title, "", "</dd>\n", 0, 0 },
+		{ "ddtitle", style_title, "", "\n", 0, 0 } },
 	{ { "", 0, 0, 0, 0, 0 },
 		{ "em", "<em>", "", "</em>", 0, 0 },
 		{ "em", "_", "", "_", 0, 0 } },
@@ -233,7 +233,7 @@ static int style_is_suppress_escapes(void) {
 /** Encode a bunch of arbitrary text `from` to `length` as whatever the options
  were.
  @param[a] If specified, prints it to the string. */
-static void encode_s(int length, const char *from, char (*const a)[256]) {
+static void encode_len_s(int length, const char *from, char (*const a)[256]) {
 	char *build = *a;
 	int suppress;
 	assert(length >= 0 && from && ((a && *a) || !a));
@@ -320,6 +320,10 @@ md_encode_print:
 	return;
 }
 
-static void encode(int length, const char *from) {
-	encode_s(length, from, 0);
+static void encode_len(int length, const char *from) {
+	encode_len_s(length, from, 0);
+}
+
+static void encode(const char *str) {
+	encode_len((int)strlen(str), str);
 }

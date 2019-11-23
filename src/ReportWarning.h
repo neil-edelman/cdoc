@@ -123,7 +123,7 @@ static void warn_internal_link(const struct Token *const token) {
 		default: return;
 	}
 	/* Encode the link text. */
-	encode_s(token->length, token->from, &a);
+	encode_len_s(token->length, token->from, &a);
 	/* Search for it. Not really efficient as it builds up labels from scratch,
 	 then discards them, over and over. */
 	while((segment = SegmentArrayNext(&report, segment))) {

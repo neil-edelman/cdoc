@@ -34,10 +34,10 @@ OUT(lit) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->length > 0 && t->from);
 	if(a) {
-		encode_s(t->length, t->from, a);
+		encode_len_s(t->length, t->from, a);
 	} else {
 		style_prepare_output(t->symbol);
-		encode(t->length, t->from);
+		encode_len(t->length, t->from);
 	}
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
@@ -173,7 +173,7 @@ OUT(escape) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == ESCAPE && t->length == 2 && !a);
 	style_prepare_output(t->symbol);
-	encode(1, t->from + 1);
+	encode_len(1, t->from + 1);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -184,11 +184,11 @@ OUT(url) {
 	/* I think it can't contain '<>()\"' by parser. */
 	if(CdocGetFormat() == OUT_HTML) {
 		printf("<a href = \"%.*s\">", t->length, t->from);
-		encode(t->length, t->from);
+		encode_len(t->length, t->from);
 		printf("</a>");
 	} else {
 		printf("[");
-		encode(t->length, t->from);
+		encode_len(t->length, t->from);
 		printf("](%.*s)", t->length, t->from);
 	}
 	*ptoken = TokenArrayNext(tokens, t);
@@ -203,11 +203,11 @@ OUT(cite) {
 	if(CdocGetFormat() == OUT_HTML) {
 		printf("<a href = \"https://scholar.google.ca/scholar?q=%s\">",
 			url_encoded);
-		encode(t->length, t->from);
+		encode_len(t->length, t->from);
 		printf("</a>");
 	} else {
 		printf("[");
-		encode(t->length, t->from);
+		encode_len(t->length, t->from);
 		printf("](https://scholar.google.ca/scholar?q=%s)", url_encoded);
 	}
 	*ptoken = TokenArrayNext(tokens, t);
@@ -222,15 +222,15 @@ OUT(see_fn) {
 	style_prepare_output(fn->symbol);
 	if(CdocGetFormat() == OUT_HTML) {
 		printf("<a href = \"#%s:", division_strings[DIV_FUNCTION]);
-		encode(fn->length, fn->from);
+		encode_len(fn->length, fn->from);
 		printf("\">");
-		encode(fn->length, fn->from);
+		encode_len(fn->length, fn->from);
 		printf("</a>");
 	} else {
 		printf("[");
-		encode(fn->length, fn->from);
+		encode_len(fn->length, fn->from);
 		printf("](%s:", division_strings[DIV_FUNCTION]);
-		encode(fn->length, fn->from);
+		encode_len(fn->length, fn->from);
 		printf(")");
 	}
 	*ptoken = TokenArrayNext(tokens, fn);
@@ -242,15 +242,15 @@ OUT(see_tag) {
 	style_prepare_output(tag->symbol);
 	if(CdocGetFormat() == OUT_HTML) {
 		printf("<a href = \"#%s:", division_strings[DIV_TAG]);
-		encode(tag->length, tag->from);
+		encode_len(tag->length, tag->from);
 		printf("\">");
-		encode(tag->length, tag->from);
+		encode_len(tag->length, tag->from);
 		printf("</a>");
 	} else {
 		printf("[");
-		encode(tag->length, tag->from);
+		encode_len(tag->length, tag->from);
 		printf("](%s:", division_strings[DIV_TAG]);
-		encode(tag->length, tag->from);
+		encode_len(tag->length, tag->from);
 		printf(")");
 	}
 	*ptoken = TokenArrayNext(tokens, tag);
@@ -262,15 +262,15 @@ OUT(see_typedef) {
 	style_prepare_output(def->symbol);
 	if(CdocGetFormat() == OUT_HTML) {
 		printf("<a href = \"#%s:", division_strings[DIV_TYPEDEF]);
-		encode(def->length, def->from);
+		encode_len(def->length, def->from);
 		printf("\">");
-		encode(def->length, def->from);
+		encode_len(def->length, def->from);
 		printf("</a>");
 	} else {
 		printf("[");
-		encode(def->length, def->from);
+		encode_len(def->length, def->from);
 		printf("](%s:", division_strings[DIV_TYPEDEF]);
-		encode(def->length, def->from);
+		encode_len(def->length, def->from);
 		printf(")");
 	}
 	*ptoken = TokenArrayNext(tokens, def);
@@ -282,15 +282,15 @@ OUT(see_data) {
 	style_prepare_output(data->symbol);
 	if(CdocGetFormat() == OUT_HTML) {
 		printf("<a href = \"#%s:", division_strings[DIV_DATA]);
-		encode(data->length, data->from);
+		encode_len(data->length, data->from);
 		printf("\">");
-		encode(data->length, data->from);
+		encode_len(data->length, data->from);
 		printf("</a>");
 	} else {
 		printf("[");
-		encode(data->length, data->from);
+		encode_len(data->length, data->from);
 		printf("](%s:", division_strings[DIV_DATA]);
-		encode(data->length, data->from);
+		encode_len(data->length, data->from);
 		printf(")");
 	}
 	*ptoken = TokenArrayNext(tokens, data);
@@ -521,7 +521,7 @@ OUT(pre) {
 		style_push(pref), style_push(line);
 	}
 	style_prepare_output(t->symbol);
-	encode(t->length, t->from);
+	encode_len(t->length, t->from);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -747,10 +747,11 @@ static void dl_preamble_att(const enum Symbol attribute,
 	const enum AttShow show, const struct StyleText *const style) {
 	const enum Format format = CdocGetFormat();
 	assert(style);
-	if(format == OUT_HTML) sprintf(title, "\t<dt>%.128s:</dt>\n"
+	/* `style_title` is static in `Styles.h`. */
+	if(format == OUT_HTML) sprintf(style_title, "\t<dt>%.128s:</dt>\n"
 		"\t<dd>", symbol_attribute_titles[attribute]);
-	else
-		sprintf(title, " * %.128s:  \n   ", symbol_attribute_titles[attribute]);
+	else sprintf(style_title, " * %.128s:  \n   ",
+		symbol_attribute_titles[attribute]);
 	style_push(&styles[ST_DESC][format]), style_push(style),
 		style_push(&plain_text);
 	div_att_print(&is_div_preamble, attribute, SHOW_TEXT);
@@ -890,6 +891,11 @@ int ReportOut(void) {
 		is_license = attribute_exists(ATT_LICENSE);
 	const struct Segment *segment = 0;
 	const enum Format format = CdocGetFormat();
+	const char *const in_fn = CdocGetInput(),
+		*const base_fn = strrchr(in_fn, *path_dirsep),
+		*const title = base_fn ? base_fn + 1 : in_fn;
+
+	assert(in_fn);
 
 	/* Set `errno` here so that we don't have to test output each time. */
 	errno = 0;
@@ -925,7 +931,7 @@ int ReportOut(void) {
 		style_push(&html_title), style_push(&plain_ssv),
 			style_push(&plain_text);
 		style_prepare_output(END);
-		printf("%s", CdocGetBaseInput());
+		encode(title);
 		style_pop_level();
 		assert(!StyleArraySize(&mode.styles));
 		printf("</head>\n\n"
@@ -935,7 +941,7 @@ int ReportOut(void) {
 	style_push(&styles[ST_H1][format]), style_push(&plain_ssv),
 		style_push(&plain_text);
 	style_prepare_output(END);
-	printf("%s", CdocGetBaseInput());
+	encode(title);
 	style_pop_level();
 	assert(!StyleArraySize(&mode.styles));
 
