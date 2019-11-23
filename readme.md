@@ -78,7 +78,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
  * Dependancies:  
    [re2c](http://re2c.org/)
  * Caveat:  
-   Trigraph support, \(haha\.\) Old\-style function support\. Hide `const` on params when it can not affect function calls\. Prototypes and functions are the same thing; this will confuse it\. Hash map will be faster and more precise\. Links to non\-documented code which sometimes doesn't show up, work without error, and create broken links\. 80\-characters _per_ line limit, and even, \([http://xyyx\.\.\.](http://xyyx...),\) \(needs buffering\.\) Eg, fixme with no args disappears; we should NOT check if the string is empty\. Complete md\-ising eg table\. `A` `B` doesn't do what one expects in md\. If a segment has multiple licenses, they will show multiple times\. Finish Github\-flavoured broken links\. `foo.c:221` : space where it shouldn't be\.
+   Old\-style function support\. Trigraph support, \(haha\.\) Hide `const` on params when it can not affect function calls\. Prototypes and functions are the same thing; this will confuse it\. Hash map might be faster and more precise\. Links to non\-documented code which sometimes doesn't show up, work without error, and create broken links\. 80\-characters _per_ line limit, [https://xxyxyz\.org/line\-breaking/](https://xxyxyz.org/line-breaking/), \(needs buffering\.\) Eg, fixme with no args disappears; we should NOT check if the string is empty\. Complete md\-ising eg table\. `A` `B` doesn't do what one expects in md\. If a segment has multiple licenses, they will show multiple times\. Finish Github\-flavoured broken links\. `foo.c:221` : space where it shouldn't be\. Why?
 
 
 
