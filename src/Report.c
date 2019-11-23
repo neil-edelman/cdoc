@@ -394,7 +394,6 @@ int ReportNotify(const struct Scanner *const scan) {
 				ScannerFrom(scan)))) goto include_catch;
 			if(!(text = TextOpen(fn))) goto include_catch;
 			cut_segment_here(&sorter.segment);
-			fprintf(stderr, "incude:: %s: %s\n", TextBaseName(text), TextGet(text));
 			if(!(subscan = Scanner(TextBaseName(text), TextGet(text),
 				&ReportNotify, SSCODE))) goto include_catch;
 			cut_segment_here(&sorter.segment);
@@ -402,7 +401,7 @@ int ReportNotify(const struct Scanner *const scan) {
 			goto include_finally;
 include_catch:
 			if(errno) perror("including");
-			else fprintf(stderr, "%s: couldn't resove name.\n", oops(scan));
+			else fprintf(stderr, "%s: couldn't resolve name.\n", oops(scan));
 include_finally:
 			Scanner_(&subscan);
 			return success;

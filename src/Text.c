@@ -1,9 +1,9 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- Handles reading an entire file.
+ Handles reading entire files and keeping them in memory.
 
- @file File
+ @file Text
  @author Neil
  @std C89 */
 
@@ -35,7 +35,7 @@ static void zero_buffer(struct Text *const b) {
 static void Text_(struct Text **const pb) {
 	struct Text *b;
 	if(!pb || !(b = *pb)) return;
-	fprintf(stderr, "Freeing data assciated with %s.\n", b->basename);
+	/*fprintf(stderr, "Freeing data assciated with %s.\n", b->basename);*/
 	CharArray_(&b->buffer);
 	free(b);
 	*pb = 0;
