@@ -1,4 +1,4 @@
-#ifndef FORMAT_H /* <-- !out */
+#ifndef FORMAT_H /* <!-- !out */
 #define FORMAT_H
 
 #include "XMacro.h"

@@ -1,4 +1,4 @@
-#ifndef SYMBOL_H /* <-- !sym */
+#ifndef SYMBOL_H /* <!-- !sym */
 #define SYMBOL_H
 
 #include "XMacro.h"

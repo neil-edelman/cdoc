@@ -1,4 +1,4 @@
-#ifndef DIVISION_H /* <-- !div */
+#ifndef DIVISION_H /* <!-- !div */
 #define DIVISION_H
 
 #include "XMacro.h"

@@ -1,4 +1,4 @@
-#ifndef XMACRO_H /* <-- !x */
+#ifndef XMACRO_H /* <!-- !x */
 #define XMACRO_H
 
 /* X-Macros are great for debugging. */

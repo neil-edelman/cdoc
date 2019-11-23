@@ -45,20 +45,20 @@
 #include <string.h>	/* memcpy memmove (strerror strcpy memcmp in ArrayTest.h) */
 #include <errno.h>	/* errno */
 #include <limits.h> /* LONG_MAX */
-#ifdef ARRAY_TO_STRING /* <-- print */
+#ifdef ARRAY_TO_STRING /* <!-- print */
 #include <stdio.h>	/* sprintf */
 #endif /* print --> */
 
 
 
 /* Check defines. */
-#ifndef ARRAY_NAME /* <-- error */
+#ifndef ARRAY_NAME /* <!-- error */
 #error Generic ARRAY_NAME undefined.
 #endif /* error --> */
-#ifndef ARRAY_TYPE /* <-- error */
+#ifndef ARRAY_TYPE /* <!-- error */
 #error Generic ARRAY_TYPE undefined.
 #endif /* --> */
-#if defined(ARRAY_TEST) && !defined(ARRAY_TO_STRING) /* <-- error */
+#if defined(ARRAY_TEST) && !defined(ARRAY_TO_STRING) /* <!-- error */
 #error ARRAY_TEST requires ARRAY_TO_STRING.
 #endif /* error --> */
 
@@ -101,7 +101,7 @@ typedef ARRAY_TYPE PT_(Type);
 
 
 
-#ifdef ARRAY_TO_STRING /* <-- string */
+#ifdef ARRAY_TO_STRING /* <!-- string */
 /** Responsible for turning `<T>` (the first argument) into a 12 `char`
  null-terminated output string (the second.) Private; must re-declare. Used for
  `ARRAY_TO_STRING`. */
@@ -132,7 +132,7 @@ struct T_(Array) {
 };
 
 /* `{0}` is `C99`. */
-#ifndef ARRAY_ZERO /* <-- !zero */
+#ifndef ARRAY_ZERO /* <!-- !zero */
 #define ARRAY_ZERO { 0, 0, 0, 0 }
 #endif /* !zero --> */
 
@@ -260,7 +260,7 @@ static size_t T_(ArraySize)(const struct T_(Array) *const a) {
 	return a->size;
 }
 
-#ifndef ARRAY_STACK /* <-- !stack */
+#ifndef ARRAY_STACK /* <!-- !stack */
 
 /** Removes `data` from `a`.
  @param[a, data] If null, returns false.
@@ -624,9 +624,9 @@ static int T_(ArrayIndexSplice)(struct T_(Array) *const a, const size_t i0,
 	return PT_(replace)(a, i0, i1, b);
 }
 
-#ifdef ARRAY_TO_STRING /* <-- print */
+#ifdef ARRAY_TO_STRING /* <!-- print */
 
-#ifndef ARRAY_PRINT_THINGS /* <-- once inside translation unit */
+#ifndef ARRAY_PRINT_THINGS /* <!-- once inside translation unit */
 #define ARRAY_PRINT_THINGS
 
 static const char *const array_cat_start     = "[";
@@ -701,7 +701,7 @@ static const char *T_(ArrayToString)(const struct T_(Array) *const a) {
 
 #endif /* print --> */
 
-#ifdef ARRAY_TEST /* <-- test */
+#ifdef ARRAY_TEST /* <!-- test */
 #include "../test/TestArray.h" /* Need this file if one is going to run tests.*/
 #endif /* test --> */
 
@@ -714,7 +714,7 @@ static void PT_(unused_set)(void) {
 	T_(Array_)(0);
 	T_(Array)(0);
 	T_(ArraySize)(0);
-#ifndef ARRAY_STACK /* <-- !stack */
+#ifndef ARRAY_STACK /* <!-- !stack */
 	T_(ArrayRemove)(0, 0);
 	T_(ArrayLazyRemove)(0, 0);
 #endif /* !stack --> */
@@ -752,9 +752,9 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #undef ARRAY_TYPE
 /* Undocumented; allows nestled inclusion so long as: `CAT_`, `CAT`, `PCAT`,
  `PCAT_` conform, and `T` is not used. */
-#ifdef ARRAY_SUBTYPE /* <-- sub */
+#ifdef ARRAY_SUBTYPE /* <!-- sub */
 #undef ARRAY_SUBTYPE
-#else /* sub --><-- !sub */
+#else /* sub --><!-- !sub */
 #undef CAT
 #undef CAT_
 #undef PCAT
