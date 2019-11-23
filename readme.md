@@ -1,15 +1,11 @@
- # Cdoc #
+ # Cdoc\.c\.re #
 
- * [wtf](#wtf)
- * [Desciption](#user-content-preamble-)
+ * [Desciption](#preamble:)
  * [Function Summary](#summary:)
  * [Function Definitions](#fn:)
- * [Licence](#license:)
+ * [License](#license:)
 
-
-# wtf
-
- ## <a name = "preamble-">Description</a> ##
+ ## <a name = "preamble:">Description</a> ##
 
 This is a context\-sensitive lexer intended to process parts of a `C` compilation unit and extract documentation\. This does not do any compiling, just very basic text\-parsing\.
 
@@ -36,7 +32,7 @@ This supports a stripped\-down version of `Markdown` that is much stricter\. Emb
 
 Each\-block\-tags separate the documentation until the next paragraph or until the next each\-block\-tag, and specify a specific documentation structure\. Each\-block\-tags that overlap are concatenated in the file order\. Not all of these are applicable for all segments of text\. These are:
 
- * `@title` : only makes sense for preamble, \(it doesn't matter what case one writes it, but multiple are concatenated using semicolons\);
+ * `@subtitle` : only makes sense for preamble, \(it doesn't matter what case one writes it, but multiple are concatenated using semicolons\);
  * `@param[<param1>[, ...]]` : parameters, \(multiple are concatenated using spaces, so this really should be sentence case\);
  * `@author` \(commas\);
  * `@std` : standard, eg, `@std GNU-C99` , \(semicolons\);
@@ -77,14 +73,12 @@ Strict regular expressions that are much easier to parse have limited state and 
 
 Note that it does not validate html; nothing stops one from writing, eg, a link, or emphasis, in the title\.
 
- * Author:  
-   Neil
  * Standard:  
    C89
  * Dependancies:  
    [re2c](http://re2c.org/)
  * Caveat:  
-   Trigraph support, \(haha\.\) Old\-style function support\. Hide `const` on params when it can not affect function calls\. Prototypes and functions are the same thing; this will confuse it\. Hash map will be faster and more precise\. Links to non\-documented code which sometimes doesn't show up, work without error, and create broken links\. Sometimes it's an error, sometimes it's a warning, seemingly at random\. Make all the errors on\-line? 80\-characters _per_ line limit; I've got it working, just need to apply to this code\. Needs buffering\. Eg, fixme with no args disappears; we should NOT check if the string is empty\. Complete md\-ising eg table\. `A` `B` doesn't do what one expects in md\. If a segment has multiple licenses, they will show multiple times\. `Style.h` should really go in it's own C\. `<code>` should not set `is_space` \.
+   Trigraph support, \(haha\.\) Old\-style function support\. Hide `const` on params when it can not affect function calls\. Prototypes and functions are the same thing; this will confuse it\. Hash map will be faster and more precise\. Links to non\-documented code which sometimes doesn't show up, work without error, and create broken links\. 80\-characters _per_ line limit, and even, \([http://xyyx\.\.\.](http://xyyx...),\) \(needs buffering\.\) Eg, fixme with no args disappears; we should NOT check if the string is empty\. Complete md\-ising eg table\. `A` `B` doesn't do what one expects in md\. If a segment has multiple licenses, they will show multiple times\. Finish Github\-flavoured broken links\. `foo.c:221` : space where it shouldn't be\.
 
 
 
@@ -97,7 +91,11 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 <tr><td align = right>int</td><td><a href = "#fn:CdocGetDebug">CdocGetDebug</a></td><td></td></tr>
 
+<tr><td align = right>int</td><td><a href = "#fn:CdocGetGithub">CdocGetGithub</a></td><td></td></tr>
+
 <tr><td align = right>enum Format</td><td><a href = "#fn:CdocGetFormat">CdocGetFormat</a></td><td></td></tr>
+
+<tr><td align = right>const char \*</td><td><a href = "#fn:CdocGetInput">CdocGetInput</a></td><td></td></tr>
 
 <tr><td align = right>const char \*</td><td><a href = "#fn:CdocGetOutput">CdocGetOutput</a></td><td></td></tr>
 
@@ -107,10 +105,9 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
  ## <a name = "fn:">Function Definitions</a> ##
 
-<a name = "fn:CdocGetDebug"><!-- --></a>
- ### CdocGetDebug ###
+ ### <a name = "fn:CdocGetDebug">CdocGetDebug</a> ###
 
-`int`**`CdocGetDebug`**` (void)`
+`int `**`CdocGetDebug`**`(void)`
 
  - Return:  
    Whether the command\-line option to print the scanner on `stderr` was set\.
@@ -118,10 +115,19 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 
 
-<a name = "fn:CdocGetFormat"><!-- --></a>
- ### CdocGetFormat ###
+ ### <a name = "fn:CdocGetGithub">CdocGetGithub</a> ###
 
-`enum Format`**`CdocGetFormat`**` (void)`
+`int `**`CdocGetGithub`**`(void)`
+
+ - Return:  
+   Whether it's in Github mode\.
+
+
+
+
+ ### <a name = "fn:CdocGetFormat">CdocGetFormat</a> ###
+
+`enum Format `**`CdocGetFormat`**`(void)`
 
  - Return:  
    What format the output was specified to be in `enum Format` \. If there was no output specified, guess before from the output filename\.
@@ -129,10 +135,19 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 
 
-<a name = "fn:CdocGetOutput"><!-- --></a>
- ### CdocGetOutput ###
+ ### <a name = "fn:CdocGetInput">CdocGetInput</a> ###
 
-`const char *`**`CdocGetOutput`**` (void)`
+`const char *`**`CdocGetInput`**`(void)`
+
+ - Return:  
+   The input filename\.
+
+
+
+
+ ### <a name = "fn:CdocGetOutput">CdocGetOutput</a> ###
+
+`const char *`**`CdocGetOutput`**`(void)`
 
  - Return:  
    The output filename\.

@@ -792,12 +792,13 @@ static void segment_print_all(const struct Segment *const segment) {
 
 	/* The title is generally the first param. Only single-words. */
 	if((param = param_no(segment, 0))) {
+		style_push(&styles[ST_H3][format]);
 		style_prepare_output(END);
 		printf("<a name = \"%s:", division_strings[segment->division]);
 		print_token(&segment->code, param);
-		printf("\"><!-- --></a>\n");
-		style_push(&styles[ST_H3][format]);
+		printf("\">");
 		print_token(&segment->code, param);
+		printf("</a>");
 		style_pop_level();
 		style_push(&styles[ST_P][format]), style_push(&styles[ST_CODE][format]);
 		highlight_tokens(&segment->code, &segment->code_params);
