@@ -115,14 +115,12 @@
  @author Neil
  @std C89
  @depend [re2c](http://re2c.org/)
- @fixme Trigraph support, (haha.)
- @fixme Old-style function support.
+ @fixme Trigraph support, (haha.) Old-style function support.
  @fixme Hide `const` on params when it can not affect function calls.
  @fixme Prototypes and functions are the same thing; this will confuse it. Hash
  map will be faster and more precise.
  @fixme Links to non-documented code which sometimes doesn't show up, work
  without error, and create broken links.
- @fixme Make all the errors on-line?
  @fixme 80-characters _per_ line limit; I've got it working, just need to apply
  to this code. Needs buffering.
  @fixme Eg, fixme with no args disappears; we should NOT check if the string is
@@ -132,7 +130,6 @@
  @fixme If a segment has multiple licenses, they will show multiple times.
  @fixme `Style.h` should really go in it's own C.
  @fixme Github-flavoured broken links.
- @fixme `foo.c:177` and `foo.c:222`: at least one has a semantic failure.
  @fixme `foo.c:221`: space where it shouldn't be. */
 
 #include <stdlib.h> /* EXIT */

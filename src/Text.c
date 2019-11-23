@@ -12,6 +12,7 @@
 #include <stdlib.h> /* malloc free */
 #include <assert.h> /* assert */
 #include <errno.h>  /* errno EILSEQ */
+#include "Cdoc.h"
 #include "Text.h"
 
 const char dirsep = '/';
@@ -35,22 +36,24 @@ static void zero_buffer(struct Text *const b) {
 static void Text_(struct Text **const pb) {
 	struct Text *b;
 	if(!pb || !(b = *pb)) return;
-	/*fprintf(stderr, "Freeing data assciated with %s.\n", b->basename);*/
+	if(CdocGetDebug()) fprintf(stderr, "Freeing data assciated with %s.\n",
+		b->basename);
 	CharArray_(&b->buffer);
 	free(b);
 	*pb = 0;
 }
 
-/** Ensures that the file has no zeros but not if the file has a '\n' at the
- end.
- @return Reads `fn` to memory. */
+/** Opens the file as text and ensures that the file contents has no zeros, but
+ doesn't do any checks otherwise.
+ @return Reads `fn` to memory as a `Text` or null is error.
+ @throws[malloc, fread]
+ @throws[EILSEQ] If the file has embedded zeros. */
 static struct Text *Text(const char *const fn) {
 	FILE *fp = 0;
 	struct Text *t = 0;
 	const size_t granularity = 1024;
 	size_t nread, zero_len, file_size, fn_size;
 	char *read_here, *terminating, *buffer, *base;
-	/* Dynamically allocate `file`. */
 	if(!fn || !(fp = fopen(fn, "r"))) goto catch;
 	fn_size = strlen(fn) + 1;
 	if(!(t = malloc(sizeof *t + fn_size))) goto catch;
@@ -58,7 +61,7 @@ static struct Text *Text(const char *const fn) {
 	t->filename = (char *)(t + 1);
 	memcpy(t->filename, fn, fn_size);
 	t->basename = (base = strrchr(t->filename, dirsep)) ? base + 1 :t->filename;
-	/* Read all contents at once. */
+	/* Read all contents at once and close the file; now in memory. */
 	do {
 		if(!(read_here = CharArrayBuffer(&t->buffer, granularity))
 			|| (nread = fread(read_here, 1, granularity, fp), ferror(fp))
