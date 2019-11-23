@@ -322,14 +322,12 @@ int Semantic(const struct TokenArray *const code) {
 	/* "Returning an array of this" and "returning this" are isomorphic. */
 	remove_recursive(buffer, '[', ']', '_');
 	/* Now with the {}[] removed. */
-	fprintf(stderr, "without typedef %s\n", buffer);
 	effectively_typedef_fn_ptr(buffer);
-	fprintf(stderr, "with typedef %s\n", buffer);
 	/* Get rid of all parentheses after the first level. This is sketchy, but
 	 allows parameters `int (*a)[2]`, however it will break something. */
 	/*remove_bottom_levels(buffer, '(', ')', '_'); That didn't work. */
 	if(!parse()) return 0;
-	/*if(CdocGetDebug())*/
+	if(CdocGetDebug())
 		fprintf(stderr, "%.32s:%lu: \"%s\" -> %s with params %s.\n",
 		semantic.label, (unsigned long)semantic.line, buffer,
 		divisions[semantic.division], IndexArrayToString(&semantic.params));
