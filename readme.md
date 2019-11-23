@@ -1,11 +1,11 @@
  # Cdoc\.c\.re #
 
- * [Desciption](#user-content-preamble_)
+ * [Desciption](#user-content-éÉpreamble_)
  * [Function Summary](#summary:)
  * [Function Definitions](#fn:)
  * [License](#license:)
 
- ## <a name = "preamble_">Description</a> ##
+ ## <a name = "éÉpreamble_">Description</a> ##
 
 This is a context\-sensitive lexer intended to process parts of a `C` compilation unit and extract documentation\. This does not do any compiling, just very basic text\-parsing\.
 
