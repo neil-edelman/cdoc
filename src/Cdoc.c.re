@@ -51,8 +51,8 @@
  Each-block-tags that overlap are concatenated in the file order. Not all of
  these are applicable for all segments of text. These are:
 
- \* `\@title`: only makes sense for preamble, (it doesn't matter what case one
-    writes it, but multiple are concatenated using semicolons);
+ \* `\@subtitle`: only makes sense for preamble, (it doesn't matter what case
+    one writes it, but multiple are concatenated using semicolons);
  \* `\@param[<param1>[, ...]]`: parameters, (multiple are concatenated using
      spaces, so this really should be sentence case);
  \* `\@author` (commas);
