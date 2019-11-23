@@ -132,7 +132,7 @@
  @fixme If a segment has multiple licenses, they will show multiple times.
  @fixme `Style.h` should really go in it's own C.
  @fixme Github-flavoured broken links.
- @fixme Now \include is not working, again. */
+ @fixme See `foo.c` for semantic failure. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
@@ -269,7 +269,7 @@ int main(int argc, char **argv) {
 	if(!Paths(args.in_fn, args.out_fn)) goto catch;
 
 	/* Buffer the file. */
-	if(!(text = Text(args.in_fn))) goto catch;
+	if(!(text = TextOpen(args.in_fn))) goto catch;
 
 	/* Open the input file and parse. The last segment is on-going. */
 	if(!(scanner = Scanner(TextBaseName(text), TextGet(text), &ReportNotify,
@@ -292,8 +292,8 @@ catch:
 	
 finally:
 	Scanner_(&scanner);
-	Text_(&text);
 	Report_();
+	TextCloseAll();
 	Paths_();
 	if(fp) fclose(fp);
 

@@ -32,9 +32,10 @@ static void zero_buffer(struct Text *const b) {
 }
 
 /** Unloads `file` from memory. */
-void Text_(struct Text **const pb) {
+static void Text_(struct Text **const pb) {
 	struct Text *b;
 	if(!pb || !(b = *pb)) return;
+	fprintf(stderr, "Freeing data assciated with %s.\n", b->basename);
 	CharArray_(&b->buffer);
 	free(b);
 	*pb = 0;
@@ -43,7 +44,7 @@ void Text_(struct Text **const pb) {
 /** Ensures that the file has no zeros but not if the file has a '\n' at the
  end.
  @return Reads `fn` to memory. */
-struct Text *Text(const char *const fn) {
+static struct Text *Text(const char *const fn) {
 	FILE *fp = 0;
 	struct Text *t = 0;
 	const size_t granularity = 1024;
@@ -98,4 +99,25 @@ size_t TextSize(const struct Text *const b) {
 /** @return The contents of `file`. */
 const char *TextGet(const struct Text *const b) {
 	return b ? CharArrayGet(&b->buffer) : 0;
+}
+
+#define ARRAY_NAME Text
+#define ARRAY_TYPE struct Text *
+#include "Array.h"
+
+static struct TextArray files;
+
+/** Loads new `Text` from `fn` into memory. */
+struct Text *TextOpen(const char *const fn) {
+	struct Text **ptext = TextArrayNew(&files);
+	if(!ptext) return 0;
+	if(!(*ptext = Text(fn))) { TextArrayPop(&files); return 0; }
+	return *ptext;
+}
+
+/** Unloads all texts. */
+void TextCloseAll(void) {
+	struct Text **ptext;
+	while((ptext = TextArrayPop(&files))) Text_(ptext);
+	TextArray_(&files);
 }
