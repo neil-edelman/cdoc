@@ -227,6 +227,7 @@ static size_t strip_query_fragment(const size_t uri_len, const char *const uri)
 	return without;
 }
 
+/** @return True if the first character in `fn`:`fn_len` is `?` or `#`. */
 static int looks_like_fragment(const size_t fn_len, const char *const fn) {
 	if(!fn_len) return 0;
 	return !!strchr(othercharsstr, fn[0]);

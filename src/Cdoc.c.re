@@ -111,8 +111,6 @@
  Note that it does not validate html; nothing stops one from writing, eg, a
  link, or emphasis, in the title.
 
- @title Cdoc
- @author Neil
  @std C89
  @depend [re2c](http://re2c.org/)
  @fixme Trigraph support, (haha.) Old-style function support.
@@ -121,15 +119,15 @@
  map will be faster and more precise.
  @fixme Links to non-documented code which sometimes doesn't show up, work
  without error, and create broken links.
- @fixme 80-characters _per_ line limit; I've got it working, just need to apply
- to this code. Needs buffering.
+ @fixme 80-characters _per_ line limit, and even, (<http://xyyx...>,)
+ (needs buffering.)
  @fixme Eg, fixme with no args disappears; we should NOT check if the string is
  empty.
  @fixme Complete md-ising eg table.
  @fixme `A``B` doesn't do what one expects in md.
  @fixme If a segment has multiple licenses, they will show multiple times.
  @fixme `Style.h` should really go in it's own C.
- @fixme Github-flavoured broken links.
+ @fixme Finish Github-flavoured broken links.
  @fixme `foo.c:221`: space where it shouldn't be. */
 
 #include <stdlib.h> /* EXIT */
