@@ -113,13 +113,13 @@
 
  @std C89
  @depend [re2c](http://re2c.org/)
- @fixme Trigraph support, (haha.) Old-style function support.
+ @fixme Old-style function support. Trigraph support, (haha.)
  @fixme Hide `const` on params when it can not affect function calls.
  @fixme Prototypes and functions are the same thing; this will confuse it. Hash
- map will be faster and more precise.
+ map might be faster and more precise.
  @fixme Links to non-documented code which sometimes doesn't show up, work
  without error, and create broken links.
- @fixme 80-characters _per_ line limit, and even, (<http://xyyx...>,)
+ @fixme 80-characters _per_ line limit, <https://xxyxyz.org/line-breaking/>,
  (needs buffering.)
  @fixme Eg, fixme with no args disappears; we should NOT check if the string is
  empty.
@@ -127,7 +127,7 @@
  @fixme `A``B` doesn't do what one expects in md.
  @fixme If a segment has multiple licenses, they will show multiple times.
  @fixme Finish Github-flavoured broken links.
- @fixme `foo.c:221`: space where it shouldn't be. */
+ @fixme `foo.c:221`: space where it shouldn't be. Why? */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
