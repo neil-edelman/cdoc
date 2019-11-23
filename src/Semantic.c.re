@@ -1,8 +1,7 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- Divides up the code into divisions based on `symbol_marks` in `Symbol.h`.
- @fixme Reports data for fn recieving templetised things. */
+ Divides up the code into divisions based on `symbol_marks` in `Symbol.h`. */
 
 #include <stdio.h>
 #include <string.h>
@@ -276,7 +275,8 @@ check:
 
 /************/
 
-/** Analyse a new string.
+/** Analyse a new string. Updates <fn:SemanticDivision> and
+ <fn:SemanticParams>.
  @param[code] If null, frees the global semantic data. Otherwise, a string that
  consists of characters from `symbol_marks` defined in `Symbol.h`.
  @return Success, otherwise `errno` may (POSIX will) be set. */
