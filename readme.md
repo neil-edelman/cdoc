@@ -5,7 +5,7 @@
  * [Function Definitions](#fn:)
  * [License](#license:)
 
- ## <a name = "user-content-preamble_">Description</a> ##
+ ## <a name = "preamble_">Description</a> ##
 
 This is a context\-sensitive lexer intended to process parts of a `C` compilation unit and extract documentation\. This does not do any compiling, just very basic text\-parsing\.
 
