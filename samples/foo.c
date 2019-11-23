@@ -14,7 +14,7 @@ Paragraph @ @a \,~~
  \* png: ![Ellen Ripley](../diagrams/Ellen_Ripley_badass.png).
  \* jpeg: ![Inigo Montoya](../diagrams/Inigo_Montoya.jpeg).
 
- @title The Title is Simple
+ @subtitle The Title is Simple
  @depend C89
  @author Somebody
  @author Nobody
@@ -181,12 +181,12 @@ T fun5(int (*arg1_2)(int arg1_3, int (*fn)(void)), Foo arg2_3, /*no*/
 }
 
 /** There should be <fn:fun1> to <fn:fun7> and <fn:main>.
- @title title! <http://f.o/> */
+ @subtitle subtitle! <http://f.o/> */
 
 
 
 
-/** @title No.
+/** @subtitle This doesn't make sense.
 
  Oyvey lipsum.
  

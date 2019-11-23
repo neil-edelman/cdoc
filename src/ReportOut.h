@@ -924,15 +924,24 @@ int ReportOut(void) {
 			"</style>\n");
 		style_push(&html_title), style_push(&plain_ssv),
 			style_push(&plain_text);
-		/*fixme!! div_att_print(&is_div_preamble, ATT_TITLE, SHOW_TEXT);*/
+		style_prepare_output(END);
+		printf("%s", CdocGetBaseInput());
 		style_pop_level();
 		assert(!StyleArraySize(&mode.styles));
 		printf("</head>\n\n"
 			"<body>\n\n");
 	}
-	/* Title. fixme!!! */
+	/* Title. */
 	style_push(&styles[ST_H1][format]), style_push(&plain_ssv),
 		style_push(&plain_text);
+	style_prepare_output(END);
+	printf("%s", CdocGetBaseInput());
+	style_pop_level();
+	assert(!StyleArraySize(&mode.styles));
+
+	/* Subtitle. */
+	style_push(&styles[ST_H2][format]), style_push(&plain_ssv),
+	style_push(&plain_text);
 	div_att_print(&is_div_preamble, ATT_SUBTITLE, SHOW_TEXT);
 	style_pop_level();
 	assert(!StyleArraySize(&mode.styles));
