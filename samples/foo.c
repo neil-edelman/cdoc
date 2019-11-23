@@ -219,7 +219,7 @@ int fun6(oy, vey) {
 }
 
 /** Does nothing to `a` and `b`. */
-void fun7(char (*const a)[12], int (*b)(int a, int b)) {
+void fun7(char (*const a)[12], int (*b)(int a, int b), int (((c)))) {
 }
 
 /** Does main stuff.

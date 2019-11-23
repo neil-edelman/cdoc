@@ -144,7 +144,7 @@ generic = "x"
 | "3(" part "," part "," part ")"; // Eg, X_(Array)
 type = tag? redact* generic; // Eg, struct X_(Array)
 type_or_void = type | void;
-argument = ("_" | "*" | "s" | "x" | generic)+;
+argument = ("_" | "*" | "s" | "x" | "(" | ")" | generic)+;
 */
 
 static int parse(void) {
@@ -245,21 +245,6 @@ static void remove_recursive(char *const buffer,
 		if(!level) continue;
 		if(*b == right) level--;
 		*b = output;
-	}
-}
-
-/** From `buffer` it removes `left` and `right` and replaces them by `output`
- from all the bottom levels but  */
-static void remove_bottom_levels(char *const buffer,
-	const char left, const char right, const char output) {
-	char *b;
-	int level = 0;
-	for(b = buffer; *b != '\0'; b++) {
-		if(*b        == left) {
-			if(++level > 1) *b = output;
-		} else if(*b == right) {
-			if(level-- > 1) *b = output;
-		}
 	}
 }
 
