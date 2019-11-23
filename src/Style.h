@@ -1,3 +1,5 @@
+/* This should really go in it's own C file. */
+
 /* `SYMBOL` is declared in `Scanner.h`. */
 static const int symbol_before_sep[] = { SYMBOL(PARAM6D) };
 static const int symbol_after_sep[]  = { SYMBOL(PARAM6E) };

@@ -126,7 +126,6 @@
  @fixme Complete md-ising eg table.
  @fixme `A``B` doesn't do what one expects in md.
  @fixme If a segment has multiple licenses, they will show multiple times.
- @fixme `Style.h` should really go in it's own C.
  @fixme Finish Github-flavoured broken links.
  @fixme `foo.c:221`: space where it shouldn't be. */
 
