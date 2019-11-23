@@ -242,11 +242,19 @@ const char *PathsFromOutput(const size_t fn_len, const char *const fn) {
 	return path_to_string(&paths.result, &paths.working.path);
 }
 
-/** Anchored names are transformed but links are not, leading to broken links.
- Inverse transform the links so that they match the anchors. */
-const char *PathsGithubInverseTransform(const size_t fn_len,
-	const char *const fn) {
+/** Safe fragment name for whatever platform, (_aka_ GitHub.) This is a
+ surjection, so don't rely on non-letter symbols to make the name unique.
+ Doesn't include the `#`.
+ @return A temporary name fragment made up from `fn`:`fn_len`, invalid on
+ calling any path function.
+ @throws[malloc] */
+const char *PathsSafeFragment(const size_t fn_len, const char *const fn) {
+	PathArrayClear(&paths.working.path);
 	if(!CdocGetGithub() || !looks_like_fragment(fn_len, fn)) return fn;
 	fprintf(stderr, "fixme: invert %.*s.\n", (int)fn_len, fn);
+	return 0;
+}
+
+const char *PathsSafeFragmentHref(const size_t fn_len, const char *const fn) {
 	return 0;
 }
