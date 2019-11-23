@@ -177,17 +177,11 @@ void T_(fun4)(void) {
 T fun5(int (*arg1_2)(int arg1_3, int (*fn)(void)), Foo arg2_3, /*no*/
 	struct T_(Array) arg3_3) /** yo */ {
 	/** @param[a, fn] Doesn't do anything. */
-	return arg1_2(arg2_2, 0);
+	return arg1_2(arg2_3, 0);
 }
 
-int main(void) {
-	arrayFooBarBaz = 0;
-	fun3_scan_comment(0);
-	fun2_scan_eof(0, 0);
-	return 0;
-}
-
-/** Header. @title title! <http://f.o/> */
+/** There should be <fn:fun1> to <fn:fun7> and <fn:main>.
+ @title title! <http://f.o/> */
 
 
 
@@ -226,4 +220,13 @@ int fun6(oy, vey) {
 
 /** Does nothing to `a` and `b`. */
 void fun7(char (*const a)[12], int (*b)(int a, int b)) {
+}
+
+/** Does main stuff.
+ @allow */
+int main(void) {
+	arrayFooBarBaz = 0;
+	fun3_scan_comment(0);
+	fun2_scan_eof(0, 0);
+	return 0;
 }

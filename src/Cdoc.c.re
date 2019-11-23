@@ -132,7 +132,8 @@
  @fixme If a segment has multiple licenses, they will show multiple times.
  @fixme `Style.h` should really go in it's own C.
  @fixme Github-flavoured broken links.
- @fixme See `foo.c` for semantic failure. */
+ @fixme `foo.c:177` and `foo.c:222`: at least one has a semantic failure.
+ @fixme `foo.c:221`: space where it shouldn't be. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
