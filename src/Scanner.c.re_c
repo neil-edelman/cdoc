@@ -2,7 +2,6 @@
  [MIT License](https://opensource.org/licenses/MIT). */
 
 #include <stdio.h>  /* .printf */
-/*#include <string.h>*/ /* memset strchr strlen */
 #include <stdlib.h> /* malloc free */
 #include <assert.h> /* assert */
 #include <errno.h>  /* errno EILSEQ */
