@@ -265,7 +265,10 @@ void ReportWarn(void) {
 	struct Segment *segment = 0;
 	while((segment = SegmentArrayNext(&report, segment)))
 		warn_segment(segment);
-	preamble_used_attribute(ATT_AUTHOR);
-	preamble_used_attribute(ATT_TITLE);
+	/* `ATT_AUTHOR` is superseded by `ATT_LICENSE`; really only needed in
+	 multi-author code.
+	preamble_used_attribute(ATT_AUTHOR); */
+	/* Now that the input doesn't come from `stdin`, use the filename.
+	preamble_used_attribute(ATT_TITLE); */
 	preamble_used_attribute(ATT_LICENSE);
 }
