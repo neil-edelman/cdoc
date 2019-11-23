@@ -344,11 +344,10 @@ int Semantic(const struct TokenArray *const code) {
 	 allows parameters `int (*a)[2]`, however it will break something. */
 	/*remove_bottom_levels(buffer, '(', ')', '_'); That didn't work. */
 	if(!parse()) return 0;
-	if(CdocGetDebug()) {
+	/*if(CdocGetDebug())*/
 		fprintf(stderr, "%.32s:%lu: \"%s\" -> %s with params %s.\n",
-			semantic.label, (unsigned long)semantic.line, buffer,
-			divisions[semantic.division], IndexArrayToString(&semantic.params));
-	}
+		semantic.label, (unsigned long)semantic.line, buffer,
+		divisions[semantic.division], IndexArrayToString(&semantic.params));
 	/* It has been determined to be `divisions[semantic.division]`. */
 	return 1;
 }
