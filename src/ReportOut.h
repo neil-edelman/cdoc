@@ -924,16 +924,16 @@ int ReportOut(void) {
 			"</style>\n");
 		style_push(&html_title), style_push(&plain_ssv),
 			style_push(&plain_text);
-		div_att_print(&is_div_preamble, ATT_TITLE, SHOW_TEXT);
+		/*fixme!! div_att_print(&is_div_preamble, ATT_TITLE, SHOW_TEXT);*/
 		style_pop_level();
 		assert(!StyleArraySize(&mode.styles));
 		printf("</head>\n\n"
 			"<body>\n\n");
 	}
-	/* Title. */
+	/* Title. fixme!!! */
 	style_push(&styles[ST_H1][format]), style_push(&plain_ssv),
 		style_push(&plain_text);
-	div_att_print(&is_div_preamble, ATT_TITLE, SHOW_TEXT);
+	div_att_print(&is_div_preamble, ATT_SUBTITLE, SHOW_TEXT);
 	style_pop_level();
 	assert(!StyleArraySize(&mode.styles));
 
@@ -1024,8 +1024,8 @@ int ReportOut(void) {
 			division_desc[DIV_FUNCTION])) return 0;
 		style_pop_push();
 	}
-	if(is_license) output_internal_link("license", "Licence"),
-		style_pop_push();
+	if(is_license) output_internal_link("license",
+		symbol_attribute_titles[ATT_LICENSE]), style_pop_push();
 	style_pop_level();
 	assert(!StyleArraySize(&mode.styles));
 
@@ -1148,7 +1148,8 @@ int ReportOut(void) {
 	if(is_license) {
 		style_push(&styles[ST_DIV][format]), style_push(&styles[ST_H2][format]);
 		style_prepare_output(END);
-		printf("<a name = \"license:\">License</a>");
+		printf("<a name = \"license:\">%s</a>",
+			symbol_attribute_titles[ATT_LICENSE]);
 		style_pop(); /* h2 */
 		style_push(&styles[ST_P][format]);
 		div_att_print(&is_div_preamble, ATT_LICENSE, SHOW_TEXT);

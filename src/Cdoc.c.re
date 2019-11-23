@@ -246,6 +246,13 @@ const char *CdocGetOutput(void) {
 	return args.out_fn;
 }
 
+/** @return The base input filename. */
+const char *CdocGetBaseInput(void) {
+	const char *base;
+	if(!args.in_fn) return 0;
+	return (base = strrchr(args.in_fn, *path_dirsep)) ? base + 1 : args.in_fn;
+}
+
 /** @param[argc, argv] Argument vectors. */
 int main(int argc, char **argv) {
 	FILE *fp = 0;

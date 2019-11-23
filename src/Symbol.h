@@ -36,7 +36,7 @@
 	X(LOCAL_INCLUDE, 'i', 0, 0, 0, 0), \
 	/* Each-block-tags; 2nd is '@' because we want them to have special
 	 meaning. Non-printable, so it doesn't matter about the last few. */ \
-	X(ATT_TITLE,      '@', 0, 0, 0, "Title"), \
+	X(ATT_SUBTITLE,   '@', 0, 0, 0, "Subtitle"), \
 	X(ATT_PARAM,      '@', 0, 0, 0, "Parameter"), \
 	X(ATT_AUTHOR,     '@', 0, 0, 0, "Author"), \
 	X(ATT_STD,        '@', 0, 0, 0, "Standard"), \

@@ -7,7 +7,7 @@
  @title Report
  @author Neil */
 
-#include <string.h> /* size_t strncpy strrchr */
+#include <string.h> /* size_t strncpy strncmp */
 #include <limits.h> /* INT_MAX */
 #include <stdio.h>  /* .printf */
 #include "Division.h"

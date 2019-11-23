@@ -15,7 +15,7 @@ static int attribute_okay(const struct Attribute *const attribute) {
 	switch(attribute->token.symbol) {
 		case ATT_PARAM: /* `Scanner.c.re_c` has a state change. */
 		case ATT_THROWS: return attribute_use(attribute, 1, 1);
-		case ATT_TITLE: /* Otherwise, warn if empty. */
+		case ATT_SUBTITLE: /* Otherwise, warn if empty text. */
 		case ATT_AUTHOR:
 		case ATT_STD:
 		case ATT_DEPEND:
@@ -179,7 +179,7 @@ static void warn_segment(const struct Segment *const segment) {
 		if(IndexArraySize(&segment->code_params) < 1) fprintf(stderr,
 			"%s: unable to extract function name.\n", pos(fallback));
 		/* Unused in function. */
-		unused_attribute(segment, ATT_TITLE);
+		unused_attribute(segment, ATT_SUBTITLE);
 		if(!is_static(&segment->code))
 			unused_attribute(segment, ATT_ALLOW);
 		/* Check for extraneous params. */
@@ -221,7 +221,7 @@ static void warn_segment(const struct Segment *const segment) {
 		if(IndexArraySize(&segment->code_params) != 1) fprintf(stderr,
 			"%s: unable to extract one tag name.\n", pos(fallback));
 		/* Unused in tags. */
-		unused_attribute(segment, ATT_TITLE);
+		unused_attribute(segment, ATT_SUBTITLE);
 		unused_attribute(segment, ATT_RETURN);
 		unused_attribute(segment, ATT_THROWS);
 		unused_attribute(segment, ATT_IMPLEMENTS);
@@ -234,7 +234,7 @@ static void warn_segment(const struct Segment *const segment) {
 		if(IndexArraySize(&segment->code_params) != 1) fprintf(stderr,
 			"%s: unable to extract one typedef name.\n", pos(fallback));
 		/* Unused in typedefs. */
-		unused_attribute(segment, ATT_TITLE);
+		unused_attribute(segment, ATT_SUBTITLE);
 		unused_attribute(segment, ATT_PARAM);
 		unused_attribute(segment, ATT_RETURN);
 		unused_attribute(segment, ATT_THROWS);
@@ -247,7 +247,7 @@ static void warn_segment(const struct Segment *const segment) {
 		if(IndexArraySize(&segment->code_params) != 1) fprintf(stderr,
 			"%s: unable to extract one data name.\n", pos(fallback));
 		/* Unused in data. */
-		unused_attribute(segment, ATT_TITLE);
+		unused_attribute(segment, ATT_SUBTITLE);
 		unused_attribute(segment, ATT_PARAM);
 		unused_attribute(segment, ATT_RETURN);
 		unused_attribute(segment, ATT_THROWS);
@@ -268,7 +268,8 @@ void ReportWarn(void) {
 	/* `ATT_AUTHOR` is superseded by `ATT_LICENSE`; really only needed in
 	 multi-author code.
 	preamble_used_attribute(ATT_AUTHOR); */
-	/* Now that the input doesn't come from `stdin`, use the filename.
+	/* Now that the input doesn't come from `stdin`, use the filename; this has
+	 been replaced by subtitle.
 	preamble_used_attribute(ATT_TITLE); */
 	preamble_used_attribute(ATT_LICENSE);
 }

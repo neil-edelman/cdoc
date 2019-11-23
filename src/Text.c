@@ -14,8 +14,7 @@
 #include <errno.h>  /* errno EILSEQ */
 #include "Cdoc.h"
 #include "Text.h"
-
-const char dirsep = '/';
+#include "Path.h" /* `path_dirsep` */
 
 /* Define `CharArray`, a vector of characters. */
 #define ARRAY_NAME Char
@@ -60,7 +59,8 @@ static struct Text *Text(const char *const fn) {
 	zero_buffer(t);
 	t->filename = (char *)(t + 1);
 	memcpy(t->filename, fn, fn_size);
-	t->basename = (base = strrchr(t->filename, dirsep)) ? base + 1 :t->filename;
+	t->basename = (base = strrchr(t->filename, *path_dirsep))
+		? base + 1 : t->filename;
 	/* Read all contents at once and close the file; now in memory. */
 	do {
 		if(!(read_here = CharArrayBuffer(&t->buffer, granularity))

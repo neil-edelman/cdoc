@@ -9,25 +9,6 @@
 #include "Cdoc.h"
 #include "Path.h"
 
-#define XSTR(s) STR(s)
-#define STR(s) #s
-
-/* POSIX and URI -- may need to change if necessary. */
-#define DIRSEP /
-#define OTHER_CHARS ?#
-#define TWODOTS ..
-#define DOT .
-
-const char
-	*const dirsepstr = XSTR(DIRSEP),
-	*const othercharsstr = XSTR(OTHER_CHARS),
-	*const searchdirsep = XSTR(DIRSEP) XSTR(OTHER_CHARS),
-	*const notallowed = XSTR(DIRSEP) XSTR(DIRSEP),
-	*const twodots = XSTR(TWODOTS),
-	*const dot = XSTR(DOT);
-
-/* XSTR(#DIRSEP ## #OTHER_CHARS), crashes clang, hmm. */
-
 #define ARRAY_NAME Path
 #define ARRAY_TYPE const char *
 #include "Array.h"
@@ -59,7 +40,7 @@ static const char *path_to_string(struct CharArray *const str,
 		if(!(p = PathArrayNext(path, p))) break;
 		/* Otherwise stick a `dirsep`. */
 		if(!(buf = CharArrayNew(str))) return 0;
-		*buf = dirsepstr[0];
+		*buf = *path_dirsep;
 	}
 terminate:
 	if(!(buf = CharArrayNew(str))) return 0;
@@ -71,8 +52,8 @@ terminate:
 static int looks_like_path(const char *const string) {
 	const char *s, *q;
 	assert(string);
-	if(!(s = strstr(string, notallowed))) return 1;
-	if(!(q = strpbrk(string, othercharsstr))) return 0;
+	if(!(s = strstr(string, path_notallowed))) return 1;
+	if(!(q = strpbrk(string, path_fragment))) return 0;
 	return s < q ? 0 : 1;
 }
 
@@ -80,7 +61,7 @@ static int looks_like_path(const char *const string) {
 static int looks_like_relative_path(const char *const string) {
 	assert(string);
 	return string[0] == '\0'
-		|| (string[0] != dirsepstr[0] && looks_like_path(string));
+		|| (string[0] != *path_dirsep && looks_like_path(string));
 }
 
 /** Appends `path` split on `dirsep` to `args`.
@@ -96,7 +77,8 @@ static int sep_path(struct PathArray *const path, char *string) {
 		if(!(arg = PathArrayNew(path))) return 0;
 		*arg = p;
 		/* This searches for '/' until hitting a '?#'. */
-		if(!(p = strpbrk(p, searchdirsep)) || strchr(othercharsstr, *p)) break;
+		if(!(p = strpbrk(p, path_searchdirsep)) || strchr(path_fragment, *p))
+			break;
 		*p++ = '\0';
 	}
 	return 1;
@@ -122,11 +104,11 @@ static void simplify_path(struct PathArray *const path) {
 	assert(path);
 	while((p1 = PathArrayNext(path, p0))) {
 		/* "./" -> "" */
-		if(strcmp(dot, *p1) == 0) { PathArrayRemove(path, p1); continue; }
+		if(strcmp(path_dot, *p1) == 0) { PathArrayRemove(path, p1); continue; }
 		/* "<dir>/../" -> "" */
-		if((p2 = PathArrayNext(path, p1)) && strcmp(twodots, *p1) != 0
-			&& strcmp(twodots, *p2) == 0) { PathArraySplice(path, p1, 2, 0);
-			continue; }
+		if((p2 = PathArrayNext(path, p1)) && strcmp(path_twodots, *p1) != 0
+			&& strcmp(path_twodots, *p2) == 0)
+			{ PathArraySplice(path, p1, 2, 0); continue; }
 		p0 = p1;
 	}
 }
@@ -140,11 +122,11 @@ static int inverse_path(struct PathArray *const path,
 	PathArrayClear(path);
 	/* The ".." is not an invertable operation; we may be lazy and require "."
 	 to not be there, too, then we can just count. */
-	while((p = PathArrayNext(inv, p))) if(strcmp(dot, *p) == 0
-		|| strcmp(twodots, *p) == 0) return fprintf(stderr,
+	while((p = PathArrayNext(inv, p))) if(strcmp(path_dot, *p) == 0
+		|| strcmp(path_twodots, *p) == 0) return fprintf(stderr,
 		"inverse_path: \"..\" is not surjective.\n"), 0;
 	if(!PathArrayBuffer(path, inv_size)) return 0;
-	while((inv_size)) p = PathArrayNew(path), *p = twodots, inv_size--;
+	while((inv_size)) p = PathArrayNew(path), *p = path_twodots, inv_size--;
 	return 1;
 }
 
@@ -221,7 +203,7 @@ static size_t strip_query_fragment(const size_t uri_len, const char *const uri)
 	assert(uri);
 	while(without < uri_len) {
 		if(!*u) { assert(0); break; } /* Cannot happen on well-formed input. */
-		if(strchr(othercharsstr, *u)) break;
+		if(strchr(path_fragment, *u)) break;
 		u++, without++;
 	}
 	return without;
@@ -230,7 +212,7 @@ static size_t strip_query_fragment(const size_t uri_len, const char *const uri)
 /** @return True if the first character in `fn`:`fn_len` is `?` or `#`. */
 static int looks_like_fragment(const size_t fn_len, const char *const fn) {
 	if(!fn_len) return 0;
-	return !!strchr(othercharsstr, fn[0]);
+	return !!strchr(path_fragment, fn[0]);
 }
 
 /** Appends output directory to `fn`:`fn_name`, (if it exists.) For opening.
