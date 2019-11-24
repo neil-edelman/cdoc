@@ -242,19 +242,35 @@ const char *PathsFromOutput(const size_t fn_len, const char *const fn) {
 	return path_to_string(&paths.result, &paths.working.path);
 }
 
+const char *PathsAnchor() {
+}
+
+int PathsAnchorClear(void) {
+	char *c;
+	CharArrayClear(&paths.working.buffer);
+	if(!(c = CharArrayNew(&paths.working.buffer))) return 0;
+	*c = '#';
+}
+int PathsAnchorCat(const char *str) {
+	const size_t len = strlen(str);
+	if(!CharArrayBuffer(&paths.working.buffer, len)) return 0;
+	memcpy(paths.working.buffer, str, len);
+	CharArrayExpand(&paths.working.buffer, len);
+}
+
 /** Safe fragment name for whatever platform, (_aka_ GitHub.) This is a
  surjection, so don't rely on non-letter symbols to make the name unique.
  Doesn't include the `#`.
  @return A temporary name fragment made up from `fn`:`fn_len`, invalid on
- calling any path function.
+ calling any path function. It does include the `#`
  @throws[malloc] */
-const char *PathsSafeFragment(const size_t fn_len, const char *const fn) {
-	PathArrayClear(&paths.working.path);
-	if(!CdocGetGithub() || !looks_like_fragment(fn_len, fn)) return fn;
+const char *PathsSafeAnchor(const size_t fn_len, const char *const fn) {
+	CharArrayBuffer(&paths.working.buffer, fn_len + 1); /* Approximate. */
+	if(!CdocGetGithub()) return fn;
 	fprintf(stderr, "fixme: invert %.*s.\n", (int)fn_len, fn);
 	return 0;
 }
 
-const char *PathsSafeFragmentHref(const size_t fn_len, const char *const fn) {
+const char *PathsSafeFragment(const size_t fn_len, const char *const fn) {
 	return 0;
 }

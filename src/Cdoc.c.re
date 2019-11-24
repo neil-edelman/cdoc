@@ -203,13 +203,13 @@ static int parse_arg(const char *const argument) {
 */
 }
 
-/** @return Whether the command-line option to print the scanner on `stderr`
- was set. */
+/** @return Whether the command-line option to spam on `stderr` was set. */
 int CdocGetDebug(void) {
 	return args.debug;
 }
 
-/** @return Whether it's in Github mode. */
+/** @return Whether it's in a mode which tries to alter the named fragments so
+ that they work with the named anchors, which are screwed up by `GitHub`. */
 int CdocGetGithub(void) {
 	return args.github;
 }
