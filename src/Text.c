@@ -3,8 +3,6 @@
 
  Handles reading entire files and keeping them in memory.
 
- @file Text
- @author Neil
  @std C89 */
 
 #include <stdio.h>  /* FILE fopen fclose fread */
@@ -12,9 +10,8 @@
 #include <stdlib.h> /* malloc free */
 #include <assert.h> /* assert */
 #include <errno.h>  /* errno EILSEQ */
-#include "Cdoc.h"
-#include "Text.h"
 #include "Path.h" /* `path_dirsep` */
+#include "Text.h"
 
 /* Define `CharArray`, a vector of characters. */
 #define ARRAY_NAME Char
@@ -35,8 +32,6 @@ static void zero_buffer(struct Text *const b) {
 static void Text_(struct Text **const pb) {
 	struct Text *b;
 	if(!pb || !(b = *pb)) return;
-	if(CdocGetDebug()) fprintf(stderr, "Freeing data assciated with %s.\n",
-		b->basename);
 	CharArray_(&b->buffer);
 	free(b);
 	*pb = 0;
@@ -109,6 +104,7 @@ const char *TextGet(const struct Text *const b) {
 #include "Array.h"
 
 static struct TextArray files;
+static struct CharArray temp;
 
 /** Loads new `Text` from `fn` into memory. */
 struct Text *TextOpen(const char *const fn) {
@@ -122,5 +118,6 @@ struct Text *TextOpen(const char *const fn) {
 void TextCloseAll(void) {
 	struct Text **ptext;
 	while((ptext = TextArrayPop(&files))) Text_(ptext);
+	CharArray_(&temp);
 	TextArray_(&files);
 }

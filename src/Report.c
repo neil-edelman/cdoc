@@ -390,7 +390,7 @@ int ReportNotify(const struct Scanner *const scan) {
 			struct Scanner *subscan = 0;
 			struct Text *text = 0;
 			int success = 0;
-			if(!(fn = PathsFromHere(ScannerTo(scan) - ScannerFrom(scan),
+			if(!(fn = PathFromHere(ScannerTo(scan) - ScannerFrom(scan),
 				ScannerFrom(scan)))) goto include_catch;
 			if(!(text = TextOpen(fn))) goto include_catch;
 			cut_segment_here(&sorter.segment);

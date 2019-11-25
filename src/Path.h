@@ -1,10 +1,8 @@
-int Paths(const char *const in_fn, const char *const out_fn);
-void Paths_(void);
-size_t PathsStripQueryFragment(const char *const uri, const size_t uri_len);
-const char *PathsFromHere(const size_t fn_len, const char *const fn);
-const char *PathsFromOutput(const size_t fn_len, const char *const fn);
-const char *PathsSafeFragment(const size_t fn_len, const char *const fn);
-const char *PathsSafeFragmentHref(const size_t fn_len, const char *const fn);
+int Path(const char *const in_fn, const char *const out_fn);
+void Path_(void);
+size_t PathStripQueryFragment(const char *const uri, const size_t uri_len);
+const char *PathFromHere(const size_t fn_len, const char *const fn);
+const char *PathFromOutput(const size_t fn_len, const char *const fn);
 
 #define XSTR(s) STR(s)
 #define STR(s) #s

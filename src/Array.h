@@ -28,10 +28,6 @@
  Optional print function implementing <typedef:<PT>ToString>; makes available
  <fn:<T>ArrayToString>.
 
- @param[ARRAY_PRINTF]
- This defines <fn:<T>ArrayCatPrintf>, but only makes sense if `ARRAY_TYPE` is
- `char`. Uses `vsnprintf`, which may not be in `C89` libraries.
-
  @param[ARRAY_TEST]
  Unit testing framework using `<T>ArrayTest`, included in a separate header,
  `../test/ArrayTest.h`. Must be defined equal to a (random) filler function,
@@ -52,13 +48,6 @@
 #ifdef ARRAY_TO_STRING /* <-- print */
 #include <stdio.h>	/* sprintf */
 #endif /* print --> */
-#ifdef ARRAY_PRINTF /* <-- printf */
-#include <stdarg.h> /* va_* */
-/* This function was standardised in `C99`. If one is getting a linker error,
- download any of the `vsnprintf` implementations and link it. */
-/*fixme!!: int vsnprintf(char *s, size_t n, const char *format, va_list ap);*/
-#endif /* printf --> */
-
 
 
 /* Check defines. */
@@ -711,49 +700,6 @@ static const char *T_(ArrayToString)(const struct T_(Array) *const a) {
 
 #endif /* print --> */
 
-#ifdef ARRAY_PRINTF /* <-- printf */
-
-/** Concatenates a [printf
- ](http://pubs.opengroup.org/onlinepubs/007908799/xsh/fprintf.html)-style
- format string. If it sees a '\0' as the last entry, it overwrites it; on
- success, it is always null-terminated. One must have `ARRAY_PRINTF` and
- `ARRAY_TYPE` must be `char`.
- @std C89 but C99 libraries required
- @return Success.
- @throws[malloc, vsnprintf]
- @allow */
-static int T_(ArrayCatPrintf)(struct T_(Array) *const a,
-	const char *const fmt, ...) {
-	va_list argp;
-	char garbage;
-	int length;
-	int is_null_term = 0;
-	size_t total_size;
-	if(!a || !fmt) return 0;
-	printf("Str: starting with <%s> appending <%s>\n", a->data, fmt);
-	/* Check the length first by printing to garbage. */
-	va_start(argp, fmt);
-	length = vsnprintf(&garbage, 0ul, fmt, argp);
-	va_end(argp);
-	if(length < 0) return 0; /* `vsnprintf` error. */
-	/* Expand the buffer. If one has troubles with this line, ensure
-	 `ARRAY_TYPE` is `char`. */
-	is_null_term = a->size ? a->data[a->size - 1] == '\0' : 0;
-	total_size = a->size + length + !is_null_term;
-	printf("is_null_term %d\ntotal_size %lu\n", is_null_term, total_size);
-	if(total_size < a->size) { errno = ERANGE; return 0; } /* Overflow. */
-	if(!PT_(reserve)(a, total_size, 0)) return 0;
-	/* Now that we have enough space, do the actual printing. */
-	va_start(argp, fmt);
-	length = vsnprintf(a->data + a->size - is_null_term, length + 1, fmt, argp);
-	va_end(argp);
-	if(length < 0) return 0; /* `vsnprintf` error; unlikely. */
-	a->size += length + !is_null_term;
-	printf("Str: <%s>:%lu\n", a->data, a->size);
-	return 1;
-}
-#endif /* printf --> */
-
 #ifdef ARRAY_TEST /* <-- test */
 #include "../test/TestArray.h" /* Need this file if one is going to run tests.*/
 #endif /* test --> */
@@ -793,9 +739,6 @@ static void PT_(unused_set)(void) {
 #ifdef ARRAY_TO_STRING
 	T_(ArrayToString)(0);
 #endif
-#ifdef ARRAY_PRINTF
-	T_(ArrayCatPrintf)(0, 0);
-#endif
 	PT_(unused_coda)();
 }
 /** `clang`'s pre-processor is not fooled if you have one function. */
@@ -819,9 +762,6 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #undef T
 #undef T_
 #undef PT_
-#ifdef ARRAY_PRINTF
-#undef ARRAY_PRINTF
-#endif
 #ifdef ARRAY_STACK
 #undef ARRAY_STACK
 #endif

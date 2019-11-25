@@ -266,7 +266,7 @@ int main(int argc, char **argv) {
 	if(args.out_fn && !freopen(args.out_fn, "w", stdout)) goto catch;
 
 	/* Set up the paths. */
-	if(!Paths(args.in_fn, args.out_fn)) goto catch;
+	if(!Path(args.in_fn, args.out_fn)) goto catch;
 
 	/* Buffer the file. */
 	if(!(text = TextOpen(args.in_fn))) goto catch;
@@ -294,7 +294,7 @@ finally:
 	Scanner_(&scanner);
 	Report_();
 	TextCloseAll();
-	Paths_();
+	Path_();
 	if(fp) fclose(fp);
 
 	return exit_code;

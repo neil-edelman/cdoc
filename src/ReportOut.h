@@ -357,11 +357,11 @@ OUT(link) {
 		if(turl->symbol == URL) break;
 	}
 	/* We want to open this file to check if it's on the up-and-up. */
-	if(!(errno = 0, fn = PathsFromHere(turl->length, turl->from)))
+	if(!(errno = 0, fn = PathFromHere(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
 	if(!(fp = fopen(fn, "r"))) { perror(fn); errno = 0; goto raw; } fclose(fp);
 	/* Actually use the entire path. */
-	if(!(errno = 0, fn = PathsFromOutput(turl->length, turl->from)))
+	if(!(errno = 0, fn = PathFromOutput(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
 	fn_len = strlen(fn);
 	assert(fn_len < INT_MAX);
@@ -405,11 +405,11 @@ OUT(image) {
 	for(text = TokenArrayNext(tokens, t); text->symbol != URL; )
 		if(!(text = print_token(tokens, text))) goto catch;
 	/* We want to open this file to check if it's on the up-and-up. */
-	if(!(errno = 0, fn = PathsFromHere(turl->length, turl->from)))
+	if(!(errno = 0, fn = PathFromHere(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
 	if(!ImageDimension(fn, &width, &height)) goto raw;
 	/* We want the path to print, now. */
-	if(!(errno = 0, fn = PathsFromOutput(turl->length, turl->from)))
+	if(!(errno = 0, fn = PathFromOutput(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
 	if(CdocGetDebug())
 		fprintf(stderr, "%s: local image %s.\n", pos(t), fn);
@@ -539,7 +539,8 @@ static const OutFn symbol_outs[] = { SYMBOL(PARAM6C) };
  @param[a] If non-null, prints to a string instead of `stdout`. Only certian
  tokens (variable names) support this.
  @throws[EILSEQ] Sequence error. Must detect with `errno`.
- @return The next token. */
+ @return The next token.
+ @fixme This 256-byte buffer is lame-o; use path to build a real one. */
 static const struct Token *print_token_s(const struct TokenArray *const tokens,
 	const struct Token *token, char (*const a)[256]) {
 	const OutFn sym_out = symbol_outs[token->symbol];
