@@ -53,7 +53,6 @@ static struct CharArray buffer;
  * THE SOFTWARE.
  */
 static int github_anchor_working_cat(const char *const a) {
-	static const char *strip = " -&+$,/:;=?@\"#{}|^~[]`\\*()%.!'";
 	const size_t size = strlen(a);
 	size_t i = 0;
 	int stripped = 0, inserted = 0;
@@ -71,7 +70,8 @@ static int github_anchor_working_cat(const char *const a) {
 		} else if(a[i] == '&') {
 			/* Skip html entities. */
 			while (i < size && a[i] != ';') i++;
-		} else if(!isascii(a[i]) || strchr(strip, a[i])) {
+		} else if(!isascii(a[i])
+			|| strchr(" -&+$,/:;=?@\"#{}|^~[]`\\*()%.!'", a[i])) {
 			/* Replace non-ascii or invalid characters with dashes. */
 			if(inserted && !stripped) *CharArrayNew(&buffer) = '-';
 			/* And do it only once. */
