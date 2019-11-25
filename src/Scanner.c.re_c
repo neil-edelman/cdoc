@@ -418,7 +418,6 @@ struct Scanner *Scanner(const char *const label, const char *const buffer,
 	while((scan->symbol = scan_next(scan)) && notify(scan))
 		if(CdocGetDebug()) fprintf(stderr, "%s.\n", pos(scan));
 	if(errno) goto catch;
-	/* fixme!!! */
 	if(scan->state != underlying_state) {
 		fprintf(stderr, "%s: enexpected mode at end of buffer.\n",
 		pos(scan)); errno = EILSEQ; goto catch; }
