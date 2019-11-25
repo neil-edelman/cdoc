@@ -136,6 +136,7 @@
 #include <assert.h> /* assert */
 #include "../src/Path.h"
 #include "../src/Text.h"
+#include "../src/Buffer.h"
 #include "../src/Scanner.h"
 #include "../src/Report.h"
 #include "../src/Semantic.h"
@@ -291,6 +292,7 @@ catch:
 	}
 	
 finally:
+	Buffer_();
 	Scanner_(&scanner);
 	Report_();
 	TextCloseAll();

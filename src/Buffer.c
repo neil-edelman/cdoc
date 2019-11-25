@@ -5,7 +5,8 @@
 
  @std C89 */
 
-#include <stdio.h>  /* fprintf */
+#include <stdio.h>  /* snprintf sprintf */
+#include <string.h> /* strlen */
 #include <assert.h> /* assert */
 #include <errno.h>  /* errno */
 #include <ctype.h>  /* tolower */
@@ -102,42 +103,36 @@ static int github_anchor_working_cat(const char *const a) {
 	return 1;
 }
 
-/*const char *BufferBuildAnchor(const enum Division d,
-	const struct Token *(*const sprint)(const struct TokenArray *const,
-	const struct Token *), const struct TokenArray *const ta,
-							 const struct Token *t, const int is_href) {
-	return 0;
-}*/
+/** Destructor for the buffer. */
+void Buffer_(void) { CharArray_(&buffer); }
 
-/** Clear the result. */
-/*void PathsResultClear(void) { CharArrayClear(&paths.result); }*/
+/** Sets the length to zero. */
+void BufferClear(void) { CharArrayClear(&buffer); }
 
-/*int PathsAnchorClear(void) {
-	char *c;
-	CharArrayClear(&paths.working.buffer);
-	if(!(c = CharArrayNew(&paths.working.buffer))) return 0;
-	*c = '#';
+/** Cats `from`:`length`. */
+static int cat(const size_t length, const char *const from) {
+	const char *const last = CharArrayPeek(&buffer);
+	const int is_null_term = !!last && *last == '\0';
+	char *b;
+	assert(from);
+	if(!(b = CharArrayBuffer(&buffer, length + !is_null_term))) return 0;
+	memcpy(b, from - is_null_term, length + 1);
+	CharArrayExpand(&buffer, length + !is_null_term);
+	return 1;
 }
-int PathsAnchorCat(const char *str) {
-	const size_t len = strlen(str);
-	if(!CharArrayBuffer(&paths.working.buffer, len)) return 0;
-	memcpy(paths.working.buffer, str, len);
-	CharArrayExpand(&paths.working.buffer, len);
-}*/
 
-/** Safe fragment name for whatever platform, (_aka_ GitHub.) This is a
- surjection, so don't rely on non-letter symbols to make the name unique.
- Doesn't include the `#`.
- @return A temporary name fragment made up from `fn`:`fn_len`, invalid on
- calling any path function. It does include the `#`
+/** Concatenates from `from` until `length` onto the buffer.
+ @return The buffer or null in case of error or null input.
  @throws[malloc] */
-/*const char *PathsSafeAnchor(const size_t fn_len, const char *const fn) {
-	CharArrayBuffer(&paths.working.buffer, fn_len + 1);
-	if(!CdocGetGithub()) return fn;
-	fprintf(stderr, "fixme: invert %.*s.\n", (int)fn_len, fn);
-	return 0;
+const char *BufferCatLength(const size_t length, const char *const from) {
+	if(!from || !cat(length, from)) return 0;
+	return CharArrayGet(&buffer);
 }
 
-const char *PathsSafeFragment(const size_t fn_len, const char *const fn) {
-	return 0;
-}*/
+/** Concatenates `str` onto buffer.
+ @return The buffer or null in case of error or null input.
+ @throws[malloc] */
+const char *BufferCat(const char *const str) {
+	if(!str || !cat(strlen(str), str)) return 0;
+	return CharArrayGet(&buffer);
+}
