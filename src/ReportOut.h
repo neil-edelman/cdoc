@@ -7,24 +7,25 @@ static const struct Token *print_token(const struct TokenArray *const tokens,
 
 /** Selects `token` out of `tokens` and prints it and returns the next token. */
 typedef int (*OutFn)(const struct TokenArray *const tokens,
-	const struct Token **const ptoken, char (*const a)[256]);
+	const struct Token **const ptoken, const int is_buffer);
 /* @param[ptoken] Is an [in/out] variable, it should get updated unless the
  return value is false.
  @return Success.
- @implements <Attribute>Predicate */
+ @implements <Attribute>Predicate
+ @fixme `is_buffer` should always be true for text-wrapping. */
 #define OUT(name) static int name(const struct TokenArray *const tokens, \
-	const struct Token **ptoken, char (*const a)[256])
+	const struct Token **ptoken, const int is_buffer)
 
 OUT(ws) {
 	const struct Token *const space = *ptoken;
-	assert(tokens && space && space->symbol == SPACE && !a);
+	assert(tokens && space && space->symbol == SPACE && !is_buffer);
 	style_separate();
 	*ptoken = TokenArrayNext(tokens, space);
 	return 1;
 }
 OUT(par) {
 	const struct Token *const t = *ptoken;
-	assert(tokens && t && t->symbol == NEWLINE && !a);
+	assert(tokens && t && t->symbol == NEWLINE && !is_buffer);
 	style_pop_level();
 	style_push(&styles[ST_P][CdocGetFormat()]);
 	*ptoken = TokenArrayNext(tokens, t);
@@ -33,8 +34,8 @@ OUT(par) {
 OUT(lit) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->length > 0 && t->from);
-	if(a) {
-		encode_len_s(t->length, t->from, a);
+	if(is_buffer) {
+		encode_len_s(t->length, t->from);
 	} else {
 		style_prepare_output(t->symbol);
 		encode_len(t->length, t->from);
@@ -59,13 +60,12 @@ OUT(gen1) {
 	if(!(b = strchr(type, '_'))) goto catch;
 	type_size = (int)(b - type);
 	assert(t->length == b + 1 - t->from);
-	if(a) {
-		assert(*a);
-		if(t->length - 1 + param->length + strlen(f == OUT_HTML ?
-			HTML_LT HTML_GT : "<>") + 1 >= sizeof *a)
-			return fprintf(stderr, "%s: too long.\n", pos(t)), 0;
-		sprintf(*a, format, t->length - 1, t->from, param->length,
-			param->from);
+	if(is_buffer) {
+		size_t len;
+		char *a;
+		if((len = snprintf(0, 0, format, t->length - 1, t->from, param->length,
+			param->from)) <= 0 || !(a = BufferPrepare(len))) return 0;
+		sprintf(a, format, t->length - 1, t->from, param->length, param->from);
 	} else {
 		style_prepare_output(t->symbol);
 		printf(format, t->length - 1, t->from, param->length, param->from);
@@ -100,12 +100,13 @@ OUT(gen2) {
 	if(!(b = strchr(type2, '_'))) goto catch;
 	type2_size = (int)(b - type2);
 	assert(t->length == b + 1 - t->from);
-	if(a) {
-		assert(*a);
-		if(type1_size + param1->length + type2_size + param2->length
-			+ 2 * strlen(f == OUT_HTML ? HTML_LT HTML_GT : "<>") + 1
-			>= sizeof *a) return fprintf(stderr, "%s: too long.\n", pos(t)), 0;
-		sprintf(*a, format, type1_size, type1, param1->length, param1->from,
+	if(is_buffer) {
+		size_t len;
+		char *a;
+		if((len = snprintf(0, 0, format, type1_size, type1, param1->length,
+			param1->from, type2_size, type2, param2->length, param2->from)) <= 0
+			|| !(a = BufferPrepare(len))) return 0;
+		sprintf(a, format, type1_size, type1, param1->length, param1->from,
 			type2_size, type2, param2->length, param2->from);
 	} else {
 		style_prepare_output(t->symbol);
@@ -148,13 +149,14 @@ OUT(gen3) {
 	if(!(b = strchr(type3, '_'))) goto catch;
 	type3_size = (int)(b - type3);
 	assert(t->length == b + 1 - t->from);
-	if(a) {
-		assert(*a);
-		if(type1_size + param1->length + type2_size + param2->length
-			+ type3_size + param3->length + 3 * strlen(f == OUT_HTML
-			? HTML_LT HTML_GT : "<>") + 1 >= sizeof *a)
-			return fprintf(stderr, "%s: too long.\n", pos(t)), 0;
-		sprintf(*a, format, type1_size, type1, param1->length, param1->from,
+	if(is_buffer) {
+		size_t len;
+		char *a;
+		if((len = snprintf(0, 0, format, type1_size, type1, param1->length,
+			param1->from, type2_size, type2, param2->length, param2->from,
+			type3_size, type3, param3->length, param3->from)) <= 0
+			|| !(a = BufferPrepare(len))) return 0;
+		sprintf(a, format, type1_size, type1, param1->length, param1->from,
 			type2_size, type2, param2->length, param2->from, type3_size, type3,
 			param3->length, param3->from);
 	} else {
@@ -171,7 +173,7 @@ catch:
 }
 OUT(escape) {
 	const struct Token *const t = *ptoken;
-	assert(tokens && t && t->symbol == ESCAPE && t->length == 2 && !a);
+	assert(tokens && t && t->symbol == ESCAPE && t->length == 2 && !is_buffer);
 	style_prepare_output(t->symbol);
 	encode_len(1, t->from + 1);
 	*ptoken = TokenArrayNext(tokens, t);
@@ -179,7 +181,7 @@ OUT(escape) {
 }
 OUT(url) {
 	const struct Token *const t = *ptoken;
-	assert(tokens && t && t->symbol == URL && !a);
+	assert(tokens && t && t->symbol == URL && !is_buffer);
 	style_prepare_output(t->symbol);
 	/* I think it can't contain '<>()\"' by parser. */
 	if(CdocGetFormat() == OUT_HTML) {
@@ -197,7 +199,7 @@ OUT(url) {
 OUT(cite) {
 	const struct Token *const t = *ptoken;
 	const char *const url_encoded = UrlEncode(t->from, t->length);
-	assert(tokens && t && t->symbol == CITE && !a);
+	assert(tokens && t && t->symbol == CITE && !is_buffer);
 	if(!url_encoded) goto catch;
 	style_prepare_output(t->symbol);
 	if(CdocGetFormat() == OUT_HTML) {
@@ -218,7 +220,7 @@ catch:
 }
 OUT(see_fn) {
 	const struct Token *const fn = *ptoken;
-	assert(tokens && fn && fn->symbol == SEE_FN && !a);
+	assert(tokens && fn && fn->symbol == SEE_FN && !is_buffer);
 	style_prepare_output(fn->symbol);
 	if(CdocGetFormat() == OUT_HTML) {
 		printf("<a href = \"#%s:", division_strings[DIV_FUNCTION]);
@@ -238,7 +240,7 @@ OUT(see_fn) {
 }
 OUT(see_tag) {
 	const struct Token *const tag = *ptoken;
-	assert(tokens && tag && tag->symbol == SEE_TAG && !a);
+	assert(tokens && tag && tag->symbol == SEE_TAG && !is_buffer);
 	style_prepare_output(tag->symbol);
 	if(CdocGetFormat() == OUT_HTML) {
 		printf("<a href = \"#%s:", division_strings[DIV_TAG]);
@@ -258,7 +260,7 @@ OUT(see_tag) {
 }
 OUT(see_typedef) {
 	const struct Token *const def = *ptoken;
-	assert(tokens && def && def->symbol == SEE_TYPEDEF && !a);
+	assert(tokens && def && def->symbol == SEE_TYPEDEF && !is_buffer);
 	style_prepare_output(def->symbol);
 	if(CdocGetFormat() == OUT_HTML) {
 		printf("<a href = \"#%s:", division_strings[DIV_TYPEDEF]);
@@ -278,7 +280,7 @@ OUT(see_typedef) {
 }
 OUT(see_data) {
 	const struct Token *const data = *ptoken;
-	assert(tokens && data && data->symbol == SEE_DATA && !a);
+	assert(tokens && data && data->symbol == SEE_DATA && !is_buffer);
 	style_prepare_output(data->symbol);
 	if(CdocGetFormat() == OUT_HTML) {
 		printf("<a href = \"#%s:", division_strings[DIV_DATA]);
@@ -298,7 +300,7 @@ OUT(see_data) {
 }
 OUT(math_begin) { /* Math and code. */
 	const struct Token *const t = *ptoken;
-	assert(tokens && t && t->symbol == MATH_BEGIN && !a);
+	assert(tokens && t && t->symbol == MATH_BEGIN && !is_buffer);
 	style_push(&styles[ST_CODE][CdocGetFormat()]);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
@@ -307,7 +309,7 @@ OUT(math_end) {
 	const struct Token *const t = *ptoken;
 	const struct StyleText *const st = style_text_peek(),
 		*const st_expect = &styles[ST_CODE][CdocGetFormat()];
-	assert(tokens && t && t->symbol == MATH_END && !a);
+	assert(tokens && t && t->symbol == MATH_END && !is_buffer);
 	if(st != st_expect) {
 		char st_str[12], st_expect_str[12];
 		style_text_to_string(st, &st_str);
@@ -321,7 +323,7 @@ OUT(math_end) {
 }
 OUT(em_begin) {
 	const struct Token *const t = *ptoken;
-	assert(tokens && t && t->symbol == EM_BEGIN && !a);
+	assert(tokens && t && t->symbol == EM_BEGIN && !is_buffer);
 	style_push(&styles[ST_EM][CdocGetFormat()]);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
@@ -330,7 +332,7 @@ OUT(em_end) {
 	const struct Token *const t = *ptoken;
 	const struct StyleText *const st = style_text_peek(),
 		*const st_expect = &styles[ST_EM][CdocGetFormat()];
-	assert(tokens && t && t->symbol == EM_END && !a);
+	assert(tokens && t && t->symbol == EM_END && !is_buffer);
 	if(st != st_expect) {
 		char st_str[12], st_expect_str[12];
 		style_text_to_string(st, &st_str);
@@ -349,7 +351,7 @@ OUT(link) {
 	size_t fn_len;
 	FILE *fp;
 	int success = 0;
-	assert(tokens && t && t->symbol == LINK_START && !a);
+	assert(tokens && t && t->symbol == LINK_START && !is_buffer);
 	style_prepare_output(t->symbol);
 	/* The expected format is LINK_START [^URL]* URL. */
 	for(turl = TokenArrayNext(tokens, t);;turl = TokenArrayNext(tokens, turl)) {
@@ -396,7 +398,7 @@ OUT(image) {
 	const char *fn;
 	unsigned width = 1, height = 1;
 	int success = 0;
-	assert(tokens && t && t->symbol == IMAGE_START && !a);
+	assert(tokens && t && t->symbol == IMAGE_START && !is_buffer);
 	style_prepare_output(t->symbol);
 	/* The expected format is IMAGE_START [^URL]* URL. */
 	for(turl = TokenArrayNext(tokens, t); turl->symbol != URL;
@@ -436,7 +438,7 @@ finally:
 }
 OUT(nbsp) {
 	const struct Token *const t = *ptoken;
-	assert(tokens && t && t->symbol == NBSP && !a);
+	assert(tokens && t && t->symbol == NBSP && !is_buffer);
 	style_prepare_output(t->symbol);
 	printf("&nbsp;");
 	*ptoken = TokenArrayNext(tokens, t);
@@ -444,7 +446,7 @@ OUT(nbsp) {
 }
 OUT(nbthinsp) {
 	const struct Token *const t = *ptoken;
-	assert(tokens && t && t->symbol == NBTHINSP && !a);
+	assert(tokens && t && t->symbol == NBTHINSP && !is_buffer);
 	style_prepare_output(t->symbol);
 	printf("&#8239;" /* "&thinsp;" <- breaking? */);
 	*ptoken = TokenArrayNext(tokens, t);
@@ -452,7 +454,7 @@ OUT(nbthinsp) {
 }
 OUT(mathcalo) {
 	const struct Token *const t = *ptoken;
-	assert(tokens && t && t->symbol == MATHCALO && !a);
+	assert(tokens && t && t->symbol == MATHCALO && !is_buffer);
 	style_prepare_output(t->symbol);
 	/* Omicron. It looks like a stylised "O"? The actual is "&#120030;" but
 	 good luck finding a font that supports that. If one was using JavaScript
@@ -463,7 +465,7 @@ OUT(mathcalo) {
 }
 OUT(ctheta) {
 	const struct Token *const t = *ptoken;
-	assert(tokens && t && t->symbol == CTHETA && !a);
+	assert(tokens && t && t->symbol == CTHETA && !is_buffer);
 	style_prepare_output(t->symbol);
 	printf("&#920;" /* "&Theta;" This is supported on more browsers. */);
 	*ptoken = TokenArrayNext(tokens, t);
@@ -471,7 +473,7 @@ OUT(ctheta) {
 }
 OUT(comega) {
 	const struct Token *const t = *ptoken;
-	assert(tokens && t && t->symbol == COMEGA && !a);
+	assert(tokens && t && t->symbol == COMEGA && !is_buffer);
 	style_prepare_output(t->symbol);
 	printf("&#937;" /* "&Omega;" */);
 	*ptoken = TokenArrayNext(tokens, t);
@@ -479,7 +481,7 @@ OUT(comega) {
 }
 OUT(times) {
 	const struct Token *const t = *ptoken;
-	assert(tokens && t && t->symbol == TIMES && !a);
+	assert(tokens && t && t->symbol == TIMES && !is_buffer);
 	style_prepare_output(t->symbol);
 	printf("&#215;");
 	*ptoken = TokenArrayNext(tokens, t);
@@ -487,7 +489,7 @@ OUT(times) {
 }
 OUT(cdot) {
 	const struct Token *const t = *ptoken;
-	assert(tokens && t && t->symbol == CDOT && !a);
+	assert(tokens && t && t->symbol == CDOT && !is_buffer);
 	style_prepare_output(t->symbol);
 	printf("&#183;" /* &middot; */);
 	*ptoken = TokenArrayNext(tokens, t);
@@ -499,7 +501,7 @@ OUT(list) {
 	const enum Format format = CdocGetFormat();
 	const struct StyleText *const li = &styles[ST_LI][format],
 		*const ul = &styles[ST_UL][format];
-	assert(tokens && t && t->symbol == LIST_ITEM && peek && !a);
+	assert(tokens && t && t->symbol == LIST_ITEM && peek && !is_buffer);
 	if(peek == li) {
 		style_pop_push();
 	} else {
@@ -515,7 +517,7 @@ OUT(pre) {
 	const enum Format format = CdocGetFormat();
 	const struct StyleText *const line = &styles[ST_PRELINE][format],
 		*const pref = &styles[ST_PRE][format];
-	assert(tokens && t && t->symbol == PREFORMATTED && peek && !a);
+	assert(tokens && t && t->symbol == PREFORMATTED && peek && !is_buffer);
 	if(peek != line) {
 		style_pop_level();
 		style_push(pref), style_push(line);
@@ -542,12 +544,12 @@ static const OutFn symbol_outs[] = { SYMBOL(PARAM6C) };
  @return The next token.
  @fixme This 256-byte buffer is lame-o; use path to build a real one. */
 static const struct Token *print_token_s(const struct TokenArray *const tokens,
-	const struct Token *token, char (*const a)[256]) {
+	const struct Token *token, const int is_buffer) {
 	const OutFn sym_out = symbol_outs[token->symbol];
 	assert(tokens && token);
 	if(!sym_out) return fprintf(stderr, "%s: symbol output undefined.\n",
 		pos(token)), TokenArrayNext(tokens, token);
-	if(!sym_out(tokens, &token, a)) { errno = EILSEQ; return 0; }
+	if(!sym_out(tokens, &token, is_buffer)) { errno = EILSEQ; return 0; }
 	return token;
 }
 

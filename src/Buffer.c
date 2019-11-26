@@ -18,7 +18,7 @@
 #define ARRAY_TYPE char
 #include "Array.h"
 
-static struct CharArray buffer;
+struct Buffer { struct CharArray buffer; };
 
 /** This adds on to the buffer in a safe anchor string, (for GitHub.)
  @return Success; if not, error and the string may be in an intermediate state
@@ -53,6 +53,7 @@ static struct CharArray buffer;
  * THE SOFTWARE.
  */
 static int github_anchor_working_cat(const char *const a) {
+	struct CharArray buffer; /* fixme */
 	const size_t size = strlen(a);
 	size_t i = 0;
 	int stripped = 0, inserted = 0;
@@ -86,7 +87,7 @@ static int github_anchor_working_cat(const char *const a) {
 	if(stripped && inserted) CharArrayPop(&buffer);
 	/* If anchor found empty, use djb2 hash for it. */
 	if(!inserted && size) {
-		const char fmt[] = "part-%lx";
+		const char *const fmt = "part-%lx";
 		char *b;
 		int len;
 		unsigned long hash = 5381;
@@ -104,35 +105,41 @@ static int github_anchor_working_cat(const char *const a) {
 }
 
 /** Destructor for the buffer. */
-void Buffer_(void) { CharArray_(&buffer); }
+void Buffer_(struct Buffer **const pb) {
+	struct Buffer *b;
+	if(!pb || !(b = *pb)) return;
+	CharArray_(&b->buffer);
+}
+
+/** Get the buffer. */
+const char *BufferGet(const struct Buffer *const b) {
+	if(!b || !CharArraySize(&b->buffer)) return "";
+	return CharArrayGet(&b->buffer);
+}
 
 /** Sets the length to zero. */
-void BufferClear(void) { CharArrayClear(&buffer); }
-
-/** Cats `from`:`length`. */
-static int cat(const size_t length, const char *const from) {
-	const char *const last = CharArrayPeek(&buffer);
-	const int is_null_term = !!last && *last == '\0';
-	char *b;
-	assert(from);
-	if(!(b = CharArrayBuffer(&buffer, length + !is_null_term))) return 0;
-	memcpy(b, from - is_null_term, length + 1);
-	CharArrayExpand(&buffer, length + !is_null_term);
-	return 1;
+void BufferClear(struct Buffer *const b) {
+	if(!b) return;
+	CharArrayClear(&b->buffer);
 }
 
-/** Concatenates from `from` until `length` onto the buffer.
- @return The buffer or null in case of error or null input.
- @throws[malloc] */
-const char *BufferCatLength(const size_t length, const char *const from) {
-	if(!from || !cat(length, from)) return 0;
-	return CharArrayGet(&buffer);
-}
-
-/** Concatenates `str` onto buffer.
- @return The buffer or null in case of error or null input.
- @throws[malloc] */
-const char *BufferCat(const char *const str) {
-	if(!str || !cat(strlen(str), str)) return 0;
-	return CharArrayGet(&buffer);
+/** Expands the buffer to include `length`, (not including the terminating
+ null.) This must be followed by a write of `length`.
+ @param[length] The length the string, not including the terminating null.
+ @return The buffer position that is appropriate to place a `char` array of
+ `length`. `length + 1` is a null terminator which one could overwrite or
+ not. */
+char *BufferPrepare(struct Buffer *const b, const size_t length) {
+	const char *last;
+	char *s;
+	int is_null_term;
+	if(!b) return 0;
+	last = CharArrayPeek(&b->buffer);
+	is_null_term = !!last && *last == '\0';
+	assert(length + !is_null_term >= length);
+	if(!(s = CharArrayBuffer(&b->buffer, length + !is_null_term))) return 0;
+	CharArrayExpand(&b->buffer, length + !is_null_term);
+	*CharArrayPeek(&b->buffer) = '\0';
+	fprintf(stderr, "Buffer size: %lu.\n", CharArraySize(&b->buffer));
+	return s - is_null_term;
 }

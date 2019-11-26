@@ -124,6 +124,8 @@ static struct {
 	int on;
 } style_highlight;
 
+static void unrecoverable(void) { perror("Unrecoverable"), exit(EXIT_FAILURE); }
+
 static void style_clear(void) {
 	assert(!StyleArraySize(&mode.styles) && !style_highlight.on);
 	StyleArray_(&mode.styles);
@@ -136,7 +138,7 @@ static void style_push(const struct StyleText *const text) {
 	/* There's so many void functions that rely on this function and it's such
 	 a small amount of memory, that it's useless to recover. The OS will have
 	 to clean up our mess. */
-	if(!push) { perror("Unrecoverable"), exit(EXIT_FAILURE); return; }
+	if(!push) { unrecoverable(); return; }
 	/*printf("<!-- push %s -->", text->name);*/
 	push->text = text;
 	push->lazy = BEGIN;
@@ -235,60 +237,80 @@ static int style_is_suppress_escapes(void) {
 /** Encode a bunch of arbitrary text `from` to `length` as whatever the options
  were.
  @param[a] If specified, prints it to the string. */
-static void encode_len_s(int length, const char *from, char (*const a)[256]) {
-	char *build = *a;
-	int suppress;
-	assert(length >= 0 && from && ((a && *a) || !a));
+static void encode_len_choose(int length, const char *from,
+	struct Buffer *const buf) {
+	int is_suppress;
+	int ahead = 0;
+	char *b;
+	const char *str;
+	size_t str_len;
+	assert(length >= 0 && from);
 
 	switch(CdocGetFormat()) {
 	case OUT_HTML:
-		if(a) goto html_encode_string;
+		if(buf) goto html_encode_buffer;
 		else goto html_encode_print;
 	case OUT_MD:
-		if(a) goto md_encode_string;
+		if(buf) goto md_encode_buffer;
 		else goto md_encode_print;
 	default: assert(0);
 	}
 	
-html_encode_string:
-	while(length) {
-		switch(*from) {
-		case '<': if((size_t)(build - *a) >= sizeof *a - 5) goto terminate_html;
-			strcpy(build, HTML_LT), build += strlen(HTML_LT); break;
-		case '>': if((size_t)(build - *a) >= sizeof *a - 5) goto terminate_html;
-			strcpy(build, HTML_GT), build += strlen(HTML_GT); break;
-		case '&': if((size_t)(build - *a) >= sizeof *a - 6) goto terminate_html;
-			strcpy(build, HTML_AMP), build += strlen(HTML_AMP); break;
+html_encode_buffer:
+	BufferClear(buf);
+	while(length - ahead) {
+		switch(from[ahead]) {
+		case '<': str = HTML_LT, str_len = strlen(str); break;
+		case '>': str = HTML_GT, str_len = strlen(str); break;
+		case '&': str = HTML_AMP, str_len = strlen(str); break;
 		case '\0': goto terminate_html;
-		default: if((size_t)(build - *a) >= sizeof *a - 1) goto terminate_html;
-			*build++ = *from; break;
+		default: ahead++; continue;
 		}
+		if(ahead) {
+			if(!(b = BufferPrepare(buf, ahead))) { unrecoverable(); return; }
+			memcpy(b, from, ahead);
+			length -= ahead;
+			from += ahead;
+			ahead = 0;
+		}
+		if(!(b = BufferPrepare(buf, str_len))) { unrecoverable(); return; }
+		memcpy(b, str, str_len);
 		from++, length--;
 	}
 terminate_html:
-	*build = '\0';
+	if(ahead) {
+		if(!(b = BufferPrepare(buf, ahead))) { unrecoverable(); return; }
+		memcpy(b, from, ahead);
+	}
 	return;
 	
-md_encode_string:
-	suppress = style_is_suppress_escapes();
-	while(length) {
-		switch(*from) {
-		case '\0':
-			goto terminate_md;
+md_encode_buffer:
+	BufferClear(buf);
+	is_suppress = style_is_suppress_escapes();
+	while(length - ahead) {
+		switch(from[ahead]) {
+		case '\0': goto terminate_md;
 		case '\\': case '`': case '*': case '_': case '{': case '}': case '[':
 		case ']': case '(': case ')': case '#': case '+': case '-': case '.':
-		case '!':
-			if(!suppress) {
-				if((size_t)(build - *a) >= sizeof *a - 2) goto terminate_md;
-				*build++ = '\\'; *build++ = *from; break;
-			}
-		default: if((size_t)(build - *a) >= sizeof *a - 1) goto terminate_md;
-			*build++ = *from; break;
+		case '!': if(!is_suppress) break;
+		default: ahead++; continue;
 		}
+		if(ahead) {
+			if(!(b = BufferPrepare(buf, ahead))) { unrecoverable(); return; }
+			memcpy(b, from, ahead);
+			length -= ahead;
+			from += ahead;
+			ahead = 0;
+		}
+		if(!(b = BufferPrepare(buf, 2))) return;
+		b[0] = '\\', b[1] = *from;
 		from++, length--;
 	}
 terminate_md:
-	*build = '\0';
+	if(ahead) {
+		if(!(b = BufferPrepare(buf, ahead))) { unrecoverable(); return; }
+		memcpy(b, from, ahead);
+	}
 	return;	
 	
 html_encode_print:
@@ -306,7 +328,7 @@ html_encode_print:
 	return;
 	
 md_encode_print:
-	suppress = style_is_suppress_escapes();
+	is_suppress = style_is_suppress_escapes();
 	while(length) {
 		switch(*from) {
 		case '\0': fprintf(stderr, "Encoded null with %d left.\n", length);
@@ -314,7 +336,7 @@ md_encode_print:
 		case '\\': case '`': case '*': case '_': case '{': case '}': case '[':
 		case ']': case '(': case ')': case '#': case '+': case '-': case '.':
 		case '!':
-			if(!suppress) { printf("\\%c", *from); break; }
+			if(!is_suppress) { printf("\\%c", *from); break; }
 		default: fputc(*from, stdout); break;
 		}
 		from++, length--;
@@ -322,10 +344,19 @@ md_encode_print:
 	return;
 }
 
-static void encode_len(int length, const char *from) {
-	encode_len_s(length, from, 0);
+static void encode_len_s(const int length, const char *const from,
+	struct Buffer *const buf) {
+	encode_len_choose(length, from, buf);
 }
 
-static void encode(const char *str) {
-	encode_len((int)strlen(str), str);
+static void encode_len(const int length, const char *const from) {
+	encode_len_choose(length, from, 0);
+}
+
+static void encode(const char *const str) {
+	size_t length = strlen(str);
+	if(length > INT_MAX) { fprintf(stderr,
+		"Encode: length is greater then the maximum integer; clipped.\n");
+		length = INT_MAX; }
+	encode_len((int)length, str);
 }

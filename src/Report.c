@@ -15,6 +15,7 @@
 #include "Scanner.h"
 #include "Semantic.h"
 #include "UrlEncode.h"
+#include "Buffer.h"
 #include "Path.h"
 #include "Text.h"
 #include "ImageDimension.h"
