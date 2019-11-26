@@ -543,7 +543,8 @@ static const OutFn symbol_outs[] = { SYMBOL(PARAM6C) };
  @throws[EILSEQ] Sequence error. Must detect with `errno`.
  @return The next token.
  @fixme This 256-byte buffer is lame-o; use path to build a real one. */
-static const struct Token *print_token_s(const struct TokenArray *const tokens,
+static const struct Token *print_token_choose(
+	const struct TokenArray *const tokens,
 	const struct Token *token, const int is_buffer) {
 	const OutFn sym_out = symbol_outs[token->symbol];
 	assert(tokens && token);
@@ -553,9 +554,14 @@ static const struct Token *print_token_s(const struct TokenArray *const tokens,
 	return token;
 }
 
+static const struct Token *print_token_s(const struct TokenArray *const tokens,
+	const struct Token *token) {
+	return print_token_choose(tokens, token, 1);
+}
+
 static const struct Token *print_token(const struct TokenArray *const tokens,
 	const struct Token *token) {
-	return print_token_s(tokens, token, 0);
+	return print_token_choose(tokens, token, 0);
 }
 
 /** @param[highlights] Must be sorted if not null, creates an emphasis on those

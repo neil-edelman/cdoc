@@ -111,7 +111,7 @@ static void preamble_used_attribute(const enum Symbol symbol) {
 
 static void warn_internal_link(const struct Token *const token) {
 	enum Division division;
-	struct Buffer a, b;
+	const char *a, *b;
 	size_t *fun_index;
 	struct Segment *segment = 0;
 	assert(token);
@@ -122,8 +122,11 @@ static void warn_internal_link(const struct Token *const token) {
 		case SEE_DATA:    division = DIV_DATA;     break;
 		default: return;
 	}
+	BufferSwap();
 	/* Encode the link text. */
-	encode_len_s(token->length, token->from, buf);
+	encode_len_s(token->length, token->from);
+	a = BufferGet();
+	BufferSwap();
 	/* Search for it. Not really efficient as it builds up labels from scratch,
 	 then discards them, over and over. */
 	while((segment = SegmentArrayNext(&report, segment))) {
@@ -133,10 +136,9 @@ static void warn_internal_link(const struct Token *const token) {
 			|| !(fun_index = IndexArrayNext(&segment->code_params, 0))
 			|| *fun_index >= TokenArraySize(&segment->code)) continue;
 		compare = TokenArrayGet(&segment->code) + *fun_index;
-		if(!print_token_s(&segment->code, compare, &b))
-			{ fprintf(stderr,
-			"%s: length was too long or end of tokens to compare with %s.\n",
-			pos(token), a); continue; }
+		BufferClear();
+		print_token_s(&segment->code, compare);
+		b = BufferGet();
 		if(!strcmp(a, b))
 			{ if(CdocGetDebug()) fprintf(stderr, "%s: link okay.\n",
 				pos(token)); return; }

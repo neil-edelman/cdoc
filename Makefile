@@ -93,7 +93,7 @@ default: $(bin)/$(project)
 docs: $(html_docs)
 
 # linking
-$(bin)/$(project): $(c_objs) $(c_other_objs) $(test_c_objs)
+$(bin)/$(project): $(c_objs) $(c_other_objs) #$(test_c_objs)
 	# linking rule
 	@$(mkdir) $(bin)
 	$(CC) $(OF) -o $@ $^

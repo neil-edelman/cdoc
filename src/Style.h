@@ -235,10 +235,9 @@ static int style_is_suppress_escapes(void) {
 }
 
 /** Encode a bunch of arbitrary text `from` to `length` as whatever the options
- were.
- @param[a] If specified, prints it to the string. */
+ were. */
 static void encode_len_choose(int length, const char *from,
-	struct Buffer *const buf) {
+	const int is_buffer) {
 	int is_suppress;
 	int ahead = 0;
 	char *b;
@@ -248,16 +247,16 @@ static void encode_len_choose(int length, const char *from,
 
 	switch(CdocGetFormat()) {
 	case OUT_HTML:
-		if(buf) goto html_encode_buffer;
+		if(is_buffer) goto html_encode_buffer;
 		else goto html_encode_print;
 	case OUT_MD:
-		if(buf) goto md_encode_buffer;
+		if(is_buffer) goto md_encode_buffer;
 		else goto md_encode_print;
 	default: assert(0);
 	}
-	
+
 html_encode_buffer:
-	BufferClear(buf);
+	BufferClear();
 	while(length - ahead) {
 		switch(from[ahead]) {
 		case '<': str = HTML_LT, str_len = strlen(str); break;
@@ -267,25 +266,25 @@ html_encode_buffer:
 		default: ahead++; continue;
 		}
 		if(ahead) {
-			if(!(b = BufferPrepare(buf, ahead))) { unrecoverable(); return; }
+			if(!(b = BufferPrepare(ahead))) { unrecoverable(); return; }
 			memcpy(b, from, ahead);
 			length -= ahead;
 			from += ahead;
 			ahead = 0;
 		}
-		if(!(b = BufferPrepare(buf, str_len))) { unrecoverable(); return; }
+		if(!(b = BufferPrepare(str_len))) { unrecoverable(); return; }
 		memcpy(b, str, str_len);
 		from++, length--;
 	}
 terminate_html:
 	if(ahead) {
-		if(!(b = BufferPrepare(buf, ahead))) { unrecoverable(); return; }
+		if(!(b = BufferPrepare(ahead))) { unrecoverable(); return; }
 		memcpy(b, from, ahead);
 	}
 	return;
-	
+
 md_encode_buffer:
-	BufferClear(buf);
+	BufferClear();
 	is_suppress = style_is_suppress_escapes();
 	while(length - ahead) {
 		switch(from[ahead]) {
@@ -296,28 +295,28 @@ md_encode_buffer:
 		default: ahead++; continue;
 		}
 		if(ahead) {
-			if(!(b = BufferPrepare(buf, ahead))) { unrecoverable(); return; }
+			if(!(b = BufferPrepare(ahead))) { unrecoverable(); return; }
 			memcpy(b, from, ahead);
 			length -= ahead;
 			from += ahead;
 			ahead = 0;
 		}
-		if(!(b = BufferPrepare(buf, 2))) return;
+		if(!(b = BufferPrepare(2))) { unrecoverable(); return; }
 		b[0] = '\\', b[1] = *from;
 		from++, length--;
 	}
 terminate_md:
 	if(ahead) {
-		if(!(b = BufferPrepare(buf, ahead))) { unrecoverable(); return; }
+		if(!(b = BufferPrepare(ahead))) { unrecoverable(); return; }
 		memcpy(b, from, ahead);
 	}
-	return;	
-	
+	return;
+
 html_encode_print:
 	while(length) {
 		switch(*from) {
 		case '<': fputs(HTML_LT, stdout); break;
-		case '>': fputs(HTML_GT, stdout); break; 
+		case '>': fputs(HTML_GT, stdout); break;
 		case '&': fputs(HTML_AMP, stdout); break;
 		case '\0': fprintf(stderr, "Encoded null with %d left.\n", length);
 			return;
@@ -326,7 +325,7 @@ html_encode_print:
 		from++, length--;
 	}
 	return;
-	
+
 md_encode_print:
 	is_suppress = style_is_suppress_escapes();
 	while(length) {
@@ -344,9 +343,8 @@ md_encode_print:
 	return;
 }
 
-static void encode_len_s(const int length, const char *const from,
-	struct Buffer *const buf) {
-	encode_len_choose(length, from, buf);
+static void encode_len_s(const int length, const char *const from) {
+	encode_len_choose(length, from, 1);
 }
 
 static void encode_len(const int length, const char *const from) {
