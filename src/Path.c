@@ -20,7 +20,7 @@
 /** Renders the `path` to `str`.
  @param[str] The path container.
  @param[path] The path.
- @return The string representing the path.
+ @return The string representing the path inside `str`.
  @throws[malloc] */
 static const char *path_to_string(struct CharArray *const str,
 	const struct PathArray *const path) {
@@ -233,6 +233,11 @@ const char *PathFromHere(const size_t fn_len, const char *const fn) {
  @return A temporary path, invalid on calling any path function.
  @throws[malloc] */
 const char *PathFromOutput(const size_t fn_len, const char *const fn) {
+	/* If it's a absolute path to input, (that we've been given,) the best we
+	 could do is <fn:PathFromHere>. */
+	if(CharArraySize(&paths.input.buffer)
+		&& *CharArrayGet(&paths.input.buffer) == '\0')
+		return PathFromHere(fn_len, fn);
 	if(looks_like_fragment(fn_len, fn)) return 0;
 	PathArrayClear(&paths.working.path);
 	if(!cat_path(&paths.working.path, &paths.outinv)
