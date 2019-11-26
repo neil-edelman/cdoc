@@ -14,7 +14,7 @@ Paragraph @ @a \,~~
  \* png: ![Ellen Ripley](../diagrams/Ellen_Ripley_badass.png).
  \* jpeg: ![Inigo Montoya](../diagrams/Inigo_Montoya.jpeg).
 
- @subtitle The Title is Simple
+ @subtitle The Subtitle is Simple
  @depend C89
  @author Somebody
  @author Nobody

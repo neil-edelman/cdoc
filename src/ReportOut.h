@@ -882,13 +882,9 @@ static int output_internal_link(const char *const label,
 	struct Scanner *scan_str;
 	size_t size;
 	char *b;
-	/* Mmmmm, yeah, we're not sure whether the buffer will be used by
-	 `Scanner`. */
-	BufferSwap();
 	BufferClear();
 	size = snprintf(0, 0, fmt, desc, label);
 	if(!(b = BufferPrepare(size))) return 0;
-	BufferSwap();
 	sprintf(b, fmt, desc, label);
 	if(!(scan_str = Scanner(label, b, &notify_brief, SSDOC))) return 0;
 	style_prepare_output(END);
