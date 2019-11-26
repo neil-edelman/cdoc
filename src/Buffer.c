@@ -134,7 +134,6 @@ char *BufferPrepare(const size_t length) {
 	if(!(s = CharArrayBuffer(buffer, length + !is_null_term))) return 0;
 	CharArrayExpand(buffer, length + !is_null_term);
 	*CharArrayPeek(buffer) = '\0';
-	fprintf(stderr, "Buffer size: %lu.\n", CharArraySize(buffer));
 	return s - is_null_term;
 }
 
