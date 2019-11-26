@@ -878,12 +878,20 @@ static void best_guess_at_modifiers(const struct Segment *const segment) {
  only for fixed links. */
 static int output_internal_link(const char *const label,
 	const char *const desc) {
+	const char *const fmt = "[%s](#%s:)";
 	struct Scanner *scan_str;
-	char buffer[128];
+	size_t size;
+	char *b;
+	/* Mmmmm, yeah, we're not sure whether the buffer will be used by
+	 `Scanner`. */
+	BufferSwap();
+	BufferClear();
+	size = snprintf(0, 0, fmt, desc, label);
+	if(!(b = BufferPrepare(size))) return 0;
+	BufferSwap();
+	sprintf(b, fmt, desc, label);
+	if(!(scan_str = Scanner(label, b, &notify_brief, SSDOC))) return 0;
 	style_prepare_output(END);
-	/* fixme! */
-	sprintf(buffer, "[%s](#%s:)", desc, label);
-	if(!(scan_str = Scanner(label, buffer, &notify_brief, SSDOC))) return 0;
 	print_brief();
 	Scanner_(&scan_str);
 	return 1;
