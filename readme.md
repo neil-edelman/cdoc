@@ -71,14 +71,14 @@ Strict regular expressions that are much easier to parse have limited state and 
  * internal underscores are emphasis except in math/code mode;
  * a \`cool' word in a \`nice' sentence must be escaped;
 
-Note that it does not validate html; nothing stops one from writing, eg, a link, or emphasis, in the title\.
+`GitHub` has it's own functions that mutilate anchor `id` and `name` but not the links pointing to them, resulting in broken links everywhere, \(it helps if one is using the newest browser\.\) We changed the separator from ':' to '\-', but `GitHub` still has issues with '\_', which is very common in `C` , and non\-ascii characters\. We had a `GitHub` mode, but it was non\-trivial and they are probably going to change it anyway\.
 
  * Standard:  
    C89
  * Dependancies:  
    [re2c](http://re2c.org/)
  * Caveat:  
-   Old\-style function support\. Trigraph support, \(haha\.\) Hide `const` on params when it can not affect function calls\. Prototypes and functions are the same thing; this will confuse it\. Hash map might be faster and more precise\. Links to non\-documented code which sometimes doesn't show up, work without error, and create broken links\. 80\-characters _per_ line limit, [https://xxyxyz\.org/line\-breaking/](https://xxyxyz.org/line-breaking/), \(needs buffering\.\) Eg, fixme with no args disappears; we should NOT check if the string is empty\. Complete md\-ising eg table\. `A` `B` doesn't do what one expects in md\. If a segment has multiple licenses, they will show multiple times\. Finish Github\-flavoured broken links\. `foo.c:221` : space where it shouldn't be\. Why?
+   Old\-style function support\. Trigraph support, \(haha\.\) Hide `const` on params when it can not affect function calls\. Prototypes and functions are the same thing; this will confuse it\. Hash map might be faster and more precise\. Links to non\-documented code which sometimes doesn't show up, work without error, and create broken links\. 80\-characters _per_ line limit, [https://xxyxyz\.org/line\-breaking/](https://xxyxyz.org/line-breaking/), \(needs buffering\.\) Eg, fixme with no args disappears; we should NOT check if the string is empty\. `A` `B` doesn't do what one expects in md\. If a segment has multiple licenses, they will show multiple times\. `foo.c:221` : space where it shouldn't be\. Why?
 
 
 
@@ -90,8 +90,6 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
 <tr><td align = right>int</td><td><a href = "#fn-CdocGetDebug">CdocGetDebug</a></td><td></td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#fn-cdoc_get_foo">cdoc_get_foo</a></td><td></td></tr>
 
 <tr><td align = right>enum Format</td><td><a href = "#fn-CdocGetFormat">CdocGetFormat</a></td><td></td></tr>
 
@@ -105,7 +103,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
  ## <a name = "fn-">Function Definitions</a> ##
 
- ### <a name = "fn-CdocGetDebug">CdocGetDebug</a> ###
+ ### <a name = "fn-CdocGetDebug" id = "YU€-CdocGetDebug">CdocGetDebug</a> ###
 
 `int `**`CdocGetDebug`**`(void)`
 
@@ -115,13 +113,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 
 
- ### <a name = "fn-cdoc\_get\_foo">cdoc\_get\_foo</a> ###
-
-`static int `**`cdoc_get_foo`**`(void)`
-
-
-
- ### <a name = "fn-CdocGetFormat">CdocGetFormat</a> ###
+ ### <a name = "fn-CdocGetFormat" id = "V€-CdocGetFormat">CdocGetFormat</a> ###
 
 `enum Format `**`CdocGetFormat`**`(void)`
 
@@ -131,7 +123,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 
 
- ### <a name = "fn-CdocGetInput">CdocGetInput</a> ###
+ ### <a name = "fn-CdocGetInput" id = "7W€-CdocGetInput">CdocGetInput</a> ###
 
 `const char *`**`CdocGetInput`**`(void)`
 
@@ -141,7 +133,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 
 
- ### <a name = "fn-CdocGetOutput">CdocGetOutput</a> ###
+ ### <a name = "fn-CdocGetOutput" id = "ÚW€-CdocGetOutput">CdocGetOutput</a> ###
 
 `const char *`**`CdocGetOutput`**`(void)`
 
