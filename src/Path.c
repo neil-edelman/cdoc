@@ -52,8 +52,8 @@ terminate:
 static int looks_like_path(const char *const string) {
 	const char *s, *q;
 	assert(string);
-	if(!(s = strstr(string, path_notallowed))) return 1;
-	if(!(q = strpbrk(string, path_fragment))) return 0;
+	if(!(s = strstr(string, path_relnotallowed))) return 1;
+	if(!(q = strpbrk(string, path_subordinate))) return 0;
 	return s < q ? 0 : 1;
 }
 
@@ -77,7 +77,7 @@ static int sep_path(struct PathArray *const path, char *string) {
 		if(!(arg = PathArrayNew(path))) return 0;
 		*arg = p;
 		/* This searches for '/' until hitting a '?#'. */
-		if(!(p = strpbrk(p, path_searchdirsep)) || strchr(path_fragment, *p))
+		if(!(p = strpbrk(p, path_searchdirsep)) || strchr(path_subordinate, *p))
 			break;
 		*p++ = '\0';
 	}
@@ -203,7 +203,7 @@ static size_t strip_query_fragment(const size_t uri_len, const char *const uri)
 	assert(uri);
 	while(without < uri_len) {
 		if(!*u) { assert(0); break; } /* Cannot happen on well-formed input. */
-		if(strchr(path_fragment, *u)) break;
+		if(strchr(path_subordinate, *u)) break;
 		u++, without++;
 	}
 	return without;
@@ -212,7 +212,7 @@ static size_t strip_query_fragment(const size_t uri_len, const char *const uri)
 /** @return True if the first character in `fn`:`fn_len` is `?` or `#`. */
 static int looks_like_fragment(const size_t fn_len, const char *const fn) {
 	if(!fn_len) return 0;
-	return !!strchr(path_fragment, fn[0]);
+	return !!strchr(path_subordinate, fn[0]);
 }
 
 /** Appends output directory to `fn`:`fn_name`, (if it exists.) For opening.
@@ -245,4 +245,10 @@ const char *PathFromOutput(const size_t fn_len, const char *const fn) {
 		|| (fn && !append_working_path(fn_len, fn))) return 0;
 	simplify_path(&paths.working.path);
 	return path_to_string(&paths.result, &paths.working.path);
+}
+
+/** Is it a fragment? This accesses only the first character. */
+int PathIsFragment(const char *const str) {
+	if(!str) return 0;
+	return *str == *path_fragment;
 }

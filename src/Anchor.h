@@ -1,2 +1,2 @@
-const char *AnchorTransform(const char *anchor, const int is_href);
+const char *AnchorHref(const size_t a_size, const char *a);
 void Anchor_(void);

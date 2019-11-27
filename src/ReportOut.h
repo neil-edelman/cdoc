@@ -347,7 +347,7 @@ OUT(em_end) {
 OUT(link) {
 	const struct Token *const t = *ptoken, *text, *turl;
 	const enum Format f = CdocGetFormat();
-	const char *fn;
+	const char *fn, *uri;
 	size_t fn_len;
 	FILE *fp;
 	int success = 0;
@@ -378,12 +378,13 @@ raw:
 		fprintf(stderr, "%s: fixed link %.*s.\n", pos(t), (int)fn_len, fn);
 output:
 	assert(fn_len <= INT_MAX);
-	if(f == OUT_HTML) printf("<a href = \"%.*s\">", (int)fn_len, fn);
+	if(!(uri = AnchorHref(fn_len, fn))) goto catch;
+	if(f == OUT_HTML) printf("<a href = \"%s\">", uri);
 	else printf("[");
 	for(text = TokenArrayNext(tokens, t); text->symbol != URL; )
 		if(!(text = print_token(tokens, text))) goto catch;
 	if(f == OUT_HTML) printf("</a>");
-	else printf("](%.*s)", (int)fn_len, fn);
+	else printf("](%s)", uri);
 	success = 1;
 	goto finally;
 catch:
