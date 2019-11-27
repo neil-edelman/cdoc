@@ -101,7 +101,7 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the 
 
 
 
- ## <a id = "user-content-part-bd16950b" name = "user-content-part-bd16950b">Struct, Union, and Enum Definitions</a> ##
+ ## <a id = "user-content-part-fef6433d" name = "user-content-part-fef6433d">Function Definitions</a> ##
 
  ### <a name = "fn:CdocGetDebug" id = "fixme fn:CdocGetDebug">CdocGetDebug</a> ###
 
@@ -145,7 +145,7 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the 
 
 
 
- ## <a name = "license-">License</a> ##
+ ## <a name = "license:">License</a> ##
 
 2019 Neil Edelman, distributed under the terms of the [MIT License](https://opensource.org/licenses/MIT)\.
 

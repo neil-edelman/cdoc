@@ -1243,7 +1243,7 @@ int ReportOut(void) {
 
 		/* Functions. */
 		style_push(&styles[ST_DIV][format]);
-		print_h2_for(DIV_TAG);
+		print_h2_for(DIV_FUNCTION);
 		division_act(DIV_FUNCTION, &segment_print_all);
 		style_pop_level();
 	}
@@ -1251,7 +1251,7 @@ int ReportOut(void) {
 	if(is_license) {
 		style_push(&styles[ST_DIV][format]), style_push(&styles[ST_H2][format]);
 		style_prepare_output(END);
-		printf("<a name = \"license-\">%s</a>",
+		printf("<a name = \"license:\">%s</a>",
 			symbol_attribute_titles[ATT_LICENSE]);
 		style_pop(); /* h2 */
 		style_push(&styles[ST_P][format]);
