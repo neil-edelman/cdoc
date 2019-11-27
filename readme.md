@@ -91,7 +91,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 <tr><td align = right>int</td><td><a href = "#fn-CdocGetDebug">CdocGetDebug</a></td><td></td></tr>
 
-<tr><td align = right>int</td><td><a href = "#fn-CdocGetGithub">CdocGetGithub</a></td><td></td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn-cdoc\_get\_foo">cdoc\_get\_foo</a></td><td></td></tr>
 
 <tr><td align = right>enum Format</td><td><a href = "#fn-CdocGetFormat">CdocGetFormat</a></td><td></td></tr>
 
@@ -115,13 +115,9 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 
 
- ### <a name = "fn-CdocGetGithub">CdocGetGithub</a> ###
+ ### <a name = "fn-cdoc\_get\_foo">cdoc\_get\_foo</a> ###
 
-`int `**`CdocGetGithub`**`(void)`
-
- - Return:  
-   Whether it's in a mode which tries to alter the named fragments so that they work with the named anchors, which are screwed up by `GitHub` \.
-
+`static int `**`cdoc_get_foo`**`(void)`
 
 
 

@@ -208,6 +208,11 @@ int CdocGetDebug(void) {
 	return args.debug;
 }
 
+/** @allow */
+static int cdoc_get_foo(void) {
+	return 42;
+}
+
 /** @return True if `suffix` is a suffix of `string`. */
 static int is_suffix(const char *const string, const char *const suffix) {
 	const size_t str_len = strlen(string), suf_len = strlen(suffix);
