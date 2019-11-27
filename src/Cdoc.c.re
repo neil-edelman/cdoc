@@ -190,7 +190,6 @@ static int parse_arg(const char *const argument) {
 	}
 	("-h" | "--help") end { usage(); exit(EXIT_SUCCESS); }
 	("-d" | "--debug") end { args.debug = 1; return 1; }
-	("-g" | "--github") end { args.github = 1; return 1; }
 	("-f" | "--format") end {
 		if(args.format) return 0;
 		args.expect = EXPECT_FORMAT;
@@ -207,12 +206,6 @@ static int parse_arg(const char *const argument) {
 /** @return Whether the command-line option to spam on `stderr` was set. */
 int CdocGetDebug(void) {
 	return args.debug;
-}
-
-/** @return Whether it's in a mode which tries to alter the named fragments so
- that they work with the named anchors, which are screwed up by `GitHub`. */
-int CdocGetGithub(void) {
-	return args.github;
 }
 
 /** @return True if `suffix` is a suffix of `string`. */
