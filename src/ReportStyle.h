@@ -254,6 +254,7 @@ static void encode_len_choose(int length, const char *from,
 	}
 
 html_encode_buffer:
+	BufferClear();
 	while(length - ahead) {
 		switch(from[ahead]) {
 		case '<': str = HTML_LT, str_len = strlen(str); break;
@@ -281,6 +282,7 @@ terminate_html:
 	return;
 
 md_encode_buffer:
+	BufferClear();
 	if(style_is_suppress_escapes()) {
 		if(!(b = BufferPrepare(length))) { unrecoverable(); return; }
 		memcpy(b, from, length);

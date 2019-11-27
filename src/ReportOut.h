@@ -54,7 +54,6 @@ OUT(lit) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->length > 0 && t->from);
 	if(is_buffer) {
-		BufferClear();
 		encode_len_s(t->length, t->from);
 	} else {
 		style_prepare_output(t->symbol);
@@ -249,19 +248,12 @@ OUT(see_fn) {
 		encode_len(fn->length, fn->from);
 		printf("</a>");
 	} else {
-		int len;
-		const char *const fmt = "%s:";
-		char *b;
 		printf("[");
 		encode_len(fn->length, fn->from);
-		printf("](#%s", md_fragment_extra);
-		BufferClear();
-		len = snprintf(0, 0, fmt, division_strings[DIV_FUNCTION]);
-		if(len <= 0 || !(b = BufferPrepare(len))) return 0;
-		sprintf(b, fmt, division_strings[DIV_FUNCTION]);
+		printf("](#%s%s-", md_fragment_extra, division_strings[DIV_FUNCTION]);
 		encode_len_s(fn->length, fn->from);
 		fprintf(stderr, "see_fn hash str: %s\n", BufferGet());
-		printf("part-%x)", fnv_32a_str(BufferGet()));
+		printf("%x)", fnv_32a_str(BufferGet()));
 	}
 	*ptoken = TokenArrayNext(tokens, fn);
 	return 1;
@@ -277,12 +269,12 @@ OUT(see_tag) {
 		encode_len(tag->length, tag->from);
 		printf("</a>");
 	} else {
-		/* fixme */
 		printf("[");
 		encode_len(tag->length, tag->from);
-		printf("](#%s-", division_strings[DIV_TAG]);
-		encode_len(tag->length, tag->from);
-		printf(")");
+		printf("](#%s%s-", md_fragment_extra, division_strings[DIV_TAG]);
+		encode_len_s(tag->length, tag->from);
+		fprintf(stderr, "see_tag hash str: %s\n", BufferGet());
+		printf("%x)", fnv_32a_str(BufferGet()));
 	}
 	*ptoken = TokenArrayNext(tokens, tag);
 	return 1;
@@ -927,7 +919,8 @@ static void best_guess_at_modifiers(const struct Segment *const segment) {
 static void print_custom_fragment_for(const char *const label,
 	const char *const desc) {
 	const enum Format f = CdocGetFormat();
-	const char *const fmt = f == OUT_HTML ? "[%s](#%s:)" : "[%s](#%spart-%x)";
+	const char *const fmt = f == OUT_HTML ?
+		"[%s](#%s:)" : "[%s](#%sheading-%x)";
 	const unsigned hash = fnv_32a_str(label);
 	struct Scanner *scan_str;
 	size_t size;
@@ -963,7 +956,7 @@ static void print_custom_anchor_for(const char *const label,
 		printf("id = \"%s:\" name = \"%s:\"", label, label);
 	} else {
 		const unsigned hash = fnv_32a_str(label);
-		printf("id = \"%spart-%x\" name = \"%spart-%x\"",
+		printf("id = \"%sheading-%x\" name = \"%sheading-%x\"",
 			md_fragment_extra, hash, md_fragment_extra, hash);
 	}
 	printf(">%s</a>", desc);
