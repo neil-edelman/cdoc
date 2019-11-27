@@ -223,7 +223,7 @@ OUT(see_fn) {
 	assert(tokens && fn && fn->symbol == SEE_FN && !is_buffer);
 	style_prepare_output(fn->symbol);
 	if(CdocGetFormat() == OUT_HTML) {
-		printf("<a href = \"#%s:", division_strings[DIV_FUNCTION]);
+		printf("<a href = \"#%s-", division_strings[DIV_FUNCTION]);
 		encode_len(fn->length, fn->from);
 		printf("\">");
 		encode_len(fn->length, fn->from);
@@ -243,7 +243,7 @@ OUT(see_tag) {
 	assert(tokens && tag && tag->symbol == SEE_TAG && !is_buffer);
 	style_prepare_output(tag->symbol);
 	if(CdocGetFormat() == OUT_HTML) {
-		printf("<a href = \"#%s:", division_strings[DIV_TAG]);
+		printf("<a href = \"#%s-", division_strings[DIV_TAG]);
 		encode_len(tag->length, tag->from);
 		printf("\">");
 		encode_len(tag->length, tag->from);
@@ -263,7 +263,7 @@ OUT(see_typedef) {
 	assert(tokens && def && def->symbol == SEE_TYPEDEF && !is_buffer);
 	style_prepare_output(def->symbol);
 	if(CdocGetFormat() == OUT_HTML) {
-		printf("<a href = \"#%s:", division_strings[DIV_TYPEDEF]);
+		printf("<a href = \"#%s-", division_strings[DIV_TYPEDEF]);
 		encode_len(def->length, def->from);
 		printf("\">");
 		encode_len(def->length, def->from);
@@ -283,7 +283,7 @@ OUT(see_data) {
 	assert(tokens && data && data->symbol == SEE_DATA && !is_buffer);
 	style_prepare_output(data->symbol);
 	if(CdocGetFormat() == OUT_HTML) {
-		printf("<a href = \"#%s:", division_strings[DIV_DATA]);
+		printf("<a href = \"#%s-", division_strings[DIV_DATA]);
 		encode_len(data->length, data->from);
 		printf("\">");
 		encode_len(data->length, data->from);
@@ -347,7 +347,7 @@ OUT(em_end) {
 OUT(link) {
 	const struct Token *const t = *ptoken, *text, *turl;
 	const enum Format f = CdocGetFormat();
-	const char *fn, *uri;
+	const char *fn;
 	size_t fn_len;
 	FILE *fp;
 	int success = 0;
@@ -378,13 +378,12 @@ raw:
 		fprintf(stderr, "%s: fixed link %.*s.\n", pos(t), (int)fn_len, fn);
 output:
 	assert(fn_len <= INT_MAX);
-	if(!(uri = AnchorHref(fn_len, fn))) goto catch;
-	if(f == OUT_HTML) printf("<a href = \"%s\">", uri);
+	if(f == OUT_HTML) printf("<a href = \"%.*s\">", (int)fn_len, fn);
 	else printf("[");
 	for(text = TokenArrayNext(tokens, t); text->symbol != URL; )
 		if(!(text = print_token(tokens, text))) goto catch;
 	if(f == OUT_HTML) printf("</a>");
-	else printf("](%s)", uri);
+	else printf("](%.*s)", (int)fn_len, fn);
 	success = 1;
 	goto finally;
 catch:
@@ -804,11 +803,13 @@ static void segment_print_all(const struct Segment *const segment) {
 	if((param = param_no(segment, 0))) {
 		style_push(&styles[ST_H3][format]);
 		style_prepare_output(END);
-		printf("<a name = \"%s:", division_strings[segment->division]);
+		printf("<div id = \"%s:", division_strings[segment->division]);
+		print_token(&segment->code, param);
+		printf("\"><a name = \"%s:", division_strings[segment->division]);
 		print_token(&segment->code, param);
 		printf("\">");
 		print_token(&segment->code, param);
-		printf("</a>");
+		printf("</a></div>");
 		style_pop_level();
 		style_push(&styles[ST_P][format]), style_push(&styles[ST_CODE][format]);
 		highlight_tokens(&segment->code, &segment->code_params);
