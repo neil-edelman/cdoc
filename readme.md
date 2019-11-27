@@ -105,7 +105,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
  ## <a name = "fn-">Function Definitions</a> ##
 
- ### <div id = "fn-CdocGetDebug"><a name = "fn-CdocGetDebug">CdocGetDebug</a></div> ###
+ ### <a name = "fn-CdocGetDebug">CdocGetDebug</a> ###
 
 `int `**`CdocGetDebug`**`(void)`
 
@@ -115,7 +115,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 
 
- ### <div id = "fn-CdocGetGithub"><a name = "fn-CdocGetGithub">CdocGetGithub</a></div> ###
+ ### <a name = "fn-CdocGetGithub">CdocGetGithub</a> ###
 
 `int `**`CdocGetGithub`**`(void)`
 
@@ -125,7 +125,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 
 
- ### <div id = "fn-CdocGetFormat"><a name = "fn-CdocGetFormat">CdocGetFormat</a></div> ###
+ ### <a name = "fn-CdocGetFormat">CdocGetFormat</a> ###
 
 `enum Format `**`CdocGetFormat`**`(void)`
 
@@ -135,7 +135,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 
 
- ### <div id = "fn-CdocGetInput"><a name = "fn-CdocGetInput">CdocGetInput</a></div> ###
+ ### <a name = "fn-CdocGetInput">CdocGetInput</a> ###
 
 `const char *`**`CdocGetInput`**`(void)`
 
@@ -145,7 +145,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 
 
- ### <div id = "fn-CdocGetOutput"><a name = "fn-CdocGetOutput">CdocGetOutput</a></div> ###
+ ### <a name = "fn-CdocGetOutput">CdocGetOutput</a> ###
 
 `const char *`**`CdocGetOutput`**`(void)`
 

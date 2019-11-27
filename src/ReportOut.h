@@ -803,13 +803,18 @@ static void segment_print_all(const struct Segment *const segment) {
 	if((param = param_no(segment, 0))) {
 		style_push(&styles[ST_H3][format]);
 		style_prepare_output(END);
-		printf("<div id = \"%s-", division_strings[segment->division]);
+/*		printf("<div id = \"%s-", division_strings[segment->division]);
 		print_token(&segment->code, param);
 		printf("\"><a name = \"%s-", division_strings[segment->division]);
 		print_token(&segment->code, param);
 		printf("\">");
 		print_token(&segment->code, param);
-		printf("</a></div>");
+		printf("</a></div>");*/
+		printf("<a name = \"%s-", division_strings[segment->division]);
+		print_token(&segment->code, param);
+		printf("\">");
+		print_token(&segment->code, param);
+		printf("</a>");
 		style_pop_level();
 		style_push(&styles[ST_P][format]), style_push(&styles[ST_CODE][format]);
 		highlight_tokens(&segment->code, &segment->code_params);
