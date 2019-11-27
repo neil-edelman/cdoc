@@ -152,7 +152,6 @@ static void usage(void) {
 		"  -d | --debug              Prints a lot of debug information.\n"
 		"  -f | --format (html | md) Overrides built-in guessing.\n"
 		"  -o | --output <filename>  Stick the output file in this.\n"
-		"  -g | --github             Prefix anchored links by 'user-content-'."
 		"\n"
 		"Given <input-file>, a C file with encoded documentation,\n"
 		"outputs that documentation.\n");
