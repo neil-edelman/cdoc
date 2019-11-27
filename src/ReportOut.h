@@ -1136,6 +1136,7 @@ int ReportOut(void) {
 		printf("<table>\n\n"
 			   "<tr><th>Modifiers</th><th>Function Name</th>"
 			   "<th>Argument List</th></tr>\n\n");
+		style_push(&no_escape);
 		while((segment = SegmentArrayNext(&report, segment))) {
 			size_t *idxs, idxn, idx, paramn;
 			struct Token *params;
@@ -1163,7 +1164,8 @@ int ReportOut(void) {
 			printf("</td></tr>\n\n");
 		}
 		printf("</table>\n\n");
-		style_pop();
+		style_pop(); /* no_escape */
+		style_pop(); /* div */
 		assert(!StyleArraySize(&mode.styles));
 
 		/* Functions. */

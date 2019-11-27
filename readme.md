@@ -91,13 +91,13 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 <tr><td align = right>int</td><td><a href = "#fn-CdocGetDebug">CdocGetDebug</a></td><td></td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn-cdoc\_get\_foo">cdoc\_get\_foo</a></td><td></td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn-cdoc_get_foo">cdoc_get_foo</a></td><td></td></tr>
 
 <tr><td align = right>enum Format</td><td><a href = "#fn-CdocGetFormat">CdocGetFormat</a></td><td></td></tr>
 
-<tr><td align = right>const char \*</td><td><a href = "#fn-CdocGetInput">CdocGetInput</a></td><td></td></tr>
+<tr><td align = right>const char *</td><td><a href = "#fn-CdocGetInput">CdocGetInput</a></td><td></td></tr>
 
-<tr><td align = right>const char \*</td><td><a href = "#fn-CdocGetOutput">CdocGetOutput</a></td><td></td></tr>
+<tr><td align = right>const char *</td><td><a href = "#fn-CdocGetOutput">CdocGetOutput</a></td><td></td></tr>
 
 </table>
 
@@ -105,7 +105,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
  ## <a name = "fn-">Function Definitions</a> ##
 
- ### <a name = "fn-CdocGetDebug" id = "ÌX€-CdocGetDebug">CdocGetDebug</a> ###
+ ### <a name = "fn-CdocGetDebug" id = "ÆX€-CdocGetDebug">CdocGetDebug</a> ###
 
 `int `**`CdocGetDebug`**`(void)`
 
@@ -115,13 +115,13 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 
 
- ### <a name = "fn-cdoc\_get\_foo" id = "’Y€-cdoc\_get\_foo">cdoc\_get\_foo</a> ###
+ ### <a name = "fn-cdoc\_get\_foo" id = "ŒY€-cdoc\_get\_foo">cdoc\_get\_foo</a> ###
 
 `static int `**`cdoc_get_foo`**`(void)`
 
 
 
- ### <a name = "fn-CdocGetFormat" id = "Z€-CdocGetFormat">CdocGetFormat</a> ###
+ ### <a name = "fn-CdocGetFormat" id = "Z€-CdocGetFormat">CdocGetFormat</a> ###
 
 `enum Format `**`CdocGetFormat`**`(void)`
 
@@ -131,7 +131,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 
 
- ### <a name = "fn-CdocGetInput" id = "*[€-CdocGetInput">CdocGetInput</a> ###
+ ### <a name = "fn-CdocGetInput" id = "$[€-CdocGetInput">CdocGetInput</a> ###
 
 `const char *`**`CdocGetInput`**`(void)`
 
@@ -141,7 +141,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 
 
- ### <a name = "fn-CdocGetOutput" id = "Í[€-CdocGetOutput">CdocGetOutput</a> ###
+ ### <a name = "fn-CdocGetOutput" id = "Ç[€-CdocGetOutput">CdocGetOutput</a> ###
 
 `const char *`**`CdocGetOutput`**`(void)`
 

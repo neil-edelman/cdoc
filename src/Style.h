@@ -23,6 +23,7 @@ plain_parenthetic = { "paren", "(", " ", ")", 0, 0 },
 plain_see_license = { "license", "(See license details ", ", ", ".)", 0, 0 },
 plain_csv = { "csv", "", ", ", "", 0, 0 },
 plain_ssv = { "ssv", "", "; ", "", 0, 0 },
+no_escape = { "noescape", "", "", "", 0, 1 },
 html_title = { "title", "<title>", "", "</title>\n", 1, 0 },
 styles[][3] = {
 	{ { "", 0, 0, 0, 0, 0 },
