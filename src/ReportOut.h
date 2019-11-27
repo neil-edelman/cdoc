@@ -231,7 +231,7 @@ OUT(see_fn) {
 	} else {
 		printf("[");
 		encode_len(fn->length, fn->from);
-		printf("](%s-", division_strings[DIV_FUNCTION]);
+		printf("](#%s-", division_strings[DIV_FUNCTION]);
 		encode_len(fn->length, fn->from);
 		printf(")");
 	}
@@ -251,7 +251,7 @@ OUT(see_tag) {
 	} else {
 		printf("[");
 		encode_len(tag->length, tag->from);
-		printf("](%s-", division_strings[DIV_TAG]);
+		printf("](#%s-", division_strings[DIV_TAG]);
 		encode_len(tag->length, tag->from);
 		printf(")");
 	}
@@ -271,7 +271,7 @@ OUT(see_typedef) {
 	} else {
 		printf("[");
 		encode_len(def->length, def->from);
-		printf("](%s-", division_strings[DIV_TYPEDEF]);
+		printf("](#%s-", division_strings[DIV_TYPEDEF]);
 		encode_len(def->length, def->from);
 		printf(")");
 	}
@@ -291,7 +291,7 @@ OUT(see_data) {
 	} else {
 		printf("[");
 		encode_len(data->length, data->from);
-		printf("](%s-", division_strings[DIV_DATA]);
+		printf("](#%s-", division_strings[DIV_DATA]);
 		encode_len(data->length, data->from);
 		printf(")");
 	}
