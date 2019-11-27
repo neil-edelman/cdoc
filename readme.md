@@ -5,7 +5,7 @@
  * [Function Definitions](#user-content-part-fef6433d)
  * [License](#user-content-part-77eb0f5a)
 
- ## <a id = "user-content-part-a5e43a39" name = "part-a5e43a39">Description</a> ##
+ ## <a id = "user-content-part-a5e43a39" name = "user-content-part-a5e43a39">Description</a> ##
 
 This is a context\-sensitive lexer intended to process parts of a `C` compilation unit and extract documentation\. This does not do any compiling, just very basic text\-parsing\.
 
@@ -101,7 +101,7 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the 
 
 
 
- ## <a name = "fn-">Function Definitions</a> ##
+ ## <a id = "user-content-part-bd16950b" name = "user-content-part-bd16950b">Struct, Union, and Enum Definitions</a> ##
 
  ### <a name = "fn:CdocGetDebug" id = "fixme fn:CdocGetDebug">CdocGetDebug</a> ###
 

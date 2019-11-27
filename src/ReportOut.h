@@ -963,6 +963,23 @@ static int output_internal_link(const char *const label,
 	return 1;
 }
 
+static void print_h2_for(enum Division d) {
+	const enum Format f = CdocGetFormat();
+	style_push(&styles[ST_H2][f]);
+	style_prepare_output(END);
+	printf("<a ");
+	if(f == OUT_HTML) {
+		printf("id = \"%s:\" name = \"%s:\"",
+			division_strings[d], division_strings[d]);
+	} else {
+		const unsigned hash = internal_link_hash(division_strings[d]);
+		printf("id = \"%spart-%x\" name = \"%spart-%x\"",
+			md_fragment_extra, hash, md_fragment_extra, hash);
+	}
+	printf(">%s</a>", division_desc[d]);
+	style_pop(); /* h2 */
+}
+
 /** Outputs a report.
  @throws[EILSEQ] Sequence error.
  @return Success. */
@@ -1131,20 +1148,8 @@ int ReportOut(void) {
 	/* Preamble contents; it shows up as the more-aptly nammed "desciption" but
 	 I didn't want to type that much. */
 	if(is_preamble) {
-		style_push(&styles[ST_DIV][format]), style_push(&styles[ST_H2][format]);
-		style_prepare_output(END);
-		printf("<a ");
-		if(format == OUT_HTML) {
-			printf("id = \"%s:\" name = \"%s:\"",
-				division_strings[DIV_PREAMBLE], division_strings[DIV_PREAMBLE]);
-		} else {
-			const unsigned hash
-				= internal_link_hash(division_strings[DIV_PREAMBLE]);
-			printf("id = \"%spart-%x\" name = \"part-%x\"", md_fragment_extra,
-				hash, hash);
-		}
-		printf(">%s</a>", division_desc[DIV_PREAMBLE]);
-		style_pop(); /* h2 */
+		style_push(&styles[ST_DIV][format]);
+		print_h2_for(DIV_PREAMBLE);
 		while((segment = SegmentArrayNext(&report, segment))) {
 			if(segment->division != DIV_PREAMBLE) continue;
 			style_push(&styles[ST_P][format]);
@@ -1174,31 +1179,22 @@ int ReportOut(void) {
 
 	/* Print typedefs. */
 	if(is_typedef) {
-		style_push(&styles[ST_DIV][format]), style_push(&styles[ST_H2][format]);
-		style_prepare_output(END);
-		printf("<a name = \"%s-\">Typedef Aliases</a>",
-			division_strings[DIV_TYPEDEF]);
-		style_pop(); /* h2 */
+		style_push(&styles[ST_DIV][format]);
+		print_h2_for(DIV_TYPEDEF);
 		division_act(DIV_TYPEDEF, &segment_print_all);
 		style_pop_level();
 	}
 	/* Print tags. */
 	if(is_tag) {
-		style_push(&styles[ST_DIV][format]), style_push(&styles[ST_H2][format]);
-		style_prepare_output(END);
-		printf("<a name = \"%s-\">Struct, Union, and Enum Definitions</a>",
-			division_strings[DIV_TAG]);
-		style_pop(); /* h2 */
+		style_push(&styles[ST_DIV][format]);
+		print_h2_for(DIV_TAG);
 		division_act(DIV_TAG, &segment_print_all);
 		style_pop_level();
 	}
 	/* Print general declarations. */
 	if(is_data) {
-		style_push(&styles[ST_DIV][format]), style_push(&styles[ST_H2][format]);
-		style_prepare_output(END);
-		printf("<a name = \"%s-\">General Definitions</a>",
-			division_strings[DIV_DATA]);
-		style_pop(); /* h2 */
+		style_push(&styles[ST_DIV][format]);
+		print_h2_for(DIV_DATA);
 		division_act(DIV_DATA, &segment_print_all);
 		style_pop_level();
 	}
@@ -1246,11 +1242,8 @@ int ReportOut(void) {
 		assert(!StyleArraySize(&mode.styles));
 
 		/* Functions. */
-		style_push(&styles[ST_DIV][format]), style_push(&styles[ST_H2][format]);
-		style_prepare_output(END);
-		printf("<a name = \"%s-\">Function Definitions</a>",
-			division_strings[DIV_FUNCTION]);
-		style_pop(); /* h2 */
+		style_push(&styles[ST_DIV][format]);
+		print_h2_for(DIV_TAG);
 		division_act(DIV_FUNCTION, &segment_print_all);
 		style_pop_level();
 	}
