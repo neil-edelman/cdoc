@@ -108,8 +108,12 @@
  \* internal underscores are emphasis except in math/code mode;
  \* a \`cool' word in a \`nice' sentence must be escaped;
 
- Note that it does not validate html; nothing stops one from writing, eg, a
- link, or emphasis, in the title.
+ `GitHub` has it's own functions that mutilate anchor `id` and `name` but not
+ the links pointing to them, resulting in broken links everywhere, (it helps if
+ one is using the newest browser.) We changed the separator from ':' to '-',
+ but `GitHub` still has issues with '\_', which is very common in `C`, and
+ non-ascii characters. We had a `GitHub` mode, but it was non-trivial and they
+ are probably going to change it anyway.
 
  @std C89
  @depend [re2c](http://re2c.org/)
@@ -123,11 +127,10 @@
  (needs buffering.)
  @fixme Eg, fixme with no args disappears; we should NOT check if the string is
  empty.
- @fixme Complete md-ising eg table.
  @fixme `A``B` doesn't do what one expects in md.
  @fixme If a segment has multiple licenses, they will show multiple times.
- @fixme Finish Github-flavoured broken links.
- @fixme `foo.c:221`: space where it shouldn't be. Why? */
+ @fixme `foo.c:221`: space where it shouldn't be. Why?
+  */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
@@ -206,11 +209,6 @@ static int parse_arg(const char *const argument) {
 /** @return Whether the command-line option to spam on `stderr` was set. */
 int CdocGetDebug(void) {
 	return args.debug;
-}
-
-/** @allow */
-static int cdoc_get_foo(void) {
-	return 42;
 }
 
 /** @return True if `suffix` is a suffix of `string`. */
