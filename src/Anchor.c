@@ -9,9 +9,15 @@
 /*#include <stdio.h>*/  /* fprintf */
 /*#include <assert.h>*/ /* assert */
 #include <errno.h>  /* errno */
+#include "Path.h"
+#include "Anchor.h"
 
 #define ARRAY_NAME Char
 #define ARRAY_TYPE char
 #include "Array.h"
 
-static struct CharArray *buffer;
+static struct CharArray buffer;
+
+void Anchor_(void) { CharArray_(&buffer); }
+
+

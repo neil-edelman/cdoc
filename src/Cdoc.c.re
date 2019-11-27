@@ -140,6 +140,7 @@
 #include "../src/Path.h"
 #include "../src/Text.h"
 #include "../src/Buffer.h"
+#include "../src/Anchor.h"
 #include "../src/Scanner.h"
 #include "../src/Report.h"
 #include "../src/Semantic.h"
@@ -288,6 +289,7 @@ catch:
 	
 finally:
 	Buffer_();
+	Anchor_();
 	Scanner_(&scanner);
 	Report_();
 	TextCloseAll();

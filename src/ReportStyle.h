@@ -369,7 +369,8 @@ static void encode_len(const int length, const char *const from) {
 static void encode(const char *const str) {
 	size_t length = strlen(str);
 	if(length > INT_MAX) { fprintf(stderr,
-		"Encode: length is greater then the maximum integer; clipped.\n");
+		"Encode: \"%.10s...\" length is greater then the maximum integer; "
+		"clipped at %d.\n", str, INT_MAX);
 		length = INT_MAX; }
 	encode_len((int)length, str);
 }
