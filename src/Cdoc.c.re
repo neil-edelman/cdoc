@@ -108,12 +108,9 @@
  \* internal underscores are emphasis except in math/code mode;
  \* a \`cool' word in a \`nice' sentence must be escaped;
 
- `GitHub` has it's own functions that mutilate anchor `id` and `name` but not
- the links pointing to them, resulting in broken links everywhere, (it helps if
- one is using the newest browser.) We changed the separator from ':' to '-',
- but `GitHub` still has issues with '\_', which is very common in `C`, and
- non-ascii characters. We had a `GitHub` mode, but it was non-trivial and they
- are probably going to change it anyway.
+ If one sets `md` as output, it goes to `GitHub` Markdown that is visible on
+ the `GitHub` page. It bears no reseblance to Markdown suppoted in the
+ document.
 
  @std C89
  @depend [re2c](http://re2c.org/)

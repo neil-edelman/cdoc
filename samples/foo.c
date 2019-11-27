@@ -4,17 +4,16 @@
 text
 &&](http://yo.c) Header. Yo <http://foo.org/> [MIT](https://mit.edu/)
 
-Paragraph @ @a \,~~
- 
- Links to entities: <fn:not_fn>, <fn:<T>not_fn>, <fn:<T>fun4>, <data:y>.
- 
+ \* Paragraph @ @a \,~~
+ \* Links to entities: <fn:<T>fun4>, <data:y>.
+ \* Broken: <fn:not_fn>, <fn:<T>not_fn>.
  \* Citation <ÀæĔge2007>.
  \* [absolute](http://arr.com/index.html#ddddd////sfdg).
  \* [relative](foo.h) [relative](../src/Cdoc.c.re).
  \* png: ![Ellen Ripley](../diagrams/Ellen_Ripley_badass.png).
  \* jpeg: ![Inigo Montoya](../diagrams/Inigo_Montoya.jpeg).
 
- @subtitle The Subtitle is Simple
+ @subtitle The Subtitle
  @depend C89
  @author Somebody
  @author Nobody
@@ -142,7 +141,7 @@ static enum Token fun2_scan_eof(struct Scanner *const arg1_2, int arg2_2) {
  * kernel-style comment.
  * <http://www.`@.com/index.html>
  * <Yo2019> ?<>&!
- * <fn:a>
+ * <fn:fun1>
  *
  *
  */
@@ -181,7 +180,7 @@ T fun5(int (*arg1_2)(int arg1_3, int (*fn)(void)), Foo arg2_3, /*no*/
 }
 
 /** There should be <fn:fun1> to <fn:fun7> and <fn:main>.
- @subtitle subtitle! <http://f.o/> */
+ @subtitle Link <http://127.0.0.1/> */
 
 
 

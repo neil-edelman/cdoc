@@ -183,7 +183,7 @@ OUT(url) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == URL && !is_buffer);
 	style_prepare_output(t->symbol);
-	/* I think it can't contain '<>()\"' by parser. */
+	/* I think it can't contain '<>()\"' by the parser. */
 	if(CdocGetFormat() == OUT_HTML) {
 		printf("<a href = \"%.*s\">", t->length, t->from);
 		encode_len(t->length, t->from);

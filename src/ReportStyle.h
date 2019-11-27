@@ -288,8 +288,13 @@ md_encode_buffer:
 	BufferClear();
 	is_suppress = style_is_suppress_escapes();
 	while(length - ahead) {
+		const char *escape = 0;
 		switch(from[ahead]) {
 		case '\0': goto terminate_md;
+		/* "Markdown takes care of escaping these." <- Me before. */
+		case '<': escape = HTML_LT; break;
+		case '>': escape = HTML_GT; break;
+		case '&': escape = HTML_AMP; break;
 		case '\\': case '`': case '*': case '_': case '{': case '}': case '[':
 		case ']': case '(': case ')': case '#': case '+': case '-': case '.':
 		case '!': if(!is_suppress) break;
@@ -302,8 +307,14 @@ md_encode_buffer:
 			from += ahead;
 			ahead = 0;
 		}
-		if(!(b = BufferPrepare(2))) { unrecoverable(); return; }
-		b[0] = '\\', b[1] = *from;
+		if(escape) {
+			const size_t e_len = strlen(escape);
+			if(!(b = BufferPrepare(e_len))) { unrecoverable(); return; }
+			memcpy(b, escape, e_len);
+		} else {
+			if(!(b = BufferPrepare(2))) { unrecoverable(); return; }
+			b[0] = '\\', b[1] = *from;
+		}
 		from++, length--;
 	}
 terminate_md:
@@ -333,6 +344,9 @@ md_encode_print:
 		switch(*from) {
 		case '\0': fprintf(stderr, "Encoded null with %d left.\n", length);
 			return;
+		case '<': fputs(HTML_LT, stdout); break;
+		case '>': fputs(HTML_GT, stdout); break;
+		case '&': fputs(HTML_AMP, stdout); break;
 		case '\\': case '`': case '*': case '_': case '{': case '}': case '[':
 		case ']': case '(': case ')': case '#': case '+': case '-': case '.':
 		case '!':
