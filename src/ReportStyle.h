@@ -237,7 +237,6 @@ static int style_is_suppress_escapes(void) {
  @param[is_buffer] Appends to the buffer chosen in `Buffer.c`. */
 static void encode_len_choose(int length, const char *from,
 	const int is_buffer) {
-	int is_suppress;
 	int ahead = 0;
 	char *b;
 	const char *str;
@@ -282,7 +281,11 @@ terminate_html:
 	return;
 
 md_encode_buffer:
-	is_suppress = style_is_suppress_escapes();
+	if(style_is_suppress_escapes()) {
+		if(!(b = BufferPrepare(length))) { unrecoverable(); return; }
+		memcpy(b, from, length);
+		return;
+	}
 	while(length - ahead) {
 		const char *escape = 0;
 		switch(from[ahead]) {
@@ -293,7 +296,7 @@ md_encode_buffer:
 		case '&': escape = HTML_AMP; break;
 		case '\\': case '`': case '*': case '_': case '{': case '}': case '[':
 		case ']': case '(': case ')': case '#': case '+': case '-': case '.':
-		case '!': if(!is_suppress) break;
+		case '!': break;
 		default: ahead++; continue;
 		}
 		if(ahead) {
@@ -335,7 +338,7 @@ html_encode_print:
 	return;
 
 md_encode_print:
-	is_suppress = style_is_suppress_escapes();
+	if(style_is_suppress_escapes()) { printf("%.*s", length, from); return; }
 	while(length) {
 		switch(*from) {
 		case '\0': fprintf(stderr, "Encoded null with %d left.\n", length);
@@ -345,8 +348,7 @@ md_encode_print:
 		case '&': fputs(HTML_AMP, stdout); break;
 		case '\\': case '`': case '*': case '_': case '{': case '}': case '[':
 		case ']': case '(': case ')': case '#': case '+': case '-': case '.':
-		case '!':
-			if(!is_suppress) { printf("\\%c", *from); break; }
+		case '!': printf("\\%c", *from); break;
 		default: fputc(*from, stdout); break;
 		}
 		from++, length--;
