@@ -103,7 +103,7 @@ Strict regular expressions that are much easier to parse have limited state and 
 
  ## <a name = "fn-">Function Definitions</a> ##
 
- ### <a name = "fn-CdocGetDebug" id = "YU€-CdocGetDebug">CdocGetDebug</a> ###
+ ### <a name = "fn-CdocGetDebug" id = "fn-CdocGetDebug">CdocGetDebug</a> ###
 
 `int `**`CdocGetDebug`**`(void)`
 
@@ -113,7 +113,7 @@ Strict regular expressions that are much easier to parse have limited state and 
 
 
 
- ### <a name = "fn-CdocGetFormat" id = "V€-CdocGetFormat">CdocGetFormat</a> ###
+ ### <a name = "fn-CdocGetFormat" id = "fn-CdocGetFormat">CdocGetFormat</a> ###
 
 `enum Format `**`CdocGetFormat`**`(void)`
 
@@ -123,7 +123,7 @@ Strict regular expressions that are much easier to parse have limited state and 
 
 
 
- ### <a name = "fn-CdocGetInput" id = "7W€-CdocGetInput">CdocGetInput</a> ###
+ ### <a name = "fn-CdocGetInput" id = "fn-CdocGetInput">CdocGetInput</a> ###
 
 `const char *`**`CdocGetInput`**`(void)`
 
@@ -133,7 +133,7 @@ Strict regular expressions that are much easier to parse have limited state and 
 
 
 
- ### <a name = "fn-CdocGetOutput" id = "ÚW€-CdocGetOutput">CdocGetOutput</a> ###
+ ### <a name = "fn-CdocGetOutput" id = "fn-CdocGetOutput">CdocGetOutput</a> ###
 
 `const char *`**`CdocGetOutput`**`(void)`
 
