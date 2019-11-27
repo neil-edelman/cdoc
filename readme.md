@@ -105,7 +105,7 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the 
 
  ### <a name = "fn:CdocGetDebug" id = "fixme fn:CdocGetDebug">CdocGetDebug</a> ###
 
-<code>int*CdocGetDebug*(void)</code>
+<code>int<strong>CdocGetDebug</strong>(void)</code>
 
  - Return:  
    Whether the command\-line option to spam on `stderr` was set\.
@@ -115,7 +115,7 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the 
 
  ### <a name = "fn:CdocGetFormat" id = "fixme fn:CdocGetFormat">CdocGetFormat</a> ###
 
-<code>enumFormat*CdocGetFormat*(void)</code>
+<code>enumFormat<strong>CdocGetFormat</strong>(void)</code>
 
  - Return:  
    What format the output was specified to be in `enum Format` \. If there was no output specified, guess before from the output filename\.
@@ -125,7 +125,7 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the 
 
  ### <a name = "fn:CdocGetInput" id = "fixme fn:CdocGetInput">CdocGetInput</a> ###
 
-<code>constchar**CdocGetInput*(void)</code>
+<code>constchar*<strong>CdocGetInput</strong>(void)</code>
 
  - Return:  
    The input filename\.
@@ -135,7 +135,7 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the 
 
  ### <a name = "fn:CdocGetOutput" id = "fixme fn:CdocGetOutput">CdocGetOutput</a> ###
 
-<code>constchar**CdocGetOutput*(void)</code>
+<code>constchar*<strong>CdocGetOutput</strong>(void)</code>
 
  - Return:  
    The output filename\.

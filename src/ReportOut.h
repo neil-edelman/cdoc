@@ -627,7 +627,7 @@ static void highlight_tokens(const struct TokenArray *const tokens,
 			is_highlight = 0;
 		}
 		if(is_highlight) style_highlight_on(&styles[is_first_highlight
-			? ST_STRONG : ST_EM][f]);
+			? ST_STRONG_HTML : ST_EM_HTML][f]);
 		token = print_token(tokens, token);
 		if(is_highlight) style_highlight_off(), is_first_highlight = 0;
 	}
