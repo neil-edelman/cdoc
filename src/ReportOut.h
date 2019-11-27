@@ -880,7 +880,7 @@ static void best_guess_at_modifiers(const struct Segment *const segment) {
  only for fixed links. */
 static int output_internal_link(const char *const label,
 	const char *const desc) {
-	const char *const fmt = "[%s](#%s:)";
+	const char *const fmt = "[%s](#%s-)";
 	struct Scanner *scan_str;
 	size_t size;
 	char *b;
@@ -1065,7 +1065,7 @@ int ReportOut(void) {
 	if(is_preamble) {
 		style_push(&styles[ST_DIV][format]), style_push(&styles[ST_H2][format]);
 		style_prepare_output(END);
-		printf("<a name = \"%s:\">Description</a>",
+		printf("<a name = \"%s-\">Description</a>",
 			division_strings[DIV_PREAMBLE]);
 		style_pop(); /* h2 */
 		while((segment = SegmentArrayNext(&report, segment))) {
@@ -1099,7 +1099,7 @@ int ReportOut(void) {
 	if(is_typedef) {
 		style_push(&styles[ST_DIV][format]), style_push(&styles[ST_H2][format]);
 		style_prepare_output(END);
-		printf("<a name = \"%s:\">Typedef Aliases</a>",
+		printf("<a name = \"%s-\">Typedef Aliases</a>",
 			division_strings[DIV_TYPEDEF]);
 		style_pop(); /* h2 */
 		division_act(DIV_TYPEDEF, &segment_print_all);
@@ -1109,7 +1109,7 @@ int ReportOut(void) {
 	if(is_tag) {
 		style_push(&styles[ST_DIV][format]), style_push(&styles[ST_H2][format]);
 		style_prepare_output(END);
-		printf("<a name = \"%s:\">Struct, Union, and Enum Definitions</a>",
+		printf("<a name = \"%s-\">Struct, Union, and Enum Definitions</a>",
 			division_strings[DIV_TAG]);
 		style_pop(); /* h2 */
 		division_act(DIV_TAG, &segment_print_all);
@@ -1119,7 +1119,7 @@ int ReportOut(void) {
 	if(is_data) {
 		style_push(&styles[ST_DIV][format]), style_push(&styles[ST_H2][format]);
 		style_prepare_output(END);
-		printf("<a name = \"%s:\">General Definitions</a>",
+		printf("<a name = \"%s-\">General Definitions</a>",
 			division_strings[DIV_DATA]);
 		style_pop(); /* h2 */
 		division_act(DIV_DATA, &segment_print_all);
@@ -1130,7 +1130,7 @@ int ReportOut(void) {
 		/* Function table. */
 		style_push(&styles[ST_DIV][format]), style_push(&styles[ST_H2][format]);
 		style_prepare_output(END);
-		printf("<a name = \"summary:\">Function Summary</a>");
+		printf("<a name = \"summary-\">Function Summary</a>");
 		style_pop(); /* h2 */
 		style_prepare_output(END);
 		printf("<table>\n\n"
@@ -1169,7 +1169,7 @@ int ReportOut(void) {
 		/* Functions. */
 		style_push(&styles[ST_DIV][format]), style_push(&styles[ST_H2][format]);
 		style_prepare_output(END);
-		printf("<a name = \"%s:\">Function Definitions</a>",
+		printf("<a name = \"%s-\">Function Definitions</a>",
 			division_strings[DIV_FUNCTION]);
 		style_pop(); /* h2 */
 		division_act(DIV_FUNCTION, &segment_print_all);
@@ -1179,7 +1179,7 @@ int ReportOut(void) {
 	if(is_license) {
 		style_push(&styles[ST_DIV][format]), style_push(&styles[ST_H2][format]);
 		style_prepare_output(END);
-		printf("<a name = \"license:\">%s</a>",
+		printf("<a name = \"license-\">%s</a>",
 			symbol_attribute_titles[ATT_LICENSE]);
 		style_pop(); /* h2 */
 		style_push(&styles[ST_P][format]);

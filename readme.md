@@ -1,11 +1,11 @@
  # Cdoc\.c\.re #
 
- * [Desciption](#preamble:)
- * [Function Summary](#summary:)
- * [Function Definitions](#fn:)
- * [License](#license:)
+ * [Desciption](#preamble-)
+ * [Function Summary](#summary-)
+ * [Function Definitions](#fn-)
+ * [License](#license-)
 
- ## <a name = "preamble:">Description</a> ##
+ ## <a name = "preamble-">Description</a> ##
 
 This is a context\-sensitive lexer intended to process parts of a `C` compilation unit and extract documentation\. This does not do any compiling, just very basic text\-parsing\.
 
@@ -83,7 +83,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 
 
- ## <a name = "summary:">Function Summary</a> ##
+ ## <a name = "summary-">Function Summary</a> ##
 
 <table>
 
@@ -103,7 +103,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 
 
- ## <a name = "fn:">Function Definitions</a> ##
+ ## <a name = "fn-">Function Definitions</a> ##
 
  ### <div id = "fn-CdocGetDebug"><a name = "fn-CdocGetDebug">CdocGetDebug</a></div> ###
 
@@ -157,7 +157,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 
 
- ## <a name = "license:">License</a> ##
+ ## <a name = "license-">License</a> ##
 
 2019 Neil Edelman, distributed under the terms of the [MIT License](https://opensource.org/licenses/MIT)\.
 
