@@ -145,7 +145,9 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the 
 
 
 
-[License](#user-content-part-77eb0f5a)2019 Neil Edelman, distributed under the terms of the [MIT License](https://opensource.org/licenses/MIT)\.
+ ## <a id = "user-content-part-77eb0f5a" name = "user-content-part-77eb0f5a">License</a> ##
+
+2019 Neil Edelman, distributed under the terms of the [MIT License](https://opensource.org/licenses/MIT)\.
 
 
 

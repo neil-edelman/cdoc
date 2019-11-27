@@ -1255,7 +1255,7 @@ int ReportOut(void) {
 	/* License. */
 	if(is_license) {
 		style_push(&styles[ST_DIV][format]);
-		print_custom_fragment_for("license",
+		print_custom_anchor_for("license",
 			symbol_attribute_titles[ATT_LICENSE]);
 		style_push(&styles[ST_P][format]);
 		div_att_print(&is_div_preamble, ATT_LICENSE, SHOW_TEXT);
