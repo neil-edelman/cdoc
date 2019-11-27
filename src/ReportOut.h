@@ -805,8 +805,8 @@ static void segment_print_all(const struct Segment *const segment) {
 		style_prepare_output(END);
 		printf("<a name = \"%s-", division_strings[segment->division]);
 		print_token(&segment->code, param);
-		printf("\" id = \"%s-");
-		print_token(&segment->code, param);
+		/*printf("\" id = \"%s-");
+		print_token(&segment->code, param);*/
 		printf("\">");
 		print_token(&segment->code, param);
 		printf("</a>");
