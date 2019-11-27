@@ -75,11 +75,11 @@ styles[][3] = {
 		{ "strong", "<strong>", "", "</strong>", 0, 0 },
 		{ "strong", "*", "", "*", 0, 0 } },
 	{ { "", 0, 0, 0, 0, 0 },
-		{ "em", "<em>", " ", "</em>", 0, 0 },
-		{ "em", "<em>", " ", "</em>", 0, 0 } },
+		{ "em", "<em>", "", "</em>", 0, 0 },
+		{ "em", "<em>", "", "</em>", 0, 0 } },
 	{ { "", 0, 0, 0, 0, 0 },
-		{ "strong", "<strong>", " ", "</strong>", 0, 0 },
-		{ "strong", "<strong>", " ", "</strong>", 0, 0 } }
+		{ "strong", "<strong>", "", "</strong>", 0, 0 },
+		{ "strong", "<strong>", "", "</strong>", 0, 0 } }
 };
 
 /* This is a hack. Don't change the styles without changing this. */

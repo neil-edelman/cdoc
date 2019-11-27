@@ -619,6 +619,7 @@ static void highlight_tokens(const struct TokenArray *const tokens,
 	const enum Format f = CdocGetFormat();
 	assert(tokens);
 	if(!token) return;
+	style_push(&plain_text);
 	while(token) {
 		if(highlight && *highlight == (size_t)(token - first)) {
 			is_highlight = 1;
@@ -631,6 +632,7 @@ static void highlight_tokens(const struct TokenArray *const tokens,
 		token = print_token(tokens, token);
 		if(is_highlight) style_highlight_off(), is_first_highlight = 0;
 	}
+	style_pop();
 }
 
 static void print_tokens(const struct TokenArray *const tokens) {

@@ -73,14 +73,14 @@ Strict regular expressions that are much easier to parse have limited state and 
 
 If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the `GitHub` page\. It bears no reseblance to Markdown suppoted in the document\.
 
+
+
  * Standard:  
    C89
  * Dependancies:  
    [re2c](http://re2c.org/)
  * Caveat:  
    Old\-style function support\. Trigraph support, \(haha\.\) Hide `const` on params when it can not affect function calls\. Prototypes and functions are the same thing; this will confuse it\. Hash map might be faster and more precise\. Links to non\-documented code which sometimes doesn't show up, work without error, and create broken links\. 80\-characters _per_ line limit, [https://xxyxyz\.org/line\-breaking/](https://xxyxyz.org/line-breaking/), \(needs buffering\.\) Eg, fixme with no args disappears; we should NOT check if the string is empty\. `A` `B` doesn't do what one expects in md\. If a segment has multiple licenses, they will show multiple times\. `foo.c:221` : space where it shouldn't be\. Why? `Array.h:304, SEE_FN "<T>Array_": link broken.` Why? Some help Markdown is; &lt;&gt; need to be escaped in all tables and headings\. It's a mess\. Arrrgg\! Fine, MD every anchor is hashed\. Ugly &lt;strong&gt;&lt;code&gt; blocks in MD\. Replace \` by literal `<code>` and it should be fine\.
-
-
 
 
  ## <a id = "user-content-part-5b9c058b" name = "user-content-part-5b9c058b">Function Summary</a> ##
@@ -105,7 +105,7 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the 
 
  ### <a name = "fn:CdocGetDebug" id = "fixme fn:CdocGetDebug">CdocGetDebug</a> ###
 
-<code>int<strong>CdocGetDebug</strong>(void)</code>
+<code>int <strong>CdocGetDebug</strong>(void)</code>
 
  - Return:  
    Whether the command\-line option to spam on `stderr` was set\.
@@ -115,7 +115,7 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the 
 
  ### <a name = "fn:CdocGetFormat" id = "fixme fn:CdocGetFormat">CdocGetFormat</a> ###
 
-<code>enumFormat<strong>CdocGetFormat</strong>(void)</code>
+<code>enum Format <strong>CdocGetFormat</strong>(void)</code>
 
  - Return:  
    What format the output was specified to be in `enum Format` \. If there was no output specified, guess before from the output filename\.
@@ -125,7 +125,7 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the 
 
  ### <a name = "fn:CdocGetInput" id = "fixme fn:CdocGetInput">CdocGetInput</a> ###
 
-<code>constchar*<strong>CdocGetInput</strong>(void)</code>
+<code>const char *<strong>CdocGetInput</strong>(void)</code>
 
  - Return:  
    The input filename\.
@@ -135,7 +135,7 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the 
 
  ### <a name = "fn:CdocGetOutput" id = "fixme fn:CdocGetOutput">CdocGetOutput</a> ###
 
-<code>constchar*<strong>CdocGetOutput</strong>(void)</code>
+<code>const char *<strong>CdocGetOutput</strong>(void)</code>
 
  - Return:  
    The output filename\.
