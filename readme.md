@@ -109,7 +109,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 `int `**`CdocGetDebug`**`(void)`
 
- - Return-  
+ - Return:  
    Whether the command\-line option to spam on `stderr` was set\.
 
 
@@ -119,7 +119,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 `int `**`CdocGetGithub`**`(void)`
 
- - Return-  
+ - Return:  
    Whether it's in a mode which tries to alter the named fragments so that they work with the named anchors, which are screwed up by `GitHub` \.
 
 
@@ -129,7 +129,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 `enum Format `**`CdocGetFormat`**`(void)`
 
- - Return-  
+ - Return:  
    What format the output was specified to be in `enum Format` \. If there was no output specified, guess before from the output filename\.
 
 
@@ -139,7 +139,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 `const char *`**`CdocGetInput`**`(void)`
 
- - Return-  
+ - Return:  
    The input filename\.
 
 
@@ -149,7 +149,7 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 `const char *`**`CdocGetOutput`**`(void)`
 
- - Return-  
+ - Return:  
    The output filename\.
 
 
