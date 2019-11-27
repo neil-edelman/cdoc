@@ -130,7 +130,10 @@
  @fixme `A``B` doesn't do what one expects in md.
  @fixme If a segment has multiple licenses, they will show multiple times.
  @fixme `foo.c:221`: space where it shouldn't be. Why?
-  */
+ @fixme `Array.h:304, SEE_FN "<T>Array_": link broken.` Why?
+ @fixme Some help Markdown is; <> need to be escaped in all tables and
+ headings. It's a mess.
+ @fixme Arrrgg! Fine, MD every anchor is hashed. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
