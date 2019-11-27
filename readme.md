@@ -83,7 +83,7 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the 
 
 
 
- ## <a name = "summary-">Function Summary</a> ##
+ ## <a id = "user-content-part-5b9c058b" name = "user-content-part-5b9c058b">Function Summary</a> ##
 
 <table>
 
@@ -145,9 +145,7 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the 
 
 
 
- ## <a name = "license:">License</a> ##
-
-2019 Neil Edelman, distributed under the terms of the [MIT License](https://opensource.org/licenses/MIT)\.
+[License](#user-content-part-77eb0f5a)2019 Neil Edelman, distributed under the terms of the [MIT License](https://opensource.org/licenses/MIT)\.
 
 
 

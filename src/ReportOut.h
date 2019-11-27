@@ -932,9 +932,7 @@ static void best_guess_at_modifiers(const struct Segment *const segment) {
 	}
 }
 
-/** Takes `url` and `desc` and makes a link. Don't go overboard on the buffer,
- only for fixed links. */
-static int output_internal_link(const char *const label,
+static void print_custom_fragment_for(const char *const label,
 	const char *const desc) {
 	struct Scanner *scan_str;
 	size_t size;
@@ -944,7 +942,8 @@ static int output_internal_link(const char *const label,
 		size = snprintf(0, 0, fmt, desc, label, ":");
 		assert(size > 0);
 		BufferClear();
-		if(!(b = BufferPrepare(size))) return 0;
+		if(!(b = BufferPrepare(size)))
+			{ perror(label); unrecoverable(); return; }
 		sprintf(b, fmt, desc, label);
 	} else {
 		const char *const fmt = "[%s](#%spart-%x)";
@@ -952,32 +951,42 @@ static int output_internal_link(const char *const label,
 		size = snprintf(0, 0, fmt, desc, md_fragment_extra, hash);
 		assert(size > 0);
 		BufferClear();
-		if(!(b = BufferPrepare(size))) return 0;
+		if(!(b = BufferPrepare(size)))
+			{ perror(label); unrecoverable(); return; }
 		sprintf(b, fmt, desc, md_fragment_extra, hash);
 		fprintf(stderr, "outinlink: %s\n", b);
 	}
-	if(!(scan_str = Scanner(label, b, &notify_brief, SSDOC))) return 0;
+	if(!(scan_str = Scanner(label, b, &notify_brief, SSDOC)))
+		{ perror(label); unrecoverable(); return; }
 	style_prepare_output(END);
 	print_brief();
 	Scanner_(&scan_str);
-	return 1;
 }
 
-static void print_h2_for(enum Division d) {
+static void print_fragment_for(enum Division d) {
+	print_custom_fragment_for(division_strings[d], division_desc[d]);
+}
+
+static void print_custom_anchor_for(const char *const label,
+	const char *const desc) {
 	const enum Format f = CdocGetFormat();
+	assert(label && desc);
 	style_push(&styles[ST_H2][f]);
 	style_prepare_output(END);
 	printf("<a ");
 	if(f == OUT_HTML) {
-		printf("id = \"%s:\" name = \"%s:\"",
-			division_strings[d], division_strings[d]);
+		printf("id = \"%s:\" name = \"%s:\"", label, label);
 	} else {
-		const unsigned hash = internal_link_hash(division_strings[d]);
+		const unsigned hash = internal_link_hash(label);
 		printf("id = \"%spart-%x\" name = \"%spart-%x\"",
 			md_fragment_extra, hash, md_fragment_extra, hash);
 	}
-	printf(">%s</a>", division_desc[d]);
+	printf(">%s</a>", desc);
 	style_pop(); /* h2 */
+}
+
+static void print_anchor_for(enum Division d) {
+	print_custom_anchor_for(division_strings[d], division_desc[d]);
 }
 
 /** Outputs a report.
@@ -1056,13 +1065,11 @@ int ReportOut(void) {
 	/* TOC. */
 	style_push(&styles[ST_UL][format]), style_push(&styles[ST_LI][format]);
 	if(is_preamble) {
-		if(!output_internal_link(division_strings[DIV_PREAMBLE],
-			division_desc[DIV_PREAMBLE])) return 0;
+		print_fragment_for(DIV_PREAMBLE);
 		style_pop_push();
 	}
 	if(is_typedef) {
-		if(!output_internal_link(division_strings[DIV_TYPEDEF],
-			division_desc[DIV_TYPEDEF])) return 0;
+		print_fragment_for(DIV_TYPEDEF);
 		printf(": ");
 		style_push(&plain_csv), style_push(&no_style);
 		while((segment = SegmentArrayNext(&report, segment))) {
@@ -1074,7 +1081,8 @@ int ReportOut(void) {
 			params = TokenArrayGet(&segment->code);
 			assert(idxs[0] < TokenArraySize(&segment->code));
 			style_prepare_output(END);
-			printf("<a href = \"#%s-",
+			/* fixme */
+			printf("<a href = \"#%s:",
 				division_strings[DIV_TYPEDEF]);
 			print_token(&segment->code, params + idxs[0]);
 			printf("\">");
@@ -1086,8 +1094,7 @@ int ReportOut(void) {
 		style_pop_push();
 	}
 	if(is_tag) {
-		if(!output_internal_link(division_strings[DIV_TAG],
-			division_desc[DIV_TAG])) return 0;
+		print_fragment_for(DIV_TAG);
 		printf(": ");
 		style_push(&plain_csv), style_push(&no_style);
 		while((segment = SegmentArrayNext(&report, segment))) {
@@ -1099,6 +1106,7 @@ int ReportOut(void) {
 			params = TokenArrayGet(&segment->code);
 			assert(idxs[0] < TokenArraySize(&segment->code));
 			style_prepare_output(END);
+			/* fixme */
 			printf("<a href = \"#%s-", division_strings[DIV_TAG]);
 			print_token(&segment->code, params + idxs[0]);
 			printf("\">");
@@ -1110,8 +1118,7 @@ int ReportOut(void) {
 		style_pop_push();
 	}
 	if(is_data) {
-		if(!output_internal_link(division_strings[DIV_DATA],
-			division_desc[DIV_DATA])) return 0;
+		print_fragment_for(DIV_DATA);
 		printf(": ");
 		style_push(&plain_csv), style_push(&no_style);
 		while((segment = SegmentArrayNext(&report, segment))) {
@@ -1123,6 +1130,7 @@ int ReportOut(void) {
 			params = TokenArrayGet(&segment->code);
 			assert(idxs[0] < TokenArraySize(&segment->code));
 			style_prepare_output(END);
+			/* fixme */
 			printf("<a href = \"#%s-", division_strings[DIV_DATA]);
 			print_token(&segment->code, params + idxs[0]);
 			printf("\">");
@@ -1134,13 +1142,12 @@ int ReportOut(void) {
 		style_pop_push();
 	}
 	if(is_function) {
-		if(!output_internal_link("summary", "Function Summary")) return 0;
+		print_custom_fragment_for("summary", "Function Summary");
 		style_pop_push();
-		if(!output_internal_link(division_strings[DIV_FUNCTION],
-			division_desc[DIV_FUNCTION])) return 0;
+		print_fragment_for(DIV_FUNCTION);
 		style_pop_push();
 	}
-	if(is_license) output_internal_link("license",
+	if(is_license) print_custom_fragment_for("license",
 		symbol_attribute_titles[ATT_LICENSE]), style_pop_push();
 	style_pop_level();
 	assert(!StyleArraySize(&mode.styles));
@@ -1149,7 +1156,7 @@ int ReportOut(void) {
 	 I didn't want to type that much. */
 	if(is_preamble) {
 		style_push(&styles[ST_DIV][format]);
-		print_h2_for(DIV_PREAMBLE);
+		print_anchor_for(DIV_PREAMBLE);
 		while((segment = SegmentArrayNext(&report, segment))) {
 			if(segment->division != DIV_PREAMBLE) continue;
 			style_push(&styles[ST_P][format]);
@@ -1180,31 +1187,29 @@ int ReportOut(void) {
 	/* Print typedefs. */
 	if(is_typedef) {
 		style_push(&styles[ST_DIV][format]);
-		print_h2_for(DIV_TYPEDEF);
+		print_anchor_for(DIV_TYPEDEF);
 		division_act(DIV_TYPEDEF, &segment_print_all);
 		style_pop_level();
 	}
 	/* Print tags. */
 	if(is_tag) {
 		style_push(&styles[ST_DIV][format]);
-		print_h2_for(DIV_TAG);
+		print_anchor_for(DIV_TAG);
 		division_act(DIV_TAG, &segment_print_all);
 		style_pop_level();
 	}
 	/* Print general declarations. */
 	if(is_data) {
 		style_push(&styles[ST_DIV][format]);
-		print_h2_for(DIV_DATA);
+		print_anchor_for(DIV_DATA);
 		division_act(DIV_DATA, &segment_print_all);
 		style_pop_level();
 	}
 	/* Print functions. */
 	if(is_function) {
 		/* Function table. */
-		style_push(&styles[ST_DIV][format]), style_push(&styles[ST_H2][format]);
-		style_prepare_output(END);
-		printf("<a name = \"summary-\">Function Summary</a>");
-		style_pop(); /* h2 */
+		style_push(&styles[ST_DIV][format]);
+		print_custom_anchor_for("summary", "Function Summary");
 		style_prepare_output(END);
 		printf("<table>\n\n"
 			   "<tr><th>Modifiers</th><th>Function Name</th>"
@@ -1243,17 +1248,15 @@ int ReportOut(void) {
 
 		/* Functions. */
 		style_push(&styles[ST_DIV][format]);
-		print_h2_for(DIV_FUNCTION);
+		print_anchor_for(DIV_FUNCTION);
 		division_act(DIV_FUNCTION, &segment_print_all);
 		style_pop_level();
 	}
 	/* License. */
 	if(is_license) {
-		style_push(&styles[ST_DIV][format]), style_push(&styles[ST_H2][format]);
-		style_prepare_output(END);
-		printf("<a name = \"license:\">%s</a>",
+		style_push(&styles[ST_DIV][format]);
+		print_custom_fragment_for("license",
 			symbol_attribute_titles[ATT_LICENSE]);
-		style_pop(); /* h2 */
 		style_push(&styles[ST_P][format]);
 		div_att_print(&is_div_preamble, ATT_LICENSE, SHOW_TEXT);
 		style_pop_push();
