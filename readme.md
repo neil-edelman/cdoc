@@ -89,15 +89,15 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>int</td><td><a href = "#fn:CdocGetDebug">CdocGetDebug</a></td><td></td></tr>
+<tr><td align = right>int</td><td><a href = "#fn-CdocGetDebug">CdocGetDebug</a></td><td></td></tr>
 
-<tr><td align = right>int</td><td><a href = "#fn:CdocGetGithub">CdocGetGithub</a></td><td></td></tr>
+<tr><td align = right>int</td><td><a href = "#fn-CdocGetGithub">CdocGetGithub</a></td><td></td></tr>
 
-<tr><td align = right>enum Format</td><td><a href = "#fn:CdocGetFormat">CdocGetFormat</a></td><td></td></tr>
+<tr><td align = right>enum Format</td><td><a href = "#fn-CdocGetFormat">CdocGetFormat</a></td><td></td></tr>
 
-<tr><td align = right>const char \*</td><td><a href = "#fn:CdocGetInput">CdocGetInput</a></td><td></td></tr>
+<tr><td align = right>const char \*</td><td><a href = "#fn-CdocGetInput">CdocGetInput</a></td><td></td></tr>
 
-<tr><td align = right>const char \*</td><td><a href = "#fn:CdocGetOutput">CdocGetOutput</a></td><td></td></tr>
+<tr><td align = right>const char \*</td><td><a href = "#fn-CdocGetOutput">CdocGetOutput</a></td><td></td></tr>
 
 </table>
 
@@ -105,51 +105,51 @@ Note that it does not validate html; nothing stops one from writing, eg, a link,
 
  ## <a name = "fn:">Function Definitions</a> ##
 
- ### <div id = "fn:CdocGetDebug"><a name = "fn:CdocGetDebug">CdocGetDebug</a></div> ###
+ ### <div id = "fn-CdocGetDebug"><a name = "fn-CdocGetDebug">CdocGetDebug</a></div> ###
 
 `int `**`CdocGetDebug`**`(void)`
 
- - Return:  
+ - Return-  
    Whether the command\-line option to spam on `stderr` was set\.
 
 
 
 
- ### <div id = "fn:CdocGetGithub"><a name = "fn:CdocGetGithub">CdocGetGithub</a></div> ###
+ ### <div id = "fn-CdocGetGithub"><a name = "fn-CdocGetGithub">CdocGetGithub</a></div> ###
 
 `int `**`CdocGetGithub`**`(void)`
 
- - Return:  
+ - Return-  
    Whether it's in a mode which tries to alter the named fragments so that they work with the named anchors, which are screwed up by `GitHub` \.
 
 
 
 
- ### <div id = "fn:CdocGetFormat"><a name = "fn:CdocGetFormat">CdocGetFormat</a></div> ###
+ ### <div id = "fn-CdocGetFormat"><a name = "fn-CdocGetFormat">CdocGetFormat</a></div> ###
 
 `enum Format `**`CdocGetFormat`**`(void)`
 
- - Return:  
+ - Return-  
    What format the output was specified to be in `enum Format` \. If there was no output specified, guess before from the output filename\.
 
 
 
 
- ### <div id = "fn:CdocGetInput"><a name = "fn:CdocGetInput">CdocGetInput</a></div> ###
+ ### <div id = "fn-CdocGetInput"><a name = "fn-CdocGetInput">CdocGetInput</a></div> ###
 
 `const char *`**`CdocGetInput`**`(void)`
 
- - Return:  
+ - Return-  
    The input filename\.
 
 
 
 
- ### <div id = "fn:CdocGetOutput"><a name = "fn:CdocGetOutput">CdocGetOutput</a></div> ###
+ ### <div id = "fn-CdocGetOutput"><a name = "fn-CdocGetOutput">CdocGetOutput</a></div> ###
 
 `const char *`**`CdocGetOutput`**`(void)`
 
- - Return:  
+ - Return-  
    The output filename\.
 
 

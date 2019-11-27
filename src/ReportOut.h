@@ -231,7 +231,7 @@ OUT(see_fn) {
 	} else {
 		printf("[");
 		encode_len(fn->length, fn->from);
-		printf("](%s:", division_strings[DIV_FUNCTION]);
+		printf("](%s-", division_strings[DIV_FUNCTION]);
 		encode_len(fn->length, fn->from);
 		printf(")");
 	}
@@ -251,7 +251,7 @@ OUT(see_tag) {
 	} else {
 		printf("[");
 		encode_len(tag->length, tag->from);
-		printf("](%s:", division_strings[DIV_TAG]);
+		printf("](%s-", division_strings[DIV_TAG]);
 		encode_len(tag->length, tag->from);
 		printf(")");
 	}
@@ -271,7 +271,7 @@ OUT(see_typedef) {
 	} else {
 		printf("[");
 		encode_len(def->length, def->from);
-		printf("](%s:", division_strings[DIV_TYPEDEF]);
+		printf("](%s-", division_strings[DIV_TYPEDEF]);
 		encode_len(def->length, def->from);
 		printf(")");
 	}
@@ -291,7 +291,7 @@ OUT(see_data) {
 	} else {
 		printf("[");
 		encode_len(data->length, data->from);
-		printf("](%s:", division_strings[DIV_DATA]);
+		printf("](%s-", division_strings[DIV_DATA]);
 		encode_len(data->length, data->from);
 		printf(")");
 	}
@@ -648,7 +648,7 @@ static void segment_att_print_all(const struct Segment *const segment,
 				const struct Token *token
 					= TokenArrayGet(&segment->code) + *pindex;
 				style_push(&no_style);
-				printf("<a href = \"#%s:", division_strings[segment->division]);
+				printf("<a href = \"#%s-", division_strings[segment->division]);
 				print_token(&segment->code, token);
 				printf("\">");
 				print_token(&segment->code, token);
@@ -740,7 +740,7 @@ static void dl_segment_att(const struct Segment *const segment,
 		|| (!match && !segment_attribute_exists(segment, attribute))) return;
 	style_push(&styles[ST_DT][format]), style_push(&plain_text);
 	style_prepare_output(END);
-	printf("%s:", symbol_attribute_titles[attribute]);
+	printf("%s-", symbol_attribute_titles[attribute]);
 	if(match) style_separate(), style_push(&styles[ST_EM][format]),
 		print_token(&segment->code, match), style_pop();
 	style_pop(), style_pop();
@@ -775,7 +775,7 @@ static void dl_segment_specific_att(const struct Attribute *const attribute) {
 	assert(attribute);
 	style_push(&styles[ST_DT][format]), style_push(&plain_text);
 	style_prepare_output(END);
-	printf("%s:", symbol_attribute_titles[attribute->token.symbol]);
+	printf("%s-", symbol_attribute_titles[attribute->token.symbol]);
 	if(TokenArraySize(&attribute->header)) {
 		const struct Token *token = 0;
 		style_separate();
@@ -803,9 +803,9 @@ static void segment_print_all(const struct Segment *const segment) {
 	if((param = param_no(segment, 0))) {
 		style_push(&styles[ST_H3][format]);
 		style_prepare_output(END);
-		printf("<div id = \"%s:", division_strings[segment->division]);
+		printf("<div id = \"%s-", division_strings[segment->division]);
 		print_token(&segment->code, param);
-		printf("\"><a name = \"%s:", division_strings[segment->division]);
+		printf("\"><a name = \"%s-", division_strings[segment->division]);
 		print_token(&segment->code, param);
 		printf("\">");
 		print_token(&segment->code, param);
@@ -989,7 +989,7 @@ int ReportOut(void) {
 			params = TokenArrayGet(&segment->code);
 			assert(idxs[0] < TokenArraySize(&segment->code));
 			style_prepare_output(END);
-			printf("<a href = \"#%s:",
+			printf("<a href = \"#%s-",
 				division_strings[DIV_TYPEDEF]);
 			print_token(&segment->code, params + idxs[0]);
 			printf("\">");
@@ -1014,7 +1014,7 @@ int ReportOut(void) {
 			params = TokenArrayGet(&segment->code);
 			assert(idxs[0] < TokenArraySize(&segment->code));
 			style_prepare_output(END);
-			printf("<a href = \"#%s:", division_strings[DIV_TAG]);
+			printf("<a href = \"#%s-", division_strings[DIV_TAG]);
 			print_token(&segment->code, params + idxs[0]);
 			printf("\">");
 			print_token(&segment->code, params + idxs[0]);
@@ -1038,7 +1038,7 @@ int ReportOut(void) {
 			params = TokenArrayGet(&segment->code);
 			assert(idxs[0] < TokenArraySize(&segment->code));
 			style_prepare_output(END);
-			printf("<a href = \"#%s:", division_strings[DIV_DATA]);
+			printf("<a href = \"#%s-", division_strings[DIV_DATA]);
 			print_token(&segment->code, params + idxs[0]);
 			printf("\">");
 			print_token(&segment->code, params + idxs[0]);
@@ -1149,7 +1149,7 @@ int ReportOut(void) {
 			style_push(&plain_text);
 			best_guess_at_modifiers(segment);
 			style_pop();
-			printf("</td><td><a href = \"#%s:",
+			printf("</td><td><a href = \"#%s-",
 				   division_strings[DIV_FUNCTION]);
 			print_token(&segment->code, params + idxs[0]);
 			printf("\">");
