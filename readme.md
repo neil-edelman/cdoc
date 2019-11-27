@@ -1,11 +1,11 @@
  # Cdoc\.c\.re #
 
- * [Description](#user-content-part-a5e43a39)
- * [Function Summary](#user-content-part-5b9c058b)
- * [Function Definitions](#user-content-part-fef6433d)
- * [License](#user-content-part-77eb0f5a)
+ * [Description](#user-content-part-586264b9)
+ * [Function Summary](#user-content-part-10a44713)
+ * [Function Definitions](#user-content-part-6322e9d5)
+ * [License](#user-content-part-83e3344)
 
- ## <a id = "user-content-part-a5e43a39" name = "user-content-part-a5e43a39">Description</a> ##
+ ## <a id = "user-content-part-586264b9" name = "user-content-part-586264b9">Description</a> ##
 
 This is a context\-sensitive lexer intended to process parts of a `C` compilation unit and extract documentation\. This does not do any compiling, just very basic text\-parsing\.
 
@@ -71,7 +71,7 @@ Strict regular expressions that are much easier to parse have limited state and 
  * internal underscores are emphasis except in math/code mode;
  * a \`cool' word in a \`nice' sentence must be escaped;
 
-If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the `GitHub` page\. It bears no reseblance to Markdown suppoted in the document\.
+If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the `GitHub` page\. It bears no resemblance to Markdown supported in the document\.
 
 
 
@@ -80,10 +80,10 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the 
  * Dependancies:  
    [re2c](http://re2c.org/)
  * Caveat:  
-   Old\-style function support\. Trigraph support, \(haha\.\) Hide `const` on params when it can not affect function calls\. Prototypes and functions are the same thing; this will confuse it\. Hash map might be faster and more precise\. Links to non\-documented code which sometimes doesn't show up, work without error, and create broken links\. 80\-characters _per_ line limit, [https://xxyxyz\.org/line\-breaking/](https://xxyxyz.org/line-breaking/), \(needs buffering\.\) Eg, fixme with no args disappears; we should NOT check if the string is empty\. `A` `B` doesn't do what one expects in md\. If a segment has multiple licenses, they will show multiple times\. `foo.c:221` : space where it shouldn't be\. Why? `Array.h:304, SEE_FN "<T>Array_": link broken.` Why? Some help Markdown is; &lt;&gt; need to be escaped in all tables and headings\. It's a mess\. Arrrgg\! Fine, MD every anchor is hashed\. Ugly &lt;strong&gt;&lt;code&gt; blocks in MD\. Replace \` by literal `<code>` and it should be fine\.
+   Old\-style function support\. Trigraph support, \(haha\.\) Hide `const` on params when it can not affect function calls\. Prototypes and functions are the same thing; this will confuse it\. Hash map might be faster and more precise\. Links to non\-documented code which sometimes doesn't show up, work without error, and create broken links\. 80\-characters _per_ line limit, [https://xxyxyz\.org/line\-breaking/](https://xxyxyz.org/line-breaking/), \(needs buffering\.\) Eg, fixme with no args disappears; we should NOT check if the string is empty\. If a segment has multiple licenses, they will show multiple times\. `foo.c:221` : space where it shouldn't be\. Why? `Array.h:304, SEE_FN "<T>Array_": link broken.` Probably because we're escaping it\. Arrrgg\! Fine, MD every anchor is hashed\.
 
 
- ## <a id = "user-content-part-5b9c058b" name = "user-content-part-5b9c058b">Function Summary</a> ##
+ ## <a id = "user-content-part-10a44713" name = "user-content-part-10a44713">Function Summary</a> ##
 
 <table>
 
@@ -101,7 +101,7 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the 
 
 
 
- ## <a id = "user-content-part-fef6433d" name = "user-content-part-fef6433d">Function Definitions</a> ##
+ ## <a id = "user-content-part-6322e9d5" name = "user-content-part-6322e9d5">Function Definitions</a> ##
 
  ### <a name = "fn:CdocGetDebug" id = "fixme fn:CdocGetDebug">CdocGetDebug</a> ###
 
@@ -145,7 +145,7 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the 
 
 
 
- ## <a id = "user-content-part-77eb0f5a" name = "user-content-part-77eb0f5a">License</a> ##
+ ## <a id = "user-content-part-83e3344" name = "user-content-part-83e3344">License</a> ##
 
 2019 Neil Edelman, distributed under the terms of the [MIT License](https://opensource.org/licenses/MIT)\.
 

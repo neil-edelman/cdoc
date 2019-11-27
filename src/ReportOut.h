@@ -14,19 +14,6 @@ static unsigned fnv_32a_str(const char *str) {
 	return hval & 0xffffffff;
 }
 
-static unsigned internal_link_hash(const char *const label) {
-	const char *const fmt = "%s:";
-	int size;
-	char *b;
-	assert(label);
-	BufferClear();
-	if((size = snprintf(0, 0, fmt, label)) <= 0
-		|| !(b = BufferPrepare(size))) { unrecoverable(); return 0; }
-	sprintf(b, fmt, label);
-	fprintf(stderr, "internal link hash str: %s\n", b);
-	return fnv_32a_str(b);
-}
-
 /* This is very `GitHub` specific. */
 static const char *const md_fragment_extra = "user-content-";
 
@@ -939,28 +926,21 @@ static void best_guess_at_modifiers(const struct Segment *const segment) {
 
 static void print_custom_fragment_for(const char *const label,
 	const char *const desc) {
+	const enum Format f = CdocGetFormat();
+	const char *const fmt = f == OUT_HTML ? "[%s](#%s:)" : "[%s](#%spart-%x)";
+	const unsigned hash = fnv_32a_str(label);
 	struct Scanner *scan_str;
 	size_t size;
 	char *b;
-	if(CdocGetFormat() == OUT_HTML) {
-		const char *const fmt = "[%s](#%s:)";
-		size = snprintf(0, 0, fmt, desc, label, ":");
-		assert(size > 0);
-		BufferClear();
-		if(!(b = BufferPrepare(size)))
-			{ perror(label); unrecoverable(); return; }
-		sprintf(b, fmt, desc, label);
-	} else {
-		const char *const fmt = "[%s](#%spart-%x)";
-		unsigned hash = internal_link_hash(label);
-		size = snprintf(0, 0, fmt, desc, md_fragment_extra, hash);
-		assert(size > 0);
-		BufferClear();
-		if(!(b = BufferPrepare(size)))
-			{ perror(label); unrecoverable(); return; }
-		sprintf(b, fmt, desc, md_fragment_extra, hash);
-		fprintf(stderr, "outinlink: %s\n", b);
-	}
+	size = (f == OUT_HTML) ? snprintf(0, 0, fmt, desc, label)
+		: snprintf(0, 0, fmt, desc, md_fragment_extra, hash);
+	assert(size > 0);
+	BufferClear();
+	if(!(b = BufferPrepare(size)))
+		{ perror(label); unrecoverable(); return; }
+	f == OUT_HTML ? sprintf(b, fmt, desc, label)
+		: sprintf(b, fmt, desc, md_fragment_extra, hash);
+	fprintf(stderr, "outinlink: %s\n", b);
 	if(!(scan_str = Scanner(label, b, &notify_brief, SSDOC)))
 		{ perror(label); unrecoverable(); return; }
 	style_prepare_output(END);
@@ -982,7 +962,7 @@ static void print_custom_anchor_for(const char *const label,
 	if(f == OUT_HTML) {
 		printf("id = \"%s:\" name = \"%s:\"", label, label);
 	} else {
-		const unsigned hash = internal_link_hash(label);
+		const unsigned hash = fnv_32a_str(label);
 		printf("id = \"%spart-%x\" name = \"%spart-%x\"",
 			md_fragment_extra, hash, md_fragment_extra, hash);
 	}

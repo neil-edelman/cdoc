@@ -109,7 +109,7 @@
  \* a \`cool' word in a \`nice' sentence must be escaped;
 
  If one sets `md` as output, it goes to `GitHub` Markdown that is visible on
- the `GitHub` page. It bears no reseblance to Markdown suppoted in the
+ the `GitHub` page. It bears no resemblance to Markdown supported in the
  document.
 
  @std C89
@@ -124,15 +124,11 @@
  (needs buffering.)
  @fixme Eg, fixme with no args disappears; we should NOT check if the string is
  empty.
- @fixme `A``B` doesn't do what one expects in md.
  @fixme If a segment has multiple licenses, they will show multiple times.
  @fixme `foo.c:221`: space where it shouldn't be. Why?
- @fixme `Array.h:304, SEE_FN "<T>Array_": link broken.` Why?
- @fixme Some help Markdown is; <> need to be escaped in all tables and
- headings. It's a mess.
- @fixme Arrrgg! Fine, MD every anchor is hashed.
- @fixme Ugly <strong><code> blocks in MD. Replace \` by literal `<code>` and it
- should be fine. */
+ @fixme `Array.h:304, SEE_FN "<T>Array_": link broken.` Probably because we're
+ escaping it.
+ @fixme Arrrgg! Fine, MD every anchor is hashed. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
