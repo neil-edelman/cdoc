@@ -1,3 +1,35 @@
+/** Perform a 32 bit
+ [Fowler/Noll/Vo FNV-1a hash](http://www.isthe.com/chongo/tech/comp/fnv/) on a
+ string. This assumes that size of `int` is at least 32 bits; if this is not
+ true, we may get a different answer, (`stdint.h` is `C99`.) */
+static unsigned fnv_32a_str(const char *str) {
+	const unsigned char *s = (const unsigned char *)str;
+	/* 32 bit FNV-1 and FNV-1a non-zero initial basis, FNV1_32A_INIT */
+	unsigned hval = 0x811c9dc5;
+	/* FNV magic prime `FNV_32_PRIME 0x01000193`. */
+	while(*s) {
+		hval ^= *s++;
+		hval += (hval<<1) + (hval<<4) + (hval<<7) + (hval<<8) + (hval<<24);
+	}
+	return hval & 0xffffffff;
+}
+
+static unsigned internal_link_hash(const char *const label) {
+	const char *const fmt = "%s:";
+	int size;
+	char *b;
+	assert(label);
+	BufferClear();
+	if((size = snprintf(0, 0, fmt, label)) <= 0
+		|| !(b = BufferPrepare(size))) { unrecoverable(); return 0; }
+	sprintf(b, fmt, label);
+	fprintf(stderr, "internal link hash str: %s\n", b);
+	return fnv_32a_str(b);
+}
+
+/* This is very `GitHub` specific. */
+static const char *const md_fragment_extra = "user-content-";
+
 /* `SYMBOL` is declared in `Scanner.h`. */
 static const char *symbol_attribute_titles[] = { SYMBOL(PARAM6F) };
 
@@ -35,6 +67,7 @@ OUT(lit) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->length > 0 && t->from);
 	if(is_buffer) {
+		BufferClear();
 		encode_len_s(t->length, t->from);
 	} else {
 		style_prepare_output(t->symbol);
@@ -223,17 +256,25 @@ OUT(see_fn) {
 	assert(tokens && fn && fn->symbol == SEE_FN && !is_buffer);
 	style_prepare_output(fn->symbol);
 	if(CdocGetFormat() == OUT_HTML) {
-		printf("<a href = \"#%s-", division_strings[DIV_FUNCTION]);
+		printf("<a href = \"#%s:", division_strings[DIV_FUNCTION]);
 		encode_len(fn->length, fn->from);
 		printf("\">");
 		encode_len(fn->length, fn->from);
 		printf("</a>");
 	} else {
+		int len;
+		const char *const fmt = "%s:";
+		char *b;
 		printf("[");
 		encode_len(fn->length, fn->from);
-		printf("](#%s-", division_strings[DIV_FUNCTION]);
-		encode_len(fn->length, fn->from);
-		printf(")");
+		printf("](#%s", md_fragment_extra);
+		BufferClear();
+		len = snprintf(0, 0, fmt, division_strings[DIV_FUNCTION]);
+		if(len <= 0 || !(b = BufferPrepare(len))) return 0;
+		sprintf(b, fmt, division_strings[DIV_FUNCTION]);
+		encode_len_s(fn->length, fn->from);
+		fprintf(stderr, "see_fn hash str: %s\n", BufferGet());
+		printf("part-%x)", fnv_32a_str(BufferGet()));
 	}
 	*ptoken = TokenArrayNext(tokens, fn);
 	return 1;
@@ -243,12 +284,13 @@ OUT(see_tag) {
 	assert(tokens && tag && tag->symbol == SEE_TAG && !is_buffer);
 	style_prepare_output(tag->symbol);
 	if(CdocGetFormat() == OUT_HTML) {
-		printf("<a href = \"#%s-", division_strings[DIV_TAG]);
+		printf("<a href = \"#%s:", division_strings[DIV_TAG]);
 		encode_len(tag->length, tag->from);
 		printf("\">");
 		encode_len(tag->length, tag->from);
 		printf("</a>");
 	} else {
+		/* fixme */
 		printf("[");
 		encode_len(tag->length, tag->from);
 		printf("](#%s-", division_strings[DIV_TAG]);
@@ -263,12 +305,13 @@ OUT(see_typedef) {
 	assert(tokens && def && def->symbol == SEE_TYPEDEF && !is_buffer);
 	style_prepare_output(def->symbol);
 	if(CdocGetFormat() == OUT_HTML) {
-		printf("<a href = \"#%s-", division_strings[DIV_TYPEDEF]);
+		printf("<a href = \"#%s:", division_strings[DIV_TYPEDEF]);
 		encode_len(def->length, def->from);
 		printf("\">");
 		encode_len(def->length, def->from);
 		printf("</a>");
 	} else {
+		/* fixme */
 		printf("[");
 		encode_len(def->length, def->from);
 		printf("](#%s-", division_strings[DIV_TYPEDEF]);
@@ -283,7 +326,8 @@ OUT(see_data) {
 	assert(tokens && data && data->symbol == SEE_DATA && !is_buffer);
 	style_prepare_output(data->symbol);
 	if(CdocGetFormat() == OUT_HTML) {
-		printf("<a href = \"#%s-", division_strings[DIV_DATA]);
+		/* fixme */
+		printf("<a href = \"#%s:", division_strings[DIV_DATA]);
 		encode_len(data->length, data->from);
 		printf("\">");
 		encode_len(data->length, data->from);
@@ -291,7 +335,7 @@ OUT(see_data) {
 	} else {
 		printf("[");
 		encode_len(data->length, data->from);
-		printf("](#%s-", division_strings[DIV_DATA]);
+		printf("](#%s:", division_strings[DIV_DATA]);
 		encode_len(data->length, data->from);
 		printf(")");
 	}
@@ -648,11 +692,17 @@ static void segment_att_print_all(const struct Segment *const segment,
 				const struct Token *token
 					= TokenArrayGet(&segment->code) + *pindex;
 				style_push(&no_style);
-				printf("<a href = \"#%s-", division_strings[segment->division]);
-				print_token(&segment->code, token);
-				printf("\">");
-				print_token(&segment->code, token);
-				printf("</a>");
+				if(CdocGetFormat() == OUT_HTML) {
+					printf("<a href = \"#%s:",
+						division_strings[segment->division]);
+					print_token(&segment->code, token);
+					printf("\">");
+					print_token(&segment->code, token);
+					printf("</a>");
+				} else {
+					printf("fixme: ");
+					print_token(&segment->code, token);
+				}
 				style_pop();
 			} else {
 				printf("%s", division_strings[segment->division]);
@@ -794,40 +844,46 @@ static void dl_segment_specific_att(const struct Attribute *const attribute) {
 /** Prints all a `segment`.
  @implements division_act */
 static void segment_print_all(const struct Segment *const segment) {
-	const enum Format format = CdocGetFormat();
+	const enum Format f = CdocGetFormat();
 	const struct Token *param;
 	assert(segment && segment->division != DIV_PREAMBLE);
-	style_push(&styles[ST_DIV][format]);
+	style_push(&styles[ST_DIV][f]);
 
 	/* The title is generally the first param. Only single-words. */
 	if((param = param_no(segment, 0))) {
-		style_push(&styles[ST_H3][format]);
+		style_push(&styles[ST_H3][f]);
 		style_prepare_output(END);
-		printf("<a name = \"%s-", division_strings[segment->division]);
+		printf("<a name = \"%s:", division_strings[segment->division]);
 		print_token(&segment->code, param);
-		printf("\" id = \"%s-", division_strings[segment->division]);
-		print_token(&segment->code, param);
+		printf("\" id = \"");
+		if(f == OUT_HTML) {
+			printf("%s:", division_strings[segment->division]);
+			print_token(&segment->code, param);
+		} else {
+			printf("fixme %s:", division_strings[segment->division]);
+			print_token(&segment->code, param);
+		}
 		printf("\">");
 		print_token(&segment->code, param);
 		printf("</a>");
 		style_pop_level();
-		style_push(&styles[ST_P][format]), style_push(&styles[ST_CODE][format]);
+		style_push(&styles[ST_P][f]), style_push(&styles[ST_CODE][f]);
 		highlight_tokens(&segment->code, &segment->code_params);
 		style_pop_level();
 	} else {
-		style_push(&styles[ST_H3][format]);
+		style_push(&styles[ST_H3][f]);
 		style_prepare_output(END);
 		printf("Unknown");
 		style_pop_level();
 	}
 
 	/* Now text. */
-	style_push(&styles[ST_P][format]);
+	style_push(&styles[ST_P][f]);
 	print_tokens(&segment->doc);
 	style_pop_level();
 
 	/* Attrubutes. */
-	style_push(&styles[ST_DL][format]);
+	style_push(&styles[ST_DL][f]);
 	if(segment->division == DIV_FUNCTION) {
 		const struct Attribute *att = 0;
 		size_t no;
@@ -880,14 +936,26 @@ static void best_guess_at_modifiers(const struct Segment *const segment) {
  only for fixed links. */
 static int output_internal_link(const char *const label,
 	const char *const desc) {
-	const char *const fmt = "[%s](#%s-)";
 	struct Scanner *scan_str;
 	size_t size;
 	char *b;
-	BufferClear();
-	size = snprintf(0, 0, fmt, desc, label);
-	if(!(b = BufferPrepare(size))) return 0;
-	sprintf(b, fmt, desc, label);
+	if(CdocGetFormat() == OUT_HTML) {
+		const char *const fmt = "[%s](#%s:)";
+		size = snprintf(0, 0, fmt, desc, label, ":");
+		assert(size > 0);
+		BufferClear();
+		if(!(b = BufferPrepare(size))) return 0;
+		sprintf(b, fmt, desc, label);
+	} else {
+		const char *const fmt = "[%s](#%spart-%x)";
+		unsigned hash = internal_link_hash(label);
+		size = snprintf(0, 0, fmt, desc, md_fragment_extra, hash);
+		assert(size > 0);
+		BufferClear();
+		if(!(b = BufferPrepare(size))) return 0;
+		sprintf(b, fmt, desc, md_fragment_extra, hash);
+		fprintf(stderr, "outinlink: %s\n", b);
+	}
 	if(!(scan_str = Scanner(label, b, &notify_brief, SSDOC))) return 0;
 	style_prepare_output(END);
 	print_brief();
@@ -1065,8 +1133,17 @@ int ReportOut(void) {
 	if(is_preamble) {
 		style_push(&styles[ST_DIV][format]), style_push(&styles[ST_H2][format]);
 		style_prepare_output(END);
-		printf("<a name = \"%s-\">Description</a>",
-			division_strings[DIV_PREAMBLE]);
+		printf("<a ");
+		if(format == OUT_HTML) {
+			printf("id = \"%s:\" name = \"%s:\"",
+				division_strings[DIV_PREAMBLE], division_strings[DIV_PREAMBLE]);
+		} else {
+			const unsigned hash
+				= internal_link_hash(division_strings[DIV_PREAMBLE]);
+			printf("id = \"%spart-%x\" name = \"part-%x\"", md_fragment_extra,
+				hash, hash);
+		}
+		printf(">%s</a>", division_desc[DIV_PREAMBLE]);
 		style_pop(); /* h2 */
 		while((segment = SegmentArrayNext(&report, segment))) {
 			if(segment->division != DIV_PREAMBLE) continue;

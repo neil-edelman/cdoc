@@ -130,7 +130,9 @@
  @fixme `Array.h:304, SEE_FN "<T>Array_": link broken.` Why?
  @fixme Some help Markdown is; <> need to be escaped in all tables and
  headings. It's a mess.
- @fixme Arrrgg! Fine, MD every anchor is hashed. */
+ @fixme Arrrgg! Fine, MD every anchor is hashed.
+ @fixme Ugly <strong><code> blocks in MD. Replace \` by literal `<code>` and it
+ should be fine. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */

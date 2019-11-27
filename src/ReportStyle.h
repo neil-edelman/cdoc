@@ -236,7 +236,8 @@ static int style_is_suppress_escapes(void) {
 }
 
 /** Encode a bunch of arbitrary text `from` to `length` as whatever the options
- were. */
+ were.
+ @param[is_buffer] Appends to the buffer chosen in `Buffer.c`. */
 static void encode_len_choose(int length, const char *from,
 	const int is_buffer) {
 	int is_suppress;
@@ -257,7 +258,6 @@ static void encode_len_choose(int length, const char *from,
 	}
 
 html_encode_buffer:
-	BufferClear();
 	while(length - ahead) {
 		switch(from[ahead]) {
 		case '<': str = HTML_LT, str_len = strlen(str); break;
@@ -285,7 +285,6 @@ terminate_html:
 	return;
 
 md_encode_buffer:
-	BufferClear();
 	is_suppress = style_is_suppress_escapes();
 	while(length - ahead) {
 		const char *escape = 0;

@@ -6,7 +6,7 @@
 /** Define the divisions of output; these go in separate sections, and
  approximately follow namespaces. */
 #define DIVISION(X) \
-	X(DIV_PREAMBLE, "preamble", "Desciption"), \
+	X(DIV_PREAMBLE, "preamble", "Description"), \
 	X(DIV_FUNCTION, "fn",       "Function Definitions"), \
 	X(DIV_TAG,      "tag",      "Struct, Union, and Enum Definitions"), \
 	X(DIV_TYPEDEF,  "typedef",  "Typedef Aliases"), \

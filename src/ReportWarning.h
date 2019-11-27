@@ -123,6 +123,7 @@ static void warn_internal_link(const struct Token *const token) {
 		default: return;
 	}
 	BufferSwap();
+	BufferClear();
 	/* Encode the link text. */
 	encode_len_s(token->length, token->from);
 	a = BufferGet();
