@@ -227,8 +227,8 @@ static void style_separate(void) {
 /** Only used with md. */
 static int style_is_suppress_escapes(void) {
 	struct Style *style = 0;
-	/*fprintf(stderr, "Does %s suppress escapes?\n",
-		StyleArrayToString(&mode.styles));*/
+	fprintf(stderr, "Does %s suppress escapes?\n",
+		StyleArrayToString(&mode.styles));
 	while((style = StyleArrayNext(&mode.styles, style))) {
 		if(style->text->is_suppress_escapes) return 1;
 	}
