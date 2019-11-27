@@ -17,7 +17,6 @@
 #include "UrlEncode.h"
 #include "Buffer.h"
 #include "Path.h"
-#include "Anchor.h"
 #include "Text.h"
 #include "ImageDimension.h"
 #include "Cdoc.h"

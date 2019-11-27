@@ -1,10 +1,10 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- This is a hack to output to GitHub, which transforms the anchor names but not
- fragment links, leading to broken anchor links over their whole site. It works
- with browsers that have been published in very recently because the ideotic id
- has...
+ This is a hack to support older browsers (\~ < 2016) which have a "name"
+ instead of the "id" element. The triumph of CSS is that it separated the
+ content from the presentation, and now we are slowly going back to having the
+ equivalent of FONT tags everywhere.
 
  @std C89/90 */
 
@@ -104,8 +104,6 @@ static int github_anchor_cat(const size_t a_size, const char *const a) {
 }
 
 /** Anchor that will go with <fn:AnchorHref>. */
-const char *Anchor() {
-}
 
 /** "Safe" anchor. */
 const char *AnchorHref(const size_t a_size, const char *a) {
