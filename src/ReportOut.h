@@ -740,7 +740,7 @@ static void dl_segment_att(const struct Segment *const segment,
 		|| (!match && !segment_attribute_exists(segment, attribute))) return;
 	style_push(&styles[ST_DT][format]), style_push(&plain_text);
 	style_prepare_output(END);
-	printf("%s-", symbol_attribute_titles[attribute]);
+	printf("%s:", symbol_attribute_titles[attribute]);
 	if(match) style_separate(), style_push(&styles[ST_EM][format]),
 		print_token(&segment->code, match), style_pop();
 	style_pop(), style_pop();
@@ -775,7 +775,7 @@ static void dl_segment_specific_att(const struct Attribute *const attribute) {
 	assert(attribute);
 	style_push(&styles[ST_DT][format]), style_push(&plain_text);
 	style_prepare_output(END);
-	printf("%s-", symbol_attribute_titles[attribute->token.symbol]);
+	printf("%s:", symbol_attribute_titles[attribute->token.symbol]);
 	if(TokenArraySize(&attribute->header)) {
 		const struct Token *token = 0;
 		style_separate();
