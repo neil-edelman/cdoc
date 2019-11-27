@@ -627,7 +627,7 @@ static void highlight_tokens(const struct TokenArray *const tokens,
 			is_highlight = 0;
 		}
 		if(is_highlight) style_highlight_on(&styles[is_first_highlight
-			? ST_CODE_STRONG : ST_CODE_EM][f]);
+			? ST_STRONG : ST_EM][f]);
 		token = print_token(tokens, token);
 		if(is_highlight) style_highlight_off(), is_first_highlight = 0;
 	}
@@ -867,8 +867,11 @@ static void segment_print_all(const struct Segment *const segment) {
 		print_token(&segment->code, param);
 		printf("</a>");
 		style_pop_level();
-		style_push(&styles[ST_P][f]), style_push(&styles[ST_CODE][f]);
+		style_push(&styles[ST_P][f]), style_push(&no_escape);
+		style_prepare_output(END);
+		printf("<code>");
 		highlight_tokens(&segment->code, &segment->code_params);
+		printf("</code>");
 		style_pop_level();
 	} else {
 		style_push(&styles[ST_H3][f]);

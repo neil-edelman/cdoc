@@ -73,19 +73,12 @@ styles[][3] = {
 		{ "em", "_", "", "_", 0, 0 } },
 	{ { "", 0, 0, 0, 0, 0 },
 		{ "strong", "<strong>", "", "</strong>", 0, 0 },
-		{ "strong", "*", "", "*", 0, 0 } },
-	{ { "", 0, 0, 0, 0, 0 },
-		{ "codeem", "<em>", "", "</em>", 0, 0 },
-		{ "codeem", "`_`", "", "`_`", 0, 0 } },
-	{ { "", 0, 0, 0, 0, 0 },
-		{ "codeb", "<strong>", "", "</strong>", 0, 0 },
-		{ "codeb", "`**`", "", "`**`", 0, 0 } }
+		{ "strong", "*", "", "*", 0, 0 } }
 };
 
 /* This is a hack. Don't change the styles without changing this. */
 enum { ST_DIV, ST_P, ST_UL, ST_LI, ST_CODE, ST_PRE, ST_PRELINE,
-	ST_H1, ST_H2, ST_H3, ST_DL, ST_DT, ST_DD, ST_DESC, ST_EM, ST_STRONG,
-	ST_CODE_EM, ST_CODE_STRONG };
+	ST_H1, ST_H2, ST_H3, ST_DL, ST_DT, ST_DD, ST_DESC, ST_EM, ST_STRONG };
 
 /* This does a delayed lazy unencoded surrounding text. Popping a `Style` and
  pushing another one, then printing, will cause a end-separator-start-print.
