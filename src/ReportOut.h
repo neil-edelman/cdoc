@@ -742,10 +742,8 @@ static void division_act(const enum Division division,
 	void (*act)(const struct Segment *const segment)) {
 	const struct Segment *segment = 0;
 	assert(act);
-	while((segment = SegmentArrayNext(&report, segment))) {
-		if(segment->division != division) continue;
-		act(segment);
-	}
+	while((segment = SegmentArrayNext(&report, segment)))
+		if(segment->division == division) act(segment);
 }
 
 /** @return Is `attribute_symbol` in the report? (needed for `@licence`.) */
@@ -855,7 +853,6 @@ static void best_guess_at_modifiers(const struct Segment *const segment) {
 static void scan_doc_string(const char *const str) {
 	struct Scanner *scan;
 	assert(str);
-	fprintf(stderr, "scan_doc_string: %s\n", str);
 	if(!(scan = Scanner("string", str, &notify_brief, SSDOC)))
 		{ perror(str); unrecoverable(); return; }
 	style_string_output(), print_brief();
@@ -908,7 +905,7 @@ static void print_anchor_for(const enum Division d, const char *const label) {
 	const enum Format f = CdocGetFormat();
 	const char *const division = division_strings[d];
 	assert(label);
-	style_push(&styles[ST_H2][f]);
+	style_push(&styles[ST_H3][f]);
 	style_string_output();
 	printf("<a ");
 	if(f == OUT_HTML) {
@@ -955,10 +952,8 @@ static void segment_print_all(const struct Segment *const segment) {
 
 	/* The title is generally the first param. Only single-words. */
 	if((param = param_no(segment, 0))) {
-		style_push(&styles[ST_H3][f]);
 		b = print_token_s(&segment->code, param);
 		print_anchor_for(segment->division, b);
-		style_pop_level();
 		style_push(&styles[ST_P][f]), style_push(&no_escape);
 		style_string_output();
 		printf("<code>");
@@ -1084,10 +1079,7 @@ int ReportOut(void) {
 
 	/* TOC. */
 	style_push(&styles[ST_UL][format]), style_push(&styles[ST_LI][format]);
-	if(is_preamble) {
-		print_heading_fragment_for(DIV_PREAMBLE);
-		style_pop_push();
-	}
+	if(is_preamble) print_heading_fragment_for(DIV_PREAMBLE), style_pop_push();
 	if(is_typedef) {
 		print_heading_fragment_for(DIV_TYPEDEF);
 		printf(": ");
@@ -1213,24 +1205,18 @@ int ReportOut(void) {
 
 	/* Print typedefs. */
 	if(is_typedef) {
-		style_push(&styles[ST_DIV][format]);
 		print_heading_anchor_for(DIV_TYPEDEF);
 		division_act(DIV_TYPEDEF, &segment_print_all);
-		style_pop_level();
 	}
 	/* Print tags. */
 	if(is_tag) {
-		style_push(&styles[ST_DIV][format]);
 		print_heading_anchor_for(DIV_TAG);
 		division_act(DIV_TAG, &segment_print_all);
-		style_pop_level();
 	}
 	/* Print general declarations. */
 	if(is_data) {
-		style_push(&styles[ST_DIV][format]);
 		print_heading_anchor_for(DIV_DATA);
 		division_act(DIV_DATA, &segment_print_all);
-		style_pop_level();
 	}
 	/* Print functions. */
 	if(is_function) {

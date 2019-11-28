@@ -103,9 +103,7 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the 
 
  ## <a id = "user-content-fn" name = "user-content-fn">Function Definitions</a> ##
 
- ###  ## <a id = "user-content-fn-155d6ff" name = "user-content-fn-155d6ff">CdocGetDebug</a> ##
-
- ###
+ ### <a id = "user-content-fn-155d6ff" name = "user-content-fn-155d6ff">CdocGetDebug</a> ###
 
 <code>int <strong>CdocGetDebug</strong>(void)</code>
 
@@ -115,9 +113,7 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the 
 
 
 
- ###  ## <a id = "user-content-fn-334aa1ab" name = "user-content-fn-334aa1ab">CdocGetFormat</a> ##
-
- ###
+ ### <a id = "user-content-fn-334aa1ab" name = "user-content-fn-334aa1ab">CdocGetFormat</a> ###
 
 <code>enum Format <strong>CdocGetFormat</strong>(void)</code>
 
@@ -127,9 +123,7 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the 
 
 
 
- ###  ## <a id = "user-content-fn-7ee5d21c" name = "user-content-fn-7ee5d21c">CdocGetInput</a> ##
-
- ###
+ ### <a id = "user-content-fn-7ee5d21c" name = "user-content-fn-7ee5d21c">CdocGetInput</a> ###
 
 <code>const char *<strong>CdocGetInput</strong>(void)</code>
 
@@ -139,9 +133,7 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the 
 
 
 
- ###  ## <a id = "user-content-fn-18fcd065" name = "user-content-fn-18fcd065">CdocGetOutput</a> ##
-
- ###
+ ### <a id = "user-content-fn-18fcd065" name = "user-content-fn-18fcd065">CdocGetOutput</a> ###
 
 <code>const char *<strong>CdocGetOutput</strong>(void)</code>
 
