@@ -4,9 +4,9 @@
  This is a context-sensitive parser intended to process parts of a `C`
  compilation unit and extract documentation, as well as outputting that
  documentation into the format specified. Contrary to other parsers, this has
- been designed to be very strict, warning one of errors. This does not do any
- compiling, just text-parsing. Thus, one can easily confuse by redefining
- symbols. However, the macro `A_B_(Foo,Bar)` is transformed into
+ been designed to be very strict, warning one of documentation errors. This
+ does not do any compiling, just text-parsing. Thus, one can easily confuse by
+ redefining symbols. However, the macro `A_B_(Foo,Bar)` is transformed into
  `<A>Foo<B>Bar`.
 
  Documentation commands are `/` `**…` (together) and are ended with `*…/`, but
