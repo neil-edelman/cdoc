@@ -135,9 +135,7 @@ static void warn_internal_link(const struct Token *const token) {
 			|| !(fun_index = IndexArrayNext(&segment->code_params, 0))
 			|| *fun_index >= TokenArraySize(&segment->code)) continue;
 		compare = TokenArrayGet(&segment->code) + *fun_index;
-		BufferClear();
-		print_token_s(&segment->code, compare);
-		b = BufferGet();
+		b = print_token_s(&segment->code, compare);
 		if(!strcmp(a, b))
 			{ if(CdocGetDebug()) fprintf(stderr, "%s: link okay.\n",
 				pos(token)); return; }
