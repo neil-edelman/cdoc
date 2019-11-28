@@ -144,6 +144,9 @@
 #include "../src/Semantic.h"
 #include "../src/Cdoc.h"
 
+/** Typedef! */
+typedef int Integer;
+
 static void usage(void) {
 	fprintf(stderr, "Usage: cdoc [options] <input-file>\n"
 		"Where options are:\n"

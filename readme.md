@@ -1,6 +1,7 @@
  # Cdoc\.c\.re #
 
  * [Description](#user-content-preamble)
+ * [Typedef Aliases](#user-content-typedef):  [Integer](#user-content-typedef-d9a953e5) or <a href = "#typedef:Integer">Integer</a>
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -81,6 +82,16 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the 
    [re2c](http://re2c.org/)
  * Caveat:  
    Old\-style function support\. Trigraph support, \(haha\.\) Hide `const` on params when it can not affect function calls\. Prototypes and functions are the same thing; this will confuse it\. Hash map might be faster and more precise\. Links to non\-documented code which sometimes doesn't show up, work without error, and create broken links\. 80\-characters _per_ line limit, [https://xxyxyz\.org/line\-breaking/](https://xxyxyz.org/line-breaking/), \(needs buffering\.\) Eg, fixme with no args disappears; we should NOT check if the string is empty\. If a segment has multiple licenses, they will show multiple times\. `foo.c:221` : space where it shouldn't be\. Why? `Array.h:304, SEE_FN "<T>Array_": link broken.` Probably because we're escaping it\. Arrrgg\! Fine, MD every anchor is hashed\.
+
+
+ ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
+
+ ### <a id = "user-content-typedef-d9a953e5" name = "user-content-typedef-d9a953e5">Integer</a> ###
+
+<code>typedef int <strong>Integer</strong>;</code>
+
+Typedef\!
+
 
 
  ## <a id = "user-content-summary" name = "user-content-summary">Function Summary</a> ##
