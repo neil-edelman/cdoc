@@ -75,13 +75,13 @@ Typedef\!
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>int</td><td><a href = "#fn-CdocGetDebug">CdocGetDebug</a></td><td></td></tr>
+<tr><td align = right>int</td><td>[CdocGetDebug](#user-content-fn-155d6ff)</td><td></td></tr>
 
-<tr><td align = right>enum Format</td><td><a href = "#fn-CdocGetFormat">CdocGetFormat</a></td><td></td></tr>
+<tr><td align = right>enum Format</td><td>[CdocGetFormat](#user-content-fn-334aa1ab)</td><td></td></tr>
 
-<tr><td align = right>const char *</td><td><a href = "#fn-CdocGetInput">CdocGetInput</a></td><td></td></tr>
+<tr><td align = right>const char *</td><td>[CdocGetInput](#user-content-fn-7ee5d21c)</td><td></td></tr>
 
-<tr><td align = right>const char *</td><td><a href = "#fn-CdocGetOutput">CdocGetOutput</a></td><td></td></tr>
+<tr><td align = right>const char *</td><td>[CdocGetOutput](#user-content-fn-18fcd065)</td><td></td></tr>
 
 </table>
 

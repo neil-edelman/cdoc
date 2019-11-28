@@ -827,7 +827,7 @@ static void dl_segment_specific_att(const struct Attribute *const attribute) {
 	style_pop(), style_pop();
 }
 
-static void best_guess_at_modifiers(const struct Segment *const segment) {
+static void print_best_guess_at_modifiers(const struct Segment *const segment) {
 	const struct Token *code = TokenArrayGet(&segment->code),
 		*stop = code + *IndexArrayGet(&segment->code_params);
 	assert(segment && segment->division == DIV_FUNCTION
@@ -1183,8 +1183,9 @@ int ReportOut(void) {
 			   "<th>Argument List</th></tr>\n\n");
 		style_push(&no_escape);
 		while((segment = SegmentArrayNext(&report, segment))) {
-			size_t *idxs, idxn, idx, paramn;
 			struct Token *params;
+			size_t *idxs, idxn, idx, paramn;
+			const char *b;
 			if(segment->division != DIV_FUNCTION
 			   || !(idxn = IndexArraySize(&segment->code_params))) continue;
 			idxs = IndexArrayGet(&segment->code_params);
@@ -1193,14 +1194,16 @@ int ReportOut(void) {
 			assert(idxs[0] < paramn);
 			printf("<tr><td align = right>");
 			style_push(&plain_text);
-			best_guess_at_modifiers(segment);
+			print_best_guess_at_modifiers(segment);
 			style_pop();
-			printf("</td><td><a href = \"#%s-",
-				   division_strings[DIV_FUNCTION]);
-			print_token(&segment->code, params + idxs[0]);
+			printf("</td><td>");
+			b = print_token_s(&segment->code, params + idxs[0]);
+			print_fragment_for(DIV_FUNCTION, b);
+			/*printf("<a href = \"#%s-", division_strings[DIV_FUNCTION]);
 			printf("\">");
-			print_token(&segment->code, params + idxs[0]);
-			printf("</a></td><td>");
+			b = print_token_s(&segment->code, params + idxs[0]);
+			printf("</a>");*/
+			printf("</td><td>");
 			for(idx = 1; idx < idxn; idx++) {
 				assert(idxs[idx] < paramn);
 				if(idx > 1) printf(", ");
