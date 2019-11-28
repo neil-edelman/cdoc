@@ -829,81 +829,6 @@ static void dl_segment_specific_att(const struct Attribute *const attribute) {
 	style_pop(), style_pop();
 }
 
-
-/** Prints all a `segment`.
- @implements division_act */
-static void segment_print_all(const struct Segment *const segment) {
-	const enum Format f = CdocGetFormat();
-	const struct Token *param;
-	assert(segment && segment->division != DIV_PREAMBLE);
-	style_push(&styles[ST_DIV][f]);
-
-	/* The title is generally the first param. Only single-words. */
-	if((param = param_no(segment, 0))) {
-		style_push(&styles[ST_H3][f]);
-		style_string_output();
-		printf("<a name = \"%s:", division_strings[segment->division]);
-		print_token(&segment->code, param);
-		printf("\" id = \"");
-		if(f == OUT_HTML) {
-			printf("%s:", division_strings[segment->division]);
-			print_token(&segment->code, param);
-		} else {
-			printf("fixme %s:", division_strings[segment->division]);
-			print_token(&segment->code, param);
-		}
-		printf("\">");
-		print_token(&segment->code, param);
-		printf("</a>");
-		style_pop_level();
-		style_push(&styles[ST_P][f]), style_push(&no_escape);
-		style_string_output();
-		printf("<code>");
-		highlight_tokens(&segment->code, &segment->code_params);
-		printf("</code>");
-		style_pop_level();
-	} else {
-		style_push(&styles[ST_H3][f]);
-		style_string_output();
-		printf("Unknown");
-		style_pop_level();
-	}
-
-	/* Now text. */
-	style_push(&styles[ST_P][f]);
-	print_tokens(&segment->doc);
-	style_pop_level();
-
-	/* Attrubutes. */
-	style_push(&styles[ST_DL][f]);
-	if(segment->division == DIV_FUNCTION) {
-		const struct Attribute *att = 0;
-		size_t no;
-		for(no = 1; (param = param_no(segment, no)); no++)
-			dl_segment_att(segment, ATT_PARAM, param, &plain_text);
-		dl_segment_att(segment, ATT_RETURN, 0, &plain_text);
-		dl_segment_att(segment, ATT_IMPLEMENTS, 0, &plain_csv);
-		while((att = AttributeArrayNext(&segment->attributes, att))) {
-			if(att->token.symbol != ATT_THROWS) continue;
-			dl_segment_specific_att(att);
-		}
-		dl_segment_att(segment, ATT_ORDER, 0, &plain_text);
-	} else if(segment->division == DIV_TAG) {
-		const struct Attribute *att = 0;
-		while((att = AttributeArrayNext(&segment->attributes, att))) {
-			if(att->token.symbol != ATT_PARAM) continue;
-			dl_segment_specific_att(att);
-		}
-	}
-	dl_segment_att(segment, ATT_AUTHOR, 0, &plain_csv);
-	dl_segment_att(segment, ATT_STD, 0, &plain_ssv);
-	dl_segment_att(segment, ATT_DEPEND, 0, &plain_ssv);
-	dl_segment_att(segment, ATT_FIXME, 0, &plain_text);
-	dl_segment_att(segment, ATT_LICENSE, 0, &plain_text);
-	style_pop_level(); /* dl */
-	style_pop_level(); /* div */
-}
-
 static void best_guess_at_modifiers(const struct Segment *const segment) {
 	const struct Token *code = TokenArrayGet(&segment->code),
 		*stop = code + *IndexArrayGet(&segment->code_params);
@@ -949,11 +874,14 @@ static void print_fragment_for(const enum Division d, const char *const label) {
 	size = (f == OUT_HTML) ? snprintf(0, 0, fmt, label, division, label)
 		: snprintf(0, 0, fmt, label, md_fragment_extra, division, hash);
 	assert(size > 0);
+	/* (Potentally) calling this with `label` as the other buffer. */
+	BufferSwap();
 	BufferClear();
 	if(!(b = BufferPrepare(size))) { perror(label); unrecoverable(); return; }
 	f == OUT_HTML ? sprintf(b, fmt, label, division, label)
 		: sprintf(b, fmt, label, md_fragment_extra, division, hash);
 	scan_doc_string(b);
+	BufferSwap();
 }
 
 static void print_custom_heading_fragment_for(const char *const division,
@@ -1012,6 +940,71 @@ static void print_custom_heading_anchor_for(const char *const division,
 
 static void print_heading_anchor_for(enum Division d) {
 	print_custom_heading_anchor_for(division_strings[d], division_desc[d]);
+}
+
+
+
+/** Prints all a `segment`.
+ @implements division_act */
+static void segment_print_all(const struct Segment *const segment) {
+	const enum Format f = CdocGetFormat();
+	const struct Token *param;
+	const char *b;
+	assert(segment && segment->division != DIV_PREAMBLE);
+	style_push(&styles[ST_DIV][f]);
+
+	/* The title is generally the first param. Only single-words. */
+	if((param = param_no(segment, 0))) {
+		style_push(&styles[ST_H3][f]);
+		b = print_token_s(&segment->code, param);
+		print_anchor_for(segment->division, b);
+		style_pop_level();
+		style_push(&styles[ST_P][f]), style_push(&no_escape);
+		style_string_output();
+		printf("<code>");
+		highlight_tokens(&segment->code, &segment->code_params);
+		printf("</code>");
+		style_pop_level();
+	} else {
+		style_push(&styles[ST_H3][f]);
+		style_string_output();
+		printf("Unknown");
+		style_pop_level();
+	}
+
+	/* Now text. */
+	style_push(&styles[ST_P][f]);
+	print_tokens(&segment->doc);
+	style_pop_level();
+
+	/* Attrubutes. */
+	style_push(&styles[ST_DL][f]);
+	if(segment->division == DIV_FUNCTION) {
+		const struct Attribute *att = 0;
+		size_t no;
+		for(no = 1; (param = param_no(segment, no)); no++)
+			dl_segment_att(segment, ATT_PARAM, param, &plain_text);
+		dl_segment_att(segment, ATT_RETURN, 0, &plain_text);
+		dl_segment_att(segment, ATT_IMPLEMENTS, 0, &plain_csv);
+		while((att = AttributeArrayNext(&segment->attributes, att))) {
+			if(att->token.symbol != ATT_THROWS) continue;
+			dl_segment_specific_att(att);
+		}
+		dl_segment_att(segment, ATT_ORDER, 0, &plain_text);
+	} else if(segment->division == DIV_TAG) {
+		const struct Attribute *att = 0;
+		while((att = AttributeArrayNext(&segment->attributes, att))) {
+			if(att->token.symbol != ATT_PARAM) continue;
+			dl_segment_specific_att(att);
+		}
+	}
+	dl_segment_att(segment, ATT_AUTHOR, 0, &plain_csv);
+	dl_segment_att(segment, ATT_STD, 0, &plain_ssv);
+	dl_segment_att(segment, ATT_DEPEND, 0, &plain_ssv);
+	dl_segment_att(segment, ATT_FIXME, 0, &plain_text);
+	dl_segment_att(segment, ATT_LICENSE, 0, &plain_text);
+	style_pop_level(); /* dl */
+	style_pop_level(); /* div */
 }
 
 
@@ -1109,11 +1102,12 @@ int ReportOut(void) {
 			params = TokenArrayGet(&segment->code);
 			assert(idxs[0] < TokenArraySize(&segment->code));
 			b = print_token_s(&segment->code, params + idxs[0]);
+			fprintf(stderr, "b is %s\n", b);
 			style_push(&no_escape);
 			print_fragment_for(DIV_TYPEDEF, b);
 			style_pop();
-			printf(" or ");
 			/* fixme */
+			printf(" or ");
 			style_string_output();
 			printf("<a href = \"#%s:",
 				division_strings[DIV_TYPEDEF]);

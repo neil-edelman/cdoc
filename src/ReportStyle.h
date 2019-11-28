@@ -233,7 +233,7 @@ static void style_separate(void) {
 static int style_is_suppress_escapes(void) {
 	struct Style *style = 0;
 	while((style = StyleArrayNext(&mode.styles, style)))
-		if(style->text->is_suppress_escapes) return fprintf(stderr, "%s suppresses escapes.\n", StyleArrayToString(&mode.styles)), 1;
+		if(style->text->is_suppress_escapes) return /*fprintf(stderr, "%s suppresses escapes.\n", StyleArrayToString(&mode.styles)),*/ 1;
 	return 0;
 }
 
