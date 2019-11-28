@@ -18,7 +18,7 @@
  description. Multiple documentation on the same command is appended. Two hard
  returns is a paragraph.
 
- This supports some `Markdown` commands,
+ This supports some `Markdown` commands included in the documentation,
 
  \* `\\` escapes `_\~!\@<>[]` and "\`"; "\`" can not be represented in
     math/code, (multiple escapes aren't supported); in paragraph mode, except
@@ -76,11 +76,11 @@
 
  Perhaps the most striking difference from `Javadoc` and `Doxygen` is the
  `\@param` has to be followed by a braced list, (it's confusing to have the
- variable be indistinguishable from the text.
+ variable be indistinguishable from the text.)
 
  If one sets `md` as output, it goes to `GitHub` Markdown that is specifically
- visible on the `GitHub` page. It bears little to Markdown supported in the
- documentation.
+ visible on the `GitHub` page, (including working anchor links on browsers
+ > 2000.) It bears little to Markdown supported in the documentation.
 
  @std C89
  @depend [re2c](http://re2c.org/)
