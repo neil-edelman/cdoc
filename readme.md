@@ -1,7 +1,7 @@
  # Cdoc\.c\.re #
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef):  [Integer](#user-content-typedef-d9a953e5) or <a href = "#typedef:Integer">Integer</a>
+ * [Typedef Aliases](#user-content-typedef):  [Integer](#user-content-typedef-d9a953e5)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)

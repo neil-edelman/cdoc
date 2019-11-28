@@ -1088,25 +1088,17 @@ int ReportOut(void) {
 			size_t *idxs;
 			struct Token *params;
 			const char *b;
-			if(segment->division != DIV_TYPEDEF
-				|| !IndexArraySize(&segment->code_params)) continue;
+			if(segment->division != DIV_TYPEDEF) continue;
+			if(!IndexArraySize(&segment->code_params))
+				{ char a[12]; segment_to_string(segment, &a);
+				fprintf(stderr, "%s: segment has no title.\n", a); continue; }
 			idxs = IndexArrayGet(&segment->code_params);
 			params = TokenArrayGet(&segment->code);
 			assert(idxs[0] < TokenArraySize(&segment->code));
 			b = print_token_s(&segment->code, params + idxs[0]);
-			fprintf(stderr, "b is %s\n", b);
 			style_push(&no_escape);
 			print_fragment_for(DIV_TYPEDEF, b);
 			style_pop();
-			/* fixme */
-			printf(" or ");
-			style_string_output();
-			printf("<a href = \"#%s:",
-				division_strings[DIV_TYPEDEF]);
-			print_token(&segment->code, params + idxs[0]);
-			printf("\">");
-			print_token(&segment->code, params + idxs[0]);
-			printf("</a>");
 			style_pop_push();
 		}
 		style_pop(), style_pop();
