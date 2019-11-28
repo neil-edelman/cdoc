@@ -941,6 +941,33 @@ static void print_heading_anchor_for(enum Division d) {
 
 
 
+/** Toc subcategories. */
+static void print_toc_extra(const enum Division d) {
+	struct Segment *segment = 0;
+	size_t *idxs;
+	struct Token *params;
+	const char *b;
+	printf(": ");
+	style_push(&plain_csv), style_push(&no_style);
+	while((segment = SegmentArrayNext(&report, segment))) {
+		if(segment->division != d) continue;
+		if(!IndexArraySize(&segment->code_params)) { fprintf(stderr,
+			"%s: segment has no title.\n", divisions[segment->division]);
+			continue; }
+		idxs = IndexArrayGet(&segment->code_params);
+		params = TokenArrayGet(&segment->code);
+		assert(idxs[0] < TokenArraySize(&segment->code));
+		b = print_token_s(&segment->code, params + idxs[0]);
+		style_push(&no_escape);
+		print_fragment_for(d, b);
+		style_pop();
+		style_pop_push();
+	}
+	style_pop(), style_pop();
+}
+
+
+
 /** Prints all a `segment`.
  @implements division_act */
 static void segment_print_all(const struct Segment *const segment) {
@@ -1080,30 +1107,8 @@ int ReportOut(void) {
 	/* TOC. */
 	style_push(&styles[ST_UL][format]), style_push(&styles[ST_LI][format]);
 	if(is_preamble) print_heading_fragment_for(DIV_PREAMBLE), style_pop_push();
-	if(is_typedef) {
-		print_heading_fragment_for(DIV_TYPEDEF);
-		printf(": ");
-		style_push(&plain_csv), style_push(&no_style);
-		while((segment = SegmentArrayNext(&report, segment))) {
-			size_t *idxs;
-			struct Token *params;
-			const char *b;
-			if(segment->division != DIV_TYPEDEF) continue;
-			if(!IndexArraySize(&segment->code_params))
-				{ char a[12]; segment_to_string(segment, &a);
-				fprintf(stderr, "%s: segment has no title.\n", a); continue; }
-			idxs = IndexArrayGet(&segment->code_params);
-			params = TokenArrayGet(&segment->code);
-			assert(idxs[0] < TokenArraySize(&segment->code));
-			b = print_token_s(&segment->code, params + idxs[0]);
-			style_push(&no_escape);
-			print_fragment_for(DIV_TYPEDEF, b);
-			style_pop();
-			style_pop_push();
-		}
-		style_pop(), style_pop();
-		style_pop_push();
-	}
+	if(is_typedef) print_heading_fragment_for(DIV_TYPEDEF),
+		print_toc_extra(DIV_TYPEDEF), style_pop_push();
 	if(is_tag) {
 		print_heading_fragment_for(DIV_TAG);
 		printf(": ");
