@@ -1,7 +1,7 @@
  # Cdoc\.c\.re #
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef):  [Integer](#user-content-typedef-d9a953e5)
+ * [Typedef Aliases](#user-content-typedef):  [Useless](#user-content-typedef-5544672d)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -61,9 +61,9 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is specifically vi
 
  ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
 
- ### <a id = "user-content-typedef-d9a953e5" name = "user-content-typedef-d9a953e5">Integer</a> ###
+ ### <a id = "user-content-typedef-5544672d" name = "user-content-typedef-5544672d">Useless</a> ###
 
-<code>typedef int <strong>Integer</strong>;</code>
+<code>typedef int <strong>Useless</strong>;</code>
 
 Typedef\!
 

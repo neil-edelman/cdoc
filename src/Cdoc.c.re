@@ -1,24 +1,22 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- This is a context-sensitive parser intended to process parts of a `C`
- compilation unit and extract documentation, as well as outputting that
- documentation into the format specified. Contrary to other parsers, this has
- been designed to be very strict, warning one of documentation errors. This
+ A context-sensitive parser intended to process parts of a `C` compilation unit
+ and extract documentation, as well as outputting that documentation into the
+ format specified. Designed to be very strict, warning one of documentation
+ errors; and simple, made for self-contained independent documenatation. This
  does not do any compiling, just text-parsing. Thus, one can easily confuse by
  redefining symbols. However, it assumes the macro `A_B_(Foo,Bar)` is
  transformed into `<A>Foo<B>Bar`.
 
  Documentation commands are `/` `**…` (together) and are ended with `*…/`, but
- not `/` `*…*` `/`, (this is a common code break.) One can have an
- asterisk at the start of a line, like Kernel comments, or asterisks all over
- like some crazy ASCII art. Documentation appearing at most two lines above
- `typedef`, `tag` (`struct`, `enum`, `union`,) data, and functions, is
- associated therewith; everything else is automatically inserted into the
- description. Multiple documentation on the same command is appended. Two hard
- returns is a paragraph.
-
- This supports some `Markdown` commands included in the documentation,
+ not `/` `*…*` `/`, (common code break.) Asterisks at the start of a line, like
+ Kernel comments, or asterisks all over like some crazy ASCII art, are
+ supported. Documentation appearing at most two lines above `typedef`, `tag`
+ (`struct`, `enum`, `union`,) data, and functions, is associated therewith;
+ everything else is automatically inserted into the description. Multiple
+ documentation on the same command is appended. Two hard returns is a paragraph.
+ Supports some `Markdown` commands included in the documentation,
 
  \* `\\` escapes `_\~!\@<>[]` and "\`"; "\`" can not be represented in
     math/code, (multiple escapes aren't supported); in paragraph mode, except
@@ -97,7 +95,8 @@
  @fixme If a segment has multiple licenses, they will show multiple times.
  @fixme `foo.c:221`: space where it shouldn't be. Why?
  @fixme `Array.h:304, SEE_FN "<T>Array_": link broken.` Probably because we're
- escaping it. */
+ escaping it.
+ @fixme MD parser ignores html blocks. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
@@ -114,7 +113,7 @@
 #include "../src/Cdoc.h"
 
 /** Typedef! */
-typedef int Integer;
+typedef int Useless;
 
 static void usage(void) {
 	fprintf(stderr, "Usage: cdoc [options] <input-file>\n"
@@ -128,6 +127,7 @@ static void usage(void) {
 		"outputs that documentation.\n");
 }
 
+/** This is useful? */
 static struct {
 	enum { EXPECT_NOTHING, EXPECT_OUT, EXPECT_FORMAT } expect;
 	const char *in_fn, *out_fn;
