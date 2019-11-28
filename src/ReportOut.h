@@ -1035,6 +1035,10 @@ static void segment_print_all(const struct Segment *const segment) {
  @throws[EILSEQ] Sequence error.
  @return Success. */
 int ReportOut(void) {
+	const char *const summary = "summary",
+		*const summary_desc = "Function Summary",
+		*const license = "license",
+		*const license_desc = symbol_attribute_titles[ATT_LICENSE];
 	const int is_preamble = division_exists(DIV_PREAMBLE),
 		is_function = division_exists(DIV_FUNCTION),
 		is_tag = division_exists(DIV_TAG),
@@ -1109,62 +1113,15 @@ int ReportOut(void) {
 	if(is_preamble) print_heading_fragment_for(DIV_PREAMBLE), style_pop_push();
 	if(is_typedef) print_heading_fragment_for(DIV_TYPEDEF),
 		print_toc_extra(DIV_TYPEDEF), style_pop_push();
-	if(is_tag) {
-		print_heading_fragment_for(DIV_TAG);
-		printf(": ");
-		style_push(&plain_csv), style_push(&no_style);
-		while((segment = SegmentArrayNext(&report, segment))) {
-			size_t *idxs;
-			struct Token *params;
-			if(segment->division != DIV_TAG
-				|| !IndexArraySize(&segment->code_params)) continue;
-			idxs = IndexArrayGet(&segment->code_params);
-			params = TokenArrayGet(&segment->code);
-			assert(idxs[0] < TokenArraySize(&segment->code));
-			style_string_output();
-			/* fixme */
-			printf("<a href = \"#%s-", division_strings[DIV_TAG]);
-			print_token(&segment->code, params + idxs[0]);
-			printf("\">");
-			print_token(&segment->code, params + idxs[0]);
-			printf("</a>");
-			style_pop_push();
-		}
-		style_pop(), style_pop();
+	if(is_tag) print_heading_fragment_for(DIV_TAG),
+		print_toc_extra(DIV_TAG), style_pop_push();
+	if(is_data) print_heading_fragment_for(DIV_DATA),
+		print_toc_extra(DIV_DATA), style_pop_push();
+	if(is_function) print_custom_heading_fragment_for(summary, summary_desc),
+		style_pop_push(), print_heading_fragment_for(DIV_FUNCTION),
 		style_pop_push();
-	}
-	if(is_data) {
-		print_heading_fragment_for(DIV_DATA);
-		printf(": ");
-		style_push(&plain_csv), style_push(&no_style);
-		while((segment = SegmentArrayNext(&report, segment))) {
-			size_t *idxs;
-			struct Token *params;
-			if(segment->division != DIV_DATA
-				|| !IndexArraySize(&segment->code_params)) continue;
-			idxs = IndexArrayGet(&segment->code_params);
-			params = TokenArrayGet(&segment->code);
-			assert(idxs[0] < TokenArraySize(&segment->code));
-			style_string_output();
-			/* fixme */
-			printf("<a href = \"#%s-", division_strings[DIV_DATA]);
-			print_token(&segment->code, params + idxs[0]);
-			printf("\">");
-			print_token(&segment->code, params + idxs[0]);
-			printf("</a>");
-			style_pop_push();
-		}
-		style_pop(), style_pop();
+	if(is_license) print_custom_heading_fragment_for(license, license_desc),
 		style_pop_push();
-	}
-	if(is_function) {
-		print_custom_heading_fragment_for("summary", "Function Summary");
-		style_pop_push();
-		print_heading_fragment_for(DIV_FUNCTION);
-		style_pop_push();
-	}
-	if(is_license) print_custom_heading_fragment_for("license",
-		symbol_attribute_titles[ATT_LICENSE]), style_pop_push();
 	style_pop_level();
 	assert(!StyleArraySize(&mode.styles));
 
@@ -1219,7 +1176,7 @@ int ReportOut(void) {
 	if(is_function) {
 		/* Function table. */
 		style_push(&styles[ST_DIV][format]);
-		print_custom_heading_anchor_for("summary", "Function Summary");
+		print_custom_heading_anchor_for(summary, summary_desc);
 		style_string_output();
 		printf("<table>\n\n"
 			   "<tr><th>Modifiers</th><th>Function Name</th>"
@@ -1265,8 +1222,7 @@ int ReportOut(void) {
 	/* License. */
 	if(is_license) {
 		style_push(&styles[ST_DIV][format]);
-		print_custom_heading_anchor_for("license",
-			symbol_attribute_titles[ATT_LICENSE]);
+		print_custom_heading_anchor_for(license, license_desc);
 		style_push(&styles[ST_P][format]);
 		div_att_print(&is_div_preamble, ATT_LICENSE, SHOW_TEXT);
 		style_pop_push();
