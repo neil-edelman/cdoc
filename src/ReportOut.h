@@ -54,7 +54,7 @@ OUT(lit) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->length > 0 && t->from);
 	if(is_buffer) {
-		encode_len_s(t->length, t->from);
+		encode_cat_len_s(t->length, t->from);
 	} else {
 		style_prepare_output(t->symbol);
 		encode_len(t->length, t->from);
@@ -248,12 +248,13 @@ OUT(see_fn) {
 		encode_len(fn->length, fn->from);
 		printf("</a>");
 	} else {
+		const char *b;
 		printf("[");
 		encode_len(fn->length, fn->from);
 		printf("](#%s%s-", md_fragment_extra, division_strings[DIV_FUNCTION]);
-		encode_len_s(fn->length, fn->from);
-		fprintf(stderr, "see_fn hash str: %s\n", BufferGet());
-		printf("%x)", fnv_32a_str(BufferGet()));
+		b = encode_len_s(fn->length, fn->from);
+		fprintf(stderr, "see_fn hash str: %s\n", b);
+		printf("%x)", fnv_32a_str(b));
 	}
 	*ptoken = TokenArrayNext(tokens, fn);
 	return 1;
@@ -269,12 +270,13 @@ OUT(see_tag) {
 		encode_len(tag->length, tag->from);
 		printf("</a>");
 	} else {
+		const char *b;
 		printf("[");
 		encode_len(tag->length, tag->from);
 		printf("](#%s%s-", md_fragment_extra, division_strings[DIV_TAG]);
-		encode_len_s(tag->length, tag->from);
-		fprintf(stderr, "see_tag hash str: %s\n", BufferGet());
-		printf("%x)", fnv_32a_str(BufferGet()));
+		b = encode_len_s(tag->length, tag->from);
+		fprintf(stderr, "see_tag hash str: %s\n", b);
+		printf("%x)", fnv_32a_str(b));
 	}
 	*ptoken = TokenArrayNext(tokens, tag);
 	return 1;
@@ -929,8 +931,7 @@ static void scan_doc_string(const char *const str) {
 	Scanner_(&scan);
 }
 
-static void print_fragment_for(const enum Division d,
-	const char *const label, const char *const desc) {
+static void print_fragment_for(const enum Division d, const char *const label) {
 	const enum Format f = CdocGetFormat();
 	const char *const fmt = f == OUT_HTML ?
 		"[%s](#%s:%s)" : "[%s](#%s%s-%x)",
@@ -938,14 +939,14 @@ static void print_fragment_for(const enum Division d,
 	const unsigned hash = fnv_32a_str(label);
 	size_t size;
 	char *b;
-	assert(label && desc);
-	size = (f == OUT_HTML) ? snprintf(0, 0, fmt, desc, division, label)
-		: snprintf(0, 0, fmt, desc, md_fragment_extra, division, hash);
+	assert(label);
+	size = (f == OUT_HTML) ? snprintf(0, 0, fmt, label, division, label)
+		: snprintf(0, 0, fmt, label, md_fragment_extra, division, hash);
 	assert(size > 0);
 	BufferClear();
 	if(!(b = BufferPrepare(size))) { perror(label); unrecoverable(); return; }
-	f == OUT_HTML ? sprintf(b, fmt, desc, division, label)
-		: sprintf(b, fmt, desc, md_fragment_extra, division, hash);
+	f == OUT_HTML ? sprintf(b, fmt, label, division, label)
+		: sprintf(b, fmt, label, md_fragment_extra, division, hash);
 	scan_doc_string(b);
 }
 
@@ -969,13 +970,10 @@ static void print_heading_fragment_for(const enum Division d) {
 
 
 
-/**/
-
-static void print_anchor_for(const enum Division d,
-	const char *const label, const char *const desc) {
+static void print_anchor_for(const enum Division d, const char *const label) {
 	const enum Format f = CdocGetFormat();
 	const char *const division = division_strings[d];
-	assert(label && desc);
+	assert(label);
 	style_push(&styles[ST_H2][f]);
 	style_string_output();
 	printf("<a ");
@@ -987,7 +985,7 @@ static void print_anchor_for(const enum Division d,
 		printf("id = \"%s%s-%x\" name = \"%s%s-%x\"", md_fragment_extra,
 			division, hash, md_fragment_extra, division, hash);
 	}
-	printf(">%s</a>", desc);
+	printf(">%s</a>", label);
 	style_pop(); /* h2 */
 }
 
@@ -1103,14 +1101,8 @@ int ReportOut(void) {
 			idxs = IndexArrayGet(&segment->code_params);
 			params = TokenArrayGet(&segment->code);
 			assert(idxs[0] < TokenArraySize(&segment->code));
-			style_string_output();
-			/* fixme */
-			printf("<a href = \"#%s:",
-				division_strings[DIV_TYPEDEF]);
-			print_token(&segment->code, params + idxs[0]);
-			printf("\">");
-			print_token(&segment->code, params + idxs[0]);
-			printf("</a>");
+			print_token_s(&segment->code, params + idxs[0]);
+			print_fragment_for(DIV_TYPEDEF, BufferGet());
 			style_pop_push();
 		}
 		style_pop(), style_pop();

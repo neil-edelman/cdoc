@@ -124,8 +124,7 @@ static void warn_internal_link(const struct Token *const token) {
 	}
 	BufferSwap();
 	/* Encode the link text. */
-	encode_len_s(token->length, token->from);
-	a = BufferGet();
+	a = encode_len_s(token->length, token->from);
 	BufferSwap();
 	/* Search for it. Not really efficient as it builds up labels from scratch,
 	 then discards them, over and over. */

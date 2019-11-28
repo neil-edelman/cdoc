@@ -259,7 +259,6 @@ static void encode_len_choose(int length, const char *from,
 	}
 
 html_encode_buffer:
-	BufferClear();
 	while(length - ahead) {
 		switch(from[ahead]) {
 		case '<': str = HTML_LT, str_len = strlen(str); break;
@@ -287,7 +286,6 @@ terminate_html:
 	return;
 
 md_encode_buffer:
-	BufferClear();
 	if(style_is_suppress_escapes()) {
 		if(!(b = BufferPrepare(length))) { unrecoverable(); return; }
 		memcpy(b, from, length);
@@ -363,7 +361,13 @@ md_encode_print:
 	return;
 }
 
-static void encode_len_s(const int length, const char *const from) {
+static const char *encode_len_s(const int length, const char *const from) {
+	BufferClear();
+	encode_len_choose(length, from, 1);
+	return BufferGet();
+}
+
+static void encode_cat_len_s(const int length, const char *const from) {
 	encode_len_choose(length, from, 1);
 }
 
