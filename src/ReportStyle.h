@@ -205,6 +205,11 @@ static void style_prepare_output(const enum Symbol symbol) {
 		fputs(style_highlight.style->begin, stdout), style_highlight.on = 1;
 }
 
+/** If we want to print a string. */
+static void style_string_output(void) {
+	style_prepare_output(END);
+}
+
 static void style_highlight_on(const struct StyleText *const style) {
 	assert(!style_highlight.style && !style_highlight.on);
 	style_highlight.style = style;
