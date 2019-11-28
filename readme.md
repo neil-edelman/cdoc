@@ -103,7 +103,9 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the 
 
  ## <a id = "user-content-fn" name = "user-content-fn">Function Definitions</a> ##
 
- ### <a name = "fn:CdocGetDebug" id = "fixme fn:CdocGetDebug">CdocGetDebug</a> ###
+ ###  ## <a id = "user-content-fn-bec2603d" name = "user-content-fn-bec2603d">[License](#user-content-license)CdocGetDebug</a> ##
+
+ ###
 
 <code>int <strong>CdocGetDebug</strong>(void)</code>
 
@@ -113,7 +115,9 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the 
 
 
 
- ### <a name = "fn:CdocGetFormat" id = "fixme fn:CdocGetFormat">CdocGetFormat</a> ###
+ ###  ## <a id = "user-content-fn-56a1b543" name = "user-content-fn-56a1b543">[License](#user-content-license)CdocGetDebugCdocGetFormat</a> ##
+
+ ###
 
 <code>enum Format <strong>CdocGetFormat</strong>(void)</code>
 
@@ -123,7 +127,9 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the 
 
 
 
- ### <a name = "fn:CdocGetInput" id = "fixme fn:CdocGetInput">CdocGetInput</a> ###
+ ###  ## <a id = "user-content-fn-dac121ce" name = "user-content-fn-dac121ce">[License](#user-content-license)CdocGetDebugCdocGetFormatCdocGetInput</a> ##
+
+ ###
 
 <code>const char *<strong>CdocGetInput</strong>(void)</code>
 
@@ -133,7 +139,9 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is visible on the 
 
 
 
- ### <a name = "fn:CdocGetOutput" id = "fixme fn:CdocGetOutput">CdocGetOutput</a> ###
+ ###  ## <a id = "user-content-fn-8522af3c" name = "user-content-fn-8522af3c">[License](#user-content-license)CdocGetDebugCdocGetFormatCdocGetInputCdocGetOutput</a> ##
+
+ ###
 
 <code>const char *<strong>CdocGetOutput</strong>(void)</code>
 
