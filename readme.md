@@ -8,9 +8,9 @@
 
  ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-This is a context\-sensitive parser intended to process parts of a `C` compilation unit and extract documentation, as well as outputting that documentation into the format specified\. Contrary to other parsers, this has been designed to be very strict, warning one of documentation errors\. This does not do any compiling, just text\-parsing\. Thus, one can easily confuse by redefining symbols\. However, the macro `A_B_(Foo,Bar)` is transformed into `<A>Foo<B>Bar` \.
+This is a context\-sensitive parser intended to process parts of a `C` compilation unit and extract documentation, as well as outputting that documentation into the format specified\. Contrary to other parsers, this has been designed to be very strict, warning one of documentation errors\. This does not do any compiling, just text\-parsing\. Thus, one can easily confuse by redefining symbols\. However, it assumes the macro `A_B_(Foo,Bar)` is transformed into `<A>Foo<B>Bar` \.
 
-Documentation commands are `/` `**…` \(together\) and are ended with `*…/` , but not `/` `*…*` `/` , \(this is a common code break\.\) One can have an asterisk at the front, like Kernel comments, or asterisks all over like some crazy ASCII art\. All documentation goes at most two lines above what it documents or it's appended to the header\. Multiple documentation on the same command is appended, including in the command\. Two hard returns is a paragraph\. One can document `typedef` , `tag` \(`struct` , `enum` , `union` ,\) data, and functions; everything else is automatically inserted into the desciption\.
+Documentation commands are `/` `**…` \(together\) and are ended with `*…/` , but not `/` `*…*` `/` , \(this is a common code break\.\) One can have an asterisk at the start of a line, like Kernel comments, or asterisks all over like some crazy ASCII art\. Documentation appearing at most two lines above `typedef` , `tag` \(`struct` , `enum` , `union` ,\) data, and functions, is associated therewith; everything else is automatically inserted into the description\. Multiple documentation on the same command is appended\. Two hard returns is a paragraph\.
 
 This supports some `Markdown` commands,
 
