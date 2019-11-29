@@ -46,7 +46,7 @@ OUT(par) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == NEWLINE && !is_buffer);
 	style_pop_level();
-	style_push(&styles[ST_P][CdocGetFormat()]);
+	style_push(&styles[ST_P][effective_format()]);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -69,7 +69,7 @@ OUT(gen1) {
 		*const rparen = TokenArrayNext(tokens, param);
 	const char *b, *type;
 	int type_size;
-	const enum Format f = CdocGetFormat();
+	const enum Format f = effective_format();
 	const char *const format =
 		f == OUT_HTML ? HTML_LT "%.*s" HTML_GT "%.*s" : "<%.*s>%.*s";
 	assert(tokens && t && t->symbol == ID_ONE_GENERIC);
@@ -105,7 +105,7 @@ OUT(gen2) {
 		*const rparen = TokenArrayNext(tokens, param2);
 	const char *b, *type1, *type2;
 	int type1_size, type2_size;
-	const enum Format f = CdocGetFormat();
+	const enum Format f = effective_format();
 	const char *const format = f == OUT_HTML ? HTML_LT "%.*s" HTML_GT "%.*s"
 		HTML_LT "%.*s" HTML_GT "%.*s" : "<%.*s>%.*s<%.*s>%.*s";
 	assert(tokens && t && t->symbol == ID_TWO_GENERICS);
@@ -149,7 +149,7 @@ OUT(gen3) {
 		*const rparen = TokenArrayNext(tokens, param3);
 	const char *b, *type1, *type2, *type3;
 	int type1_size, type2_size, type3_size;
-	const enum Format f = CdocGetFormat();
+	const enum Format f = effective_format();
 	const char *const format = f == OUT_HTML ? HTML_LT "%.*s" HTML_GT "%.*s"
 		HTML_LT "%.*s" HTML_GT "%.*s" HTML_LT "%.*s" HTML_GT "%.*s"
 		: "<%.*s>%.*s<%.*s>%.*s<%.*s>%.*s";
@@ -203,7 +203,7 @@ OUT(url) {
 	assert(tokens && t && t->symbol == URL && !is_buffer);
 	style_prepare_output(t->symbol);
 	/* I think it can't contain '<>()\"' by the parser. */
-	if(CdocGetFormat() == OUT_HTML) {
+	if(effective_format() == OUT_HTML) {
 		printf("<a href = \"%.*s\">", t->length, t->from);
 		encode_len(t->length, t->from);
 		printf("</a>");
@@ -221,7 +221,7 @@ OUT(cite) {
 	assert(tokens && t && t->symbol == CITE && !is_buffer);
 	if(!url_encoded) goto catch;
 	style_prepare_output(t->symbol);
-	if(CdocGetFormat() == OUT_HTML) {
+	if(effective_format() == OUT_HTML) {
 		printf("<a href = \"https://scholar.google.ca/scholar?q=%s\">",
 			url_encoded);
 		encode_len(t->length, t->from);
@@ -241,7 +241,7 @@ OUT(see_fn) {
 	const struct Token *const fn = *ptoken;
 	assert(tokens && fn && fn->symbol == SEE_FN && !is_buffer);
 	style_prepare_output(fn->symbol);
-	if(CdocGetFormat() == OUT_HTML) {
+	if(effective_format() == OUT_HTML) {
 		printf("<a href = \"#%s:", division_strings[DIV_FUNCTION]);
 		encode_len(fn->length, fn->from);
 		printf("\">");
@@ -249,12 +249,14 @@ OUT(see_fn) {
 		printf("</a>");
 	} else {
 		const char *b;
+		style_push(&to_html);
 		printf("[");
 		encode_len(fn->length, fn->from);
 		printf("](#%s%s-", md_fragment_extra, division_strings[DIV_FUNCTION]);
 		b = encode_len_s(fn->length, fn->from);
 		fprintf(stderr, "see_fn hash str: %s\n", b);
 		printf("%x)", fnv_32a_str(b));
+		style_pop();
 	}
 	*ptoken = TokenArrayNext(tokens, fn);
 	return 1;
@@ -263,7 +265,7 @@ OUT(see_tag) {
 	const struct Token *const tag = *ptoken;
 	assert(tokens && tag && tag->symbol == SEE_TAG && !is_buffer);
 	style_prepare_output(tag->symbol);
-	if(CdocGetFormat() == OUT_HTML) {
+	if(effective_format() == OUT_HTML) {
 		printf("<a href = \"#%s:", division_strings[DIV_TAG]);
 		encode_len(tag->length, tag->from);
 		printf("\">");
@@ -285,7 +287,7 @@ OUT(see_typedef) {
 	const struct Token *const def = *ptoken;
 	assert(tokens && def && def->symbol == SEE_TYPEDEF && !is_buffer);
 	style_prepare_output(def->symbol);
-	if(CdocGetFormat() == OUT_HTML) {
+	if(effective_format() == OUT_HTML) {
 		printf("<a href = \"#%s:", division_strings[DIV_TYPEDEF]);
 		encode_len(def->length, def->from);
 		printf("\">");
@@ -306,7 +308,7 @@ OUT(see_data) {
 	const struct Token *const data = *ptoken;
 	assert(tokens && data && data->symbol == SEE_DATA && !is_buffer);
 	style_prepare_output(data->symbol);
-	if(CdocGetFormat() == OUT_HTML) {
+	if(effective_format() == OUT_HTML) {
 		/* fixme */
 		printf("<a href = \"#%s:", division_strings[DIV_DATA]);
 		encode_len(data->length, data->from);
@@ -326,21 +328,21 @@ OUT(see_data) {
 OUT(math_begin) { /* Math and code. */
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == MATH_BEGIN && !is_buffer);
-	style_push(&styles[ST_CODE][CdocGetFormat()]);
+	style_push(&styles[ST_CODE][effective_format()]);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
 OUT(math_end) {
 	const struct Token *const t = *ptoken;
 	const struct StyleText *const st = style_text_peek(),
-		*const st_expect = &styles[ST_CODE][CdocGetFormat()];
+		*const st_expect = &styles[ST_CODE][effective_format_will_be_popped()];
 	assert(tokens && t && t->symbol == MATH_END && !is_buffer);
 	if(st != st_expect) {
 		char st_str[12], st_expect_str[12];
 		style_text_to_string(st, &st_str);
 		style_text_to_string(st_expect, &st_expect_str);
-		return fprintf(stderr, "Expected %s but got %s.\n",
-			st_expect_str, st_str), 0;
+		return fprintf(stderr, "%s: expected %s but got %s.\n",
+			StyleArrayToString(&mode.styles), st_expect_str, st_str), 0;
 	}
 	style_pop();
 	*ptoken = TokenArrayNext(tokens, t);
@@ -349,21 +351,21 @@ OUT(math_end) {
 OUT(em_begin) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == EM_BEGIN && !is_buffer);
-	style_push(&styles[ST_EM][CdocGetFormat()]);
+	style_push(&styles[ST_EM][effective_format()]);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
 OUT(em_end) {
 	const struct Token *const t = *ptoken;
 	const struct StyleText *const st = style_text_peek(),
-		*const st_expect = &styles[ST_EM][CdocGetFormat()];
+		*const st_expect = &styles[ST_EM][effective_format_will_be_popped()];
 	assert(tokens && t && t->symbol == EM_END && !is_buffer);
 	if(st != st_expect) {
 		char st_str[12], st_expect_str[12];
 		style_text_to_string(st, &st_str);
 		style_text_to_string(st_expect, &st_expect_str);
-		return fprintf(stderr, "Expected %s but got %s.\n",
-			st_expect_str, st_str), 0;
+		return fprintf(stderr, "%s: expected %s but got %s.\n",
+			StyleArrayToString(&mode.styles), st_expect_str, st_str), 0;
 	}
 	style_pop();
 	*ptoken = TokenArrayNext(tokens, t);
@@ -371,7 +373,7 @@ OUT(em_end) {
 }
 OUT(link) {
 	const struct Token *const t = *ptoken, *text, *turl;
-	const enum Format f = CdocGetFormat();
+	const enum Format f = effective_format();
 	const char *fn;
 	size_t fn_len;
 	FILE *fp;
@@ -419,7 +421,7 @@ finally:
 }
 OUT(image) {
 	const struct Token *const t = *ptoken, *text, *turl;
-	const enum Format f = CdocGetFormat();
+	const enum Format f = effective_format();
 	const char *fn;
 	unsigned width = 1, height = 1;
 	int success = 0;
@@ -523,7 +525,7 @@ OUT(cdot) {
 OUT(list) {
 	const struct StyleText *const peek = style_text_peek();
 	const struct Token *const t = *ptoken;
-	const enum Format format = CdocGetFormat();
+	const enum Format format = effective_format();
 	const struct StyleText *const li = &styles[ST_LI][format],
 		*const ul = &styles[ST_UL][format];
 	assert(tokens && t && t->symbol == LIST_ITEM && peek && !is_buffer);
@@ -539,7 +541,7 @@ OUT(list) {
 OUT(pre) {
 	const struct StyleText *const peek = style_text_peek();
 	const struct Token *const t = *ptoken;
-	const enum Format format = CdocGetFormat();
+	const enum Format format = effective_format();
 	const struct StyleText *const line = &styles[ST_PRELINE][format],
 		*const pref = &styles[ST_PRE][format];
 	assert(tokens && t && t->symbol == PREFORMATTED && peek && !is_buffer);
@@ -603,7 +605,7 @@ static void highlight_tokens(const struct TokenArray *const tokens,
 	const struct Token *const first = TokenArrayNext(tokens, 0), *token = first;
 	size_t *highlight = IndexArrayNext(highlights, 0);
 	int is_highlight, is_first_highlight = 1;
-	const enum Format f = CdocGetFormat();
+	const enum Format f = effective_format();
 	assert(tokens);
 	if(!token) return;
 	style_push(&plain_text);
@@ -681,7 +683,7 @@ static void segment_att_print_all(const struct Segment *const segment,
 				const struct Token *token
 					= TokenArrayGet(&segment->code) + *pindex;
 				style_push(&no_style);
-				if(CdocGetFormat() == OUT_HTML) {
+				if(effective_format() == OUT_HTML) {
 					printf("<a href = \"#%s:",
 						division_strings[segment->division]);
 					print_token(&segment->code, token);
@@ -771,7 +773,7 @@ static int segment_attribute_match_exists(const struct Segment *const segment,
 static void dl_segment_att(const struct Segment *const segment,
 	const enum Symbol attribute, const struct Token *match,
 	const struct StyleText *const style) {
-	const enum Format format = CdocGetFormat();
+	const enum Format format = effective_format();
 	assert(segment && attribute && style);
 	if((match && !segment_attribute_match_exists(segment, attribute, match))
 		|| (!match && !segment_attribute_exists(segment, attribute))) return;
@@ -791,7 +793,7 @@ static void dl_segment_att(const struct Segment *const segment,
  @param[is_recursive]  */
 static void dl_preamble_att(const enum Symbol attribute,
 	const enum AttShow show, const struct StyleText *const style) {
-	const enum Format format = CdocGetFormat();
+	const enum Format format = effective_format();
 	assert(style);
 	/* `style_title` is static in `Styles.h`. */
 	if(format == OUT_HTML) sprintf(style_title, "\t<dt>%.128s:</dt>\n"
@@ -808,7 +810,7 @@ static void dl_preamble_att(const enum Symbol attribute,
 }
 
 static void dl_segment_specific_att(const struct Attribute *const attribute) {
-	const enum Format format = CdocGetFormat();
+	const enum Format format = effective_format();
 	assert(attribute);
 	style_push(&styles[ST_DT][format]), style_push(&plain_text);
 	style_string_output();
@@ -837,7 +839,7 @@ static void print_best_guess_at_modifiers(const struct Segment *const segment) {
 	while(code < stop) {
 		if(code->symbol == LPAREN) {
 			style_separate();
-			style_push(&styles[ST_EM][CdocGetFormat()]);
+			style_push(&styles[ST_EM][effective_format()]);
 			style_string_output();
 			printf("function");
 			style_pop();
@@ -861,7 +863,7 @@ static void scan_doc_string(const char *const str) {
 
 static void print_fragment_for_extra(const enum Division d,
 	const char *const label, const int is_html) {
-	const enum Format f = CdocGetFormat();
+	const enum Format f = effective_format();
 	const char *const fmt = is_html ? (f == OUT_HTML
 		? "<a href = \"#%s:%s\">%s</a>" : "<a href = \"#%s%s-%x\">%s</a>")
 		: (f == OUT_HTML ? "[%s](#%s:%s)" : "[%s](#%s%s-%x)"),
@@ -901,7 +903,7 @@ static void print_html_fragment_for(const enum Division d,
 static void print_custom_heading_fragment_for(const char *const division,
 	const char *const desc) {
 	const char *const fmt
-		= (CdocGetFormat() == OUT_HTML) ? "[%s](#%.0s%s:)" : "[%s](#%s%s)";
+		= (effective_format() == OUT_HTML) ? "[%s](#%.0s%s:)" : "[%s](#%s%s)";
 	const size_t size = snprintf(0, 0, fmt, desc, md_fragment_extra, division);
 	char *b;
 	assert(division && desc && size > 0);
@@ -919,7 +921,7 @@ static void print_heading_fragment_for(const enum Division d) {
 
 
 static void print_anchor_for(const enum Division d, const char *const label) {
-	const enum Format f = CdocGetFormat();
+	const enum Format f = effective_format();
 	const char *const division = division_strings[d];
 	assert(label);
 	style_push(&styles[ST_H3][f]);
@@ -939,7 +941,7 @@ static void print_anchor_for(const enum Division d, const char *const label) {
 
 static void print_custom_heading_anchor_for(const char *const division,
 	const char *const desc) {
-	const enum Format f = CdocGetFormat();
+	const enum Format f = effective_format();
 	assert(division && desc);
 	style_push(&styles[ST_H2][f]);
 	style_string_output();
@@ -975,7 +977,7 @@ static void print_toc_extra(const enum Division d) {
 		params = TokenArrayGet(&segment->code);
 		assert(idxs[0] < TokenArraySize(&segment->code));
 		b = print_token_s(&segment->code, params + idxs[0]);
-		style_push(&no_escape);
+		style_push(&to_html);
 		print_fragment_for(d, b);
 		style_pop();
 		style_pop_push();
@@ -988,7 +990,7 @@ static void print_toc_extra(const enum Division d) {
 /** Prints all a `segment`.
  @implements division_act */
 static void segment_print_all(const struct Segment *const segment) {
-	const enum Format f = CdocGetFormat();
+	const enum Format f = effective_format();
 	const struct Token *param;
 	const char *b;
 	assert(segment && segment->division != DIV_PREAMBLE);
@@ -998,7 +1000,7 @@ static void segment_print_all(const struct Segment *const segment) {
 	if((param = param_no(segment, 0))) {
 		b = print_token_s(&segment->code, param);
 		print_anchor_for(segment->division, b);
-		style_push(&styles[ST_P][f]), style_push(&no_escape);
+		style_push(&styles[ST_P][f]), style_push(&to_html);
 		style_string_output();
 		printf("<code>");
 		highlight_tokens(&segment->code, &segment->code_params);
@@ -1063,7 +1065,7 @@ int ReportOut(void) {
 		is_data = division_exists(DIV_DATA),
 		is_license = attribute_exists(ATT_LICENSE);
 	const struct Segment *segment = 0;
-	const enum Format format = CdocGetFormat();
+	const enum Format format = effective_format();
 	const char *const in_fn = CdocGetInput(),
 		*const base_fn = strrchr(in_fn, *path_dirsep),
 		*const title = base_fn ? base_fn + 1 : in_fn;
@@ -1198,7 +1200,7 @@ int ReportOut(void) {
 		printf("<table>\n\n"
 			   "<tr><th>Modifiers</th><th>Function Name</th>"
 			   "<th>Argument List</th></tr>\n\n");
-		style_push(&no_escape);
+		style_push(&to_html);
 		while((segment = SegmentArrayNext(&report, segment))) {
 			struct Token *params;
 			size_t *idxs, idxn, idx, paramn;
@@ -1229,7 +1231,7 @@ int ReportOut(void) {
 			printf("</td></tr>\n\n");
 		}
 		printf("</table>\n\n");
-		style_pop(); /* no_escape */
+		style_pop(); /* to_html */
 		style_pop(); /* div */
 		assert(!StyleArraySize(&mode.styles));
 

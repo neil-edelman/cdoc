@@ -16,70 +16,70 @@ static char style_title[256];
  `is_next_level`. */
 static const struct StyleText {
 	const char *name, *begin, *sep, *end;
-	int is_next_level, is_suppress_escapes;
+	int is_next_level, to_html;
 } no_style = { "nosty", "", "", "", 0, 0 },
 plain_text = { "plain", "", " ", "", 0, 0 },
 plain_parenthetic = { "paren", "(", " ", ")", 0, 0 },
 plain_see_license = { "license", "(See license details ", ", ", ".)", 0, 0 },
 plain_csv = { "csv", "", ", ", "", 0, 0 },
 plain_ssv = { "ssv", "", "; ", "", 0, 0 },
-no_escape = { "noescape", "", "", "", 0, 1 },
+to_html = { "noescape", "", "", "", 0, 1 },
 html_title = { "title", "<title>", "", "</title>\n", 1, 0 },
 styles[][3] = {
 	{ { "", 0, 0, 0, 0, 0 },
-		{ "div", "<div>", "", "</div>\n\n", 1, 0 },
-		{ "div", "", "", "\n\n", 1, 0 } },
+		{ "html_div", "<div>", "", "</div>\n\n", 1, 0 },
+		{ "md_div", "", "", "\n\n", 1, 0 } },
 	{ { "", 0, 0, 0, 0, 0 },
-		{ "p", "<p>", " ", "</p>\n\n", 1, 0 },
-		{ "p", "", " ", "\n\n", 1, 0 } },
+		{ "html_p", "<p>", " ", "</p>\n\n", 1, 0 },
+		{ "md_p", "", " ", "\n\n", 1, 0 } },
 	{ { "", 0, 0, 0, 0, 0 },
-		{ "ul", "<ul>\n", "", "</ul>\n\n", 1, 0 },
-		{ "ul", "", "",  "\n", 1, 0 } },
+		{ "html_ul", "<ul>\n", "", "</ul>\n\n", 1, 0 },
+		{ "md_ul", "", "",  "\n", 1, 0 } },
 	{ { "", 0, 0, 0, 0, 0 },
-		{ "li", "\t<li>", " ", "</li>\n", 0, 0 },
-		{ "li", " * ", " ", "\n", 0, 0 } },
+		{ "html_li", "\t<li>", " ", "</li>\n", 0, 0 },
+		{ "md_li", " * ", " ", "\n", 0, 0 } },
 	{ { "", 0, 0, 0, 0, 0 },
-		{ "code", "<code>", /*"&nbsp;"*/" ", "</code>", 0, 0 },
-		{ "code", "`", " ", "`", 0, 1 } },
+		{ "html_code", "<code>", /*"&nbsp;"*/" ", "</code>", 0, 0 },
+		{ "md_code", "`", " ", "`", 0, 1 } },
 	{ { "", 0, 0, 0, 0, 0 },
-		{ "pre", "<pre>\n", "", "</pre>\n\n", 1, 0 },
-		{ "pre", "", "", "\n", 1, 1 } },
+		{ "html_pre", "<pre>\n", "", "</pre>\n\n", 1, 0 },
+		{ "md_pre", "", "", "\n", 1, 1 } },
 	{ { "", 0, 0, 0, 0, 0 },
-		{ "pretext", "", "\n", "\n", 0, 0 },
-		{ "pretext", "", "\n    ", "\n", 0, 0 } },
+		{ "html_pretext", "", "\n", "\n", 0, 0 },
+		{ "md_pretext", "", "\n    ", "\n", 0, 0 } },
 	{ { "", 0, 0, 0, 0, 0 },
-		{ "h1", "<h1>", "", "</h1>\n\n", 1, 0 },
-		{ "h1", " # ", "", " #\n\n", 1, 0 } },
+		{ "html_h1", "<h1>", "", "</h1>\n\n", 1, 0 },
+		{ "md_h1", " # ", "", " #\n\n", 1, 0 } },
 	{ { "", 0, 0, 0, 0, 0 },
-		{ "h2", "<h2>", "", "</h2>\n\n", 1, 0 },
-		{ "h2", " ## ", "", " ##\n\n", 1, 0 } },
+		{ "html_h2", "<h2>", "", "</h2>\n\n", 1, 0 },
+		{ "md_h2", " ## ", "", " ##\n\n", 1, 0 } },
 	{ { "", 0, 0, 0, 0, 0 },
-		{ "h3", "<h3>", "", "</h3>\n\n", 1, 0 },
-		{ "h3", " ### ", "", " ###\n\n", 1, 0 } },
+		{ "html_h3", "<h3>", "", "</h3>\n\n", 1, 0 },
+		{ "md_h3", " ### ", "", " ###\n\n", 1, 0 } },
 	{ { "", 0, 0, 0, 0, 0 },
-		{ "dl", "<dl>\n", "", "</dl>\n\n", 1, 0 },
-		{ "dl", "", "", "\n\n", 1, 0 } },
+		{ "html_dl", "<dl>\n", "", "</dl>\n\n", 1, 0 },
+		{ "md_dl", "", "", "\n\n", 1, 0 } },
 	{ { "", 0, 0, 0, 0, 0 },
-		{ "dt", "\t<dt>", "", "</dt>\n", 0, 0 },
-		{ "dt", " - ", "", "  \n", 0, 0 } },
+		{ "html_dt", "\t<dt>", "", "</dt>\n", 0, 0 },
+		{ "md_dt", " - ", "", "  \n", 0, 0 } },
 	{ { "", 0, 0, 0, 0, 0 },
-		{ "dd", "\t<dd>", "", "</dd>\n", 0, 0 },
-		{ "dd", "   ", "", "\n", 0, 0 } },
+		{ "html_dd", "\t<dd>", "", "</dd>\n", 0, 0 },
+		{ "md_dd", "   ", "", "\n", 0, 0 } },
 	{ { "", 0, 0, 0, 0, 0 },
-		{ "ddtitle", style_title, "", "</dd>\n", 0, 0 },
-		{ "ddtitle", style_title, "", "\n", 0, 0 } },
+		{ "html_ddtitle", style_title, "", "</dd>\n", 0, 0 },
+		{ "md_ddtitle", style_title, "", "\n", 0, 0 } },
 	{ { "", 0, 0, 0, 0, 0 },
-		{ "em", "<em>", "", "</em>", 0, 0 },
-		{ "em", "_", "", "_", 0, 0 } },
+		{ "html_em", "<em>", "", "</em>", 0, 0 },
+		{ "md_em", "_", "", "_", 0, 0 } },
 	{ { "", 0, 0, 0, 0, 0 },
-		{ "strong", "<strong>", "", "</strong>", 0, 0 },
-		{ "strong", "*", "", "*", 0, 0 } },
+		{ "html_strong", "<strong>", "", "</strong>", 0, 0 },
+		{ "md_strong", "*", "", "*", 0, 0 } },
 	{ { "", 0, 0, 0, 0, 0 },
-		{ "em", "<em>", "", "</em>", 0, 0 },
-		{ "em", "<em>", "", "</em>", 0, 0 } },
+		{ "html_html_em", "<em>", "", "</em>", 0, 0 },
+		{ "md_html_em", "<em>", "", "</em>", 0, 0 } },
 	{ { "", 0, 0, 0, 0, 0 },
-		{ "strong", "<strong>", "", "</strong>", 0, 0 },
-		{ "strong", "<strong>", "", "</strong>", 0, 0 } }
+		{ "html_html_strong", "<strong>", "", "</strong>", 0, 0 },
+		{ "md_html_strong", "<strong>", "", "</strong>", 0, 0 } }
 };
 
 /* This is a hack. Don't change the styles without changing this. */
@@ -229,12 +229,21 @@ static void style_separate(void) {
 	if(top->lazy == ITEM) top->lazy = SEPARATE;
 }
 
-/** Only used with md. */
-static int style_is_suppress_escapes(void) {
+/** With Markdown, the effective style is sometimes HTML. */
+static int effective_format_pop(const int will_be_popped) {
 	struct Style *style = 0;
-	while((style = StyleArrayNext(&mode.styles, style)))
-		if(style->text->is_suppress_escapes) return /*fprintf(stderr, "%s suppresses escapes.\n", StyleArrayToString(&mode.styles)),*/ 1;
-	return 0;
+	const enum Format f = CdocGetFormat();
+	if(f == OUT_HTML) return OUT_HTML;
+	if(will_be_popped) style = StyleArrayBack(&mode.styles, style);
+	while((style = StyleArrayBack(&mode.styles, style)))
+		if(style->text->to_html) return /*fprintf(stderr, "%s suppresses escapes.\n", StyleArrayToString(&mode.styles)),*/ OUT_HTML;
+	return f;
+}
+
+static int effective_format(void) { return effective_format_pop(0); }
+
+static int effective_format_will_be_popped(void) {
+	return effective_format_pop(1);
 }
 
 /** Encode a bunch of arbitrary text `from` to `length` as whatever the options
@@ -248,7 +257,7 @@ static void encode_len_choose(int length, const char *from,
 	size_t str_len;
 	assert(length >= 0 && from);
 
-	switch(CdocGetFormat()) {
+	switch(effective_format()) {
 	case OUT_HTML:
 		if(is_buffer) goto html_encode_buffer;
 		else goto html_encode_print;
@@ -286,19 +295,10 @@ terminate_html:
 	return;
 
 md_encode_buffer:
-	if(style_is_suppress_escapes()) {
-		if(!(b = BufferPrepare(length))) { unrecoverable(); return; }
-		memcpy(b, from, length);
-		return;
-	}
 	while(length - ahead) {
 		const char *escape = 0;
 		switch(from[ahead]) {
 		case '\0': goto terminate_md;
-		/* "Markdown takes care of escaping these." <- Me before. */
-		case '<': escape = HTML_LT; break;
-		case '>': escape = HTML_GT; break;
-		case '&': escape = HTML_AMP; break;
 		case '\\': case '`': case '*': case '_': case '{': case '}': case '[':
 		case ']': case '(': case ')': case '#': case '+': case '-': case '.':
 		case '!': break;
@@ -343,14 +343,10 @@ html_encode_print:
 	return;
 
 md_encode_print:
-	if(style_is_suppress_escapes()) { printf("%.*s", length, from); return; }
 	while(length) {
 		switch(*from) {
 		case '\0': fprintf(stderr, "Encoded null with %d left.\n", length);
 			return;
-		case '<': fputs(HTML_LT, stdout); break;
-		case '>': fputs(HTML_GT, stdout); break;
-		case '&': fputs(HTML_AMP, stdout); break;
 		case '\\': case '`': case '*': case '_': case '{': case '}': case '[':
 		case ']': case '(': case ')': case '#': case '+': case '-': case '.':
 		case '!': printf("\\%c", *from); break;

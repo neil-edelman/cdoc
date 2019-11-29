@@ -3,20 +3,20 @@
  ## The Subtitle; Link [http://127\.0\.0\.1/](http://127.0.0.1/) ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef):  [<PT>Type](#user-content-typedef-8b318acb), [<A>Foo<B>Bar](#user-content-typedef-3bb96b9), [<PT>ToString](#user-content-typedef-c92c3b0f), [<PT>Action](#user-content-typedef-33725a81), [<PT>Predicate](#user-content-typedef-d7c73930)
- * [Struct, Union, and Enum Definitions](#user-content-tag):  [Cee](#user-content-tag-68097f70), [Scanner](#user-content-tag-ace769e5), [Token](#user-content-tag-3a355bd2)
- * [General Declarations](#user-content-data):  [Cee](#user-content-data-68097f70), [y](#user-content-data-fc0c4ef4), [foo](#user-content-data-a9f37ed7), [c](#user-content-data-e60c2c52)
+ * [Typedef Aliases](#user-content-typedef):  [&lt;PT&gt;Type](#typedef:&lt;PT&gt;Type), [&lt;A&gt;Foo&lt;B&gt;Bar](#typedef:&lt;A&gt;Foo&lt;B&gt;Bar), [&lt;PT&gt;ToString](#typedef:&lt;PT&gt;ToString), [&lt;PT&gt;Action](#typedef:&lt;PT&gt;Action), [&lt;PT&gt;Predicate](#typedef:&lt;PT&gt;Predicate)
+ * [Struct, Union, and Enum Definitions](#user-content-tag):  <a href = "#tag:Cee">Cee</a>, <a href = "#tag:Scanner">Scanner</a>, <a href = "#tag:Token">Token</a>
+ * [General Declarations](#user-content-data):  <a href = "#data:Cee">Cee</a>, <a href = "#data:y">y</a>, <a href = "#data:foo">foo</a>, <a href = "#data:c">c</a>
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
 
  ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-[This is text &amp;&amp;](http://yo.c) Header\. Yo [http://foo\.org/](http://foo.org/) [MIT](https://mit.edu/)
+[This is text &&](http://yo.c) Header\. Yo [http://foo\.org/](http://foo.org/) [MIT](https://mit.edu/)
 
  * Paragraph @ @a &#8239;&nbsp;&nbsp;
  * Links to entities: [&lt;T&gt;fun4](#user-content-fn-165f2b9f), [y](#data:y)\.
- * Broken: [not\_fn](#user-content-fn-beb37567), [&lt;T&gt;not\_fn](#user-content-fn-3ebb6d3c)\.
+ * Broken: [not_fn](#user-content-fn-9ab2437f), [&lt;T&gt;not_fn](#user-content-fn-7ad975e)\.
  * Citation [ÀæĔge2007](https://scholar.google.ca/scholar?q=%C3%80%C3%A6%C4%94ge2007)\.
  * [absolute](http://arr.com/index.html#ddddd////sfdg)\.
  * [relative](../../samples/foo.h) [relative](../../src/Cdoc.c.re)\.
@@ -25,13 +25,17 @@
 
 Escapes\. \\ \` @ \_ \` This is not prefomated\.
 
-This is preformated <http://foo.com/>*
-     
-    pre***
+This is preformated &lt;http://foo.com/&gt;*
+
+<pre>
+ 
+</pre>
+
+pre***
 
 Header\. That also goes in the header\.
 
-This is a kernel\-style comment\. [http://www\.\`@\.com/index\.html](http://www.`@.com/index.html) [Yo2019](https://scholar.google.ca/scholar?q=Yo2019) ?&lt;&gt;&amp;\! [fun1](#user-content-fn-407e96bd)
+This is a kernel\-style comment\. [http://www\.\`@\.com/index\.html](http://www.`@.com/index.html) [Yo2019](https://scholar.google.ca/scholar?q=Yo2019) ?<>&\! [fun1](#user-content-fn-407e96bd)
 
 
 
@@ -53,7 +57,7 @@ There should be [fun1](#user-content-fn-407e96bd) to [fun7](#user-content-fn-3a7
 
  ### <a id = "user-content-typedef-8b318acb" name = "user-content-typedef-8b318acb"><PT>Type</a> ###
 
-<code>typedef int <strong><PT>Type</strong>;</code>
+<code>typedef int <strong>&lt;PT&gt;Type</strong>;</code>
 
 Troubles with this line? check to ensure that `ARRAY_TYPE` is a valid type, whose definition is placed above `#include "Array.h"` \.
 
@@ -61,7 +65,7 @@ Troubles with this line? check to ensure that `ARRAY_TYPE` is a valid type, whos
 
  ### <a id = "user-content-typedef-3bb96b9" name = "user-content-typedef-3bb96b9"><A>Foo<B>Bar</a> ###
 
-<code>typedef int(*<strong><A>Foo<B>Bar</strong>)(int);</code>
+<code>typedef int(*<strong>&lt;A&gt;Foo&lt;B&gt;Bar</strong>)(int);</code>
 
 Typedef\.
 
@@ -69,7 +73,7 @@ Typedef\.
 
  ### <a id = "user-content-typedef-c92c3b0f" name = "user-content-typedef-c92c3b0f"><PT>ToString</a> ###
 
-<code>typedef void(*<strong><PT>ToString</strong>)(const T *, char(*const)[12]);</code>
+<code>typedef void(*<strong>&lt;PT&gt;ToString</strong>)(const T *, char(*const)[12]);</code>
 
 Typedef\.
 
@@ -77,7 +81,7 @@ Typedef\.
 
  ### <a id = "user-content-typedef-33725a81" name = "user-content-typedef-33725a81"><PT>Action</a> ###
 
-<code>typedef void(*<strong><PT>Action</strong>)(T *const data);</code>
+<code>typedef void(*<strong>&lt;PT&gt;Action</strong>)(T *const data);</code>
 
 Typedef\. Operates by side\-effects on `data` only\.
 
@@ -85,7 +89,7 @@ Typedef\. Operates by side\-effects on `data` only\.
 
  ### <a id = "user-content-typedef-d7c73930" name = "user-content-typedef-d7c73930"><PT>Predicate</a> ###
 
-<code>typedef int(*<strong><PT>Predicate</strong>)(const T *const data);</code>
+<code>typedef int(*<strong>&lt;PT&gt;Predicate</strong>)(const T *const data);</code>
 
 Typedef\. Given constant `data` , returns a boolean\.
 
@@ -161,27 +165,27 @@ Declare a pointer\-to\-int?
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>void</td><td><a href = "#user-content-fn-f5f336fd">Cee_</a></td><td>ceeptr</td></tr>
+<tr><td align = right>void</td><td><a href = "#fn:Cee_">Cee_</a></td><td>ceeptr</td></tr>
 
-<tr><td align = right>char *</td><td><a href = "#user-content-fn-b55497dd">CeeGetVar</a></td><td>cee</td></tr>
+<tr><td align = right>char *</td><td><a href = "#fn:CeeGetVar">CeeGetVar</a></td><td>cee</td></tr>
 
-<tr><td align = right>int</td><td><a href = "#user-content-fn-3f7e952a">fun0</a></td><td>arg1_2, arg2_2</td></tr>
+<tr><td align = right>int</td><td><a href = "#fn:fun0">fun0</a></td><td>arg1_2, arg2_2</td></tr>
 
-<tr><td align = right>int _function_</td><td><a href = "#user-content-fn-407e96bd">fun1</a></td><td>arg1_1</td></tr>
+<tr><td align = right>int <em>function</em></td><td><a href = "#fn:fun1">fun1</a></td><td>arg1_1</td></tr>
 
-<tr><td align = right>static enum Token</td><td><a href = "#user-content-fn-5ce16895">fun2_scan_eof</a></td><td>arg1_2, arg2_2</td></tr>
+<tr><td align = right>static enum Token</td><td><a href = "#fn:fun2_scan_eof">fun2_scan_eof</a></td><td>arg1_2, arg2_2</td></tr>
 
-<tr><td align = right>static enum Token</td><td><a href = "#user-content-fn-48c98dc7">fun3_scan_comment</a></td><td>arg1_1</td></tr>
+<tr><td align = right>static enum Token</td><td><a href = "#fn:fun3_scan_comment">fun3_scan_comment</a></td><td>arg1_1</td></tr>
 
-<tr><td align = right>void</td><td><a href = "#user-content-fn-ebe4b0f2"><T>fun4</a></td><td></td></tr>
+<tr><td align = right>void</td><td><a href = "#fn:&lt;T&gt;fun4">&lt;T&gt;fun4</a></td><td></td></tr>
 
-<tr><td align = right>T</td><td><a href = "#user-content-fn-693cf86a">fun5_</a></td><td>arg1_2, arg2_3, arg3_3</td></tr>
+<tr><td align = right>T</td><td><a href = "#fn:fun5_">fun5_</a></td><td>arg1_2, arg2_3, arg3_3</td></tr>
 
-<tr><td align = right>int</td><td><a href = "#user-content-fn-397e8bb8">fun6</a></td><td>oy, vey</td></tr>
+<tr><td align = right>int</td><td><a href = "#fn:fun6">fun6</a></td><td>oy, vey</td></tr>
 
-<tr><td align = right>void</td><td><a href = "#user-content-fn-3a7e8d4b">fun7</a></td><td>a, b, c</td></tr>
+<tr><td align = right>void</td><td><a href = "#fn:fun7">fun7</a></td><td>a, b, c</td></tr>
 
-<tr><td align = right>int</td><td><a href = "#user-content-fn-ea90e208">main</a></td><td></td></tr>
+<tr><td align = right>int</td><td><a href = "#fn:main">main</a></td><td></td></tr>
 
 </table>
 
@@ -259,7 +263,7 @@ Function\.
 
  ### <a id = "user-content-fn-ebe4b0f2" name = "user-content-fn-ebe4b0f2"><T>fun4</a> ###
 
-<code>void <strong><T>fun4</strong>(void)</code>
+<code>void <strong>&lt;T&gt;fun4</strong>(void)</code>
 
 This is a foo\.
 
@@ -271,7 +275,7 @@ This is a foo\.
 
  ### <a id = "user-content-fn-9ff81818" name = "user-content-fn-9ff81818">fun5\_</a> ###
 
-<code>T <strong>fun5_</strong>(int(*<em>arg1_2</em>)(int arg1_3, int(*fn)(void)), Foo <em>arg2_3</em>, struct <T>Array <em>arg3_3</em>)</code>
+<code>T <strong>fun5_</strong>(int(*<em>arg1_2</em>)(int arg1_3, int(*fn)(void)), Foo <em>arg2_3</em>, struct &lt;T&gt;Array <em>arg3_3</em>)</code>
 
 Function `arg1_2` \. yo
 
@@ -289,7 +293,7 @@ Oyvey lipsum\.
 
 O\!\!\!\!
 
-&lt;&gt; &lt;i&gt; [i\.](i.) [i\.o](i.o) [i/o](i/o)
+<> <i> [i\.](i.) [i\.o](i.o) [i/o](i/o)
 
 
 
