@@ -5,7 +5,7 @@
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef):  [&lt;PT&gt;Type](#user-content-typedef-8b318acb), [&lt;A&gt;Foo&lt;B&gt;Bar](#user-content-typedef-3bb96b9), [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f), [&lt;PT&gt;Action](#user-content-typedef-33725a81), [&lt;PT&gt;Predicate](#user-content-typedef-d7c73930)
  * [Struct, Union, and Enum Definitions](#user-content-tag):  [Cee](#user-content-tag-68097f70), [Scanner](#user-content-tag-ace769e5), [Token](#user-content-tag-3a355bd2)
- * [General Declarations](#user-content-data):  [Cee](#user-content-data-68097f70), [y](#user-content-data-fc0c4ef4), [foo](#user-content-data-a9f37ed7), [c](#user-content-data-e60c2c52)
+ * [General Declarations](#user-content-data):  [Cee](#user-content-data-68097f70), [y](#user-content-data-fc0c4ef4), [foo](#user-content-data-a9f37ed7), [c](#user-content-data-e60c2c52), [&lt;T&gt;foo](#user-content-data-80b9524b)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -156,6 +156,14 @@ declare foo as pointer to function \(void\) returning pointer to array 3 of int
 <code>int(*<strong>c</strong>);</code>
 
 Declare a pointer\-to\-int?
+
+
+
+ ### <a id = "user-content-data-524fbdd8" name = "user-content-data-524fbdd8">&lt;T&gt;foo</a> ###
+
+<code>int <strong>&lt;T&gt;foo</strong>;</code>
+
+Test parameter\.
 
 
 

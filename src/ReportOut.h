@@ -866,6 +866,7 @@ static void scan_doc_string(const char *const str) {
 	Scanner_(&scan);
 }
 
+/* @param[label] Un-escaped label. */
 static void print_fragment_for(const enum Division d, const char *const label) {
 	/* `effective_format` is NOT the thing we need; we need to raw format for
 	 the link. */
@@ -875,6 +876,7 @@ static void print_fragment_for(const enum Division d, const char *const label) {
 	const unsigned hash = fnv_32a_str(label);
 	size_t size;
 	char *b;
+	fprintf(stderr, "print_fragment_for(%s)\n", label);
 	assert(label);
 	size = f == OUT_HTML ? snprintf(0, 0, fmt, label, division, label)
 		: snprintf(0, 0, fmt, label, md_fragment_extra, division, hash);
@@ -927,6 +929,7 @@ static void print_anchor_for(const enum Division d, const char *const label) {
 	}
 	printf(">%s</a>", label);
 	style_pop(); /* h2 */
+	fprintf(stderr, "Label: %s\n", label);
 }
 
 static void print_custom_heading_anchor_for(const char *const division,
@@ -1185,6 +1188,7 @@ int ReportOut(void) {
 	/* Print functions. */
 	if(is_function) {
 		/* Function table. */
+		fprintf(stderr, "Function table...\n");
 		style_push(&styles[ST_DIV][format]);
 		print_custom_heading_anchor_for(summary, summary_desc);
 		style_push(&to_html);
@@ -1208,12 +1212,9 @@ int ReportOut(void) {
 			style_pop();
 			printf("</td><td>");
 			b = print_token_s(&segment->code, params + idxs[0]);
-			fprintf(stderr, "table: %s\n", b);
+			fprintf(stderr, "ReportOut: print_fragment_for(%s)\n", b);
 			print_fragment_for(DIV_FUNCTION, b);
-			/*printf("<a href = \"#%s-", division_strings[DIV_FUNCTION]);
-			printf("\">");
-			b = print_token_s(&segment->code, params + idxs[0]);
-			printf("</a>");*/
+			/*printf("<a href = \"#%s\">");*/
 			printf("</td><td>");
 			for(idx = 1; idx < idxn; idx++) {
 				assert(idxs[idx] < paramn);
@@ -1226,6 +1227,7 @@ int ReportOut(void) {
 		style_pop(); /* to_html */
 		style_pop(); /* div */
 		assert(!StyleArraySize(&mode.styles));
+		fprintf(stderr, "...end function table.\n");
 
 		/* Functions. */
 		style_push(&styles[ST_DIV][format]);

@@ -88,6 +88,9 @@ int (*(*foo)(void ))[3];
 /** Declare a pointer-to-int? */
 int (*c);
 
+/** Test parameter. */
+int T_(foo);
+
 int fun0(int (*arg1_2)(int, int (*not)(int)), int arg2_2) {
 }
 
