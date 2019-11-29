@@ -19,9 +19,9 @@
  * Broken: [not\_fn](#user-content-fn-beb37567), [&lt;T&gt;not\_fn](#user-content-fn-3ebb6d3c)\.
  * Citation [ÀæĔge2007](https://scholar.google.ca/scholar?q=%C3%80%C3%A6%C4%94ge2007)\.
  * [absolute](http://arr.com/index.html#ddddd////sfdg)\.
- * [relative](/Users/neil/Movies/Cdoc/samples/foo.h) [relative](/Users/neil/Movies/Cdoc/src/Cdoc.c.re)\.
- * png: ![Ellen Ripley](/Users/neil/Movies/Cdoc/diagrams/Ellen_Ripley_badass.png)\.
- * jpeg: ![Inigo Montoya](/Users/neil/Movies/Cdoc/diagrams/Inigo_Montoya.jpeg)\.
+ * [relative](../../samples/foo.h) [relative](../../src/Cdoc.c.re)\.
+ * png: ![Ellen Ripley](../../diagrams/Ellen_Ripley_badass.png)\.
+ * jpeg: ![Inigo Montoya](../../diagrams/Inigo_Montoya.jpeg)\.
 
 Escapes\. \\ \` @ \_ \` This is not prefomated\.
 
