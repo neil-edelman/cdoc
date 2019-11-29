@@ -234,6 +234,7 @@ static int effective_format_pop(const int will_be_popped) {
 	struct Style *style = 0;
 	const enum Format f = CdocGetFormat();
 	if(f == OUT_HTML) return OUT_HTML;
+	/* If the style will be popped, don't include it. */
 	if(will_be_popped) style = StyleArrayBack(&mode.styles, style);
 	while((style = StyleArrayBack(&mode.styles, style)))
 		if(style->text->to_html) return /*fprintf(stderr, "%s suppresses escapes.\n", StyleArrayToString(&mode.styles)),*/ OUT_HTML;
