@@ -210,7 +210,7 @@ T fun5_(int (*arg1_2)(int arg1_3, int (*fn)(void)), Foo arg2_3, /*no*/
  @license Way.
  
  <>
- <i>
+ <foo>
  <i.>
  <i.o>
  <i/o> */

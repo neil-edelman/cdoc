@@ -293,7 +293,7 @@ Oyvey lipsum\.
 
 O\!\!\!\!
 
-<> <i> [i\.](i.) [i\.o](i.o) [i/o](i/o)
+<> <foo> [i\.](i.) [i\.o](i.o) [i/o](i/o)
 
 
 
