@@ -867,7 +867,9 @@ static void scan_doc_string(const char *const str) {
 }
 
 static void print_fragment_for(const enum Division d, const char *const label) {
-	const enum Format f = effective_format();
+	/* `effective_format` is NOT the thing we need; we need to raw format for
+	 the link. */
+	const enum Format f = CdocGetFormat();
 	const char *const fmt = f == OUT_HTML ? "[%s](#%s:%s)" : "[%s](#%s%s-%x)",
 		*const division = division_strings[d];
 	const unsigned hash = fnv_32a_str(label);
@@ -1206,6 +1208,7 @@ int ReportOut(void) {
 			style_pop();
 			printf("</td><td>");
 			b = print_token_s(&segment->code, params + idxs[0]);
+			fprintf(stderr, "table: %s\n", b);
 			print_fragment_for(DIV_FUNCTION, b);
 			/*printf("<a href = \"#%s-", division_strings[DIV_FUNCTION]);
 			printf("\">");

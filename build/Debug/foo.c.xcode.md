@@ -165,27 +165,27 @@ Declare a pointer\-to\-int?
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>void</td><td><a href = "#fn:Cee_">Cee_</a></td><td>ceeptr</td></tr>
+<tr><td align = right>void</td><td><a href = "#user-content-fn-f5f336fd">Cee_</a></td><td>ceeptr</td></tr>
 
-<tr><td align = right>char *</td><td><a href = "#fn:CeeGetVar">CeeGetVar</a></td><td>cee</td></tr>
+<tr><td align = right>char *</td><td><a href = "#user-content-fn-b55497dd">CeeGetVar</a></td><td>cee</td></tr>
 
-<tr><td align = right>int</td><td><a href = "#fn:fun0">fun0</a></td><td>arg1_2, arg2_2</td></tr>
+<tr><td align = right>int</td><td><a href = "#user-content-fn-3f7e952a">fun0</a></td><td>arg1_2, arg2_2</td></tr>
 
-<tr><td align = right>int <em>function</em></td><td><a href = "#fn:fun1">fun1</a></td><td>arg1_1</td></tr>
+<tr><td align = right>int <em>function</em></td><td><a href = "#user-content-fn-407e96bd">fun1</a></td><td>arg1_1</td></tr>
 
-<tr><td align = right>static enum Token</td><td><a href = "#fn:fun2_scan_eof">fun2_scan_eof</a></td><td>arg1_2, arg2_2</td></tr>
+<tr><td align = right>static enum Token</td><td><a href = "#user-content-fn-5ce16895">fun2_scan_eof</a></td><td>arg1_2, arg2_2</td></tr>
 
-<tr><td align = right>static enum Token</td><td><a href = "#fn:fun3_scan_comment">fun3_scan_comment</a></td><td>arg1_1</td></tr>
+<tr><td align = right>static enum Token</td><td><a href = "#user-content-fn-48c98dc7">fun3_scan_comment</a></td><td>arg1_1</td></tr>
 
-<tr><td align = right>void</td><td>[&amp;lt;T&amp;gt;fun4](#fn:&amp;lt;T&amp;gt;fun4)</td><td></td></tr>
+<tr><td align = right>void</td><td><a href = "#user-content-fn-165f2b9f">&amp;lt;T&amp;gt;fun4</a></td><td></td></tr>
 
-<tr><td align = right>T</td><td><a href = "#fn:fun5_">fun5_</a></td><td>arg1_2, arg2_3, arg3_3</td></tr>
+<tr><td align = right>T</td><td><a href = "#user-content-fn-693cf86a">fun5_</a></td><td>arg1_2, arg2_3, arg3_3</td></tr>
 
-<tr><td align = right>int</td><td><a href = "#fn:fun6">fun6</a></td><td>oy, vey</td></tr>
+<tr><td align = right>int</td><td><a href = "#user-content-fn-397e8bb8">fun6</a></td><td>oy, vey</td></tr>
 
-<tr><td align = right>void</td><td><a href = "#fn:fun7">fun7</a></td><td>a, b, c</td></tr>
+<tr><td align = right>void</td><td><a href = "#user-content-fn-3a7e8d4b">fun7</a></td><td>a, b, c</td></tr>
 
-<tr><td align = right>int</td><td><a href = "#fn:main">main</a></td><td></td></tr>
+<tr><td align = right>int</td><td><a href = "#user-content-fn-ea90e208">main</a></td><td></td></tr>
 
 </table>
 
