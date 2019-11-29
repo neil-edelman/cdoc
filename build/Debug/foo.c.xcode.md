@@ -20,8 +20,8 @@
  * Citation [ÀæĔge2007](https://scholar.google.ca/scholar?q=%C3%80%C3%A6%C4%94ge2007)\.
  * [absolute](http://arr.com/index.html#ddddd////sfdg) \.
  * [relative](../../samples/foo.h) [relative](../../src/Cdoc.c.re) \.
- * png: ![Ellen Ripley](../../diagrams/Ellen_Ripley_badass.png)\.
- * jpeg: ![Inigo Montoya](../../diagrams/Inigo_Montoya.jpeg)\.
+ * png: ![Ellen Ripley](../../diagrams/Ellen_Ripley_badass.png) \.
+ * jpeg: ![Inigo Montoya](../../diagrams/Inigo_Montoya.jpeg) \.
 
 Escapes\. \\ \` @ \_ \` This is not prefomated\.
 
@@ -55,7 +55,7 @@ There should be [fun1](#user-content-fn-407e96bd) to [fun7](#user-content-fn-3a7
 
  ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
 
- ### <a id = "user-content-typedef-8b318acb" name = "user-content-typedef-8b318acb"><PT>Type</a> ###
+ ### <a id = "user-content-typedef-db68604c" name = "user-content-typedef-db68604c">&lt;PT&gt;Type</a> ###
 
 <code>typedef int <strong>&lt;PT&gt;Type</strong>;</code>
 
@@ -63,7 +63,7 @@ Troubles with this line? check to ensure that `ARRAY_TYPE` is a valid type, whos
 
 
 
- ### <a id = "user-content-typedef-3bb96b9" name = "user-content-typedef-3bb96b9"><A>Foo<B>Bar</a> ###
+ ### <a id = "user-content-typedef-75e6431b" name = "user-content-typedef-75e6431b">&lt;A&gt;Foo&lt;B&gt;Bar</a> ###
 
 <code>typedef int(*<strong>&lt;A&gt;Foo&lt;B&gt;Bar</strong>)(int);</code>
 
@@ -71,7 +71,7 @@ Typedef\.
 
 
 
- ### <a id = "user-content-typedef-c92c3b0f" name = "user-content-typedef-c92c3b0f"><PT>ToString</a> ###
+ ### <a id = "user-content-typedef-74d5ca80" name = "user-content-typedef-74d5ca80">&lt;PT&gt;ToString</a> ###
 
 <code>typedef void(*<strong>&lt;PT&gt;ToString</strong>)(const T *, char(*const)[12]);</code>
 
@@ -79,7 +79,7 @@ Typedef\.
 
 
 
- ### <a id = "user-content-typedef-33725a81" name = "user-content-typedef-33725a81"><PT>Action</a> ###
+ ### <a id = "user-content-typedef-9cd30ec6" name = "user-content-typedef-9cd30ec6">&lt;PT&gt;Action</a> ###
 
 <code>typedef void(*<strong>&lt;PT&gt;Action</strong>)(T *const data);</code>
 
@@ -87,7 +87,7 @@ Typedef\. Operates by side\-effects on `data` only\.
 
 
 
- ### <a id = "user-content-typedef-d7c73930" name = "user-content-typedef-d7c73930"><PT>Predicate</a> ###
+ ### <a id = "user-content-typedef-f1170a2d" name = "user-content-typedef-f1170a2d">&lt;PT&gt;Predicate</a> ###
 
 <code>typedef int(*<strong>&lt;PT&gt;Predicate</strong>)(const T *const data);</code>
 
@@ -193,7 +193,7 @@ Declare a pointer\-to\-int?
 
  ## <a id = "user-content-fn" name = "user-content-fn">Function Definitions</a> ##
 
- ### <a id = "user-content-fn-8fd7e081" name = "user-content-fn-8fd7e081">Cee\_</a> ###
+ ### <a id = "user-content-fn-f5f336fd" name = "user-content-fn-f5f336fd">Cee_</a> ###
 
 <code>void <strong>Cee_</strong>(struct Cee **<em>ceeptr</em>);</code>
 
@@ -223,7 +223,7 @@ Function declare x as function \(int\) returning pointer to function \(int\) ret
 
 
 
- ### <a id = "user-content-fn-ddb1e3f5" name = "user-content-fn-ddb1e3f5">fun2\_scan\_eof</a> ###
+ ### <a id = "user-content-fn-5ce16895" name = "user-content-fn-5ce16895">fun2_scan_eof</a> ###
 
 <code>static enum Token <strong>fun2_scan_eof</strong>(struct Scanner *const <em>arg1_2</em>, int <em>arg2_2</em>)</code>
 
@@ -245,7 +245,7 @@ Returns eof\.
 
 
 
- ### <a id = "user-content-fn-a0e9278f" name = "user-content-fn-a0e9278f">fun3\_scan\_comment</a> ###
+ ### <a id = "user-content-fn-48c98dc7" name = "user-content-fn-48c98dc7">fun3_scan_comment</a> ###
 
 <code>static enum Token <strong>fun3_scan_comment</strong>(struct Scanner *const <em>arg1_1</em>)</code>
 
@@ -261,7 +261,7 @@ Function\.
 
 
 
- ### <a id = "user-content-fn-ebe4b0f2" name = "user-content-fn-ebe4b0f2"><T>fun4</a> ###
+ ### <a id = "user-content-fn-165f2b9f" name = "user-content-fn-165f2b9f">&lt;T&gt;fun4</a> ###
 
 <code>void <strong>&lt;T&gt;fun4</strong>(void)</code>
 
@@ -273,7 +273,7 @@ This is a foo\.
 
 
 
- ### <a id = "user-content-fn-9ff81818" name = "user-content-fn-9ff81818">fun5\_</a> ###
+ ### <a id = "user-content-fn-693cf86a" name = "user-content-fn-693cf86a">fun5_</a> ###
 
 <code>T <strong>fun5_</strong>(int(*<em>arg1_2</em>)(int arg1_3, int(*fn)(void)), Foo <em>arg2_3</em>, struct &lt;T&gt;Array <em>arg3_3</em>)</code>
 

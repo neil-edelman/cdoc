@@ -407,7 +407,7 @@ output:
 	assert(fn_len <= INT_MAX);
 	if(f == OUT_HTML) printf("<a href = \"%.*s\">", (int)fn_len, fn);
 	else printf("[");
-	/* This is html even in md. */
+	/* This is html even in md in `GitHub`. */
 	style_push(&to_html), style_push(&plain_text);
 	for(text = TokenArrayNext(tokens, t); text->symbol != URL; )
 		if(!(text = print_token(tokens, text))) goto catch;
@@ -434,8 +434,11 @@ OUT(image) {
 	for(turl = TokenArrayNext(tokens, t); turl->symbol != URL;
 		turl = TokenArrayNext(tokens, turl)) if(!turl) goto catch;
 	printf("%s", f == OUT_HTML ? "<img alt = \"" : "![");
+	/* This is html even in md in `GitHub`. */
+	style_push(&to_html), style_push(&plain_text);
 	for(text = TokenArrayNext(tokens, t); text->symbol != URL; )
 		if(!(text = print_token(tokens, text))) goto catch;
+	style_pop(), style_pop();
 	/* We want to open this file to check if it's on the up-and-up. */
 	if(!(errno = 0, fn = PathFromHere(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
@@ -922,6 +925,7 @@ static void print_heading_fragment_for(const enum Division d) {
 
 
 
+/** @param[label] In HTML. */
 static void print_anchor_for(const enum Division d, const char *const label) {
 	const enum Format f = effective_format();
 	const char *const division = division_strings[d];
@@ -998,7 +1002,10 @@ static void segment_print_all(const struct Segment *const segment) {
 
 	/* The title is generally the first param. Only single-words. */
 	if((param = param_no(segment, 0))) {
+		/* Anchors are always in html. */
+		style_push(&to_html);
 		b = print_token_s(&segment->code, param);
+		style_pop();
 		print_anchor_for(segment->division, b);
 		style_push(&styles[ST_P][f]), style_push(&to_html);
 		style_string_output();
