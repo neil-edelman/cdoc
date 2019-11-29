@@ -249,14 +249,14 @@ OUT(see_fn) {
 		printf("</a>");
 	} else {
 		const char *b;
-		style_push(&to_html);
 		printf("[");
+		style_push(&to_html);
 		encode_len(fn->length, fn->from);
+		style_pop();
 		printf("](#%s%s-", md_fragment_extra, division_strings[DIV_FUNCTION]);
-		b = encode_len_s(fn->length, fn->from);
+		b = encode_len_s_html(fn->length, fn->from);
 		fprintf(stderr, "see_fn hash str: %s\n", b);
 		printf("%x)", fnv_32a_str(b));
-		style_pop();
 	}
 	*ptoken = TokenArrayNext(tokens, fn);
 	return 1;
@@ -276,7 +276,7 @@ OUT(see_tag) {
 		printf("[");
 		encode_len(tag->length, tag->from);
 		printf("](#%s%s-", md_fragment_extra, division_strings[DIV_TAG]);
-		b = encode_len_s(tag->length, tag->from);
+		b = encode_len_s_html(tag->length, tag->from);
 		fprintf(stderr, "see_tag hash str: %s\n", b);
 		printf("%x)", fnv_32a_str(b));
 	}
@@ -407,8 +407,11 @@ output:
 	assert(fn_len <= INT_MAX);
 	if(f == OUT_HTML) printf("<a href = \"%.*s\">", (int)fn_len, fn);
 	else printf("[");
+	/* This is html even in md. */
+	style_push(&to_html), style_push(&plain_text);
 	for(text = TokenArrayNext(tokens, t); text->symbol != URL; )
 		if(!(text = print_token(tokens, text))) goto catch;
+	style_pop(), style_pop();
 	if(f == OUT_HTML) printf("</a>");
 	else printf("](%.*s)", (int)fn_len, fn);
 	success = 1;
@@ -440,8 +443,7 @@ OUT(image) {
 	/* We want the path to print, now. */
 	if(!(errno = 0, fn = PathFromOutput(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
-	if(CdocGetDebug())
-		fprintf(stderr, "%s: local image %s.\n", pos(t), fn);
+	if(CdocGetDebug()) fprintf(stderr, "%s: local image %s.\n", pos(t), fn);
 	if(f == OUT_HTML) {
 		printf("\" src = \"%s\" width = %u height = %u>", fn, width, height);
 	} else {
@@ -977,9 +979,7 @@ static void print_toc_extra(const enum Division d) {
 		params = TokenArrayGet(&segment->code);
 		assert(idxs[0] < TokenArraySize(&segment->code));
 		b = print_token_s(&segment->code, params + idxs[0]);
-		style_push(&to_html);
 		print_fragment_for(d, b);
-		style_pop();
 		style_pop_push();
 	}
 	style_pop(), style_pop();

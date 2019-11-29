@@ -251,21 +251,21 @@ static int effective_format_will_be_popped(void) {
  were.
  @param[is_buffer] Appends to the buffer chosen in `Buffer.c`. */
 static void encode_len_choose(int length, const char *from,
-	const int is_buffer) {
+	const enum Format f, const int is_buffer) {
 	int ahead = 0;
 	char *b;
 	const char *str;
 	size_t str_len;
 	assert(length >= 0 && from);
 
-	switch(effective_format()) {
+	switch(f) {
 	case OUT_HTML:
 		if(is_buffer) goto html_encode_buffer;
 		else goto html_encode_print;
 	case OUT_MD:
 		if(is_buffer) goto md_encode_buffer;
 		else goto md_encode_print;
-	default: assert(0);
+	default: assert(0); return;
 	}
 
 html_encode_buffer:
@@ -358,18 +358,18 @@ md_encode_print:
 	return;
 }
 
-static const char *encode_len_s(const int length, const char *const from) {
+static const char *encode_len_s_html(const int length, const char *const from) {
 	BufferClear();
-	encode_len_choose(length, from, 1);
+	encode_len_choose(length, from, OUT_HTML, 1);
 	return BufferGet();
 }
 
 static void encode_cat_len_s(const int length, const char *const from) {
-	encode_len_choose(length, from, 1);
+	encode_len_choose(length, from, effective_format(), 1);
 }
 
 static void encode_len(const int length, const char *const from) {
-	encode_len_choose(length, from, 0);
+	encode_len_choose(length, from, effective_format(), 0);
 }
 
 static void encode(const char *const str) {

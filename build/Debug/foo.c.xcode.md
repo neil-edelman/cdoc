@@ -3,23 +3,23 @@
  ## The Subtitle; Link [http://127\.0\.0\.1/](http://127.0.0.1/) ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef):  [&lt;PT&gt;Type](#typedef:&lt;PT&gt;Type), [&lt;A&gt;Foo&lt;B&gt;Bar](#typedef:&lt;A&gt;Foo&lt;B&gt;Bar), [&lt;PT&gt;ToString](#typedef:&lt;PT&gt;ToString), [&lt;PT&gt;Action](#typedef:&lt;PT&gt;Action), [&lt;PT&gt;Predicate](#typedef:&lt;PT&gt;Predicate)
- * [Struct, Union, and Enum Definitions](#user-content-tag):  <a href = "#tag:Cee">Cee</a>, <a href = "#tag:Scanner">Scanner</a>, <a href = "#tag:Token">Token</a>
- * [General Declarations](#user-content-data):  <a href = "#data:Cee">Cee</a>, <a href = "#data:y">y</a>, <a href = "#data:foo">foo</a>, <a href = "#data:c">c</a>
+ * [Typedef Aliases](#user-content-typedef):  [&lt;PT&gt;Type](#user-content-typedef-8b318acb), [&lt;A&gt;Foo&lt;B&gt;Bar](#user-content-typedef-3bb96b9), [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f), [&lt;PT&gt;Action](#user-content-typedef-33725a81), [&lt;PT&gt;Predicate](#user-content-typedef-d7c73930)
+ * [Struct, Union, and Enum Definitions](#user-content-tag):  [Cee](#user-content-tag-68097f70), [Scanner](#user-content-tag-ace769e5), [Token](#user-content-tag-3a355bd2)
+ * [General Declarations](#user-content-data):  [Cee](#user-content-data-68097f70), [y](#user-content-data-fc0c4ef4), [foo](#user-content-data-a9f37ed7), [c](#user-content-data-e60c2c52)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
 
  ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-[This is text &&](http://yo.c) Header\. Yo [http://foo\.org/](http://foo.org/) [MIT](https://mit.edu/)
+[This is text &amp;&amp;](http://yo.c) Header\. Yo [http://foo\.org/](http://foo.org/) [MIT](https://mit.edu/)
 
  * Paragraph @ @a &#8239;&nbsp;&nbsp;
  * Links to entities: [&lt;T&gt;fun4](#user-content-fn-165f2b9f), [y](#data:y)\.
  * Broken: [not_fn](#user-content-fn-9ab2437f), [&lt;T&gt;not_fn](#user-content-fn-7ad975e)\.
  * Citation [ÀæĔge2007](https://scholar.google.ca/scholar?q=%C3%80%C3%A6%C4%94ge2007)\.
- * [absolute](http://arr.com/index.html#ddddd////sfdg)\.
- * [relative](../../samples/foo.h) [relative](../../src/Cdoc.c.re)\.
+ * [absolute](http://arr.com/index.html#ddddd////sfdg) \.
+ * [relative](../../samples/foo.h) [relative](../../src/Cdoc.c.re) \.
  * png: ![Ellen Ripley](../../diagrams/Ellen_Ripley_badass.png)\.
  * jpeg: ![Inigo Montoya](../../diagrams/Inigo_Montoya.jpeg)\.
 
