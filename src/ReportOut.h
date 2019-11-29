@@ -866,43 +866,25 @@ static void scan_doc_string(const char *const str) {
 	Scanner_(&scan);
 }
 
-static void print_fragment_for_extra(const enum Division d,
-	const char *const label, const int is_html) {
+static void print_fragment_for(const enum Division d, const char *const label) {
 	const enum Format f = effective_format();
-	const char *const fmt = is_html ? (f == OUT_HTML
-		? "<a href = \"#%s:%s\">%s</a>" : "<a href = \"#%s%s-%x\">%s</a>")
-		: (f == OUT_HTML ? "[%s](#%s:%s)" : "[%s](#%s%s-%x)"),
+	const char *const fmt = f == OUT_HTML ? "[%s](#%s:%s)" : "[%s](#%s%s-%x)",
 		*const division = division_strings[d];
 	const unsigned hash = fnv_32a_str(label);
 	size_t size;
 	char *b;
 	assert(label);
-	size = is_html ? (f == OUT_HTML
-		? snprintf(0, 0, fmt, division, label, label)
-		: snprintf(0, 0, fmt, md_fragment_extra, division, hash, label))
-		: (f == OUT_HTML ? snprintf(0, 0, fmt, label, division, label)
-		: snprintf(0, 0, fmt, label, md_fragment_extra, division, hash));
+	size = f == OUT_HTML ? snprintf(0, 0, fmt, label, division, label)
+		: snprintf(0, 0, fmt, label, md_fragment_extra, division, hash);
 	assert(size > 0);
 	/* (Potentally) calling this with `label` as the other buffer. */
 	BufferSwap();
 	BufferClear();
 	if(!(b = BufferPrepare(size))) { perror(label); unrecoverable(); return; }
-	size = is_html ? (f == OUT_HTML ? sprintf(b, fmt, division, label, label)
-		: sprintf(b, fmt, md_fragment_extra, division, hash, label))
-		: (f == OUT_HTML ? sprintf(b, fmt, label, division, label)
-		: sprintf(b, fmt, label, md_fragment_extra, division, hash));
-	if(is_html) printf("%s", b);
-	else scan_doc_string(b);
+	size = f == OUT_HTML ? sprintf(b, fmt, label, division, label)
+		: sprintf(b, fmt, label, md_fragment_extra, division, hash);
+	scan_doc_string(b);
 	BufferSwap();
-}
-
-static void print_fragment_for(const enum Division d, const char *const label) {
-	print_fragment_for_extra(d, label, 0);
-}
-
-static void print_html_fragment_for(const enum Division d,
-	const char *const label) {
-	print_fragment_for_extra(d, label, 1);
 }
 
 static void print_custom_heading_fragment_for(const char *const division,
@@ -1224,7 +1206,7 @@ int ReportOut(void) {
 			style_pop();
 			printf("</td><td>");
 			b = print_token_s(&segment->code, params + idxs[0]);
-			print_html_fragment_for(DIV_FUNCTION, b);
+			print_fragment_for(DIV_FUNCTION, b);
 			/*printf("<a href = \"#%s-", division_strings[DIV_FUNCTION]);
 			printf("\">");
 			b = print_token_s(&segment->code, params + idxs[0]);

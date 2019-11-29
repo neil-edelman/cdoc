@@ -177,7 +177,7 @@ Declare a pointer\-to\-int?
 
 <tr><td align = right>static enum Token</td><td><a href = "#fn:fun3_scan_comment">fun3_scan_comment</a></td><td>arg1_1</td></tr>
 
-<tr><td align = right>void</td><td><a href = "#fn:&lt;T&gt;fun4">&lt;T&gt;fun4</a></td><td></td></tr>
+<tr><td align = right>void</td><td>[&amp;lt;T&amp;gt;fun4](#fn:&amp;lt;T&amp;gt;fun4)</td><td></td></tr>
 
 <tr><td align = right>T</td><td><a href = "#fn:fun5_">fun5_</a></td><td>arg1_2, arg2_3, arg3_3</td></tr>
 
