@@ -1203,11 +1203,11 @@ int ReportOut(void) {
 		/* Function table. */
 		style_push(&styles[ST_DIV][format]);
 		print_custom_heading_anchor_for(summary, summary_desc);
+		style_push(&to_html);
 		style_string_output();
 		printf("<table>\n\n"
 			   "<tr><th>Modifiers</th><th>Function Name</th>"
 			   "<th>Argument List</th></tr>\n\n");
-		style_push(&to_html);
 		while((segment = SegmentArrayNext(&report, segment))) {
 			struct Token *params;
 			size_t *idxs, idxn, idx, paramn;
