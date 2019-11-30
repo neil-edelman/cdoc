@@ -112,9 +112,6 @@
 #include "../src/Semantic.h"
 #include "../src/Cdoc.h"
 
-/** Typedef! */
-typedef int Useless;
-
 static void usage(void) {
 	fprintf(stderr, "Usage: cdoc [options] <input-file>\n"
 		"Where options are:\n"
@@ -127,7 +124,6 @@ static void usage(void) {
 		"outputs that documentation.\n");
 }
 
-/** This is useful? */
 static struct {
 	enum { EXPECT_NOTHING, EXPECT_OUT, EXPECT_FORMAT } expect;
 	const char *in_fn, *out_fn;
