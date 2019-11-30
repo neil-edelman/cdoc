@@ -15,8 +15,8 @@
 [This is text &amp;&amp;](http://yo.c) Header\. Yo [http://foo\.org/](http://foo.org/) [MIT](https://mit.edu/)
 
  * Paragraph @ @a &#8239;&nbsp;&nbsp;
- * Links to entities: [&lt;T&gt;fun4](#user-content-fn-ebe4b0f2), [y](#data:y)\.
- * Broken: [not_fn](#user-content-fn-9ab2437f), [&lt;T&gt;not_fn](#user-content-fn-afc45f23)\.
+ * Links to entities: [&lt;T&gt;fun4](#user-content-ATT_PARAM-ebe4b0f2), [y](#user-content-ATT_DEPEND-fc0c4ef4)\.
+ * Broken: [not_fn](#user-content-ATT_PARAM-9ab2437f), [&lt;T&gt;not_fn](#user-content-ATT_PARAM-afc45f23)\.
  * Citation [ÀæĔge2007](https://scholar.google.ca/scholar?q=%C3%80%C3%A6%C4%94ge2007)\.
  * [absolute](http://arr.com/index.html#ddddd////sfdg) \.
  * [relative](../../samples/foo.h) [relative](../../src/Cdoc.c.re) \.
@@ -35,13 +35,13 @@ pre***
 
 Header\. That also goes in the header\.
 
-This is a kernel\-style comment\. [http://www\.\`@\.com/index\.html](http://www.`@.com/index.html) [Yo2019](https://scholar.google.ca/scholar?q=Yo2019) ?<>&\! [fun1](#user-content-fn-407e96bd)
+This is a kernel\-style comment\. [http://www\.\`@\.com/index\.html](http://www.`@.com/index.html) [Yo2019](https://scholar.google.ca/scholar?q=Yo2019) ?<>&\! [fun1](#user-content-ATT_PARAM-407e96bd)
 
 
 
 Header\. This is an ascii art comment\. Eww\.
 
-There should be [fun1](#user-content-fn-407e96bd) to [fun7](#user-content-fn-3a7e8d4b) and [main](#user-content-fn-ea90e208)\.
+There should be [fun1](#user-content-ATT_PARAM-407e96bd) to [fun7](#user-content-ATT_PARAM-3a7e8d4b) and [main](#user-content-ATT_PARAM-ea90e208)\.
 
  * Author:  
    Somebody, Nobody, (fixme: Cee: , fixme: fun2\_scan\_eof:  External Author, fixme: fun3\_scan\_comment:  Prof\. Snape, fixme: fun6:  Nobody, fixme: fun6:  Sombody)

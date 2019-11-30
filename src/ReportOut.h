@@ -238,93 +238,33 @@ catch:
 	fprintf(stderr, "%s: expected <short source>.\n", pos(t));
 	return 0;
 }
-OUT(see_fn) {
-	const struct Token *const fn = *ptoken;
-	assert(tokens && fn && fn->symbol == SEE_FN && !is_buffer);
-	style_prepare_output(fn->symbol);
+static int see(const struct TokenArray *const tokens,
+	const struct Token **ptoken, const int is_buffer,
+	const enum Division divn) {
+	const struct Token *const tok = *ptoken;
+	assert(tokens && tok && tok->symbol == divn && !is_buffer);
+	style_prepare_output(tok->symbol);
 	if(effective_format() == OUT_HTML) {
-		printf("<a href = \"#%s:", division_strings[DIV_FUNCTION]);
-		encode_len(fn->length, fn->from);
+		printf("<a href = \"#%s:", division_strings[divn]);
+		encode_len(tok->length, tok->from);
 		printf("\">");
-		encode_len(fn->length, fn->from);
+		encode_len(tok->length, tok->from);
 		printf("</a>");
 	} else {
-		const char *b;
 		printf("[");
-		style_push(&to_html);
-		encode_len(fn->length, fn->from);
+		style_push(&to_html); /* This is not escaped by `GitHub` Markdown. */
+		encode_len(tok->length, tok->from);
 		style_pop();
-		printf("](#%s%s-", md_fragment_extra, division_strings[DIV_FUNCTION]);
-		b = encode_len_s_raw(fn->length, fn->from);
-		printf("%x)", fnv_32a_str(b));
+		printf("](#%s%s-%x)", md_fragment_extra, division_strings[divn],
+			   fnv_32a_str(encode_len_s_raw(tok->length, tok->from)));
 	}
-	*ptoken = TokenArrayNext(tokens, fn);
+	*ptoken = TokenArrayNext(tokens, tok);
 	return 1;
 }
-OUT(see_tag) {
-	const struct Token *const tag = *ptoken;
-	assert(tokens && tag && tag->symbol == SEE_TAG && !is_buffer);
-	style_prepare_output(tag->symbol);
-	if(effective_format() == OUT_HTML) {
-		printf("<a href = \"#%s:", division_strings[DIV_TAG]);
-		encode_len(tag->length, tag->from);
-		printf("\">");
-		encode_len(tag->length, tag->from);
-		printf("</a>");
-	} else {
-		const char *b;
-		printf("[");
-		encode_len(tag->length, tag->from);
-		printf("](#%s%s-", md_fragment_extra, division_strings[DIV_TAG]);
-		b = encode_len_s_raw(tag->length, tag->from);
-		fprintf(stderr, "see_tag hash str: %s\n", b);
-		printf("%x)", fnv_32a_str(b));
-	}
-	*ptoken = TokenArrayNext(tokens, tag);
-	return 1;
-}
-OUT(see_typedef) {
-	const struct Token *const def = *ptoken;
-	assert(tokens && def && def->symbol == SEE_TYPEDEF && !is_buffer);
-	style_prepare_output(def->symbol);
-	if(effective_format() == OUT_HTML) {
-		printf("<a href = \"#%s:", division_strings[DIV_TYPEDEF]);
-		encode_len(def->length, def->from);
-		printf("\">");
-		encode_len(def->length, def->from);
-		printf("</a>");
-	} else {
-		/* fixme */
-		printf("[");
-		encode_len(def->length, def->from);
-		printf("](#%s-", division_strings[DIV_TYPEDEF]);
-		encode_len(def->length, def->from);
-		printf(")");
-	}
-	*ptoken = TokenArrayNext(tokens, def);
-	return 1;
-}
-OUT(see_data) {
-	const struct Token *const data = *ptoken;
-	assert(tokens && data && data->symbol == SEE_DATA && !is_buffer);
-	style_prepare_output(data->symbol);
-	if(effective_format() == OUT_HTML) {
-		/* fixme */
-		printf("<a href = \"#%s:", division_strings[DIV_DATA]);
-		encode_len(data->length, data->from);
-		printf("\">");
-		encode_len(data->length, data->from);
-		printf("</a>");
-	} else {
-		printf("[");
-		encode_len(data->length, data->from);
-		printf("](#%s:", division_strings[DIV_DATA]);
-		encode_len(data->length, data->from);
-		printf(")");
-	}
-	*ptoken = TokenArrayNext(tokens, data);
-	return 1;
-}
+OUT(see_fn) { return see(tokens, ptoken, is_buffer, SEE_FN); }
+OUT(see_tag) { return see(tokens, ptoken, is_buffer, SEE_TAG); }
+OUT(see_typedef) { return see(tokens, ptoken, is_buffer, SEE_TYPEDEF); }
+OUT(see_data) { return see(tokens, ptoken, is_buffer, SEE_DATA); }
 OUT(math_begin) { /* Math and code. */
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == MATH_BEGIN && !is_buffer);
