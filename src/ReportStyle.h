@@ -237,11 +237,10 @@ static void style_separate(void) {
 static int effective_format_pop(const int will_be_popped) {
 	struct Style *style = 0;
 	const enum Format f = CdocGetFormat();
-	if(f == OUT_HTML) return OUT_HTML;
 	/* If the style will be popped, don't include it. */
 	if(will_be_popped) style = StyleArrayBack(&mode.styles, style);
 	while((style = StyleArrayBack(&mode.styles, style)))
-		if(style->text->to_html) return /*fprintf(stderr, "%s suppresses escapes.\n", StyleArrayToString(&mode.styles)),*/ OUT_HTML;
+		if(style->text->is_to) return /*fprintf(stderr, "%s suppresses escapes.\n", StyleArrayToString(&mode.styles)),*/ style->text->to_format;
 	return f;
 }
 
@@ -263,21 +262,23 @@ static void encode_len_choose(int length, const char *from,
 	assert(length >= 0 && from);
 
 	switch(f) {
-	case OUT_RAW:
-		if(is_buffer) goto raw_encode_buffer;
-		else break; /* It doesn't make sense to output a raw thing. */
 	case OUT_HTML:
 		if(is_buffer) goto html_encode_buffer;
 		else goto html_encode_print;
 	case OUT_MD:
 		if(is_buffer) goto md_encode_buffer;
 		else goto md_encode_print;
+	case OUT_RAW:
+		if(!is_buffer) { fprintf(stderr,
+			"%.*s: doesn't make sense to output is raw.\n", length, from);
+			return; }
+		goto raw_encode_buffer;
 	}
-	assert(0); return;
 
 raw_encode_buffer:
-	if(!(b = BufferPrepare(str_len))) { unrecoverable(); return; }
+	if(!(b = BufferPrepare(length))) { unrecoverable(); return; }
 	memcpy(b, from, length);
+	fprintf(stderr, "encode %d \"%s\"\n", length, b);
 	return;
 
 html_encode_buffer:
@@ -372,6 +373,7 @@ md_encode_print:
 
 static const char *encode_len_s_raw(const int length, const char *const from) {
 	BufferClear();
+	fprintf(stderr, "encode_len_s_raw: length %d, %.*s\n", length, length, from);
 	encode_len_choose(length, from, OUT_RAW, 1);
 	return BufferGet();
 }

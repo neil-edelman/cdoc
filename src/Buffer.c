@@ -13,8 +13,13 @@
 #include "Cdoc.h"
 #include "Buffer.h"
 
+static void char_to_string(const char *c, char (*const a)[12]) {
+	sprintf(*a, "%x", *c);
+}
+
 #define ARRAY_NAME Char
 #define ARRAY_TYPE char
+#define ARRAY_TO_STRING &char_to_string
 #include "Array.h"
 
 static struct CharArray buffers[2], *buffer = buffers;
@@ -57,6 +62,8 @@ char *BufferPrepare(const size_t length) {
 	if(!(s = CharArrayBuffer(buffer, length + !is_null_term))) return 0;
 	CharArrayExpand(buffer, length + !is_null_term);
 	*CharArrayPeek(buffer) = '\0';
+	fprintf(stderr, "BufferPrepare: added length %lu, %s\n", length,
+		CharArrayToString(buffer));
 	return s - is_null_term;
 }
 

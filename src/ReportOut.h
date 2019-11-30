@@ -256,7 +256,7 @@ OUT(see_fn) {
 		style_pop();
 		printf("](#%s%s-", md_fragment_extra, division_strings[DIV_FUNCTION]);
 		b = encode_len_s_raw(fn->length, fn->from);
-		fprintf(stderr, "see_fn hash str: %s\n", b);
+		fprintf(stderr, "see_fn hash str: \"%s\" from %.*s\n", b, fn->length, fn->from);
 		printf("%x)", fnv_32a_str(b));
 	}
 	*ptoken = TokenArrayNext(tokens, fn);
