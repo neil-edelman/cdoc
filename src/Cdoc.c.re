@@ -190,7 +190,7 @@ static int is_suffix(const char *const string, const char *const suffix) {
 }
 
 static void guess(void) {
-	if(args.format == OUT_UNSPECIFIED) {
+	if(args.format == OUT_RAW) {
 		if(args.out_fn && (is_suffix(args.out_fn, ".html")
 			|| is_suffix(args.out_fn, ".htm"))) args.format = OUT_HTML;
 		else args.format = OUT_MD;

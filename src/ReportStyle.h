@@ -16,71 +16,75 @@ static char style_title[256];
  `is_next_level`. */
 static const struct StyleText {
 	const char *name, *begin, *sep, *end;
-	int is_next_level, to_html;
-} no_style = { "nosty", "", "", "", 0, 0 },
-plain_text = { "plain", "", " ", "", 0, 0 },
-plain_parenthetic = { "paren", "(", " ", ")", 0, 0 },
-plain_see_license = { "license", "(See license details ", ", ", ".)", 0, 0 },
-plain_csv = { "csv", "", ", ", "", 0, 0 },
-plain_ssv = { "ssv", "", "; ", "", 0, 0 },
-to_html = { "noescape", "", "", "", 0, 1 },
-html_title = { "title", "<title>", "", "</title>\n", 1, 0 },
-styles[][3] = {
-	{ { "", 0, 0, 0, 0, 0 },
-		{ "html_div", "<div>", "", "</div>\n\n", 1, 0 },
-		{ "md_div", "", "", "\n\n", 1, 0 } },
-	{ { "", 0, 0, 0, 0, 0 },
-		{ "html_p", "<p>", " ", "</p>\n\n", 1, 0 },
-		{ "md_p", "", " ", "\n\n", 1, 0 } },
-	{ { "", 0, 0, 0, 0, 0 },
-		{ "html_ul", "<ul>\n", "", "</ul>\n\n", 1, 0 },
-		{ "md_ul", "", "",  "\n", 1, 0 } },
-	{ { "", 0, 0, 0, 0, 0 },
-		{ "html_li", "\t<li>", " ", "</li>\n", 0, 0 },
-		{ "md_li", " * ", " ", "\n", 0, 0 } },
-	{ { "", 0, 0, 0, 0, 0 },
-		{ "html_code", "<code>", /*"&nbsp;"*/" ", "</code>", 0, 0 },
-		{ "md_code", "`", " ", "`", 0, 1 } },
-	{ { "", 0, 0, 0, 0, 0 },
-		{ "html_pre", "<pre>\n", "", "</pre>\n\n", 1, 0 },
-		{ "md_pre", "", "", "\n", 1, 1 } },
-	{ { "", 0, 0, 0, 0, 0 },
-		{ "html_pretext", "", "\n", "\n", 0, 0 },
-		{ "md_pretext", "", "\n    ", "\n", 0, 0 } },
-	{ { "", 0, 0, 0, 0, 0 },
-		{ "html_h1", "<h1>", "", "</h1>\n\n", 1, 0 },
-		{ "md_h1", " # ", "", " #\n\n", 1, 0 } },
-	{ { "", 0, 0, 0, 0, 0 },
-		{ "html_h2", "<h2>", "", "</h2>\n\n", 1, 0 },
-		{ "md_h2", " ## ", "", " ##\n\n", 1, 0 } },
-	{ { "", 0, 0, 0, 0, 0 },
-		{ "html_h3", "<h3>", "", "</h3>\n\n", 1, 0 },
-		{ "md_h3", " ### ", "", " ###\n\n", 1, 0 } },
-	{ { "", 0, 0, 0, 0, 0 },
-		{ "html_dl", "<dl>\n", "", "</dl>\n\n", 1, 0 },
-		{ "md_dl", "", "", "\n\n", 1, 0 } },
-	{ { "", 0, 0, 0, 0, 0 },
-		{ "html_dt", "\t<dt>", "", "</dt>\n", 0, 0 },
-		{ "md_dt", " - ", "", "  \n", 0, 0 } },
-	{ { "", 0, 0, 0, 0, 0 },
-		{ "html_dd", "\t<dd>", "", "</dd>\n", 0, 0 },
-		{ "md_dd", "   ", "", "\n", 0, 0 } },
-	{ { "", 0, 0, 0, 0, 0 },
-		{ "html_ddtitle", style_title, "", "</dd>\n", 0, 0 },
-		{ "md_ddtitle", style_title, "", "\n", 0, 0 } },
-	{ { "", 0, 0, 0, 0, 0 },
-		{ "html_em", "<em>", "", "</em>", 0, 0 },
-		{ "md_em", "_", "", "_", 0, 0 } },
-	{ { "", 0, 0, 0, 0, 0 },
-		{ "html_strong", "<strong>", "", "</strong>", 0, 0 },
-		{ "md_strong", "*", "", "*", 0, 0 } },
-	{ { "", 0, 0, 0, 0, 0 },
-		{ "html_html_em", "<em>", "", "</em>", 0, 0 },
-		{ "md_html_em", "<em>", "", "</em>", 0, 0 } },
-	{ { "", 0, 0, 0, 0, 0 },
-		{ "html_html_strong", "<strong>", "", "</strong>", 0, 0 },
-		{ "md_html_strong", "<strong>", "", "</strong>", 0, 0 } }
-};
+	int is_next_level, is_to;
+	const enum Format to_format;
+} no_style = { "nosty", "", "", "", 0, 0, 0 },
+	plain_text = { "plain", "", " ", "", 0, 0, 0 },
+	plain_parenthetic = { "paren", "(", " ", ")", 0, 0, 0 },
+	plain_see_license = { "license", "(See license details ", ", ", ".)",
+	0, 0, 0 },
+	plain_csv = { "csv", "", ", ", "", 0, 0, 0 },
+	plain_ssv = { "ssv", "", "; ", "", 0, 0, 0 },
+	to_raw = { "to_raw", "", "", "", 0, 1, OUT_RAW },
+	to_html = { "to_html", "", "", "", 0, 1, OUT_HTML },
+	html_title = { "title", "<title>", "", "</title>\n", 1, 0, 0 },
+	styles[][3] = {
+	{ { "raw_div", "", "", "", 1, 0, 0 },
+		{ "html_div", "<div>", "", "</div>\n\n", 1, 0, 0 },
+		{ "md_div", "", "", "\n\n", 1, 0, 0 } },
+	{ { "raw_p", "", " ", "", 1, 0, 0 },
+		{ "html_p", "<p>", " ", "</p>\n\n", 1, 0, 0 },
+		{ "md_p", "", " ", "\n\n", 1, 0, 0 } },
+	{ { "raw_ul", "", "", "", 1, 0, 0 },
+		{ "html_ul", "<ul>\n", "", "</ul>\n\n", 1, 0, 0 },
+		{ "md_ul", "", "",  "\n", 1, 0, 0 } },
+	{ { "raw_li", "", " ", "", 0, 0, 0 },
+		{ "html_li", "\t<li>", " ", "</li>\n", 0, 0, 0 },
+		{ "md_li", " * ", " ", "\n", 0, 0, 0 } },
+	{ { "raw_code", "", " ", "", 0, 0, 0 },
+		{ "html_code", "<code>", /*"&nbsp;"*/" ", "</code>", 0, 0, 0 },
+		{ "md_code", "`", " ", "`", 0, 1, OUT_HTML } },
+	{ { "raw_pre", "", "", "", 1, 0, 0 },
+		{ "html_pre", "<pre>\n", "", "</pre>\n\n", 1, 0, 0 },
+		{ "md_pre", "", "", "\n", 1, 1, OUT_HTML } },
+	{ { "raw_pretext", "", "\n", "", 0, 0, 0 },
+		{ "html_pretext", "", "\n", "\n", 0, 0, 0 },
+		{ "md_pretext", "", "\n    ", "\n", 0, 0, 0 } },
+	{ { "raw_h1", "", "", "", 1, 0, 0 },
+		{ "html_h1", "<h1>", "", "</h1>\n\n", 1, 0, 0 },
+		{ "md_h1", " # ", "", " #\n\n", 1, 0, 0 } },
+	{ { "raw_h2", "", "", "", 1, 0, 0 },
+		{ "html_h2", "<h2>", "", "</h2>\n\n", 1, 0, 0 },
+		{ "md_h2", " ## ", "", " ##\n\n", 1, 0, 0 } },
+	{ { "raw_h3", "", "", "", 1, 0, 0 },
+		{ "html_h3", "<h3>", "", "</h3>\n\n", 1, 0, 0 },
+		{ "md_h3", " ### ", "", " ###\n\n", 1, 0, 0 } },
+	{ { "raw_dl", "", "", "", 1, 0, 0 },
+		{ "html_dl", "<dl>\n", "", "</dl>\n\n", 1, 0, 0 },
+		{ "md_dl", "", "", "\n\n", 1, 0, 0 } },
+	{ { "raw_dt", "", "", "", 0, 0, 0 },
+		{ "html_dt", "\t<dt>", "", "</dt>\n", 0, 0, 0 },
+		{ "md_dt", " - ", "", "  \n", 0, 0, 0 } },
+	{ { "raw_dd", "", "", "", 0, 0, 0 },
+		{ "html_dd", "\t<dd>", "", "</dd>\n", 0, 0, 0 },
+		{ "md_dd", "   ", "", "\n", 0, 0, 0 } },
+	/* This is a mess. */
+	{ { "raw_ddtitle", style_title, "", "", 0, 0, 0 },
+		{ "html_ddtitle", style_title, "", "</dd>\n", 0, 0, 0 },
+		{ "md_ddtitle", style_title, "", "\n", 0, 0, 0 } },
+	{ { "raw_em", "", "", "", 0, 0, 0 },
+		{ "html_em", "<em>", "", "</em>", 0, 0, 0 },
+		{ "md_em", "_", "", "_", 0, 0, 0 } },
+	{ { "raw_strong", "", "", "", 0, 0, 0 },
+		{ "html_strong", "<strong>", "", "</strong>", 0, 0, 0 },
+		{ "md_strong", "*", "", "*", 0, 0, 0 } },
+	{ { "raw_html_em", "", "", "", 0, 0, 0 },
+		{ "html_html_em", "<em>", "", "</em>", 0, 0, 0 },
+		{ "md_html_em", "<em>", "", "</em>", 0, 0, 0 } },
+	{ { "raw_html_strong", "", "", "", 0, 0, 0 },
+		{ "html_html_strong", "<strong>", "", "</strong>", 0, 0, 0 },
+		{ "md_html_strong", "<strong>", "", "</strong>", 0, 0, 0 } }
+	};
 
 /* This is a hack. Don't change the styles without changing this. */
 enum { ST_DIV, ST_P, ST_UL, ST_LI, ST_CODE, ST_PRE, ST_PRELINE,
@@ -259,14 +263,22 @@ static void encode_len_choose(int length, const char *from,
 	assert(length >= 0 && from);
 
 	switch(f) {
+	case OUT_RAW:
+		if(is_buffer) goto raw_encode_buffer;
+		else break; /* It doesn't make sense to output a raw thing. */
 	case OUT_HTML:
 		if(is_buffer) goto html_encode_buffer;
 		else goto html_encode_print;
 	case OUT_MD:
 		if(is_buffer) goto md_encode_buffer;
 		else goto md_encode_print;
-	default: assert(0); return;
 	}
+	assert(0); return;
+
+raw_encode_buffer:
+	if(!(b = BufferPrepare(str_len))) { unrecoverable(); return; }
+	memcpy(b, from, length);
+	return;
 
 html_encode_buffer:
 	while(length - ahead) {
@@ -358,9 +370,9 @@ md_encode_print:
 	return;
 }
 
-static const char *encode_len_s_html(const int length, const char *const from) {
+static const char *encode_len_s_raw(const int length, const char *const from) {
 	BufferClear();
-	encode_len_choose(length, from, OUT_HTML, 1);
+	encode_len_choose(length, from, OUT_RAW, 1);
 	return BufferGet();
 }
 

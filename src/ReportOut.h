@@ -255,7 +255,7 @@ OUT(see_fn) {
 		encode_len(fn->length, fn->from);
 		style_pop();
 		printf("](#%s%s-", md_fragment_extra, division_strings[DIV_FUNCTION]);
-		b = encode_len_s_html(fn->length, fn->from);
+		b = encode_len_s_raw(fn->length, fn->from);
 		fprintf(stderr, "see_fn hash str: %s\n", b);
 		printf("%x)", fnv_32a_str(b));
 	}
@@ -277,7 +277,7 @@ OUT(see_tag) {
 		printf("[");
 		encode_len(tag->length, tag->from);
 		printf("](#%s%s-", md_fragment_extra, division_strings[DIV_TAG]);
-		b = encode_len_s_html(tag->length, tag->from);
+		b = encode_len_s_raw(tag->length, tag->from);
 		fprintf(stderr, "see_tag hash str: %s\n", b);
 		printf("%x)", fnv_32a_str(b));
 	}

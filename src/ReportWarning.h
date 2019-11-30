@@ -124,7 +124,7 @@ static void warn_internal_link(const struct Token *const token) {
 	}
 	BufferSwap();
 	/* Encode the link text. */
-	a = encode_len_s_html(token->length, token->from);
+	a = encode_len_s_raw(token->length, token->from);
 	BufferSwap();
 	/* Search for it. Not really efficient as it builds up labels from scratch,
 	 then discards them, over and over. */
@@ -135,7 +135,8 @@ static void warn_internal_link(const struct Token *const token) {
 			|| !(fun_index = IndexArrayNext(&segment->code_params, 0))
 			|| *fun_index >= TokenArraySize(&segment->code)) continue;
 		compare = TokenArrayGet(&segment->code) + *fun_index;
-		style_push(&to_html);
+		/* Use raw encoding. */
+		style_push(&to_raw);
 		b = print_token_s(&segment->code, compare);
 		style_pop();
 		if(!strcmp(a, b)) { if(CdocGetDebug()) fprintf(stderr,

@@ -4,7 +4,7 @@
 #include "XMacro.h"
 
 #define FORMAT(X) \
-	X(OUT_UNSPECIFIED), \
+	X(OUT_RAW), \
 	X(OUT_HTML), \
 	X(OUT_MD)
 
