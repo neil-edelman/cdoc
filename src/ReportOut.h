@@ -256,7 +256,6 @@ OUT(see_fn) {
 		style_pop();
 		printf("](#%s%s-", md_fragment_extra, division_strings[DIV_FUNCTION]);
 		b = encode_len_s_raw(fn->length, fn->from);
-		fprintf(stderr, "see_fn hash str: \"%s\" from %.*s\n", b, fn->length, fn->from);
 		printf("%x)", fnv_32a_str(b));
 	}
 	*ptoken = TokenArrayNext(tokens, fn);
@@ -990,8 +989,7 @@ static void segment_print_all(const struct Segment *const segment) {
 
 	/* The title is generally the first param. Only single-words. */
 	if((param = param_no(segment, 0))) {
-		/* Anchors are always in html. */
-		style_push(&to_html);
+		style_push(&to_raw); /* Anchors are always raw. */
 		b = print_token_s(&segment->code, param);
 		style_pop();
 		print_anchor_for(segment->division, b);
@@ -1189,7 +1187,6 @@ int ReportOut(void) {
 	/* Print functions. */
 	if(is_function) {
 		/* Function table. */
-		fprintf(stderr, "Function table...\n");
 		style_push(&styles[ST_DIV][format]);
 		print_custom_heading_anchor_for(summary, summary_desc);
 		style_push(&to_html);
@@ -1212,10 +1209,11 @@ int ReportOut(void) {
 			print_best_guess_at_modifiers(segment);
 			style_pop();
 			printf("</td><td>");
+			style_push(&to_raw); /* Always get raw; translate after. */
 			b = print_token_s(&segment->code, params + idxs[0]);
+			style_pop();
 			fprintf(stderr, "ReportOut: print_fragment_for(%s)\n", b);
 			print_fragment_for(DIV_FUNCTION, b);
-			/*printf("<a href = \"#%s\">");*/
 			printf("</td><td>");
 			for(idx = 1; idx < idxn; idx++) {
 				assert(idxs[idx] < paramn);
@@ -1228,7 +1226,6 @@ int ReportOut(void) {
 		style_pop(); /* to_html */
 		style_pop(); /* div */
 		assert(!StyleArraySize(&mode.styles));
-		fprintf(stderr, "...end function table.\n");
 
 		/* Functions. */
 		style_push(&styles[ST_DIV][format]);

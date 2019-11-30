@@ -135,7 +135,7 @@ static void warn_internal_link(const struct Token *const token) {
 			|| !(fun_index = IndexArrayNext(&segment->code_params, 0))
 			|| *fun_index >= TokenArraySize(&segment->code)) continue;
 		compare = TokenArrayGet(&segment->code) + *fun_index;
-		/* Use raw encoding. */
+		/* Use raw encoding to match raw in `a`. */
 		style_push(&to_raw);
 		b = print_token_s(&segment->code, compare);
 		style_pop();
