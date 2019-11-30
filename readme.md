@@ -1,7 +1,6 @@
  # Cdoc\.c\.re #
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef):  [Useless](#user-content-typedef-5544672d)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -55,16 +54,6 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is specifically vi
    [re2c](http://re2c.org/)
  * Caveat:  
    Old\-style function support\. Trigraph support, \(haha\.\) Hide `const` on params when it can not affect function calls\. Prototypes and functions are the same thing; this will confuse it\. Hash map might be faster and more precise\. Links to non\-documented code which sometimes doesn't show up, work without error, and create broken links\. 80\-characters _per_ line limit, [https://xxyxyz\.org/line\-breaking/](https://xxyxyz.org/line-breaking/), \(needs buffering\.\) Eg, fixme with no args disappears; we should NOT check if the string is empty\. If a segment has multiple licenses, they will show multiple times\. `foo.c:221` : space where it shouldn't be\. Why? `Array.h:304, SEE_FN "&lt;T&gt;Array_": link broken.` Probably because we're escaping it\. MD parser ignores html blocks\.
-
-
- ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
-
- ### <a id = "user-content-typedef-5544672d" name = "user-content-typedef-5544672d">Useless</a> ###
-
-<code>typedef int <strong>Useless</strong>;</code>
-
-Typedef\!
-
 
 
  ## <a id = "user-content-summary" name = "user-content-summary">Function Summary</a> ##
