@@ -6,6 +6,7 @@ static unsigned fnv_32a_str(const char *str) {
 	const unsigned char *s = (const unsigned char *)str;
 	/* 32 bit FNV-1 and FNV-1a non-zero initial basis, FNV1_32A_INIT */
 	unsigned hval = 0x811c9dc5;
+	assert(str);
 	/* FNV magic prime `FNV_32_PRIME 0x01000193`. */
 	while(*s) {
 		hval ^= *s++;
@@ -510,11 +511,10 @@ static const OutFn symbol_outs[] = { SYMBOL(PARAM6C) };
 /** Prints one [multi-]token sequence.
  @param[tokens] The token array that `token` is a part of.
  @param[token] The start token.
- @param[a] If non-null, prints to a string instead of `stdout`. Only certian
- tokens (variable names) support this.
+ @param[a] If non-null, prints to a string instead of `stdout`. Only variable
+ name tokens support this.
  @throws[EILSEQ] Sequence error. Must detect with `errno`.
- @return The next token.
- @fixme This 256-byte buffer is lame-o; use path to build a real one. */
+ @return The next token. */
 static const struct Token *print_token_choose(
 	const struct TokenArray *const tokens,
 	const struct Token *token, const int is_buffer) {
