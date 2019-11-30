@@ -96,7 +96,7 @@
  @fixme `foo.c:221`: space where it shouldn't be. Why?
  @fixme `Array.h:304, SEE_FN "<T>Array_": link broken.` Probably because we're
  escaping it.
- @fixme MD parser ignores html blocks. */
+ @fixme Oh, `<>`. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
