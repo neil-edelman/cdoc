@@ -34,9 +34,9 @@ text
  
  \* list: html <>& md \*{}[]()#+-.! (cannot \`\_.)
 
- image: ![html <>& md \*{}[]()#+-.! [(cannot \`\_?)](../diagrams/Ellen_Ripley_badass.png).
+ image: ![html <>& md \*{}[]()#+-.! (cannot \`\_?)](foo.c).
 
- link: [html <>& md \*{}[]()#+-.! [(cannot \`\_?)](../diagrams/Ellen_Ripley_badass.png).
+ link: [html <>& md \*{}[]()#+-.! (cannot \`\_?)](foo.c).
 
  */
 

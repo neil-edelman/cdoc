@@ -43,9 +43,9 @@ pre: html &lt;&gt;&amp; md: \*_`{}[]()#+-.!
 
  * list: html <>& md \*\{\}\[\]\(\)\#\+\-\.\! \(cannot \`\_\.\)
 
-image: \!\[html <>& md \*\{\}\[\]\(\)\#\+\-\.\!\]\(\.\./diagrams/Ellen_Ripley_ badass\.png\)\.
+image: \!\[html <>& md \*\{\}\[\]\(\)\#\+\-\.\! \(cannot \`\_?\)\]\(foo\.c\)\.
 
-link: \[html <>& md \*\{\}\[\]\(\)\#\+\-\.\!\]\(\.\./diagrams/Ellen_Ripley_ badass\.png\)\.
+link: \[html <>& md \*\{\}\[\]\(\)\#\+\-\.\! \(cannot \`\_?\)\]\(foo\.c\)\.
 
 
 
