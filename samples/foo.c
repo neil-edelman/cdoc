@@ -23,12 +23,21 @@ text
  This is not prefomated. \" This is preformated <http://foo.com/>*
  \"  
  \"pre***
+
+ normal: html <>& md \*{}[]()#+-.! (cannot \`\_.)
+
+ code: html `<>&` md `\*_{}[]()#+-.!` (cannot \`.)
+
+ em: html _<>&_ md _\*`{}[]()#+-.!_ (cannot \_.)
+
+ \" pre: html <>& md: \*_`{}[]()#+-.!
  
- html escapes: `<>&` md escapes: `\*_{}[]()#+-.!` (cannot \`.)
+ \* list: html <>& md \*{}[]()#+-.! (cannot \`\_.)
 
- html escapes: _<>&_ md escapes: _\*`{}[]()#+-.!_ (cannot \_.)
+ image: ![html <>& md \*{}[]()#+-.! (cannot \`\_?)](../diagrams/Ellen_Ripley_badass.png).
 
- \" html: <>& md: \*_`{}[]()#+-.!
+ link: [html <>& md \*{}[]()#+-.! (cannot \`\_?)](../diagrams/Ellen_Ripley_badass.png).
+
  */
 
 #include <assert.h>
