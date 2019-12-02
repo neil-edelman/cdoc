@@ -23,6 +23,12 @@ text
  This is not prefomated. \" This is preformated <http://foo.com/>*
  \"  
  \"pre***
+ 
+ html escapes: `<>&` md escapes: `\*_{}[]()#+-.!` (cannot \`.)
+
+ html escapes: _<>&_ md escapes: _\*`{}[]()#+-.!_ (cannot \_.)
+
+ \" html: <>& md: \*_`{}[]()#+-.!
  */
 
 #include <assert.h>

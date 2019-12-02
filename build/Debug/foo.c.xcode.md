@@ -33,6 +33,12 @@ This is preformated &lt;http://foo.com/&gt;*
 
 pre***
 
+html escapes: `<>&` md escapes: `\*\_\{\}\[\]\(\)\#\+\-\.\!` \(cannot \`\.\)
+
+html escapes: _<>&_ md escapes: _\*\`\{\}\[\]\(\)\#\+\-\.\!_ \(cannot \_\.\)
+
+html: &lt;&gt;&amp; md: \*_`{}[]()#+-.!
+
 Header\. That also goes in the header\.
 
 This is a kernel\-style comment\. [http://www\.\`@\.com/index\.html](http://www.`@.com/index.html) [Yo2019](https://scholar.google.ca/scholar?q=Yo2019) ?<>&\! [fun1](#user-content-ATT_PARAM-407e96bd)
@@ -59,7 +65,7 @@ There should be [fun1](#user-content-ATT_PARAM-407e96bd) to [fun7](#user-content
 
 <code>typedef int <strong>&lt;PT&gt;Type</strong>;</code>
 
-Troubles with this line? check to ensure that `ARRAY_TYPE` is a valid type, whose definition is placed above `#include "Array.h"` \.
+Troubles with this line? check to ensure that `ARRAY\_TYPE` is a valid type, whose definition is placed above `\#include "Array\.h"` \.
 
 
 
@@ -285,10 +291,10 @@ This is a foo\.
 
 <code>T <strong>fun5_</strong>(int(*<em>arg1_2</em>)(int arg1_3, int(*fn)(void)), Foo <em>arg2_3</em>, struct &lt;T&gt;Array <em>arg3_3</em>)</code>
 
-Function `arg1_2` \. yo
+Function `arg1\_2` \. yo
 
  - Return:  
-   Function of `arg2_2` \.
+   Function of `arg2\_2` \.
 
 
 
