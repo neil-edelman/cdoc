@@ -96,7 +96,7 @@
  @fixme `foo.c:221`: space where it shouldn't be. Why?
  @fixme `Array.h:304, SEE_FN "<T>Array_": link broken.` Probably because we're
  escaping it.
- @fixme Oh, `<>`. */
+ @fixme `<>_`; Markdown disables some escapes but not others? What a mess. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */

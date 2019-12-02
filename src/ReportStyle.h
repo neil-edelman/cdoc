@@ -43,7 +43,7 @@ static const struct StyleText {
 		{ "md_li", " * ", " ", "\n", 0, 0, 0 } },
 	{ { "raw_code", "", " ", "", 0, 0, 0 },
 		{ "html_code", "<code>", /*"&nbsp;"*/" ", "</code>", 0, 0, 0 },
-		{ "md_code", "`", " ", "`", 0, 1, OUT_HTML } },
+		{ "md_code", "`", " ", "`", 0, 0, 0 } },
 	{ { "raw_pre", "", "", "", 1, 0, 0 },
 		{ "html_pre", "<pre>\n", "", "</pre>\n\n", 1, 0, 0 },
 		{ "md_pre", "", "", "\n", 1, 1, OUT_HTML } },
