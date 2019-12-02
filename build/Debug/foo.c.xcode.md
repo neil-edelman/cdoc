@@ -15,10 +15,10 @@
 [This is text &amp;&amp;](http://yo.c) Header\. Yo [http://foo\.org/](http://foo.org/) [MIT](https://mit.edu/)
 
  * Paragraph @ @a &#8239;&nbsp;&nbsp;
- * Links to entities: [&lt;T&gt;fun4](#user-content-ATT_PARAM-ebe4b0f2), [y](#user-content-ATT_DEPEND-fc0c4ef4)\.
- * Broken: [not_fn](#user-content-ATT_PARAM-9ab2437f), [&lt;T&gt;not_fn](#user-content-ATT_PARAM-afc45f23)\.
+ * Links to entities: [&lt;T&gt;fun4](#user-content-fn-ebe4b0f2), [y](#user-content-data-fc0c4ef4)\.
+ * Broken: [not_fn](#user-content-fn-9ab2437f), [&lt;T&gt;not_fn](#user-content-fn-afc45f23)\.
  * Citation [ÀæĔge2007](https://scholar.google.ca/scholar?q=%C3%80%C3%A6%C4%94ge2007)\.
- * [absolute](http://arr.com/index.html#ddddd////sfdg) \.
+ * [absolute](http://arr.com/index.html#ddddd<u>sfdg) \.
  * [relative](../../samples/foo.h) [relative](../../src/Cdoc.c.re) \.
  * png: ![Ellen Ripley](../../diagrams/Ellen_Ripley_badass.png) \.
  * jpeg: ![Inigo Montoya](../../diagrams/Inigo_Montoya.jpeg) \.
@@ -51,11 +51,11 @@ link: \[html <>& md \*\{\}\[\]\(\)\#\+\-\.\! \(cannot \`\_?\)\]\(foo\.c\)\.
 
 Header\. That also goes in the header\.
 
-This is a kernel\-style comment\. [http://www\.\`@\.com/index\.html](http://www.`@.com/index.html) [Yo2019](https://scholar.google.ca/scholar?q=Yo2019) ?<>&\! [fun1](#user-content-ATT_PARAM-407e96bd)
+This is a kernel\-style comment\. [http://www\.\`@\.com/index\.html](http://www.`@.com/index.html) [Yo2019](https://scholar.google.ca/scholar?q=Yo2019) ?<>&\! [fun1](#user-content-fn-407e96bd)
 
 Header\. This is an ascii art comment\. Eww\.
 
-There should be [fun1](#user-content-ATT_PARAM-407e96bd) to [fun7](#user-content-ATT_PARAM-3a7e8d4b) and [main](#user-content-ATT_PARAM-ea90e208)\.
+There should be [fun1](#user-content-fn-407e96bd) to [fun7](#user-content-fn-3a7e8d4b) and [main](#user-content-fn-ea90e208)\.
 
  * Author:  
    Somebody, Nobody, (fixme: Cee: , fixme: fun2\_scan\_eof:  External Author, fixme: fun3\_scan\_comment:  Prof\. Snape, fixme: fun6:  Nobody, fixme: fun6:  Sombody)
@@ -215,7 +215,7 @@ Test parameter\.
 
  ## <a id = "user-content-fn" name = "user-content-fn">Function Definitions</a> ##
 
- ### <a id = "user-content-fn-f5f336fd" name = "user-content-fn-f5f336fd">Cee_</a> ###
+ ### <a id = "user-content-fn-f5f336fd" name = "user-content-fn-f5f336fd">Cee\_</a> ###
 
 <code>void <strong>Cee_</strong>(struct Cee **<em>ceeptr</em>);</code>
 
@@ -245,7 +245,7 @@ Function declare x as function \(int\) returning pointer to function \(int\) ret
 
 
 
- ### <a id = "user-content-fn-5ce16895" name = "user-content-fn-5ce16895">fun2_scan_eof</a> ###
+ ### <a id = "user-content-fn-5ce16895" name = "user-content-fn-5ce16895">fun2\_scan\_eof</a> ###
 
 <code>static enum Token <strong>fun2_scan_eof</strong>(struct Scanner *const <em>arg1_2</em>, int <em>arg2_2</em>)</code>
 
@@ -267,7 +267,7 @@ Returns eof\.
 
 
 
- ### <a id = "user-content-fn-48c98dc7" name = "user-content-fn-48c98dc7">fun3_scan_comment</a> ###
+ ### <a id = "user-content-fn-48c98dc7" name = "user-content-fn-48c98dc7">fun3\_scan\_comment</a> ###
 
 <code>static enum Token <strong>fun3_scan_comment</strong>(struct Scanner *const <em>arg1_1</em>)</code>
 
@@ -295,7 +295,7 @@ This is a foo\.
 
 
 
- ### <a id = "user-content-fn-693cf86a" name = "user-content-fn-693cf86a">fun5_</a> ###
+ ### <a id = "user-content-fn-693cf86a" name = "user-content-fn-693cf86a">fun5\_</a> ###
 
 <code>T <strong>fun5_</strong>(int(*<em>arg1_2</em>)(int arg1_3, int(*fn)(void)), Foo <em>arg2_3</em>, struct &lt;T&gt;Array <em>arg3_3</em>)</code>
 
