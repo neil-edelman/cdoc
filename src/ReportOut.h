@@ -243,7 +243,11 @@ static int see(const struct TokenArray *const tokens,
 	const struct Token **ptoken, const int is_buffer,
 	const enum Division divn) {
 	const struct Token *const tok = *ptoken;
-	assert(tokens && tok && tok->symbol == divn && !is_buffer);
+	assert(tokens && tok && !is_buffer
+		&& ((tok->symbol == SEE_FN && divn == DIV_FUNCTION)
+		|| (tok->symbol == SEE_TAG && divn == DIV_TAG)
+		|| (tok->symbol == SEE_TYPEDEF && divn == DIV_TYPEDEF)
+		|| (tok->symbol == SEE_DATA && divn == DIV_DATA)));
 	style_prepare_output(tok->symbol);
 	if(effective_format() == OUT_HTML) {
 		printf("<a href = \"#%s:", division_strings[divn]);
@@ -262,10 +266,10 @@ static int see(const struct TokenArray *const tokens,
 	*ptoken = TokenArrayNext(tokens, tok);
 	return 1;
 }
-OUT(see_fn) { return see(tokens, ptoken, is_buffer, SEE_FN); }
-OUT(see_tag) { return see(tokens, ptoken, is_buffer, SEE_TAG); }
-OUT(see_typedef) { return see(tokens, ptoken, is_buffer, SEE_TYPEDEF); }
-OUT(see_data) { return see(tokens, ptoken, is_buffer, SEE_DATA); }
+OUT(see_fn) { return see(tokens, ptoken, is_buffer, DIV_FUNCTION); }
+OUT(see_tag) { return see(tokens, ptoken, is_buffer, DIV_TAG); }
+OUT(see_typedef) { return see(tokens, ptoken, is_buffer, DIV_TYPEDEF); }
+OUT(see_data) { return see(tokens, ptoken, is_buffer, DIV_DATA); }
 OUT(math_begin) { /* Math and code. */
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == MATH_BEGIN && !is_buffer);
@@ -816,7 +820,6 @@ static void print_fragment_for(const enum Division d, const char *const label) {
 	const unsigned hash = fnv_32a_str(label);
 	size_t size;
 	char *b;
-	fprintf(stderr, "print_fragment_for(%s)\n", label);
 	assert(label);
 	size = f == OUT_HTML ? snprintf(0, 0, fmt, label, division, label)
 		: snprintf(0, 0, fmt, label, md_fragment_extra, division, hash);
@@ -869,7 +872,6 @@ static void print_anchor_for(const enum Division d, const char *const label) {
 	}
 	printf(">%s</a>", label);
 	style_pop(); /* h2 */
-	fprintf(stderr, "Label: %s\n", label);
 }
 
 static void print_custom_heading_anchor_for(const char *const division,
@@ -909,7 +911,9 @@ static void print_toc_extra(const enum Division d) {
 		idxs = IndexArrayGet(&segment->code_params);
 		params = TokenArrayGet(&segment->code);
 		assert(idxs[0] < TokenArraySize(&segment->code));
+		style_push(&to_raw);
 		b = print_token_s(&segment->code, params + idxs[0]);
+		style_pop();
 		print_fragment_for(d, b);
 		style_pop_push();
 	}

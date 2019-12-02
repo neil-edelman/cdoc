@@ -278,7 +278,6 @@ static void encode_len_choose(int length, const char *from,
 raw_encode_buffer:
 	if(!(b = BufferPrepare(length))) { unrecoverable(); return; }
 	memcpy(b, from, length);
-	fprintf(stderr, "encode %d \"%s\"\n", length, b);
 	return;
 
 html_encode_buffer:
@@ -373,7 +372,6 @@ md_encode_print:
 
 static const char *encode_len_s_raw(const int length, const char *const from) {
 	BufferClear();
-	fprintf(stderr, "encode_len_s_raw: length %d, %.*s\n", length, length, from);
 	encode_len_choose(length, from, OUT_RAW, 1);
 	return BufferGet();
 }

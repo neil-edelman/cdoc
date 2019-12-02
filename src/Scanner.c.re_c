@@ -153,8 +153,13 @@ looks_like_uri_path = (
 ) | (
 	("." "."? "/")+ [^?# \t\n\v\f\r*<>()&\x00]*
 );
-uri_query = ("?" [^# \t\n\v\f\r*<>()&\x00]*);
-uri_fragment = ("#" [^ \t\n\v\f\r*<>()&\x00]*);
+//uri_query = ("?" [^# \t\n\v\f\r*<>()&\x00]*);
+//uri_fragment = ("#" [^ \t\n\v\f\r*<>()&\x00]*);
+uri_query = ("?" [^# \t\n\v\f\r\x00]*);
+// "The characters slash ("/") and question mark ("?") are allowed to
+// represent data within the fragment identifier."
+// <https://tools.ietf.org/html/rfc3986>
+uri_fragment = ("#" [^ \t\n\v\f\r/?\x00]*);
 absolute_uri = uri_scheme uri_authority uri_path uri_query? uri_fragment?;
 relative_uri = uri_scheme? uri_authority?
 	looks_like_uri_path uri_query? uri_fragment?;
