@@ -8,7 +8,7 @@ text
  \* Links to entities: <fn:<T>fun4>, <data:y>.
  \* Broken: <fn:not_fn>, <fn:<T>not_fn>.
  \* Citation <ÀæĔge2007>.
- \* [absolute](http://arr.com/index.html#ddddd////sfdg).
+ \* [absolute](http://arr.com/index.html#ddddd<u>sfdg).
  \* [relative](foo.h) [relative](../src/Cdoc.c.re).
  \* png: ![Ellen Ripley](../diagrams/Ellen_Ripley_badass.png).
  \* jpeg: ![Inigo Montoya](../diagrams/Inigo_Montoya.jpeg).

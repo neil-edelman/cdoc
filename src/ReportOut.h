@@ -870,7 +870,9 @@ static void print_anchor_for(const enum Division d, const char *const label) {
 		printf("id = \"%s%s-%x\" name = \"%s%s-%x\"", md_fragment_extra,
 			division, hash, md_fragment_extra, division, hash);
 	}
-	printf(">%s</a>", label);
+	fputc('>', stdout);
+	encode(label);
+	fputs("</a>", stdout);
 	style_pop(); /* h2 */
 }
 
