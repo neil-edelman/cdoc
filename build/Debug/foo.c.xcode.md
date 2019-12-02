@@ -33,17 +33,25 @@ This is preformated &lt;http://foo.com/&gt;*
 
 pre***
 
-html escapes: `<>&` md escapes: `\*\_\{\}\[\]\(\)\#\+\-\.\!` \(cannot \`\.\)
+normal: html <>& md \*\{\}\[\]\(\)\#\+\-\.\! \(cannot \`\_\.\)
 
-html escapes: _<>&_ md escapes: _\*\`\{\}\[\]\(\)\#\+\-\.\!_ \(cannot \_\.\)
+code: html `<>&` md `\*\_\{\}\[\]\(\)\#\+\-\.\!` \(cannot \`\.\)
 
-html: &lt;&gt;&amp; md: \*_`{}[]()#+-.!
+em: html _<>&_ md _\*\`\{\}\[\]\(\)\#\+\-\.\!_ \(cannot \_\.\)
+
+pre: html &lt;&gt;&amp; md: \*_`{}[]()#+-.!
+
+ * list: html <>& md \*\{\}\[\]\(\)\#\+\-\.\! \(cannot \`\_\.\)
+
+image: \!\[html <>& md \*\{\}\[\]\(\)\#\+\-\.\! \(cannot \`\_?\)\]\(\.\./diagrams/Ellen_Ripley_ badass\.png\)\.
+
+link: \[html <>& md \*\{\}\[\]\(\)\#\+\-\.\! \(cannot \`\_?\)\]\(\.\./diagrams/Ellen_Ripley_ badass\.png\)\.
+
+
 
 Header\. That also goes in the header\.
 
 This is a kernel\-style comment\. [http://www\.\`@\.com/index\.html](http://www.`@.com/index.html) [Yo2019](https://scholar.google.ca/scholar?q=Yo2019) ?<>&\! [fun1](#user-content-ATT_PARAM-407e96bd)
-
-
 
 Header\. This is an ascii art comment\. Eww\.
 
