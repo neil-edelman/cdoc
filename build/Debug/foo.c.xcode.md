@@ -327,9 +327,9 @@ O\!\!\!\!
    No\. Way\.
  - Implements:  
    Foo, Bar
- - Exceptional Return: AUGH, OY  
+ - Exceptional return: AUGH, OY  
    Bad\.
- - Exceptional Return: RUN, AWAY  
+ - Exceptional return: RUN, AWAY  
    Ohno\.
  - Author:  
    Nobody, Sombody
