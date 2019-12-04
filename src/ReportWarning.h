@@ -13,19 +13,21 @@ static int attribute_use(const struct Attribute *const attribute,
 static int attribute_okay(const struct Attribute *const attribute) {
 	assert(attribute);
 	switch(attribute->token.symbol) {
-		case ATT_PARAM: /* `Scanner.c.re_c` has a state change. */
-		case ATT_THROWS: return attribute_use(attribute, 1, 1);
-		case ATT_SUBTITLE: /* Otherwise, warn if empty text. */
-		case ATT_AUTHOR:
-		case ATT_STD:
-		case ATT_DEPEND:
-		case ATT_FIXME:
-		case ATT_RETURN:
-		case ATT_IMPLEMENTS:
-		case ATT_ORDER:
-		case ATT_LICENSE: return attribute_use(attribute, 0, 1);
-		case ATT_ALLOW: return attribute_use(attribute, 0, 0); /* Or full. */
-		default: assert((fprintf(stderr, "Not recognised.\n"), 0)); return 0;
+		/* `Scanner.c.re_c` has a state change thus `is_header` is true. */
+	case ATT_PARAM: return attribute_use(attribute, 1, 1);
+	case ATT_THROWS: return attribute_use(attribute, 1, 0);
+		/* Otherwise, warn if empty text. */
+	case ATT_SUBTITLE:
+	case ATT_AUTHOR:
+	case ATT_STD:
+	case ATT_DEPEND:
+	case ATT_FIXME:
+	case ATT_RETURN:
+	case ATT_IMPLEMENTS:
+	case ATT_ORDER:
+	case ATT_LICENSE: return attribute_use(attribute, 0, 1);
+	case ATT_ALLOW: return attribute_use(attribute, 0, 0); /* Or full. */
+	default: assert((fprintf(stderr, "Not recognised.\n"), 0)); return 0;
 	}
 }
 
@@ -181,8 +183,7 @@ static void warn_segment(const struct Segment *const segment) {
 			"%s: unable to extract function name.\n", pos(fallback));
 		/* Unused in function. */
 		unused_attribute(segment, ATT_SUBTITLE);
-		if(!is_static(&segment->code))
-			unused_attribute(segment, ATT_ALLOW);
+		if(!is_static(&segment->code)) unused_attribute(segment, ATT_ALLOW);
 		/* Check for extraneous params. */
 		attribute = 0;
 		while((attribute = AttributeArrayNext(&segment->attributes, attribute)))
