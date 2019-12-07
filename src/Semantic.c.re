@@ -143,7 +143,8 @@ generic = "x"
 | "3(" part "," part "," part ")"; // Eg, X_(Array)
 type = tag? redact* generic; // Eg, struct X_(Array)
 type_or_void = type | void;
-argument = ("_" | "*" | "s" | "x" | "(" | ")" | generic)+;
+argument = ("v" | "_" | "*" | "s" | "x" | "(" | ")" | generic)*
+	("_" | "*" | "s" | "x" | "(" | ")" | generic)+;
 */
 
 static int parse(void) {
