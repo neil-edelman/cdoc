@@ -94,7 +94,8 @@
  empty.
  @fixme If a segment has multiple licenses, they will show multiple times.
  @fixme `foo.c:221`: space where it shouldn't be. Why?
- @fixme `<>_`; Markdown disables some escapes but not others? What a mess. */
+ @fixme `<>_`; Markdown disables some escapes but not others? What a mess.
+ @fixme \@throws relax constriants on having something there. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
