@@ -815,21 +815,23 @@ static void print_fragment_for(const enum Division d, const char *const label) {
 	/* `effective_format` is NOT the thing we need; we need to raw format for
 	 the link. */
 	const enum Format f = CdocGetFormat();
-	const char *const fmt = f == OUT_HTML ? "[%s](#%s:%s)" : "[%s](#%s%s-%x)",
+	/* GCC is too smart but not smart enough. */
+	const char *const fmt_html = "[%s](#%s:%s)",
+		*const fmt_md = "[%s](#%s%s-%x)",
 		*const division = division_strings[d];
 	const unsigned hash = fnv_32a_str(label);
 	size_t size;
 	char *b;
 	assert(label);
-	size = f == OUT_HTML ? snprintf(0, 0, fmt, label, division, label)
-		: snprintf(0, 0, fmt, label, md_fragment_extra, division, hash);
+	size = f == OUT_HTML ? snprintf(0, 0, fmt_html, label, division, label)
+		: snprintf(0, 0, fmt_md, label, md_fragment_extra, division, hash);
 	assert(size > 0);
 	/* (Potentally) calling this with `label` as the other buffer. */
 	BufferSwap();
 	BufferClear();
 	if(!(b = BufferPrepare(size))) { perror(label); unrecoverable(); return; }
-	size = f == OUT_HTML ? sprintf(b, fmt, label, division, label)
-		: sprintf(b, fmt, label, md_fragment_extra, division, hash);
+	size = f == OUT_HTML ? sprintf(b, fmt_html, label, division, label)
+		: sprintf(b, fmt_md, label, md_fragment_extra, division, hash);
 	scan_doc_string(b);
 	BufferSwap();
 }

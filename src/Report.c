@@ -10,6 +10,7 @@
 #include <string.h> /* size_t strncpy strncmp */
 #include <limits.h> /* INT_MAX */
 #include <stdio.h>  /* .printf */
+#include <stdio.h>  /* snprintf */
 #include "Division.h"
 #include "Format.h"
 #include "Scanner.h"
