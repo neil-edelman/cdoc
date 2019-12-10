@@ -24,19 +24,17 @@ text
  \"  
  \"pre***
 
- normal: html <>& md \*{}[]()#+-.! (cannot \`\_.)
-
- code: html `<>&` md `\*_{}[]()#+-.!` (cannot \`.)
-
- em: html _<>&_ md _\*`{}[]()#+-.!_ (cannot \_.)
-
- \" pre: html <>& md: \*_`{}[]()#+-.!
- 
- \* list: html <>& md \*{}[]()#+-.! (cannot \`\_.)
-
- image: ![html <>& md \*{}[]()#+-.! (cannot \`\_?)](foo.c).
-
- link: [html <>& md \*{}[]()#+-.! (cannot \`\_?)](foo.c).
+ normal:
+ para: &lt;&gt;&amp; <>& \*{}[]()#+-.! (cannot \`\_?)
+ code: `&lt;&gt;&amp; <>& \*{}[]()#+-.!_` (cannot \`?)
+ em: _&lt;&gt;&amp; <>& \*{}[]()#+-.!`_ (cannot \_?)
+ \" pre: &lt;&gt;&amp; <>& \*{}[]()#+-.!`_
+ \* list: &lt;&gt;&amp; <>& md \*{}[]()#+-.! (cannot \`\_?)
+ image: ![&lt;&gt;&amp; <>& \*{}[]()#+-.!\_\`](foo.c).
+ link: [&lt;&gt;&amp; <>& \*{}[]()#+-.!\`\_](foo.c).
+ # &lt;&gt;&amp; <>& \*{}[]()#+-.!\`\_ #
+ ## &lt;&gt;&amp; <>& \*{}[]()#+-.!\`\_ ##
+ ### &lt;&gt;&amp; <>& \*{}[]()#+-.!\`\_ ###
 
  */
 

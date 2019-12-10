@@ -33,25 +33,19 @@ This is preformated &lt;http://foo.com/&gt;*
 
 pre***
 
-normal: html <>& md \*\{\}\[\]\(\)\#\+\-\.\! \(cannot \`\_\.\)
+normal: para: &lt;&gt;&amp; <>& \*\{\}\[\]\(\)\#\+\-\.\! \(cannot \`\_?\) code: `&lt;&gt;&amp; <>& \*\{\}\[\]\(\)\#\+\-\.\!\_` \(cannot \`?\) em: _&lt;&gt;&amp;<>&\*\{\}\[\]\(\)\#\+\-\.\!\`_ \(cannot \_?\)
 
-code: html `<>&` md `\*\_\{\}\[\]\(\)\#\+\-\.\!` \(cannot \`\.\)
+pre: &amp;lt;&amp;gt;&amp;amp; &lt;&gt;&amp; \*{}[]()#+-.!`_
 
-em: html _<>&_ md _\*\`\{\}\[\]\(\)\#\+\-\.\!_ \(cannot \_\.\)
-
-pre: html &lt;&gt;&amp; md: \*_`{}[]()#+-.!
-
- * list: html <>& md \*\{\}\[\]\(\)\#\+\-\.\! \(cannot \`\_\.\)
-
-image: \!\[html <>& md \*\{\}\[\]\(\)\#\+\-\.\! \(cannot \`\_?\)\]\(foo\.c\)\.
-
-link: \[html <>& md \*\{\}\[\]\(\)\#\+\-\.\! \(cannot \`\_?\)\]\(foo\.c\)\.
-
-
+<ul>
+	<li>list: &lt;&gt;&amp; <>& md \*\{\}\[\]\(\)\#\+\-\.\! \(cannot \`\_?\) image: \!\[&lt;&gt;&amp; <>& \*\{\}\[\]\(\)\#\+\-\.\!\_\`\]\(foo\.c\)\. link: \[&lt;&gt;&amp; <>& \*\{\}\[\]\(\)\#\+\-\.\!\`\_\]\(foo\.c\)\. \# &lt;&gt;&amp; <>& \*\{\}\[\]\(\)\#\+\-\.\!\`\_ \# \#\# &lt;&gt;&amp; <>& \*\{\}\[\]\(\)\#\+\-\.\!\`\_ \#\# \#\#\# &lt;&gt;&amp; <>& \*\{\}\[\]\(\)\#\+\-\.\!\`\_ \#\#\#</li>
+</ul>
 
 Header\. That also goes in the header\.
 
 This is a kernel\-style comment\. [http://www\.\`@\.com/index\.html](http://www.`@.com/index.html) [Yo2019](https://scholar.google.ca/scholar?q=Yo2019) ?<>&\! [fun1](#user-content-fn-407e96bd)
+
+
 
 Header\. This is an ascii art comment\. Eww\.
 
