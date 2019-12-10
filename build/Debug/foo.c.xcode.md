@@ -43,11 +43,17 @@ pre: &lt;&gt;&amp;\*{}[]()#+-.!`_` &amp;lt;&amp;gt;&amp;amp; \&lt;\&gt;\&amp;\\\
 
  * list: <>&\*\{\}\[\]\(\)\#\+\-\.\!`\_` &lt;&gt;&amp; <>\\&\\\*\\\{\\\}\[\]\\\(\\\)\\\#\\\+\\\-\\\.\!\`\_
 
-image: \!\[<>&\*\{\}\[\]\(\)\#\+\-\.\!`\_` &lt;&gt;&amp; <>\\&\\\*\\\{\\\}\[\]\\\(\\\)\\\#\\\+\\\-\\\.\!\`\_\]\(\.\./diagrams/Ellen_Ripley_ badass\.png\)\.
+image: \*\{\}\[\]\(\)\#\+\-\.\!`\_` &lt;&gt;&amp; <>\\&\\\*\\\{\\\}\[\]\\\(\\\)\\\#\\\+\\\-\\\.\!\`\_ ![&lt;&gt;&amp;](../../diagrams/Ellen_Ripley_badass.png) \.
 
 link: \[<>&\*\{\}\[\]\(\)\#\+\-\.\!`\_` &lt;&gt;&amp; <>\\&\\\*\\\{\\\}\[\]\\\(\\\)\\\#\\\+\\\-\\\.\!\`\_\]\(foo\.c\)\.
 
-Headings accept html entities and pass math bold formatting unchanged
+Headings accept html entities; accept <>&; accept backslash escapes; normal code\-em; but if enclosed in html, transfer to html\.
+
+Para accepts entities; accept <>&; accept backslash
+
+Code does not accept entities; escapes all
+
+Em accepts entities; accept <>&; accepts backslash
 
 
 
