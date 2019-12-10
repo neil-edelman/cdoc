@@ -64,6 +64,10 @@ OUT(lit) {
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
+
+/* <https://stackoverflow.com/a/50387918> */
+int snprintf(char *buf, size_t size, const char *fmt, ...);
+
 OUT(gen1) {
 	const struct Token *const t = *ptoken,
 		*const lparen = TokenArrayNext(tokens, t),
