@@ -33,19 +33,31 @@ This is preformated &lt;http://foo.com/&gt;*
 
 pre***
 
-normal: para: &lt;&gt;&amp; <>& \*\{\}\[\]\(\)\#\+\-\.\! \(cannot \`\_?\) code: `&lt;&gt;&amp; <>& \*\{\}\[\]\(\)\#\+\-\.\!\_` \(cannot \`?\) em: _&lt;&gt;&amp;<>&\*\{\}\[\]\(\)\#\+\-\.\!\`_ \(cannot \_?\)
+para: &lt;&gt;&amp; <>& \*\{\}\[\]\(\)\#\+\-\.\! \(cannot \`\_?\)
+
+code: `&lt;&gt;&amp; <>& \*\{\}\[\]\(\)\#\+\-\.\!\_` \(cannot \`?\)
+
+em: _&lt;&gt;&amp;<>&\*\{\}\[\]\(\)\#\+\-\.\!\`_ \(cannot \_?\)
 
 pre: &amp;lt;&amp;gt;&amp;amp; &lt;&gt;&amp; \*{}[]()#+-.!`_
 
-<ul>
-	<li>list: &lt;&gt;&amp; <>& md \*\{\}\[\]\(\)\#\+\-\.\! \(cannot \`\_?\) image: \!\[&lt;&gt;&amp; <>& \*\{\}\[\]\(\)\#\+\-\.\!\_\`\]\(foo\.c\)\. link: \[&lt;&gt;&amp; <>& \*\{\}\[\]\(\)\#\+\-\.\!\`\_\]\(foo\.c\)\. \# &lt;&gt;&amp; <>& \*\{\}\[\]\(\)\#\+\-\.\!\`\_ \# \#\# &lt;&gt;&amp; <>& \*\{\}\[\]\(\)\#\+\-\.\!\`\_ \#\# \#\#\# &lt;&gt;&amp; <>& \*\{\}\[\]\(\)\#\+\-\.\!\`\_ \#\#\#</li>
-</ul>
+ * list: &lt;&gt;&amp; <>& md \*\{\}\[\]\(\)\#\+\-\.\! \(cannot \`\_?\)
+
+image: \!\[&lt;&gt;&amp; <>& \*\{\}\[\]\(\)\#\+\-\.\!\_\`\]\(foo\.c\)\.
+
+link: \[&lt;&gt;&amp; <>& \*\{\}\[\]\(\)\#\+\-\.\!\`\_\]\(foo\.c\)\.
+
+\# &lt;&gt;&amp; <>& \*\{\}\[\]\(\)\#\+\-\.\!\`\_ \#
+
+\#\# &lt;&gt;&amp; <>& \*\{\}\[\]\(\)\#\+\-\.\!\`\_ \#\#
+
+\#\#\# &lt;&gt;&amp; <>& \*\{\}\[\]\(\)\#\+\-\.\!\`\_ \#\#\#
+
+
 
 Header\. That also goes in the header\.
 
 This is a kernel\-style comment\. [http://www\.\`@\.com/index\.html](http://www.`@.com/index.html) [Yo2019](https://scholar.google.ca/scholar?q=Yo2019) ?<>&\! [fun1](#user-content-fn-407e96bd)
-
-
 
 Header\. This is an ascii art comment\. Eww\.
 
