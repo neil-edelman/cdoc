@@ -69,7 +69,7 @@ There should be [fun1](#user-content-fn-407e96bd) to [fun7](#user-content-fn-3a7
 
  ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
 
- ### <a id = "user-content-typedef-8b318acb" name = "user-content-typedef-8b318acb"><PT>Type</a> ###
+ ### <a id = "user-content-typedef-8b318acb" name = "user-content-typedef-8b318acb">&lt;PT&gt;Type</a> ###
 
 <code>typedef int <strong>&lt;PT&gt;Type</strong>;</code>
 
@@ -77,7 +77,7 @@ Troubles with this line? check to ensure that `ARRAY\_TYPE` is a valid type, who
 
 
 
- ### <a id = "user-content-typedef-3bb96b9" name = "user-content-typedef-3bb96b9"><A>Foo<B>Bar</a> ###
+ ### <a id = "user-content-typedef-3bb96b9" name = "user-content-typedef-3bb96b9">&lt;A&gt;Foo&lt;B&gt;Bar</a> ###
 
 <code>typedef int(*<strong>&lt;A&gt;Foo&lt;B&gt;Bar</strong>)(int);</code>
 
@@ -85,7 +85,7 @@ Typedef\.
 
 
 
- ### <a id = "user-content-typedef-c92c3b0f" name = "user-content-typedef-c92c3b0f"><PT>ToString</a> ###
+ ### <a id = "user-content-typedef-c92c3b0f" name = "user-content-typedef-c92c3b0f">&lt;PT&gt;ToString</a> ###
 
 <code>typedef void(*<strong>&lt;PT&gt;ToString</strong>)(const T *, char(*const)[12]);</code>
 
@@ -93,7 +93,7 @@ Typedef\.
 
 
 
- ### <a id = "user-content-typedef-33725a81" name = "user-content-typedef-33725a81"><PT>Action</a> ###
+ ### <a id = "user-content-typedef-33725a81" name = "user-content-typedef-33725a81">&lt;PT&gt;Action</a> ###
 
 <code>typedef void(*<strong>&lt;PT&gt;Action</strong>)(T *const data);</code>
 
@@ -101,7 +101,7 @@ Typedef\. Operates by side\-effects on `data` only\.
 
 
 
- ### <a id = "user-content-typedef-d7c73930" name = "user-content-typedef-d7c73930"><PT>Predicate</a> ###
+ ### <a id = "user-content-typedef-d7c73930" name = "user-content-typedef-d7c73930">&lt;PT&gt;Predicate</a> ###
 
 <code>typedef int(*<strong>&lt;PT&gt;Predicate</strong>)(const T *const data);</code>
 
@@ -173,7 +173,7 @@ Declare a pointer\-to\-int?
 
 
 
- ### <a id = "user-content-data-80b9524b" name = "user-content-data-80b9524b"><T>foo</a> ###
+ ### <a id = "user-content-data-80b9524b" name = "user-content-data-80b9524b">&lt;T&gt;foo</a> ###
 
 <code>int <strong>&lt;T&gt;foo</strong>;</code>
 
@@ -215,7 +215,7 @@ Test parameter\.
 
  ## <a id = "user-content-fn" name = "user-content-fn">Function Definitions</a> ##
 
- ### <a id = "user-content-fn-f5f336fd" name = "user-content-fn-f5f336fd">Cee\_</a> ###
+ ### <a id = "user-content-fn-f5f336fd" name = "user-content-fn-f5f336fd">Cee_</a> ###
 
 <code>void <strong>Cee_</strong>(struct Cee **<em>ceeptr</em>);</code>
 
@@ -245,7 +245,7 @@ Function declare x as function \(int\) returning pointer to function \(int\) ret
 
 
 
- ### <a id = "user-content-fn-5ce16895" name = "user-content-fn-5ce16895">fun2\_scan\_eof</a> ###
+ ### <a id = "user-content-fn-5ce16895" name = "user-content-fn-5ce16895">fun2_scan_eof</a> ###
 
 <code>static enum Token <strong>fun2_scan_eof</strong>(struct Scanner *const <em>arg1_2</em>, int <em>arg2_2</em>)</code>
 
@@ -267,7 +267,7 @@ Returns eof\.
 
 
 
- ### <a id = "user-content-fn-48c98dc7" name = "user-content-fn-48c98dc7">fun3\_scan\_comment</a> ###
+ ### <a id = "user-content-fn-48c98dc7" name = "user-content-fn-48c98dc7">fun3_scan_comment</a> ###
 
 <code>static enum Token <strong>fun3_scan_comment</strong>(struct Scanner *const <em>arg1_1</em>)</code>
 
@@ -283,7 +283,7 @@ Function\.
 
 
 
- ### <a id = "user-content-fn-ebe4b0f2" name = "user-content-fn-ebe4b0f2"><T>fun4</a> ###
+ ### <a id = "user-content-fn-ebe4b0f2" name = "user-content-fn-ebe4b0f2">&lt;T&gt;fun4</a> ###
 
 <code>void <strong>&lt;T&gt;fun4</strong>(void)</code>
 
@@ -295,7 +295,7 @@ This is a foo\.
 
 
 
- ### <a id = "user-content-fn-693cf86a" name = "user-content-fn-693cf86a">fun5\_</a> ###
+ ### <a id = "user-content-fn-693cf86a" name = "user-content-fn-693cf86a">fun5_</a> ###
 
 <code>T <strong>fun5_</strong>(int(*<em>arg1_2</em>)(int arg1_3, int(*fn)(void)), Foo <em>arg2_3</em>, struct &lt;T&gt;Array <em>arg3_3</em>)</code>
 

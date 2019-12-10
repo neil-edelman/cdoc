@@ -64,10 +64,6 @@ OUT(lit) {
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
-
-/* <https://stackoverflow.com/a/50387918> */
-int snprintf(char *buf, size_t size, const char *fmt, ...);
-
 OUT(gen1) {
 	const struct Token *const t = *ptoken,
 		*const lparen = TokenArrayNext(tokens, t),
@@ -88,6 +84,7 @@ OUT(gen1) {
 	if(is_buffer) {
 		size_t len;
 		char *a;
+		/* fixme: snprintf is not defined in C89. */
 		if((len = snprintf(0, 0, format, t->length - 1, t->from, param->length,
 			param->from)) <= 0 || !(a = BufferPrepare(len))) return 0;
 		sprintf(a, format, t->length - 1, t->from, param->length, param->from);
@@ -128,6 +125,7 @@ OUT(gen2) {
 	if(is_buffer) {
 		size_t len;
 		char *a;
+		/* fixme: snprintf is not defined in C89. */
 		if((len = snprintf(0, 0, format, type1_size, type1, param1->length,
 			param1->from, type2_size, type2, param2->length, param2->from)) <= 0
 			|| !(a = BufferPrepare(len))) return 0;
@@ -177,6 +175,7 @@ OUT(gen3) {
 	if(is_buffer) {
 		size_t len;
 		char *a;
+		/* fixme: snprintf is not defined in C89. */
 		if((len = snprintf(0, 0, format, type1_size, type1, param1->length,
 			param1->from, type2_size, type2, param2->length, param2->from,
 			type3_size, type3, param3->length, param3->from)) <= 0
@@ -827,6 +826,7 @@ static void print_fragment_for(const enum Division d, const char *const label) {
 	size_t size;
 	char *b;
 	assert(label);
+	/* fixme: snprintf is not defined in C89. */
 	size = f == OUT_HTML ? snprintf(0, 0, fmt_html, label, division, label)
 		: snprintf(0, 0, fmt_md, label, md_fragment_extra, division, hash);
 	assert(size > 0);
@@ -844,6 +844,7 @@ static void print_custom_heading_fragment_for(const char *const division,
 	const char *const desc) {
 	const char *const fmt
 		= (effective_format() == OUT_HTML) ? "[%s](#%.0s%s:)" : "[%s](#%s%s)";
+	/* fixme: snprintf is not defined in C89. */
 	const size_t size = snprintf(0, 0, fmt, desc, md_fragment_extra, division);
 	char *b;
 	assert(division && desc && size > 0);
@@ -877,7 +878,9 @@ static void print_anchor_for(const enum Division d, const char *const label) {
 			division, hash, md_fragment_extra, division, hash);
 	}
 	fputc('>', stdout);
+	style_push(&to_html); /* The format is HTML because it's in an HTML tag. */
 	encode(label);
+	style_pop();
 	fputs("</a>", stdout);
 	style_pop(); /* h2 */
 }

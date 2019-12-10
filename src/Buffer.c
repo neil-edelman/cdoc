@@ -5,10 +5,8 @@
 
  @std C89 */
 
-#include <stdio.h>  /* snprintf sprintf */
-#include <string.h> /* strlen */
+#include <stddef.h> /* size_t */
 #include <assert.h> /* assert */
-#include <errno.h>  /* errno */
 #include "Division.h"
 #include "Cdoc.h"
 #include "Buffer.h"
