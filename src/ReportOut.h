@@ -12,7 +12,7 @@ static unsigned fnv_32a_str(const char *str) {
 		hval ^= *s++;
 		hval += (hval<<1) + (hval<<4) + (hval<<7) + (hval<<8) + (hval<<24);
 	}
-	fprintf(stderr, "fnv32: %s -> %u\n", str, hval);
+	if(CdocGetDebug()) fprintf(stderr, "fnv32: %s -> %u\n", str, hval);
 	return hval & 0xffffffff;
 }
 
@@ -1167,7 +1167,6 @@ int ReportOut(void) {
 			style_push(&to_raw); /* Always get raw; translate after. */
 			b = print_token_s(&segment->code, params + idxs[0]);
 			style_pop();
-			fprintf(stderr, "ReportOut: print_fragment_for(%s)\n", b);
 			print_fragment_for(DIV_FUNCTION, b);
 			printf("</td><td>");
 			for(idx = 1; idx < idxn; idx++) {

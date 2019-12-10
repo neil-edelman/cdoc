@@ -7,44 +7,44 @@
 
  ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-A context\-sensitive parser intended to process parts of a `C` compilation unit and extract documentation, as well as outputting that documentation into the format specified\. Designed to be very strict, warning one of documentation errors; and simple, made for self\-contained independent documenatation\. This does not do any compiling, just text\-parsing\. Thus, one can easily confuse by redefining symbols\. However, it assumes the macro `A\_B\_\(Foo,Bar\)` is transformed into `<A>Foo<B>Bar` \.
+A context\-sensitive parser intended to process parts of a `RAW?C` compilation unit and extract documentation, as well as outputting that documentation into the format specified\. Designed to be very strict, warning one of documentation errors; and simple, made for self\-contained independent documenatation\. This does not do any compiling, just text\-parsing\. Thus, one can easily confuse by redefining symbols\. However, it assumes the macro `RAW?A_B_(Foo,Bar)` is transformed into `RAW?<A>Foo<B>Bar` \.
 
-Documentation commands are `/` `\*\*…` \(together\) and are ended with `\*…/` , but not `/` `\*…\*` `/` , \(common code break\.\) Asterisks at the start of a line, like Kernel comments, or asterisks all over like some crazy ASCII art, are supported\. Documentation appearing at most two lines above `typedef` , `tag` \(`struct` , `enum` , `union` ,\) data, and functions, is associated therewith; everything else is automatically inserted into the description\. Multiple documentation on the same command is appended\. Two hard returns is a paragraph\. Supports some `Markdown` commands included in the documentation,
+Documentation commands are `RAW?/` `RAW?*RAW?*RAW?…` \(together\) and are ended with `RAW?*RAW?…/` , but not `RAW?/` `RAW?*RAW?…RAW?*` `RAW?/` , \(common code break\.\) Asterisks at the start of a line, like Kernel comments, or asterisks all over like some crazy ASCII art, are supported\. Documentation appearing at most two lines above `RAW?typedef` , `RAW?tag` \(`RAW?struct` , `RAW?enum` , `RAW?union` ,\) data, and functions, is associated therewith; everything else is automatically inserted into the description\. Multiple documentation on the same command is appended\. Two hard returns is a paragraph\. Supports some `RAW?Markdown` commands included in the documentation,
 
- * `\\` escapes `\_~\!@<>\[\]` and "\`"; "\`" can not be represented in math/code, \(multiple escapes aren't supported\); in paragraph mode, except in ambiguous cases, the only ones that are needed are \\\` and \\\_;
+ * `RAW?\` escapes `RAW?_RAW?~RAW?!RAW?@RAW?<>[]` and "\`"; "\`" can not be represented in math/code, \(multiple escapes aren't supported\); in paragraph mode, except in ambiguous cases, the only ones that are needed are \\\` and \\\_;
  * \_emphasised\_: _emphasised_ ;
- * \`code/math\`: `code/math` ;
- * start lists with `\\\*` \(including spaces\) and end with a new paragraph; these are simple, can be anywhere and don't nest;
- * `\\"` \(and optionally a space\) causes all the line after to be pre\-formatted;
- * Escapes included for convenience: `\\,` "&#8239;" non\-breaking thin space, `\\O` "&#927;" Bachmann–Landau notation, \(but really capital omicron because not many fonts have a shape for code\-point 120030,\) `\\Theta` "&#920;", `\\Omega` "&#937;", `\\times` "&#215;", `\\cdot` "&#183;"\.
- * `~` "&nbsp;" non\-breaking space;
- * `<url>` : relative URIs must have a slash or a dot to distinguish it from text;
- * `<Source, 1999, pp\. 1\-2>` : citation;
- * `<fn:<function>>` : function reference;
- * `<tag:<tag>>` : struct, union, or enum \(tag\) reference;
- * `<typedef:<typedef>>` : typedef reference;
- * `<data:<identifier>>` : data reference;
- * `\[The link text\]\(url\)` : link;
- * `\!\[Caption text\]\(url\.image\)` : image;
- * a local include directive has a documentation comment immediately after that reads only `\\include` , it will also be included in the documentation\.
+ * \`code/math\`: `RAW?code/math` ;
+ * start lists with `RAW?\RAW?*` \(including spaces\) and end with a new paragraph; these are simple, can be anywhere and don't nest;
+ * `RAW?\RAW?"` \(and optionally a space\) causes all the line after to be pre\-formatted;
+ * Escapes included for convenience: `RAW?\RAW?,` "&#8239;" non\-breaking thin space, `RAW?\RAW?O` "&#927;" Bachmann–Landau notation, \(but really capital omicron because not many fonts have a shape for code\-point 120030,\) `RAW?\RAW?Theta` "&#920;", `RAW?\RAW?Omega` "&#937;", `RAW?\RAW?times` "&#215;", `RAW?\RAW?cdot` "&#183;"\.
+ * `RAW?~` "&nbsp;" non\-breaking space;
+ * `RAW?<RAW?urlRAW?>` : relative URIs must have a slash or a dot to distinguish it from text;
+ * `RAW?<RAW?Source, RAW?1999, RAW?pp. RAW?1-2RAW?>` : citation;
+ * `RAW?<RAW?fn:RAW?<RAW?functionRAW?>RAW?>` : function reference;
+ * `RAW?<RAW?tag:RAW?<RAW?tagRAW?>RAW?>` : struct, union, or enum \(tag\) reference;
+ * `RAW?<RAW?typedef:RAW?<RAW?typedefRAW?>RAW?>` : typedef reference;
+ * `RAW?<RAW?data:RAW?<RAW?identifierRAW?>RAW?>` : data reference;
+ * `RAW?[RAW?The RAW?link RAW?textRAW?]RAW?(url)` : link;
+ * `RAW?!RAW?[RAW?Caption RAW?textRAW?]RAW?(url.image)` : image;
+ * a local include directive has a documentation comment immediately after that reads only `RAW?\RAW?include` , it will also be included in the documentation\.
 
 Each\-block\-tags separate the documentation until the next paragraph or until the next each\-block\-tag, and specify a specific documentation structure\. Each\-block\-tags that overlap are concatenated in the file order\. Not all of these are applicable for all segments of text\. These are:
 
- * `@subtitle` : only makes sense for preamble, \(it doesn't matter what case one writes it, but multiple are concatenated using semicolons\);
- * `@param\[<param1>\[, \.\.\.\]\]` : parameters, \(multiple are concatenated using spaces, so this really should be sentence case\);
- * `@author` \(commas\);
- * `@std` : standard, eg, `@std GNU\-C99` , \(semicolons\);
- * `@depend` : dependancy, \(semicolons\);
- * `@fixme` : something doesn't work as expected, \(spaces\);
- * `@return` : normal function return, \(spaces\);
- * `@throws\[<exception1>\[, \.\.\.\]\]` : exceptional function return; `C` doesn't have native exceptions, so `@throws` means whatever one desires; perhaps a null pointer or false is returned and `errno` is set to `exception1` , \(spaces\);
- * `@implements` : `C` doesn't have the concept of implements, but we would say that a function having a prototype of `\(int \(\*\)\(const void \*, const void \*\)\)` implements `bsearch` and `qsort` , \(commas\);
- * `@order` : comments about the run\-time or space, \(spaces\);
- * and `@allow` , the latter being to allow `static` functions or data in the documentation, which are usually culled; one will be warned if this has any text\.
+ * `RAW?@RAW?subtitle` : only makes sense for preamble, \(it doesn't matter what case one writes it, but multiple are concatenated using semicolons\);
+ * `RAW?@RAW?param[<param1>[, RAW?...]]` : parameters, \(multiple are concatenated using spaces, so this really should be sentence case\);
+ * `RAW?@RAW?author` \(commas\);
+ * `RAW?@RAW?std` : standard, eg, `RAW?@RAW?std RAW?GNU-C99` , \(semicolons\);
+ * `RAW?@RAW?depend` : dependancy, \(semicolons\);
+ * `RAW?@RAW?fixme` : something doesn't work as expected, \(spaces\);
+ * `RAW?@RAW?return` : normal function return, \(spaces\);
+ * `RAW?@RAW?throws[<exception1>[, RAW?...]]` : exceptional function return; `RAW?C` doesn't have native exceptions, so `RAW?@throws` means whatever one desires; perhaps a null pointer or false is returned and `RAW?errno` is set to `RAW?exception1` , \(spaces\);
+ * `RAW?@RAW?implements` : `RAW?C` doesn't have the concept of implements, but we would say that a function having a prototype of `RAW?(int RAW?(RAW?*RAW?)(const RAW?void RAW?*RAW?, RAW?const RAW?void RAW?*RAW?))` implements `RAW?bsearch` and `RAW?qsort` , \(commas\);
+ * `RAW?@RAW?order` : comments about the run\-time or space, \(spaces\);
+ * and `RAW?@RAW?allow` , the latter being to allow `RAW?static` functions or data in the documentation, which are usually culled; one will be warned if this has any text\.
 
-Perhaps the most striking difference from `Javadoc` and `Doxygen` is the `@param` has to be followed by a braced list, \(it's confusing to have the variable be indistinguishable from the text\.\)
+Perhaps the most striking difference from `RAW?Javadoc` and `RAW?Doxygen` is the `RAW?@RAW?param` has to be followed by a braced list, \(it's confusing to have the variable be indistinguishable from the text\.\)
 
-If one sets `md` as output, it goes to `GitHub` Markdown that is specifically visible on the `GitHub` page, \(including working anchor links on browsers > 2000\.\) It bears little to Markdown supported in the documentation\.
+If one sets `RAW?md` as output, it goes to `RAW?GitHub` Markdown that is specifically visible on the `RAW?GitHub` page, \(including working anchor links on browsers > 2000\.\) It bears little to Markdown supported in the documentation\.
 
 
 
@@ -53,7 +53,7 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is specifically vi
  * Dependancies:  
    [re2c](http://re2c.org/)
  * Caveat:  
-   Old\-style function support\. Trigraph support, \(haha\.\) Hide `const` on params when it can not affect function calls\. Prototypes and functions are the same thing; this will confuse it\. Hash map might be faster and more precise\. Links to non\-documented code which sometimes doesn't show up, work without error, and create broken links\. 80\-characters _per_ line limit, [https://xxyxyz\.org/line\-breaking/](https://xxyxyz.org/line-breaking/), \(needs buffering\.\) Eg, fixme with no args disappears; we should NOT check if the string is empty\. If a segment has multiple licenses, they will show multiple times\. `foo\.c:221` : space where it shouldn't be\. Why? `<>\_` ; Markdown disables some escapes but not others? What a mess\.
+   Old\-style function support\. Trigraph support, \(haha\.\) Hide `RAW?const` on params when it can not affect function calls\. Documentation on functions should be added to documentation on prototypes with the same \(similar\) prototype\. Links to non\-documented code which sometimes doesn't show up, work without error, and create broken links\. 80\-characters _per_ line limit, [https://xxyxyz\.org/line\-breaking/](https://xxyxyz.org/line-breaking/), \(needs buffering\.\) Eg, fixme with no args disappears; we should NOT check if the string is empty\. If a segment has multiple licenses, they will show multiple times\. `RAW?foo.c:221` : space where it shouldn't be\. Why? @throws relax constriants on having something there\. Markdown doesn't allow any brackets within links/images but html does; provide a separate escape table? \(Not likely; no brackets\. Fixed\.\)
 
 
  ## <a id = "user-content-summary" name = "user-content-summary">Function Summary</a> ##
@@ -81,7 +81,7 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is specifically vi
 <code>int <strong>CdocGetDebug</strong>(void)</code>
 
  - Return:  
-   Whether the command\-line option to spam on `stderr` was set\.
+   Whether the command\-line option to spam on `RAW?stderr` was set\.
 
 
 
@@ -91,7 +91,7 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is specifically vi
 <code>enum Format <strong>CdocGetFormat</strong>(void)</code>
 
  - Return:  
-   What format the output was specified to be in `enum Format` \. If there was no output specified, guess before from the output filename\.
+   What format the output was specified to be in `RAW?enum RAW?Format` \. If there was no output specified, guess before from the output filename\.
 
 
 

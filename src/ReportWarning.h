@@ -6,9 +6,9 @@
 
 static int attribute_use(const struct Attribute *const attribute,
 	const int is_header, const int is_contents_care, const int is_contents) {
-	if(!(!is_header ^ !TokenArraySize(&attribute->header))
-		|| (is_contents_care
-		&& !(!is_contents ^ !TokenArraySize(&attribute->contents)))) return 0;
+	if((!is_header ^ !TokenArraySize(&attribute->header))) return 0;
+	if((is_contents_care
+		&& (!is_contents ^ !TokenArraySize(&attribute->contents)))) return 0;
 	return 1;
 }
 
@@ -23,11 +23,11 @@ static int attribute_okay(const struct Attribute *const attribute) {
 	case ATT_AUTHOR:
 	case ATT_STD:
 	case ATT_DEPEND:
-	case ATT_FIXME:
 	case ATT_RETURN:
 	case ATT_IMPLEMENTS:
 	case ATT_ORDER:
 	case ATT_LICENSE: return attribute_use(attribute, 0, 1, 1);
+	case ATT_FIXME: return attribute_use(attribute, 0, 0, 1);
 	case ATT_ALLOW: return attribute_use(attribute, 0, 1, 0); /* Or full. */
 	default: assert((fprintf(stderr, "Not recognised.\n"), 0)); return 0;
 	}
