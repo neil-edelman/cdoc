@@ -13,7 +13,7 @@ text
  \* png: ![Ellen Ripley](../diagrams/Ellen_Ripley_badass.png).
  \* jpeg: ![Inigo Montoya](../diagrams/Inigo_Montoya.jpeg).
 
- @subtitle The Subtitle &lt;&gt;&amp; <>& \*{}[]()#+-.!\`\_
+ @subtitle The Subtitle <>&\*{}[]()#+-.!`_` &lt;&gt;&amp; \<\>\&\\\*\{\}\[\]\(\)\#\+\-\.\!\`\_
  @depend C89
  @author Somebody
  @author Nobody
@@ -24,20 +24,22 @@ text
  \"  
  \"pre***
 
- para: &lt;&gt;&amp; <>& \*{}[]()#+-.! (cannot \`\_?)
+ para: <>&\*{}[]()#+-.!`_` &lt;&gt;&amp; \<\>\&\\\*\{\}\[\]\(\)\#\+\-\.\!\`\_
 
- code: `&lt;&gt;&amp; <>& \*{}[]()#+-.!_` (cannot \`?)
+ code: `<>&\*{}[]()#+-.!_ &lt;&gt;&amp; \<\>\&\\\*\{\}\[\]\(\)\#\+\-\.\!\_` (cannot \`?)
  
- em: _&lt;&gt;&amp; <>& \*{}[]()#+-.!`_ (cannot \_?)
+ em: _<>&\*{}[]()#+-.!` &lt;&gt;&amp; \<\>\&\\\*\{\}\[\]\(\)\#\+\-\.\!\`_ (cannot \_?)
  
- \" pre: &lt;&gt;&amp; <>& \*{}[]()#+-.!`_
+ \" pre: <>&\*{}[]()#+-.!`_` &lt;&gt;&amp; \<\>\&\\\*\{\}\[\]\(\)\#\+\-\.\!\`\_
  
- \* list: &lt;&gt;&amp; <>& md \*{}[]()#+-.! (cannot \`\_?)
+ \* list: <>&\*{}[]()#+-.!`_` &lt;&gt;&amp; \<\>\&\\\*\{\}\[\]\(\)\#\+\-\.\!\`\_
  
- image: ![&lt;&gt;&amp; <>& \*{}[]()#+-.!\_\`](foo.c).
+ image: ![<>&\*{}[]()#+-.!`_` &lt;&gt;&amp; \<\>\&\\\*\{\}\[\]\(\)\#\+\-\.\!\`\_](../diagrams/Ellen_Ripley_badass.png).
  
- link: [&lt;&gt;&amp; <>& \*{}[]()#+-.!\`\_](foo.c).
+ link: [<>&\*{}[]()#+-.!`_` &lt;&gt;&amp; \<\>\&\\\*\{\}\[\]\(\)\#\+\-\.\!\`\_](foo.c).
 
+ Headings accept html entities and pass math bold formatting unchanged
+ 
  */
 
 #include <assert.h>
