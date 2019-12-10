@@ -350,7 +350,7 @@ raw:
 	fn = turl->from;
 	fn_len = turl->length;
 	if(CdocGetDebug())
-		fprintf(stderr, "%s: fixed link %.*s.\n", pos(t), (int)fn_len, fn);
+		fprintf(stderr, "%s: absolute link %.*s.\n", pos(t), (int)fn_len, fn);
 output:
 	assert(fn_len <= INT_MAX);
 	if(f == OUT_HTML) printf("<a href = \"%.*s\">", (int)fn_len, fn);
