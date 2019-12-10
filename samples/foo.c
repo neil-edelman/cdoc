@@ -36,7 +36,7 @@ text
  
  image: \*{}[]()#+-.!`_` &lt;&gt;&amp; \<\>\&\\\*\{\}\[\]\(\)\#\+\-\.\!\`\_ ![<>&*+-.!](../diagrams/Ellen_Ripley_badass.png).
  
- link: [<>&\*#+-.!](foo.c).
+ link: [<>&\*#+-.!\(](foo.c).
 
  Headings accept html entities; accept <>&; accept backslash escapes; normal
  code-em; but if enclosed in html, transfer to html.
@@ -47,7 +47,7 @@ text
  
  Em accepts entities; accept <>&; accepts backslash
  
- Image accepts html entities but doesn't accept some things.
+ Image/link accepts html entities but doesn't accept ()[]{}.
  
  */
 

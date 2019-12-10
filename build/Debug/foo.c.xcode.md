@@ -45,7 +45,7 @@ pre: &lt;&gt;&amp;\*{}[]()#+-.!`_` &amp;lt;&amp;gt;&amp;amp; \&lt;\&gt;\&amp;\\\
 
 image: \*\{\}\[\]\(\)\#\+\-\.\!`\_` &lt;&gt;&amp; <>\\&\\\*\\\{\\\}\[\]\\\(\\\)\\\#\\\+\\\-\\\.\!\`\_ ![&lt;&gt;&amp;*+-.!](../../diagrams/Ellen_Ripley_badass.png) \.
 
-link: [&lt;&gt;&amp;*#+-.!](../../samples/foo.c) \.
+link: [&lt;&gt;&amp;*#+-.!\(](../../samples/foo.c) \.
 
 Headings accept html entities; accept <>&; accept backslash escapes; normal code\-em; but if enclosed in html, transfer to html\.
 
@@ -55,7 +55,7 @@ Code does not accept entities; escapes all
 
 Em accepts entities; accept <>&; accepts backslash
 
-Image accepts html entities but doesn't accept some things\.
+Image/link accepts html entities but doesn't accept \(\)\[\]\{\}\.
 
 
 
