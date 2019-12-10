@@ -70,13 +70,13 @@ Header\. This is an ascii art comment\. Eww\.
 There should be [fun1](#user-content-fn-407e96bd) to [fun7](#user-content-fn-3a7e8d4b) and [main](#user-content-fn-ea90e208)\.
 
  * Author:  
-   Somebody, Nobody, (fixme: Cee: , fixme: fun2\_scan\_eof:  External Author, fixme: fun3\_scan\_comment:  Prof\. Snape, fixme: fun6:  Nobody, fixme: fun6:  Sombody)
+   Somebody, Nobody, ([Cee](#tag:Cee): , [fun2\_scan\_eof](#fn:fun2\_scan\_eof):  External Author, [fun3\_scan\_comment](#fn:fun3\_scan\_comment):  Prof\. Snape, [fun6](#fn:fun6):  Nobody, [fun6](#fn:fun6):  Sombody)
  * Standard:  
-   (fixme: fun6:  C, fixme: fun6:  Java)
+   ([fun6](#fn:fun6):  C, [fun6](#fn:fun6):  Java)
  * Dependancies:  
-   C89, (fixme: fun6:  Meh, fixme: fun6:  Duh)
+   C89, ([fun6](#fn:fun6):  Meh, [fun6](#fn:fun6):  Duh)
  * Caveat:  
-    (fixme: Cee, fixme: fun2\_scan\_eof, fixme: fun6, fixme: fun6)
+    ([Cee](#tag:Cee), [fun2\_scan\_eof](#fn:fun2\_scan\_eof), [fun6](#fn:fun6)DUP?, [fun6](#fn:fun6))
 
 
  ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -379,7 +379,7 @@ Lol I don't need a license\.
 
 No\.
 
-(See license details fixme: fun2\_scan\_eof, fixme: fun3\_scan\_comment, fixme: fun6, fixme: fun6.)
+(See license details [fun2\_scan\_eof](#fn:fun2\_scan\_eof), [fun3\_scan\_comment](#fn:fun3\_scan\_comment), [fun6](#fn:fun6)DUP?, [fun6](#fn:fun6).)
 
 
 

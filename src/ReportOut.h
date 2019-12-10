@@ -635,6 +635,7 @@ static void segment_att_print_all(const struct Segment *const segment,
 				const struct Token *token
 					= TokenArrayGet(&segment->code) + *pindex;
 				style_push(&no_style);
+				/* fixme: didn't I already do this? */
 				if(effective_format() == OUT_HTML) {
 					printf("<a href = \"#%s:",
 						division_strings[segment->division]);
@@ -643,8 +644,11 @@ static void segment_att_print_all(const struct Segment *const segment,
 					print_token(&segment->code, token);
 					printf("</a>");
 				} else {
-					printf("fixme: "); /* should only do one per segment */
+					printf("[");
 					print_token(&segment->code, token);
+					printf("](#%s:", division_strings[segment->division]);
+					print_token(&segment->code, token);
+					printf(")");
 				}
 				style_pop();
 			} else {
@@ -654,6 +658,9 @@ static void segment_att_print_all(const struct Segment *const segment,
 		if(show == SHOW_ALL) fputs(": ", stdout);
 		if(show & SHOW_TEXT) print_tokens(&attribute->contents);
 		style_pop_push();
+		/* Only do one if `SHOW_TEXT` is not set; in practice, this affects
+		 license, only showing one _per_ function. */
+		if(!(show & SHOW_TEXT)) break;
 	}
 }
 

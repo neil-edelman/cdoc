@@ -92,7 +92,6 @@
  (needs buffering.)
  @fixme Eg, fixme with no args disappears; we should NOT check if the string is
  empty.
- @fixme If a segment has multiple licenses, they will show multiple times.
  @fixme `foo.c:221`: space where it shouldn't be. Why?
  @fixme \@throws relax constriants on having something there.
  @fixme Markdown doesn't allow any brackets within links/images but html does;
