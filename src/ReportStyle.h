@@ -8,8 +8,8 @@ static const int symbol_after_sep[]  = { SYMBOL(PARAM6E) };
 #define HTML_GT  "&gt;"
 #define HTML_LT  "&lt;"
 
-/* Hack `sprintf` titles. */
-static char style_title[256];
+/* Hack `sprintf` titles. They never go this big and are internal. */
+static char style_title[128];
 
 /* Every `StyleText` can have a beginning, a separator, and an end, which will
  be printed around literals. Block and can appear alone elements have
@@ -368,6 +368,21 @@ md_encode_print:
 		from++, length--;
 	}
 	return;
+
+/* This is how we would `[sfgsg\(dfg]()` but it hardly seems worth it -- maybe
+ Markdown will change?
+ md_square_encode_print:
+	while(length) {
+		switch(*from) {
+		case '\0': fprintf(stderr, "Encoded null with %d left.\n", length);
+			return;
+		case '{': case '}': case '[': case ']': case '(': case ')':
+			printf("\\%c", *from); break;
+		default: fputc(*from, stdout); break;
+		}
+		from++, length--;
+	}
+	return; */
 }
 
 static const char *encode_len_s_raw(const int length, const char *const from) {
