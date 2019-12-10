@@ -93,7 +93,6 @@
  @fixme Eg, fixme with no args disappears; we should NOT check if the string is
  empty.
  @fixme `foo.c:221`: space where it shouldn't be. Why?
- @fixme \@throws relax constriants on having something there.
  @fixme Markdown doesn't allow any brackets within links/images but html does;
  provide a separate escape table? (Not likely; no brackets. Fixed.) */
 
