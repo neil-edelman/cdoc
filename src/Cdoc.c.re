@@ -84,8 +84,8 @@
  @depend [re2c](http://re2c.org/)
  @fixme Old-style function support. Trigraph support, (haha.)
  @fixme Hide `const` on params when it can not affect function calls.
- @fixme Prototypes and functions are the same thing; this will confuse it. Hash
- map might be faster and more precise.
+ @fixme Documentation on functions should be added to documentation on
+ prototypes with the same (similar) prototype.
  @fixme Links to non-documented code which sometimes doesn't show up, work
  without error, and create broken links.
  @fixme 80-characters _per_ line limit, <https://xxyxyz.org/line-breaking/>,
@@ -96,7 +96,7 @@
  @fixme `foo.c:221`: space where it shouldn't be. Why?
  @fixme \@throws relax constriants on having something there.
  @fixme Markdown doesn't allow any brackets within links/images but html does;
- provide a separate escape table? (Not likely; no brackets.) */
+ provide a separate escape table? (Not likely; no brackets. Fixed.) */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */

@@ -5,17 +5,19 @@
  */
 
 static int attribute_use(const struct Attribute *const attribute,
-	const int is_header, const int is_contents) {
-	return is_header ^ !!TokenArraySize(&attribute->header)
-		|| is_contents ^ !!TokenArraySize(&attribute->contents) ? 0 : 1;
+	const int is_header, const int is_contents_care, const int is_contents) {
+	if(!(!is_header ^ !TokenArraySize(&attribute->header))
+		|| (is_contents_care
+		&& !(!is_contents ^ !TokenArraySize(&attribute->contents)))) return 0;
+	return 1;
 }
 
 static int attribute_okay(const struct Attribute *const attribute) {
 	assert(attribute);
 	switch(attribute->token.symbol) {
 		/* `Scanner.c.re_c` has a state change thus `is_header` is true. */
-	case ATT_PARAM: return attribute_use(attribute, 1, 1);
-	case ATT_THROWS: return attribute_use(attribute, 1, 0);
+	case ATT_PARAM: return attribute_use(attribute, 1, 1, 1);
+	case ATT_THROWS: return attribute_use(attribute, 1, 0, 1);
 		/* Otherwise, warn if empty text. */
 	case ATT_SUBTITLE:
 	case ATT_AUTHOR:
@@ -25,8 +27,8 @@ static int attribute_okay(const struct Attribute *const attribute) {
 	case ATT_RETURN:
 	case ATT_IMPLEMENTS:
 	case ATT_ORDER:
-	case ATT_LICENSE: return attribute_use(attribute, 0, 1);
-	case ATT_ALLOW: return attribute_use(attribute, 0, 0); /* Or full. */
+	case ATT_LICENSE: return attribute_use(attribute, 0, 1, 1);
+	case ATT_ALLOW: return attribute_use(attribute, 0, 1, 0); /* Or full. */
 	default: assert((fprintf(stderr, "Not recognised.\n"), 0)); return 0;
 	}
 }

@@ -269,10 +269,8 @@ static void encode_len_choose(int length, const char *from,
 		if(is_buffer) goto md_encode_buffer;
 		else goto md_encode_print;
 	case OUT_RAW:
-		if(!is_buffer) { fprintf(stderr,
-			"%.*s: doesn't make sense to output is raw.\n", length, from);
-			return; }
-		goto raw_encode_buffer;
+		if(is_buffer) goto raw_encode_buffer;
+		goto raw_encode_print;
 	}
 
 raw_encode_buffer:
@@ -339,6 +337,10 @@ terminate_md:
 		if(!(b = BufferPrepare(ahead))) { unrecoverable(); return; }
 		memcpy(b, from, ahead);
 	}
+	return;
+
+raw_encode_print:
+	printf("RAW?%.*s", length, from);
 	return;
 
 html_encode_print:
