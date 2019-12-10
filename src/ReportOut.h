@@ -643,7 +643,7 @@ static void segment_att_print_all(const struct Segment *const segment,
 					print_token(&segment->code, token);
 					printf("</a>");
 				} else {
-					printf("fixme: ");
+					printf("fixme: "); /* should only do one per segment */
 					print_token(&segment->code, token);
 				}
 				style_pop();
