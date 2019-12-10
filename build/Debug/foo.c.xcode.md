@@ -1,6 +1,6 @@
  # foo\.c #
 
- ## The Subtitle; Link [http://127\.0\.0\.1/](http://127.0.0.1/) ##
+ ## The Subtitle &lt;&gt;&amp; <>& \*\{\}\[\]\(\)\#\+\-\.\!\`\_; Link [http://127\.0\.0\.1/](http://127.0.0.1/) ##
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef):  [&lt;PT&gt;Type](#user-content-typedef-8b318acb), [&lt;A&gt;Foo&lt;B&gt;Bar](#user-content-typedef-3bb96b9), [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f), [&lt;PT&gt;Action](#user-content-typedef-33725a81), [&lt;PT&gt;Predicate](#user-content-typedef-d7c73930)
@@ -46,12 +46,6 @@ pre: &amp;lt;&amp;gt;&amp;amp; &lt;&gt;&amp; \*{}[]()#+-.!`_
 image: \!\[&lt;&gt;&amp; <>& \*\{\}\[\]\(\)\#\+\-\.\!\_\`\]\(foo\.c\)\.
 
 link: \[&lt;&gt;&amp; <>& \*\{\}\[\]\(\)\#\+\-\.\!\`\_\]\(foo\.c\)\.
-
-\# &lt;&gt;&amp; <>& \*\{\}\[\]\(\)\#\+\-\.\!\`\_ \#
-
-\#\# &lt;&gt;&amp; <>& \*\{\}\[\]\(\)\#\+\-\.\!\`\_ \#\#
-
-\#\#\# &lt;&gt;&amp; <>& \*\{\}\[\]\(\)\#\+\-\.\!\`\_ \#\#\#
 
 
 

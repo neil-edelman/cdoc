@@ -13,7 +13,7 @@ text
  \* png: ![Ellen Ripley](../diagrams/Ellen_Ripley_badass.png).
  \* jpeg: ![Inigo Montoya](../diagrams/Inigo_Montoya.jpeg).
 
- @subtitle The Subtitle
+ @subtitle The Subtitle &lt;&gt;&amp; <>& \*{}[]()#+-.!\`\_
  @depend C89
  @author Somebody
  @author Nobody
@@ -37,12 +37,6 @@ text
  image: ![&lt;&gt;&amp; <>& \*{}[]()#+-.!\_\`](foo.c).
  
  link: [&lt;&gt;&amp; <>& \*{}[]()#+-.!\`\_](foo.c).
- 
- # &lt;&gt;&amp; <>& \*{}[]()#+-.!\`\_ #
- 
- ## &lt;&gt;&amp; <>& \*{}[]()#+-.!\`\_ ##
- 
- ### &lt;&gt;&amp; <>& \*{}[]()#+-.!\`\_ ###
 
  */
 
