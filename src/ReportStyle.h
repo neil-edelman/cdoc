@@ -340,7 +340,7 @@ terminate_md:
 	return;
 
 raw_encode_print:
-	printf("RAW?%.*s", length, from);
+	printf("%.*s", length, from);
 	return;
 
 html_encode_print:
