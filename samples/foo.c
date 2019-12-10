@@ -34,7 +34,7 @@ text
  
  \* list: <>&\*{}[]()#+-.!`_` &lt;&gt;&amp; \<\>\&\\\*\{\}\[\]\(\)\#\+\-\.\!\`\_
  
- image: \*{}[]()#+-.!`_` &lt;&gt;&amp; \<\>\&\\\*\{\}\[\]\(\)\#\+\-\.\!\`\_ ![<>&](../diagrams/Ellen_Ripley_badass.png).
+ image: \*{}[]()#+-.!`_` &lt;&gt;&amp; \<\>\&\\\*\{\}\[\]\(\)\#\+\-\.\!\`\_ ![<>&!](../diagrams/Ellen_Ripley_badass.png).
  
  link: [<>&\*{}[]()#+-.!`_` &lt;&gt;&amp; \<\>\&\\\*\{\}\[\]\(\)\#\+\-\.\!\`\_](foo.c).
 
@@ -46,6 +46,8 @@ text
  Code does not accept entities; escapes all
  
  Em accepts entities; accept <>&; accepts backslash
+ 
+ Image accepts <>& and doesn't change.
  
  */
 
