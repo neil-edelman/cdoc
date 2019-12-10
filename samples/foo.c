@@ -47,7 +47,9 @@ text
  
  Em accepts entities; accept <>&; accepts backslash
  
- Image/link accepts html entities but doesn't accept ()[]{}.
+ Image/link accepts html entities but doesn't accept ()[]{}, but does \(\).
+ 
+ Pre is not working.
  
  */
 

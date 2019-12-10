@@ -1,6 +1,6 @@
  # foo\.c #
 
- ## The Subtitle <>&\*\{\}\[\]\(\)\#\+\-\.\!`\_` &lt;&gt;&amp; <>\\&\\\*\\\{\\\}\[\]\\\(\\\)\\\#\\\+\\\-\\\.\!\`\_; Link [http://127\.0\.0\.1/](http://127.0.0.1/) ##
+ ## The Subtitle <>&\*\{\}\[\]\(\)\#\+\-\.\!`` &lt;&gt;&amp; <>\\&\\\*\\\{\\\}\[\]\\\(\\\)\\\#\\\+\\\-\\\.\!\`\_; Link [http://127\.0\.0\.1/](http://127.0.0.1/) ##
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef):  [&lt;PT&gt;Type](#user-content-typedef-8b318acb), [&lt;A&gt;Foo&lt;B&gt;Bar](#user-content-typedef-3bb96b9), [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f), [&lt;PT&gt;Action](#user-content-typedef-33725a81), [&lt;PT&gt;Predicate](#user-content-typedef-d7c73930)
@@ -33,17 +33,17 @@ This is preformated &lt;http://foo.com/&gt;*
 
 pre***
 
-para: <>&\*\{\}\[\]\(\)\#\+\-\.\!`\_` &lt;&gt;&amp; <>\\&\\\*\\\{\\\}\[\]\\\(\\\)\\\#\\\+\\\-\\\.\!\`\_
+para: <>&\*\{\}\[\]\(\)\#\+\-\.\!`` &lt;&gt;&amp; <>\\&\\\*\\\{\\\}\[\]\\\(\\\)\\\#\\\+\\\-\\\.\!\`\_
 
-code: `<>&\*\{\}\[\]\(\)\#\+\-\.\!\_ &lt;&gt;&amp; <>\\&\\\*\\\{\\\}\[\]\\\(\\\)\\\#\\\+\\\-\\\.\!\_` \(cannot \`?\)
+code: `  ` \(cannot \`?\)
 
 em: _<>&\*\{\}\[\]\(\)\#\+\-\.\!\`&lt;&gt;&amp;<>\\&\\\*\\\{\\\}\[\]\\\(\\\)\\\#\\\+\\\-\\\.\!\`_ \(cannot \_?\)
 
 pre: &lt;&gt;&amp;\*{}[]()#+-.!`_` &amp;lt;&amp;gt;&amp;amp; \&lt;\&gt;\&amp;\\\*\{\}\[\]\(\)\#\+\-\.\!\`\_
 
- * list: <>&\*\{\}\[\]\(\)\#\+\-\.\!`\_` &lt;&gt;&amp; <>\\&\\\*\\\{\\\}\[\]\\\(\\\)\\\#\\\+\\\-\\\.\!\`\_
+ * list: <>&\*\{\}\[\]\(\)\#\+\-\.\!`` &lt;&gt;&amp; <>\\&\\\*\\\{\\\}\[\]\\\(\\\)\\\#\\\+\\\-\\\.\!\`\_
 
-image: \*\{\}\[\]\(\)\#\+\-\.\!`\_` &lt;&gt;&amp; <>\\&\\\*\\\{\\\}\[\]\\\(\\\)\\\#\\\+\\\-\\\.\!\`\_ ![&lt;&gt;&amp;*+-.!](../../diagrams/Ellen_Ripley_badass.png) \.
+image: \*\{\}\[\]\(\)\#\+\-\.\!`` &lt;&gt;&amp; <>\\&\\\*\\\{\\\}\[\]\\\(\\\)\\\#\\\+\\\-\\\.\!\`\_ ![&lt;&gt;&amp;*+-.!](../../diagrams/Ellen_Ripley_badass.png) \.
 
 link: [&lt;&gt;&amp;*#+-.!\(](../../samples/foo.c) \.
 
@@ -55,7 +55,9 @@ Code does not accept entities; escapes all
 
 Em accepts entities; accept <>&; accepts backslash
 
-Image/link accepts html entities but doesn't accept \(\)\[\]\{\}\.
+Image/link accepts html entities but doesn't accept \(\)\[\]\{\}, but does \\\(\\\)\.
+
+Pre is not working\.
 
 
 
@@ -83,7 +85,7 @@ There should be [fun1](#user-content-fn-407e96bd) to [fun7](#user-content-fn-3a7
 
 <code>typedef int <strong>&lt;PT&gt;Type</strong>;</code>
 
-Troubles with this line? check to ensure that `ARRAY\_TYPE` is a valid type, whose definition is placed above `\#include "Array\.h"` \.
+Troubles with this line? check to ensure that `` is a valid type, whose definition is placed above ` ` \.
 
 
 
@@ -107,7 +109,7 @@ Typedef\.
 
 <code>typedef void(*<strong>&lt;PT&gt;Action</strong>)(T *const data);</code>
 
-Typedef\. Operates by side\-effects on `data` only\.
+Typedef\. Operates by side\-effects on `` only\.
 
 
 
@@ -115,7 +117,7 @@ Typedef\. Operates by side\-effects on `data` only\.
 
 <code>typedef int(*<strong>&lt;PT&gt;Predicate</strong>)(const T *const data);</code>
 
-Typedef\. Given constant `data` , returns a boolean\.
+Typedef\. Given constant `` , returns a boolean\.
 
 
 
@@ -309,10 +311,10 @@ This is a foo\.
 
 <code>T <strong>fun5_</strong>(int(*<em>arg1_2</em>)(int arg1_3, int(*fn)(void)), Foo <em>arg2_3</em>, struct &lt;T&gt;Array <em>arg3_3</em>)</code>
 
-Function `arg1\_2` \. yo
+Function `` \. yo
 
  - Return:  
-   Function of `arg2\_2` \.
+   Function of `` \.
 
 
 
@@ -359,7 +361,7 @@ O\!\!\!\!
 
 <code>void <strong>fun7</strong>(char(*const <em>a</em>)[12], int(*<em>b</em>)(int a, int b), int(((<em>c</em>))))</code>
 
-Does nothing to `a` and `b` \.
+Does nothing to `` and `` \.
 
 
 
