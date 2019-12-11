@@ -92,7 +92,10 @@
  (needs buffering.)
  @fixme Eg, fixme with no args disappears; we should NOT check if the string is
  empty for these values.
- @fixme `foo.c:221`: space where it shouldn't be. Why? */
+ @fixme `foo.c:221`: space where it shouldn't be. Why?
+ @fixme pre needs to be investigated in md; it's not doing
+ "[fun1](#user-content-ATT_PARAM-407e96bd)" when link?
+ @fixme This needs to be fixed: Somebody, Nobody, (fixme: Cee: , fixme:)... */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
