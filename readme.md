@@ -24,8 +24,8 @@ Documentation commands are `/` `**…` \(together\) and are ended with `*…/` ,
  * `<tag:<tag>>` : struct, union, or enum \(tag\) reference;
  * `<typedef:<typedef>>` : typedef reference;
  * `<data:<identifier>>` : data reference;
- * `[The link text](url)` : link;
- * `![Caption text](url.image)` : image;
+ * `[The link text](url)` : link, Markdown doesn't like `{}[]()` in text;
+ * `![Caption text](url.image)` : image, same;
  * a local include directive has a documentation comment immediately after that reads only `\include` , it will also be included in the documentation\.
 
 Each\-block\-tags separate the documentation until the next paragraph or until the next each\-block\-tag, and specify a specific documentation structure\. Each\-block\-tags that overlap are concatenated in the file order\. Not all of these are applicable for all segments of text\. These are:
@@ -53,7 +53,7 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is specifically vi
  * Dependancies:  
    [re2c](http://re2c.org/)
  * Caveat:  
-   Old\-style function support\. Trigraph support, \(haha\.\) Hide `const` on params when it can not affect function calls\. Documentation on functions should be added to documentation on prototypes with the same \(similar\) prototype\. Links to non\-documented code which sometimes doesn't show up, work without error, and create broken links\. 80\-characters _per_ line limit, [https://xxyxyz\.org/line\-breaking/](https://xxyxyz.org/line-breaking/), \(needs buffering\.\) Eg, fixme with no args disappears; we should NOT check if the string is empty\. `foo.c:221` : space where it shouldn't be\. Why? @throws relax constriants on having something there\. Markdown doesn't allow any brackets within links/images but html does; provide a separate escape table? \(Not likely; no brackets\. Fixed\.\)
+   Old\-style function support\. Trigraph support, \(haha\.\) Hide `const` on params when it can not affect function calls\. Documentation on functions should be added to documentation on prototypes with the same \(similar\) prototype\. Links to non\-documented code which sometimes doesn't show up, work without error, and create broken links\. 80\-characters _per_ line limit, [https://xxyxyz\.org/line\-breaking/](https://xxyxyz.org/line-breaking/), \(needs buffering\.\) Eg, fixme with no args disappears; we should NOT check if the string is empty for these values\. `foo.c:221` : space where it shouldn't be\. Why?
 
 
  ## <a id = "user-content-summary" name = "user-content-summary">Function Summary</a> ##

@@ -39,8 +39,8 @@
  \* `\<tag:\<tag\>\>`: struct, union, or enum (tag) reference;
  \* `\<typedef:\<typedef\>\>`: typedef reference;
  \* `\<data:\<identifier\>\>`: data reference;
- \* `\[The link text\](url)`: link;
- \* `\!\[Caption text\](url.image)`: image;
+ \* `\[The link text\](url)`: link, Markdown doesn't like `{}[]()` in text;
+ \* `\!\[Caption text\](url.image)`: image, same;
  \* a local include directive has a documentation comment immediately
     after that reads only `\include`, it will also be included in the
     documentation.
@@ -91,10 +91,8 @@
  @fixme 80-characters _per_ line limit, <https://xxyxyz.org/line-breaking/>,
  (needs buffering.)
  @fixme Eg, fixme with no args disappears; we should NOT check if the string is
- empty.
- @fixme `foo.c:221`: space where it shouldn't be. Why?
- @fixme Markdown doesn't allow any brackets within links/images but html does;
- provide a separate escape table? (Not likely; no brackets. Fixed.) */
+ empty for these values.
+ @fixme `foo.c:221`: space where it shouldn't be. Why? */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
