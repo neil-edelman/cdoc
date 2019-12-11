@@ -1,3 +1,5 @@
+/** `Code`. */
+
 /** @license Lol I don't need a license.
 
  [This is

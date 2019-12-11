@@ -92,7 +92,6 @@
  (needs buffering.)
  @fixme Eg, fixme with no args disappears; we should NOT check if the string is
  empty for these values. Better yet, have a flag.
- @fixme `foo.c:221`: space where it shouldn't be. Why?
  @fixme pre needs to be investigated in md; it's not doing
  "[fun1](#user-content-ATT_PARAM-407e96bd)" when link?
  @fixme This needs to be fixed: Somebody, Nobody, (fixme: Cee: , fixme:)... */

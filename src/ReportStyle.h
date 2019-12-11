@@ -42,8 +42,8 @@ static const struct StyleText {
 		{ "html_li", "\t<li>", " ", "</li>\n", 0, 0, 0 },
 		{ "md_li", " * ", " ", "\n", 0, 0, 0 } },
 	{ { "raw_code", "", " ", "", 0, 0, 0 },
-		{ "html_code", "<code>", /*"&nbsp;"*/" ", "</code>", 0, 0, 0 },
-		{ "md_code", "`", " ", "`", 0, 1, OUT_RAW /* Really?? */ } },
+		{ "html_code", "<code>", " ", "</code>", 0, 0, 0 },
+		{ "md_code", "`", " ", "`", 0, 1, OUT_RAW /* Really? */ } },
 	{ { "raw_pre", "", "", "", 1, 0, 0 },
 		{ "html_pre", "<pre>\n", "", "</pre>\n\n", 1, 0, 0 },
 		{ "md_pre", "", "", "\n", 1, 1, OUT_HTML } },
@@ -150,14 +150,15 @@ static void style_push(const struct StyleText *const text) {
 }
 
 static void style_pop(void) {
-	struct Style *const pop = StyleArrayPop(&mode.styles),
-	*const top = StyleArrayPeek(&mode.styles);
+	/* The commented code: {a,b,c{d},c} -> {a,b,c{d}c} */
+	struct Style *const pop = StyleArrayPop(&mode.styles)/*,
+		*const top = StyleArrayPeek(&mode.styles)*/;
 	assert(pop);
 	/*printf("<!-- pop %s -->", pop->text->name);*/
 	if(pop->lazy == BEGIN) return;
 	/* Was used. */
 	fputs(pop->text->end, stdout);
-	if(top) assert(top->lazy != BEGIN), top->lazy = SEPARATE;
+	/*if(top) assert(top->lazy != BEGIN), top->lazy = SEPARATE;*/
 }
 
 /** Pops until the the element that is popped is a block element and can appear

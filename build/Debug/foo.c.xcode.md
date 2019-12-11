@@ -1,16 +1,18 @@
  # foo\.c #
 
- ## The Subtitle <>&\*\{\}\[\]\(\)\#\+\-\.\!`_` &lt;&gt;&amp; <>\\&\\\*\\\{\\\}\[\]\\\(\\\)\\\#\\\+\\\-\\\.\!\`\_; Link [http://127\.0\.0\.1/](http://127.0.0.1/) ##
+ ## The Subtitle <>&\*\{\}\[\]\(\)\#\+\-\.\!`_` &lt;&gt;&amp; <>\\&\\\*\\\{\\\}\[\]\\\(\\\)\\\#\\\+\\\-\\\.\!\`\_Link [http://127\.0\.0\.1/](http://127.0.0.1/) ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef):  [&lt;PT&gt;Type](#user-content-typedef-8b318acb), [&lt;A&gt;Foo&lt;B&gt;Bar](#user-content-typedef-3bb96b9), [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f), [&lt;PT&gt;Action](#user-content-typedef-33725a81), [&lt;PT&gt;Predicate](#user-content-typedef-d7c73930)
- * [Struct, Union, and Enum Definitions](#user-content-tag):  [Cee](#user-content-tag-68097f70), [Scanner](#user-content-tag-ace769e5), [Token](#user-content-tag-3a355bd2)
- * [General Declarations](#user-content-data):  [Cee](#user-content-data-68097f70), [y](#user-content-data-fc0c4ef4), [foo](#user-content-data-a9f37ed7), [c](#user-content-data-e60c2c52), [&lt;T&gt;foo](#user-content-data-80b9524b)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;Type](#user-content-typedef-8b318acb)[&lt;A&gt;Foo&lt;B&gt;Bar](#user-content-typedef-3bb96b9)[&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f)[&lt;PT&gt;Action](#user-content-typedef-33725a81)[&lt;PT&gt;Predicate](#user-content-typedef-d7c73930)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [Cee](#user-content-tag-68097f70)[Scanner](#user-content-tag-ace769e5)[Token](#user-content-tag-3a355bd2)
+ * [General Declarations](#user-content-data): [Cee](#user-content-data-68097f70)[y](#user-content-data-fc0c4ef4)[foo](#user-content-data-a9f37ed7)[c](#user-content-data-e60c2c52)[&lt;T&gt;foo](#user-content-data-80b9524b)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
 
  ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
+
+`Code`\.
 
 [This is text &amp;&amp;](http://yo.c) Header\. Yo [http://foo\.org/](http://foo.org/) [MIT](https://mit.edu/)
 
@@ -18,10 +20,10 @@
  * Links to entities: [&lt;T&gt;fun4](#user-content-fn-ebe4b0f2), [y](#user-content-data-fc0c4ef4)\.
  * Broken: [not_fn](#user-content-fn-9ab2437f), [&lt;T&gt;not_fn](#user-content-fn-afc45f23)\.
  * Citation [ÀæĔge2007](https://scholar.google.ca/scholar?q=%C3%80%C3%A6%C4%94ge2007)\.
- * [absolute](http://arr.com/index.html#ddddd<u>sfdg) \.
- * [relative](../../samples/foo.h) [relative](../../src/Cdoc.c.re) \.
- * png: ![Ellen Ripley](../../diagrams/Ellen_Ripley_badass.png) \.
- * jpeg: ![Inigo Montoya](../../diagrams/Inigo_Montoya.jpeg) \.
+ * [absolute](http://arr.com/index.html#ddddd<u>sfdg)\.
+ * [relative](../../samples/foo.h) [relative](../../src/Cdoc.c.re)\.
+ * png: ![Ellen Ripley](../../diagrams/Ellen_Ripley_badass.png)\.
+ * jpeg: ![Inigo Montoya](../../diagrams/Inigo_Montoya.jpeg)\.
 
 Escapes\. \\ \` @ \_ \` This is not prefomated\.
 
@@ -43,9 +45,9 @@ pre: &lt;&gt;&amp;\*{}[]()#+-.!`_` &amp;lt;&amp;gt;&amp;amp; \&lt;\&gt;\&amp;\\\
 
  * list: <>&\*\{\}\[\]\(\)\#\+\-\.\!`_` &lt;&gt;&amp; <>\\&\\\*\\\{\\\}\[\]\\\(\\\)\\\#\\\+\\\-\\\.\!\`\_
 
-image: \*\{\}\[\]\(\)\#\+\-\.\!`_` &lt;&gt;&amp; <>\\&\\\*\\\{\\\}\[\]\\\(\\\)\\\#\\\+\\\-\\\.\!\`\_ ![&lt;&gt;&amp;*+-.!](../../diagrams/Ellen_Ripley_badass.png) \.
+image: \*\{\}\[\]\(\)\#\+\-\.\!`_` &lt;&gt;&amp; <>\\&\\\*\\\{\\\}\[\]\\\(\\\)\\\#\\\+\\\-\\\.\!\`\_ ![&lt;&gt;&amp;*+-.!](../../diagrams/Ellen_Ripley_badass.png)\.
 
-link: [&lt;&gt;&amp;*#+-.!\(](../../samples/foo.c) \.
+link: [&lt;&gt;&amp;*#+-.!\(](../../samples/foo.c)\.
 
 Headings accept html entities; accept <>&; accept backslash escapes; normal code\-em; but if enclosed in html, transfer to html\.
 
@@ -70,13 +72,13 @@ Header\. This is an ascii art comment\. Eww\.
 There should be [fun1](#user-content-fn-407e96bd) to [fun7](#user-content-fn-3a7e8d4b) and [main](#user-content-fn-ea90e208)\.
 
  * Author:  
-   Somebody, Nobody, ([Cee](#tag:Cee): , [fun2\_scan\_eof](#fn:fun2\_scan\_eof):  External Author, [fun3\_scan\_comment](#fn:fun3\_scan\_comment):  Prof\. Snape, [fun6](#fn:fun6):  Nobody, [fun6](#fn:fun6):  Sombody)
+   SomebodyNobody([Cee](#tag:Cee): [fun2\_scan\_eof](#fn:fun2\_scan\_eof): External Author[fun3\_scan\_comment](#fn:fun3\_scan\_comment): Prof\. Snape[fun6](#fn:fun6): Nobody[fun6](#fn:fun6): Sombody)
  * Standard:  
-   ([fun6](#fn:fun6):  C, [fun6](#fn:fun6):  Java)
+   ([fun6](#fn:fun6): C[fun6](#fn:fun6): Java)
  * Dependancies:  
-   C89, ([fun6](#fn:fun6):  Meh, [fun6](#fn:fun6):  Duh)
+   C89([fun6](#fn:fun6): Meh[fun6](#fn:fun6): Duh)
  * Caveat:  
-    ([Cee](#tag:Cee), [fun2\_scan\_eof](#fn:fun2\_scan\_eof), [fun6](#fn:fun6))
+   ([Cee](#tag:Cee)[fun2\_scan\_eof](#fn:fun2\_scan\_eof)[fun6](#fn:fun6))
 
 
  ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -85,7 +87,7 @@ There should be [fun1](#user-content-fn-407e96bd) to [fun7](#user-content-fn-3a7
 
 <code>typedef int <strong>&lt;PT&gt;Type</strong>;</code>
 
-Troubles with this line? check to ensure that `ARRAY_TYPE` is a valid type, whose definition is placed above `#include "Array.h"` \.
+Troubles with this line? check to ensure that `ARRAY_TYPE` is a valid type, whose definition is placed above `#include "Array.h"`\.
 
 
 
@@ -117,7 +119,7 @@ Typedef\. Operates by side\-effects on `data` only\.
 
 <code>typedef int(*<strong>&lt;PT&gt;Predicate</strong>)(const T *const data);</code>
 
-Typedef\. Given constant `data` , returns a boolean\.
+Typedef\. Given constant `data`, returns a boolean\.
 
 
 
@@ -311,10 +313,10 @@ This is a foo\.
 
 <code>T <strong>fun5_</strong>(int(*<em>arg1_2</em>)(int arg1_3, int(*fn)(void)), Foo <em>arg2_3</em>, struct &lt;T&gt;Array <em>arg3_3</em>)</code>
 
-Function `arg1_2` \. yo
+Function `arg1_2`\. yo
 
  - Return:  
-   Function of `arg2_2` \.
+   Function of `arg2_2`\.
 
 
 
@@ -332,27 +334,27 @@ O\!\!\!\!
 
 
  - Parameter: _oy_  
-   Nothing\. Maybe something\.
+   Nothing\.Maybe something\.
  - Parameter: _vey_  
    Nothing\.
  - Return:  
-   No\. Way\.
+   No\.Way\.
  - Implements:  
-   Foo, Bar
+   FooBar
  - Exceptional return: AUGH, OY  
    Bad\.
  - Exceptional return: RUN, AWAY  
    Ohno\.
  - Author:  
-   Nobody, Sombody
+   NobodySombody
  - Standard:  
-   C; Java
+   CJava
  - Dependancies:  
-   Meh; Duh
+   MehDuh
  - Caveat:  
-   Ohoh\. Ohno\.
+   Ohoh\.Ohno\.
  - License:  
-   No\. Way\.
+   No\.Way\.
 
 
 
@@ -361,7 +363,7 @@ O\!\!\!\!
 
 <code>void <strong>fun7</strong>(char(*const <em>a</em>)[12], int(*<em>b</em>)(int a, int b), int(((<em>c</em>))))</code>
 
-Does nothing to `a` and `b` \.
+Does nothing to `a` and `b`\.
 
 
 
@@ -379,7 +381,7 @@ Lol I don't need a license\.
 
 No\.
 
-(See license details [fun2\_scan\_eof](#fn:fun2\_scan\_eof), [fun3\_scan\_comment](#fn:fun3\_scan\_comment), [fun6](#fn:fun6).)
+(See license details [fun2\_scan\_eof](#fn:fun2\_scan\_eof)[fun3\_scan\_comment](#fn:fun3\_scan\_comment)[fun6](#fn:fun6).)
 
 
 
