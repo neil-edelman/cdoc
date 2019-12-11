@@ -150,15 +150,11 @@ static void style_push(const struct StyleText *const text) {
 }
 
 static void style_pop(void) {
-	/* The commented code: {a,b,c{d},c} -> {a,b,c{d}c} */
-	struct Style *const pop = StyleArrayPop(&mode.styles)/*,
-		*const top = StyleArrayPeek(&mode.styles)*/;
+	struct Style *const pop = StyleArrayPop(&mode.styles);
 	assert(pop);
 	/*printf("<!-- pop %s -->", pop->text->name);*/
-	if(pop->lazy == BEGIN) return;
 	/* Was used. */
-	fputs(pop->text->end, stdout);
-	/*if(top) assert(top->lazy != BEGIN), top->lazy = SEPARATE;*/
+	if(pop->lazy != BEGIN) fputs(pop->text->end, stdout);
 }
 
 /** Pops until the the element that is popped is a block element and can appear
