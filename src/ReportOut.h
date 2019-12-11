@@ -624,6 +624,7 @@ static void segment_att_print_all(const struct Segment *const segment,
 	struct Attribute *attribute = 0;
 	assert(segment);
 	if(!show) return;
+	fprintf(stderr, "segment_att_print_all segment %s and symbol %s: %s.\n", divisions[segment->division], symbols[symbol], StyleArrayToString(&mode.styles));
 	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
 		size_t *pindex;
 		if(attribute->token.symbol != symbol
@@ -644,6 +645,7 @@ static void segment_att_print_all(const struct Segment *const segment,
 					print_token(&segment->code, token);
 					printf("</a>");
 				} else {
+					/* fixme: this is wrong. */
 					printf("[");
 					print_token(&segment->code, token);
 					printf("](#%s:", division_strings[segment->division]);
@@ -665,8 +667,8 @@ static void segment_att_print_all(const struct Segment *const segment,
 }
 
 /** For each `division` segment, print all attributes that match `symbol`.
- @param[is_where] Prints where is is.
- @param[is_text] Prints the text. */
+ @param[div_pred] If specified, only prints when it returns true.
+ @param[symbol, show] Passed to <fn:segment_att_print_all>. */
 static void div_att_print(const DivisionPredicate div_pred,
 	const enum Symbol symbol, const enum AttShow show) {
 	struct Segment *segment = 0;
@@ -745,6 +747,8 @@ static void dl_segment_att(const struct Segment *const segment,
 	style_push(&styles[ST_DD][format]), style_push(style),
 		style_push(&plain_text);
 	segment_att_print_all(segment, attribute, match, SHOW_TEXT);
+	/* fixme */
+	fprintf(stderr, "dl_segment_att for %s: %s.\n", symbols[attribute], StyleArrayToString(&mode.styles));
 	style_pop(), style_pop(), style_pop();
 }
 
@@ -754,7 +758,7 @@ static void dl_preamble_att(const enum Symbol attribute,
 	const enum AttShow show, const struct StyleText *const style) {
 	const enum Format format = effective_format();
 	assert(style);
-	/* `style_title` is static in `Styles.h`. */
+	/* `style_title` is static in `Styles.h`. Hack. */
 	if(format == OUT_HTML) sprintf(style_title, "\t<dt>%.128s:</dt>\n"
 		"\t<dd>", symbol_attribute_titles[attribute]);
 	else sprintf(style_title, " * %.128s:  \n   ",
@@ -765,6 +769,8 @@ static void dl_preamble_att(const enum Symbol attribute,
 	style_pop(), style_push(&plain_parenthetic), style_push(&plain_csv),
 	style_push(&plain_text);
 	div_att_print(&is_not_div_preamble, attribute, show);
+	/* fixme */
+	fprintf(stderr, "dl_preamble_att for %s: %s.\n", symbols[attribute], StyleArrayToString(&mode.styles));
 	style_pop(), style_pop(), style_pop(), style_pop(), style_pop();
 }
 

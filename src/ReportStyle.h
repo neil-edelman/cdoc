@@ -9,7 +9,7 @@ static const int symbol_after_sep[]  = { SYMBOL(PARAM6E) };
 #define HTML_LT  "&lt;"
 
 /* Hack `sprintf` titles. They never go this big and are internal. */
-static char style_title[128];
+static char style_title[256];
 
 /* Every `StyleText` can have a beginning, a separator, and an end, which will
  be printed around literals. Block and can appear alone elements have
@@ -142,7 +142,7 @@ static void style_push(const struct StyleText *const text) {
 	assert(text);
 	/* There's so many void functions that rely on this function and it's such
 	 a small amount of memory, that it's useless to recover. The OS will have
-	 to clean up our mess. */
+	 to clean up our mess. Hack. */
 	if(!push) { unrecoverable(); return; }
 	/*printf("<!-- push %s -->", text->name);*/
 	push->text = text;
@@ -150,11 +150,14 @@ static void style_push(const struct StyleText *const text) {
 }
 
 static void style_pop(void) {
-	struct Style *const pop = StyleArrayPop(&mode.styles);
+	struct Style *const pop = StyleArrayPop(&mode.styles),
+		*const top = StyleArrayPeek(&mode.styles);
 	assert(pop);
 	/*printf("<!-- pop %s -->", pop->text->name);*/
-	/* Was used. */
-	if(pop->lazy != BEGIN) fputs(pop->text->end, stdout);
+	if(pop->lazy == BEGIN) return;
+	fputs(pop->text->end, stdout);
+	/* There has been an ITEM, just encased in another level. */
+	if(top) top->lazy = SEPARATE;
 }
 
 /** Pops until the the element that is popped is a block element and can appear
