@@ -26,7 +26,8 @@ static int attribute_okay(const struct Attribute *const attribute) {
 	case ATT_RETURN:
 	case ATT_IMPLEMENTS:
 	case ATT_ORDER:
-	case ATT_LICENSE: return attribute_use(attribute, 0, 1, 1);
+	case ATT_LICENSE:
+	case ATT_CF: return attribute_use(attribute, 0, 1, 1);
 	case ATT_FIXME: return attribute_use(attribute, 0, 0, 1);
 	case ATT_ALLOW: return attribute_use(attribute, 0, 1, 0); /* Or full. */
 	default: assert((fprintf(stderr, "Not recognised.\n"), 0)); return 0;

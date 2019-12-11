@@ -22,6 +22,10 @@ text
  @license No.
  @fixme
 
+ @cf
+ @cf [foo.h](foo.h)
+ @cf [foo.c](foo.c)
+ 
  Escapes. \\ \` \@ \_ \`
  This is not prefomated. \" This is preformated <http://foo.com/>*
  \"  

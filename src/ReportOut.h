@@ -999,6 +999,7 @@ static void segment_print_all(const struct Segment *const segment) {
 	dl_segment_att(segment, ATT_DEPEND, 0, &plain_ssv);
 	dl_segment_att(segment, ATT_FIXME, 0, &plain_text);
 	dl_segment_att(segment, ATT_LICENSE, 0, &plain_text);
+	dl_segment_att(segment, ATT_CF, 0, &plain_ssv);
 	style_pop_level(); /* dl */
 	style_pop_level(); /* div */
 }
@@ -1124,6 +1125,7 @@ int ReportOut(void) {
 		dl_preamble_att(ATT_STD, SHOW_ALL, &plain_csv);
 		dl_preamble_att(ATT_DEPEND, SHOW_ALL, &plain_csv);
 		dl_preamble_att(ATT_FIXME, SHOW_WHERE, &plain_text);
+		dl_preamble_att(ATT_CF, SHOW_ALL, &plain_ssv);
 		/* `ATT_RETURN`, `ATT_THROWS`, `ATT_IMPLEMENTS`, `ATT_ORDER`,
 		 `ATT_ALLOW` have warnings. `ATT_LICENSE` is below. */
 		style_pop_level();

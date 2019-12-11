@@ -79,6 +79,8 @@ There should be [fun1](#user-content-fn-407e96bd) to [fun7](#user-content-fn-3a7
    C89([fun6](#fn:fun6): Meh[fun6](#fn:fun6): Duh)
  * Caveat:  
    ([Cee](#tag:Cee)[fun2\_scan\_eof](#fn:fun2\_scan\_eof)[fun6](#fn:fun6))
+ * See also:  
+   [foo.h](../../samples/foo.h)[foo.c](../../samples/foo.c)
 
 
  ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
