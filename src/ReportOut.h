@@ -737,7 +737,7 @@ static void print_custom_heading_fragment_for(const char *const division,
 	const char *const desc) {
 	const enum Format f = effective_format();
 	/* "*.0s" does not work on all libraries? */
-	const char *const fmt_html "[%s](#%s:)", *const fmt_md = "[%s](#%s%s)";
+	const char *const fmt_html = "[%s](#%s:)", *const fmt_md = "[%s](#%s%s)";
 	const size_t fmt_len = (f == OUT_HTML)
 		? strlen("[](#:)") + strlen(desc) + strlen(division)
 		: strlen("[](#)") + strlen(desc) + strlen(md_fragment_extra)
