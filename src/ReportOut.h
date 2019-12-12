@@ -735,16 +735,19 @@ static void print_fragment_for(const enum Division d, const char *const label) {
 
 static void print_custom_heading_fragment_for(const char *const division,
 	const char *const desc) {
-	const char *const fmt
-		= (effective_format() == OUT_HTML) ? "[%s](#%.0s%s:)" : "[%s](#%s%s)";
-	/* fixme: snprintf is not defined in C89. */
-	const size_t size = snprintf(0, 0, fmt, desc, md_fragment_extra, division);
+	const enum Format f = effective_format();
+	const char *const fmt = (f == OUT_HTML) ? "[%s](#%.0s%s:)" : "[%s](#%s%s)";
+	const size_t fmt_len = (f == OUT_HTML)
+		? strlen("[](#:)") + strlen(division)
+		: strlen("[](#)") + strlen(md_fragment_extra) + strlen(division);
+	size_t len;
 	char *b;
-	assert(division && desc && size > 0);
+	assert(division && desc);
 	BufferClear();
-	if(!(b = BufferPrepare(size)))
+	if(!(b = BufferPrepare(fmt_len)))
 		{ perror(division); unrecoverable(); return; }
-	sprintf(b, fmt, desc, md_fragment_extra, division);
+	len = sprintf(b, fmt, desc, md_fragment_extra, division);
+	assert(len == fmt_len);
 	scan_doc_string(b);
 }
 
