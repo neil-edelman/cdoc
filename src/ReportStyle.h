@@ -244,8 +244,9 @@ static int effective_format_pop(const int will_be_popped) {
 	const enum Format f = CdocGetFormat();
 	/* If the style will be popped, don't include it. */
 	if(will_be_popped) style = StyleArrayBack(&mode.styles, style);
+	/*fprintf(stderr, "%s suppresses escapes.\n", StyleArrayToString(&mode.styles)),*/
 	while((style = StyleArrayBack(&mode.styles, style)))
-		if(style->text->is_to) return /*fprintf(stderr, "%s suppresses escapes.\n", StyleArrayToString(&mode.styles)),*/ style->text->to_format;
+		if(style->text->is_to) return style->text->to_format;
 	return f;
 }
 

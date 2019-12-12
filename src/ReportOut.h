@@ -67,30 +67,29 @@ OUT(lit) {
 OUT(gen1) {
 	const struct Token *const t = *ptoken,
 		*const lparen = TokenArrayNext(tokens, t),
-		*const param = TokenArrayNext(tokens, lparen),
-		*const rparen = TokenArrayNext(tokens, param);
-	const char *b, *type;
-	int type_size;
+		*const param1 = TokenArrayNext(tokens, lparen),
+		*const rparen = TokenArrayNext(tokens, param1);
+	const char *b, *type1;
+	int type1_size;
 	const enum Format f = effective_format();
 	const char *const format =
 		f == OUT_HTML ? HTML_LT "%.*s" HTML_GT "%.*s" : "<%.*s>%.*s";
 	assert(tokens && t && t->symbol == ID_ONE_GENERIC);
-	if(!lparen || lparen->symbol != LPAREN || !param || !rparen
+	if(!lparen || lparen->symbol != LPAREN || !param1 || !rparen
 		|| rparen->symbol != RPAREN) goto catch;
-	type = t->from;
-	if(!(b = strchr(type, '_'))) goto catch;
-	type_size = (int)(b - type);
+	type1 = t->from;
+	if(!(b = strchr(type1, '_'))) goto catch;
+	type1_size = (int)(b - type1);
 	assert(t->length == b + 1 - t->from);
 	if(is_buffer) {
-		size_t len;
+		const char *const ltgt = f == OUT_HTML ? HTML_LT HTML_GT : "<>";
 		char *a;
-		/* fixme: snprintf is not defined in C89. */
-		if((len = snprintf(0, 0, format, t->length - 1, t->from, param->length,
-			param->from)) <= 0 || !(a = BufferPrepare(len))) return 0;
-		sprintf(a, format, t->length - 1, t->from, param->length, param->from);
+		if(!(a = BufferPrepare(strlen(ltgt)
+			+ type1_size + param1->length))) return 0;		
+		sprintf(a, format, type1_size, type1, param1->length, param1->from);
 	} else {
 		style_prepare_output(t->symbol);
-		printf(format, t->length - 1, t->from, param->length, param->from);
+		printf(format, type1_size, type1, param1->length, param1->from);
 	}
 	*ptoken = TokenArrayNext(tokens, rparen);
 	return 1;
@@ -123,12 +122,10 @@ OUT(gen2) {
 	type2_size = (int)(b - type2);
 	assert(t->length == b + 1 - t->from);
 	if(is_buffer) {
-		size_t len;
+		const char *const ltgt = f == OUT_HTML ? HTML_LT HTML_GT : "<>";
 		char *a;
-		/* fixme: snprintf is not defined in C89. */
-		if((len = snprintf(0, 0, format, type1_size, type1, param1->length,
-			param1->from, type2_size, type2, param2->length, param2->from)) <= 0
-			|| !(a = BufferPrepare(len))) return 0;
+		if(!(a = BufferPrepare(2 * strlen(ltgt) + type1_size + param1->length
+			+ type2_size + param2->length))) return 0;
 		sprintf(a, format, type1_size, type1, param1->length, param1->from,
 			type2_size, type2, param2->length, param2->from);
 	} else {
@@ -173,13 +170,11 @@ OUT(gen3) {
 	type3_size = (int)(b - type3);
 	assert(t->length == b + 1 - t->from);
 	if(is_buffer) {
-		size_t len;
+		const char *const ltgt = f == OUT_HTML ? HTML_LT HTML_GT : "<>";
 		char *a;
-		/* fixme: snprintf is not defined in C89. */
-		if((len = snprintf(0, 0, format, type1_size, type1, param1->length,
-			param1->from, type2_size, type2, param2->length, param2->from,
-			type3_size, type3, param3->length, param3->from)) <= 0
-			|| !(a = BufferPrepare(len))) return 0;
+		if(!(a = BufferPrepare(3 * strlen(ltgt) + type1_size + param1->length
+			+ type2_size + param2->length
+			+ type3_size + param3->length))) return 0;
 		sprintf(a, format, type1_size, type1, param1->length, param1->from,
 			type2_size, type2, param2->length, param2->from, type3_size, type3,
 			param3->length, param3->from);
@@ -604,8 +599,6 @@ static int is_not_div_preamble(const enum Division d) {
 	return d != DIV_PREAMBLE;
 }
 
-
-
 /** @return The first token in `tokens` that matches `token`. */
 static const struct Token *any_token(const struct TokenArray *const tokens,
 	const struct Token *const token) {
@@ -614,81 +607,6 @@ static const struct Token *any_token(const struct TokenArray *const tokens,
 		if(!token_compare(token, t)) return t;
 	return 0;
 }
-
-/** Functions as a bit-vector. */
-enum AttShow { SHOW_NONE, SHOW_WHERE, SHOW_TEXT, SHOW_ALL };
-
-static void segment_att_print_all(const struct Segment *const segment,
-	const enum Symbol symbol, const struct Token *const match,
-	const enum AttShow show) {
-	struct Attribute *attribute = 0;
-	assert(segment);
-	if(!show) return;
-	fprintf(stderr, "segment_att_print_all segment %s and symbol %s: %s.\n", divisions[segment->division], symbols[symbol], StyleArrayToString(&mode.styles));
-	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
-		size_t *pindex;
-		if(attribute->token.symbol != symbol
-			|| (match && !any_token(&attribute->header, match))) continue;
-		style_string_output();
-		if(show & SHOW_WHERE) {
-#if 1
-			if((pindex = IndexArrayNext(&segment->code_params, 0))
-				&& *pindex < TokenArraySize(&segment->code)) {
-				#if 1
-				const struct Token *token
-					= TokenArrayGet(&segment->code) + *pindex;
-				style_push(&no_style);
-				#if 0
-				/* fixme: didn't I already do this? */
-				if(effective_format() == OUT_HTML) {
-					#if 0
-					printf("<a href = \"#%s:",
-						division_strings[segment->division]);
-					print_token(&segment->code, token);
-					printf("\">");
-					print_token(&segment->code, token);
-					printf("</a>");
-					#endif
-				} else {
-					#if 0
-					/* fixme: this is wrong. */
-					printf("[");
-					print_token(&segment->code, token);
-					printf("](#%s:", division_strings[segment->division]);
-					print_token(&segment->code, token);
-					printf(")");
-					#endif
-				}
-				#endif
-				style_pop();
-				#endif
-			} else {
-				printf("%s", division_strings[segment->division]);
-			}
-#endif
-		}
-		if(show == SHOW_ALL) fputs(": ", stdout);
-		if(show & SHOW_TEXT) print_tokens(&attribute->contents);
-		style_pop_push();
-		/* Only do one if `SHOW_TEXT` is not set; in practice, this affects
-		 license, only showing one _per_ function. */
-		if(!(show & SHOW_TEXT)) break;
-	}
-}
-
-/** For each `division` segment, print all attributes that match `symbol`.
- @param[div_pred] If specified, only prints when it returns true.
- @param[symbol, show] Passed to <fn:segment_att_print_all>. */
-static void div_att_print(const DivisionPredicate div_pred,
-	const enum Symbol symbol, const enum AttShow show) {
-	struct Segment *segment = 0;
-	if(!show) return;
-	while((segment = SegmentArrayNext(&report, segment)))
-		if(!div_pred || div_pred(segment->division))
-		segment_att_print_all(segment, symbol, 0, show);
-}
-
-
 
 /** @return If there exist an `attribute_symbol` with content within
  `segment`. */
@@ -739,70 +657,6 @@ static int segment_attribute_match_exists(const struct Segment *const segment,
 		if(any_token(&attribute->header, match)) return 1;
 	}
 	return 0;
-}
-
-static void dl_segment_att(const struct Segment *const segment,
-	const enum Symbol attribute, const struct Token *match,
-	const struct StyleText *const style) {
-	const enum Format format = effective_format();
-	assert(segment && attribute && style);
-	if((match && !segment_attribute_match_exists(segment, attribute, match))
-		|| (!match && !segment_attribute_exists(segment, attribute))) return;
-	style_push(&styles[ST_DT][format]), style_push(&plain_text);
-	style_string_output();
-	printf("%s:", symbol_attribute_titles[attribute]);
-	if(match) style_separate(), style_push(&styles[ST_EM][format]),
-		print_token(&segment->code, match), style_pop();
-	style_pop(), style_pop();
-	style_push(&styles[ST_DD][format]), style_push(style),
-		style_push(&plain_text);
-	segment_att_print_all(segment, attribute, match, SHOW_TEXT);
-	/* fixme */
-	fprintf(stderr, "dl_segment_att for %s: %s.\n", symbols[attribute], StyleArrayToString(&mode.styles));
-	style_pop(), style_pop(), style_pop();
-}
-
-/** This is used in preamble for attributes inside a `dl`.
- @param[is_recursive]  */
-static void dl_preamble_att(const enum Symbol attribute,
-	const enum AttShow show, const struct StyleText *const style) {
-	const enum Format format = effective_format();
-	assert(style);
-	/* `style_title` is static in `Styles.h`. Hack. */
-	/*if(format == OUT_HTML) sprintf(style_title, "\t<dt>%.128s:</dt>\n"
-		"\t<dd>", symbol_attribute_titles[attribute]);
-	else sprintf(style_title, " * %.128s:  \n   ",
-		symbol_attribute_titles[attribute]);*/
-	fprintf(stderr, "A %s\n", StyleArrayToString(&mode.styles));
-	style_push(&styles[ST_DESC][format]), fprintf(stderr, "Ab %s\n", StyleArrayToString(&mode.styles)), style_push(style),
-		style_push(&plain_text);
-	div_att_print(&is_div_preamble, attribute, SHOW_TEXT);
-	style_pop(), style_push(&plain_parenthetic), style_push(&plain_csv),
-	style_push(&plain_text);
-	div_att_print(&is_not_div_preamble, attribute, show);
-	/* fixme */
-	fprintf(stderr, "dl_preamble_att for %s: %s.\n", symbols[attribute], StyleArrayToString(&mode.styles));
-	style_pop(), style_pop(), style_pop(), style_pop(), style_pop();
-}
-
-static void dl_segment_specific_att(const struct Attribute *const attribute) {
-	const enum Format format = effective_format();
-	assert(attribute);
-	style_push(&styles[ST_DT][format]), style_push(&plain_text);
-	style_string_output();
-	printf("%s:", symbol_attribute_titles[attribute->token.symbol]);
-	if(TokenArraySize(&attribute->header)) {
-		const struct Token *token = 0;
-		style_separate();
-		style_push(&plain_csv);
-		while((token = TokenArrayNext(&attribute->header, token)))
-			print_token(&attribute->header, token), style_separate();
-		style_pop();
-	}
-	style_pop(), style_pop();
-	style_push(&styles[ST_DD][format]), style_push(&plain_text);
-	print_tokens(&attribute->contents);
-	style_pop(), style_pop();
 }
 
 static void print_best_guess_at_modifiers(const struct Segment *const segment) {
@@ -952,6 +806,119 @@ static void print_toc_extra(const enum Division d) {
 		print_fragment_for(d, b);
 		style_pop_push();
 	}
+	style_pop(), style_pop();
+}
+
+
+
+/** Functions as a bit-vector. */
+enum AttShow { SHOW_NONE, SHOW_WHERE, SHOW_TEXT, SHOW_ALL };
+
+static void segment_att_print_all(const struct Segment *const segment,
+	const enum Symbol symbol, const struct Token *const match,
+	const enum AttShow show) {
+	struct Attribute *attribute = 0;
+	assert(segment);
+	if(!show) return;
+	fprintf(stderr, "segment_att_print_all segment %s and symbol %s: %s.\n", divisions[segment->division], symbols[symbol], StyleArrayToString(&mode.styles));
+	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
+		size_t *pindex;
+		if(attribute->token.symbol != symbol
+		   || (match && !any_token(&attribute->header, match))) continue;
+		style_string_output();
+		if(show & SHOW_WHERE) {
+			if((pindex = IndexArrayNext(&segment->code_params, 0))
+			   && *pindex < TokenArraySize(&segment->code)) {
+				const struct Token *token
+					= TokenArrayGet(&segment->code) + *pindex;
+				print_fragment_for(segment->division,
+					print_token_s(&segment->code, token));
+			} else {
+				printf("%s", division_strings[segment->division]);
+			}
+		}
+		if(show == SHOW_ALL) fputs(": ", stdout);
+		if(show & SHOW_TEXT) print_tokens(&attribute->contents);
+		/* Only do one if `SHOW_TEXT` is not set; in practice, this affects
+		 license, only showing one _per_ function. */
+		if(!(show & SHOW_TEXT)) break;
+		style_pop_push();
+	}
+}
+
+/** For each `division` segment, print all attributes that match `symbol`.
+ @param[div_pred] If specified, only prints when it returns true.
+ @param[symbol, show] Passed to <fn:segment_att_print_all>. */
+static void div_att_print(const DivisionPredicate div_pred,
+	const enum Symbol symbol, const enum AttShow show) {
+	struct Segment *segment = 0;
+	if(!show) return;
+	while((segment = SegmentArrayNext(&report, segment)))
+		if(!div_pred || div_pred(segment->division))
+			segment_att_print_all(segment, symbol, 0, show);
+}
+
+static void dl_segment_att(const struct Segment *const segment,
+	const enum Symbol attribute, const struct Token *match,
+	const struct StyleText *const style) {
+	const enum Format format = effective_format();
+	assert(segment && attribute && style);
+	if((match && !segment_attribute_match_exists(segment, attribute, match))
+	   || (!match && !segment_attribute_exists(segment, attribute))) return;
+	style_push(&styles[ST_DT][format]), style_push(&plain_text);
+	style_string_output();
+	printf("%s:", symbol_attribute_titles[attribute]);
+	if(match) style_separate(), style_push(&styles[ST_EM][format]),
+		print_token(&segment->code, match), style_pop();
+	style_pop(), style_pop();
+	style_push(&styles[ST_DD][format]), style_push(style),
+	style_push(&plain_text);
+	segment_att_print_all(segment, attribute, match, SHOW_TEXT);
+	/* fixme */
+	fprintf(stderr, "dl_segment_att for %s: %s.\n", symbols[attribute], StyleArrayToString(&mode.styles));
+	style_pop(), style_pop(), style_pop();
+}
+
+/** This is used in preamble for attributes inside a `dl`.
+ @param[is_recursive]  */
+static void dl_preamble_att(const enum Symbol attribute,
+	const enum AttShow show, const struct StyleText *const style) {
+	const enum Format format = effective_format();
+	assert(style);
+	/* `style_title` is static in `Styles.h`. Hack. */
+	/*if(format == OUT_HTML) sprintf(style_title, "\t<dt>%.128s:</dt>\n"
+	 "\t<dd>", symbol_attribute_titles[attribute]);
+	 else sprintf(style_title, " * %.128s:  \n   ",
+	 symbol_attribute_titles[attribute]);*/
+	fprintf(stderr, "A %s\n", StyleArrayToString(&mode.styles));
+	style_push(&styles[ST_DESC][format]), fprintf(stderr, "Ab %s\n", StyleArrayToString(&mode.styles)), style_push(style),
+	style_push(&plain_text);
+	div_att_print(&is_div_preamble, attribute, SHOW_TEXT);
+	style_pop(), style_push(&plain_parenthetic), style_push(&plain_csv),
+	style_push(&plain_text);
+	div_att_print(&is_not_div_preamble, attribute, show);
+	/* fixme */
+	fprintf(stderr, "dl_preamble_att for %s: %s.\n", symbols[attribute], StyleArrayToString(&mode.styles));
+	style_pop(), style_pop(), style_pop(), style_pop(), style_pop();
+}
+
+static void dl_segment_specific_att(const struct Attribute *const attribute) {
+	const enum Format format = effective_format();
+	assert(attribute);
+	style_push(&styles[ST_DT][format]), style_push(&plain_text);
+	style_string_output();
+	printf("%s:", symbol_attribute_titles[attribute->token.symbol]);
+	if(TokenArraySize(&attribute->header)) {
+		const struct Token *token = 0;
+		style_separate();
+		style_push(&plain_csv);
+		while((token = TokenArrayNext(&attribute->header, token)))
+			print_token(&attribute->header, token), style_separate();
+		style_pop();
+	}
+	style_pop(), style_pop();
+	style_push(&styles[ST_DD][format]), style_push(&plain_text);
+	print_tokens(&attribute->contents);
 	style_pop(), style_pop();
 }
 
