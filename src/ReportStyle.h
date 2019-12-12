@@ -141,20 +141,16 @@ static void style_push(const struct StyleText *const text) {
 	/*struct Style *const push = StyleArrayNew(&mode.styles);*/
 	struct Style *push;
 	assert(text);
-	fprintf(stderr, "style_push %s\n", StyleArrayToString(&mode.styles));
+	fprintf(stderr, "style_push before %s <- %s\n", StyleArrayToString(&mode.styles), text->name);
 	push = StyleArrayNew(&mode.styles);
 	/* There's so many void functions that rely on this function and it's such
 	 a small amount of memory, that it's useless to recover. The OS will have
 	 to clean up our mess. Hack. */
 	if(!push) { unrecoverable(); return; }
-	fprintf(stderr, "style before memset\n");
-	memset(push, 0, sizeof *push);
-	fprintf(stderr, "style after\n");
 	/*printf("<!-- push %s -->", text->name);*/
-	fprintf(stderr, "style_push %s\n", text->name);
 	push->text = text;
 	push->lazy = BEGIN;
-	fprintf(stderr, "style_push %s\n", StyleArrayToString(&mode.styles));
+	fprintf(stderr, "style_push after %s\n", StyleArrayToString(&mode.styles));
 }
 
 static void style_pop(void) {

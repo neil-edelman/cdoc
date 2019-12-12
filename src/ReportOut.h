@@ -1117,7 +1117,7 @@ int ReportOut(void) {
 			if(segment->division != DIV_PREAMBLE) continue;
 #if 1
 			style_push(&styles[ST_P][format]);
-#if 0
+#if 1
 			print_tokens(&segment->doc);
 #endif
 			style_pop_level();
