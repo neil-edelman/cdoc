@@ -1109,15 +1109,18 @@ int ReportOut(void) {
 
 	/* Preamble contents; it shows up as the more-aptly nammed "desciption" but
 	 I didn't want to type that much. */
-	if(is_preamble && 0) {
+	if(is_preamble) {
 		style_push(&styles[ST_DIV][format]);
 		print_heading_anchor_for(DIV_PREAMBLE);
 		while((segment = SegmentArrayNext(&report, segment))) {
 			if(segment->division != DIV_PREAMBLE) continue;
+#if 0
 			style_push(&styles[ST_P][format]);
 			print_tokens(&segment->doc);
 			style_pop_level();
+#endif
 		}
+#if 0
 		style_push(&styles[ST_DL][format]);
 		/* `ATT_TITLE` is above. */
 		while((segment = SegmentArrayNext(&report, segment))) {
@@ -1129,18 +1132,16 @@ int ReportOut(void) {
 			}
 		}
 		fprintf(stderr, "ReportOut: going into dl_preamble_att(ATT_AUTHOR, SHOW_ALL, &plain_csv) with mode.styles = %s;\n", StyleArrayToString(&mode.styles));
-#if 0
 		dl_preamble_att(ATT_AUTHOR, SHOW_ALL, &plain_csv);
-#endif
 		fprintf(stderr, "ReportOut: returned.\n");
 		dl_preamble_att(ATT_STD, SHOW_ALL, &plain_csv);
 		dl_preamble_att(ATT_DEPEND, SHOW_ALL, &plain_csv);
 		dl_preamble_att(ATT_FIXME, SHOW_WHERE, &plain_text);
-		fprintf(stderr, "ReportOut: returned.\n");
 		dl_preamble_att(ATT_CF, SHOW_ALL, &plain_ssv);
 		/* `ATT_RETURN`, `ATT_THROWS`, `ATT_IMPLEMENTS`, `ATT_ORDER`,
 		 `ATT_ALLOW` have warnings. `ATT_LICENSE` is below. */
 		style_pop_level();
+#endif
 		style_pop_level();
 	}
 	assert(!StyleArraySize(&mode.styles));
