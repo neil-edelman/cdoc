@@ -737,7 +737,7 @@ static void print_custom_heading_fragment_for(const char *const division,
 	const char *const desc) {
 	const enum Format f = effective_format();
 	/* "*.0s" does not work on all libraries? */
-	const char *const fmt = (f == OUT_HTML) ? "[%s](#%s:)" : "[%s](#%s%s)";
+	const char *const fmt_html "[%s](#%s:)", *const fmt_md = "[%s](#%s%s)";
 	const size_t fmt_len = (f == OUT_HTML)
 		? strlen("[](#:)") + strlen(desc) + strlen(division)
 		: strlen("[](#)") + strlen(desc) + strlen(md_fragment_extra)
@@ -748,8 +748,8 @@ static void print_custom_heading_fragment_for(const char *const division,
 	BufferClear();
 	if(!(b = BufferPrepare(fmt_len)))
 		{ perror(division); unrecoverable(); return; }
-	len = (f == OUT_HTML) ? sprintf(b, fmt, desc, division) :
-		sprintf(b, fmt, desc, md_fragment_extra, division);
+	len = (f == OUT_HTML) ? sprintf(b, fmt_html, desc, division) :
+		sprintf(b, fmt_md, desc, md_fragment_extra, division);
 	assert(len == fmt_len);
 	scan_doc_string(b);
 }
