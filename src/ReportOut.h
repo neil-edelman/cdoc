@@ -691,34 +691,44 @@ static void scan_doc_string(const char *const str) {
 	Scanner_(&scan);
 }
 
+static unsigned log2u(unsigned i) {
+	unsigned log = 0;
+	while(i) log++, i >>= 1;
+	return log;
+}
+
+/** For computing the number of digits. */
+static unsigned compute_digits_x(unsigned x) {
+	unsigned digits = log2u(x) >> 2;
+	return digits ? digits : 1;
+}
+
 /* @param[label] Un-escaped label. */
 static void print_fragment_for(const enum Division d, const char *const label) {
 	/* `effective_format` is NOT the thing we need; we need to raw format for
 	 the link. */
 	const enum Format f = CdocGetFormat();
+	const unsigned hash = fnv_32a_str(label);
 	/* GCC is too smart but not smart enough. */
 	const char *const fmt_html = "[%s](#%s:%s)",
 		*const fmt_md = "[%s](#%s%s-%x)",
 		*const division = division_strings[d];
 	const size_t label_len = strlen(label), division_len = strlen(division),
 		md_fragment_extra_len = strlen(md_fragment_extra),
-		fmt_html_len = strlen("[](#:)") + 2 * label_len + division_len,
-		fmt_md_len = strlen("[](#-)") + label_len + md_fragment_extra_len +
-		division_len + log2f();
-	const unsigned hash = fnv_32a_str(label);
-	size_t size;
+		fmt_len = (f == OUT_HTML) ? strlen("[](#:)") + 2 * label_len
+		+ division_len : strlen("[](#-)") + label_len + md_fragment_extra_len
+		+ division_len + compute_digits_x(hash);
+	size_t len;
 	char *b;
 	assert(label);
-	/* fixme: snprintf is not defined in C89. */
-	size = f == OUT_HTML ? snprintf(0, 0, fmt_html, label, division, label)
-		: snprintf(0, 0, fmt_md, label, md_fragment_extra, division, hash);
-	assert(size > 0);
 	/* (Potentally) calling this with `label` as the other buffer. */
 	BufferSwap();
 	BufferClear();
-	if(!(b = BufferPrepare(size))) { perror(label); unrecoverable(); return; }
-	size = f == OUT_HTML ? sprintf(b, fmt_html, label, division, label)
+	if(!(b = BufferPrepare(fmt_len)))
+		{ perror(label); unrecoverable(); return; }
+	len = f == OUT_HTML ? sprintf(b, fmt_html, label, division, label)
 		: sprintf(b, fmt_md, label, md_fragment_extra, division, hash);
+	assert(len == fmt_len);
 	scan_doc_string(b);
 	BufferSwap();
 }
