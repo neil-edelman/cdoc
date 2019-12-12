@@ -631,31 +631,41 @@ static void segment_att_print_all(const struct Segment *const segment,
 			|| (match && !any_token(&attribute->header, match))) continue;
 		style_string_output();
 		if(show & SHOW_WHERE) {
+#if 1
 			if((pindex = IndexArrayNext(&segment->code_params, 0))
 				&& *pindex < TokenArraySize(&segment->code)) {
+				#if 1
 				const struct Token *token
 					= TokenArrayGet(&segment->code) + *pindex;
 				style_push(&no_style);
+				#if 0
 				/* fixme: didn't I already do this? */
 				if(effective_format() == OUT_HTML) {
+					#if 0
 					printf("<a href = \"#%s:",
 						division_strings[segment->division]);
 					print_token(&segment->code, token);
 					printf("\">");
 					print_token(&segment->code, token);
 					printf("</a>");
+					#endif
 				} else {
+					#if 0
 					/* fixme: this is wrong. */
 					printf("[");
 					print_token(&segment->code, token);
 					printf("](#%s:", division_strings[segment->division]);
 					print_token(&segment->code, token);
 					printf(")");
+					#endif
 				}
+				#endif
 				style_pop();
+				#endif
 			} else {
 				printf("%s", division_strings[segment->division]);
 			}
+#endif
 		}
 		if(show == SHOW_ALL) fputs(": ", stdout);
 		if(show & SHOW_TEXT) print_tokens(&attribute->contents);
@@ -1136,7 +1146,7 @@ int ReportOut(void) {
 			}
 		}
 #endif
-#if 0
+#if 1
 		fprintf(stderr, "ReportOut: going into dl_preamble_att(ATT_AUTHOR, SHOW_ALL, &plain_csv) with mode.styles = %s;\n", StyleArrayToString(&mode.styles));
 		dl_preamble_att(ATT_AUTHOR, SHOW_ALL, &plain_csv);
 		fprintf(stderr, "ReportOut: returned.\n");
