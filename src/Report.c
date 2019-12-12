@@ -138,9 +138,12 @@ static void segment_to_string(const struct Segment *seg, char (*const a)[12]) {
 static void segment_array_(struct SegmentArray *const sa) {
 	struct Segment *segment;
 	if(!sa) return;
-	while((segment = SegmentArrayPop(sa)))
-		TokenArray_(&segment->doc), TokenArray_(&segment->code),
-		IndexArray_(&segment->code_params), attributes_(&segment->attributes);
+	while((segment = SegmentArrayPop(sa))) {
+		TokenArray_(&segment->doc);
+		TokenArray_(&segment->code);
+		IndexArray_(&segment->code_params);
+		attributes_(&segment->attributes);
+	}
 	SegmentArray_(sa);
 }
 static void segment_array_clear(struct SegmentArray *const sa) {
