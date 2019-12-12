@@ -141,6 +141,7 @@ static void segment_array_(struct SegmentArray *const sa) {
 	while((segment = SegmentArrayPop(sa))) {
 		TokenArray_(&segment->doc);
 		TokenArray_(&segment->code);
+		fprintf(stderr, "Clearing %s index array.\n", SegmentArrayToString(sa));
 		IndexArray_(&segment->code_params);
 		attributes_(&segment->attributes);
 	}
