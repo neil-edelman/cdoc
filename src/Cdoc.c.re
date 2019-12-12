@@ -253,6 +253,7 @@ catch:
 	
 finally:
 	Buffer_();
+	Semantic_();
 	Scanner_(&scanner);
 	Report_();
 	TextCloseAll();
