@@ -69,9 +69,9 @@ static const struct StyleText {
 		{ "html_dd", "\t<dd>", "", "</dd>\n", 0, 0, 0 },
 		{ "md_dd", "   ", "", "\n", 0, 0, 0 } },
 	/* This is a mess. */
-	{ { "raw_ddtitle", style_title, "", "", 0, 0, 0 },
-		{ "html_ddtitle", style_title, "", "</dd>\n", 0, 0, 0 },
-		{ "md_ddtitle", style_title, "", "\n", 0, 0, 0 } },
+	{ { "raw_ddtitle", "FIXME"/*style_title*/, "", "", 0, 0, 0 },
+		{ "html_ddtitle", "FIXME"/*style_title*/, "", "</dd>\n", 0, 0, 0 },
+		{ "md_ddtitle", "FIXME"/*style_title*/, "", "\n", 0, 0, 0 } },
 	{ { "raw_em", "", "", "", 0, 0, 0 },
 		{ "html_em", "<em>", "", "</em>", 0, 0, 0 },
 		{ "md_em", "_", "", "_", 0, 0, 0 } },
@@ -138,26 +138,34 @@ static void style_clear(void) {
 }
 
 static void style_push(const struct StyleText *const text) {
-	struct Style *const push = StyleArrayNew(&mode.styles);
+	/*struct Style *const push = StyleArrayNew(&mode.styles);*/
+	struct Style *push;
 	assert(text);
+	fprintf(stderr, "style_push %s\n", StyleArrayToString(&mode.styles));
+	push = StyleArrayNew(&mode.styles);
 	/* There's so many void functions that rely on this function and it's such
 	 a small amount of memory, that it's useless to recover. The OS will have
 	 to clean up our mess. Hack. */
 	if(!push) { unrecoverable(); return; }
+	fprintf(stderr, "style before memset\n");
+	memset(push, 0, sizeof *push);
+	fprintf(stderr, "style after\n");
 	/*printf("<!-- push %s -->", text->name);*/
+	fprintf(stderr, "style_push %s\n", text->name);
 	push->text = text;
 	push->lazy = BEGIN;
+	fprintf(stderr, "style_push %s\n", StyleArrayToString(&mode.styles));
 }
 
 static void style_pop(void) {
-	struct Style *const pop = StyleArrayPop(&mode.styles),
-		*const top = StyleArrayPeek(&mode.styles);
+	struct Style *const pop = StyleArrayPop(&mode.styles)/*,
+		*const top = StyleArrayPeek(&mode.styles)*/;
 	assert(pop);
 	/*printf("<!-- pop %s -->", pop->text->name);*/
 	if(pop->lazy == BEGIN) return;
 	fputs(pop->text->end, stdout);
-	/* There has been an ITEM, just encased in another level. */
-	if(top) top->lazy = SEPARATE;
+	/* There has been an ITEM, just encased in another level; leaves extra. */
+	/*if(top) top->lazy = SEPARATE; <- <fn:style_pop_push>. */
 }
 
 /** Pops until the the element that is popped is a block element and can appear
@@ -170,11 +178,12 @@ static void style_pop_level(void) {
 	}
 }
 
-/** Pops and then pushes the same element. */
+/** Pops and then pushes the same element, separated. */
 static void style_pop_push(void) {
-	struct Style *const peek = StyleArrayPeek(&mode.styles);
+	struct Style *const peek = StyleArrayPeek(&mode.styles), *top;
 	assert(peek);
 	style_pop();
+	if((top = StyleArrayPeek(&mode.styles))) top->lazy = SEPARATE;
 	style_push(peek->text);
 }
 

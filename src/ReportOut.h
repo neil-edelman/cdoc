@@ -759,11 +759,12 @@ static void dl_preamble_att(const enum Symbol attribute,
 	const enum Format format = effective_format();
 	assert(style);
 	/* `style_title` is static in `Styles.h`. Hack. */
-	if(format == OUT_HTML) sprintf(style_title, "\t<dt>%.128s:</dt>\n"
+	/*if(format == OUT_HTML) sprintf(style_title, "\t<dt>%.128s:</dt>\n"
 		"\t<dd>", symbol_attribute_titles[attribute]);
 	else sprintf(style_title, " * %.128s:  \n   ",
-		symbol_attribute_titles[attribute]);
-	style_push(&styles[ST_DESC][format]), style_push(style),
+		symbol_attribute_titles[attribute]);*/
+	fprintf(stderr, "A %s\n", StyleArrayToString(&mode.styles));
+	style_push(&styles[ST_DESC][format]), fprintf(stderr, "Ab %s\n", StyleArrayToString(&mode.styles)), style_push(style),
 		style_push(&plain_text);
 	div_att_print(&is_div_preamble, attribute, SHOW_TEXT);
 	style_pop(), style_push(&plain_parenthetic), style_push(&plain_csv),
@@ -1108,7 +1109,7 @@ int ReportOut(void) {
 
 	/* Preamble contents; it shows up as the more-aptly nammed "desciption" but
 	 I didn't want to type that much. */
-	if(is_preamble) {
+	if(is_preamble && 0) {
 		style_push(&styles[ST_DIV][format]);
 		print_heading_anchor_for(DIV_PREAMBLE);
 		while((segment = SegmentArrayNext(&report, segment))) {
@@ -1127,10 +1128,15 @@ int ReportOut(void) {
 				dl_segment_specific_att(att);
 			}
 		}
+		fprintf(stderr, "ReportOut: going into dl_preamble_att(ATT_AUTHOR, SHOW_ALL, &plain_csv) with mode.styles = %s;\n", StyleArrayToString(&mode.styles));
+#if 0
 		dl_preamble_att(ATT_AUTHOR, SHOW_ALL, &plain_csv);
+#endif
+		fprintf(stderr, "ReportOut: returned.\n");
 		dl_preamble_att(ATT_STD, SHOW_ALL, &plain_csv);
 		dl_preamble_att(ATT_DEPEND, SHOW_ALL, &plain_csv);
 		dl_preamble_att(ATT_FIXME, SHOW_WHERE, &plain_text);
+		fprintf(stderr, "ReportOut: returned.\n");
 		dl_preamble_att(ATT_CF, SHOW_ALL, &plain_ssv);
 		/* `ATT_RETURN`, `ATT_THROWS`, `ATT_IMPLEMENTS`, `ATT_ORDER`,
 		 `ATT_ALLOW` have warnings. `ATT_LICENSE` is below. */

@@ -22,8 +22,8 @@ text
  @license No.
  @fixme
 
- @cf
  @cf [foo.h](foo.h)
+ @cf
  @cf [foo.c](foo.c)
  
  Escapes. \\ \` \@ \_ \`
