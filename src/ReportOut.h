@@ -1107,6 +1107,7 @@ int ReportOut(void) {
 	style_pop_level();
 	assert(!StyleArraySize(&mode.styles));
 
+	fprintf(stderr, "format: %s\n", format_strings[format]);
 	/* Preamble contents; it shows up as the more-aptly nammed "desciption" but
 	 I didn't want to type that much. */
 	if(is_preamble) {
@@ -1114,14 +1115,17 @@ int ReportOut(void) {
 		print_heading_anchor_for(DIV_PREAMBLE);
 		while((segment = SegmentArrayNext(&report, segment))) {
 			if(segment->division != DIV_PREAMBLE) continue;
-#if 0
+#if 1
 			style_push(&styles[ST_P][format]);
+#if 0
 			print_tokens(&segment->doc);
+#endif
 			style_pop_level();
 #endif
 		}
-#if 0
+#if 1
 		style_push(&styles[ST_DL][format]);
+#if 1
 		/* `ATT_TITLE` is above. */
 		while((segment = SegmentArrayNext(&report, segment))) {
 			const struct Attribute *att = 0;
@@ -1131,6 +1135,8 @@ int ReportOut(void) {
 				dl_segment_specific_att(att);
 			}
 		}
+#endif
+#if 0
 		fprintf(stderr, "ReportOut: going into dl_preamble_att(ATT_AUTHOR, SHOW_ALL, &plain_csv) with mode.styles = %s;\n", StyleArrayToString(&mode.styles));
 		dl_preamble_att(ATT_AUTHOR, SHOW_ALL, &plain_csv);
 		fprintf(stderr, "ReportOut: returned.\n");
@@ -1140,6 +1146,7 @@ int ReportOut(void) {
 		dl_preamble_att(ATT_CF, SHOW_ALL, &plain_ssv);
 		/* `ATT_RETURN`, `ATT_THROWS`, `ATT_IMPLEMENTS`, `ATT_ORDER`,
 		 `ATT_ALLOW` have warnings. `ATT_LICENSE` is below. */
+#endif
 		style_pop_level();
 #endif
 		style_pop_level();
