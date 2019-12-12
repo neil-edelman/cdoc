@@ -700,6 +700,11 @@ static void print_fragment_for(const enum Division d, const char *const label) {
 	const char *const fmt_html = "[%s](#%s:%s)",
 		*const fmt_md = "[%s](#%s%s-%x)",
 		*const division = division_strings[d];
+	const size_t label_len = strlen(label), division_len = strlen(division),
+		md_fragment_extra_len = strlen(md_fragment_extra),
+		fmt_html_len = strlen("[](#:)") + 2 * label_len + division_len,
+		fmt_md_len = strlen("[](#-)") + label_len + md_fragment_extra_len +
+		division_len + log2f();
 	const unsigned hash = fnv_32a_str(label);
 	size_t size;
 	char *b;
