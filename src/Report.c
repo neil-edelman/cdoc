@@ -578,7 +578,7 @@ static int keep_segment(struct Segment *const s) {
 	{
 		char a[12];
 		segment_to_string(s, &a);
-		fprintf(stderr, "keep_segment: erasing %s.\n", a);
+		fprintf(stderr, "keep_segment: erasing %s with index array %s.\n", a, IndexArrayToString(&s->code_params));
 	}
 	erase_segment(s);
 	return 0;
