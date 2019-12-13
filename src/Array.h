@@ -1,8 +1,8 @@
 /** @license 2016 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- `<T>Array` is a dynamic contiguous array that stores `<T>`, which must be set
- using `ARRAY_TYPE`. To ensure that the capacity is greater then or equal to
+ <tag:<T>Array>` is a dynamic contiguous array that stores `<T>`, which must be
+ set using `ARRAY_TYPE`. To ensure that the capacity is greater then or equal to
  the size, resizing may be necessary and incurs amortised cost. When adding new
  elements, the elements may change memory location to fit. It is therefore
  unstable; any pointers to this memory may become stale and unusable when
@@ -11,15 +11,15 @@
  `<T>Array` is not synchronised. Errors are returned with `errno`. The
  parameters are preprocessor macros, and are all undefined at the end of the
  file for convenience. `assert.h` is included in this file; to stop the
- debug assertions, use `#define NDEBUG` before inclusion.
+ debug assertions, use `#define NDEBUG` before `assert.h`.
 
  ![States](../web/states.png)
 
  @param[ARRAY_NAME, ARRAY_TYPE]
- The name that literally becomes `<T>`, and a valid type associated therewith,
- accessible to the compiler at the time of inclusion; should be conformant to
- naming and to the maximum available length of identifiers. Must each be
- present before including.
+ `<T>` that satisfies `C` naming conventions when mangled and a valid tag
+ (type) associated therewith; required. `<PT>` is private, whose names are
+ prefixed in a manner to avoid collisions; any should be re-defined prior to
+ use elsewhere.
 
  @param[ARRAY_STACK]
  Doesn't define removal functions except <fn:<T>ArrayPop>, making it a stack.
@@ -29,35 +29,32 @@
  <fn:<T>ArrayToString>.
 
  @param[ARRAY_TEST]
- Unit testing framework using `<T>ArrayTest`, included in a separate header,
- `../test/ArrayTest.h`. Must be defined equal to a (random) filler function,
+ Unit testing framework <fn:<T>ArrayTest>, included in a separate header,
+ <../test/ArrayTest.h>. Must be defined equal to a (random) filler function,
  satisfying <typedef:<PT>Action>. Requires `ARRAY_TO_STRING` and not `NDEBUG`.
 
- @title Contiguous Dynamic Parameterised Array
- @std C89
- @author Neil */
+ @subtitle Parameterised Contiguous Dynamic Array (Vector)
+ @std C89 */
 
-
-
-#include <stddef.h>	/* ptrdiff_t offset_of */
+#include <stddef.h>	/* offset_of */
 #include <stdlib.h>	/* realloc free */
 #include <assert.h>	/* assert */
 #include <string.h>	/* memcpy memmove (strerror strcpy memcmp in ArrayTest.h) */
 #include <errno.h>	/* errno */
 #include <limits.h> /* LONG_MAX */
-#ifdef ARRAY_TO_STRING /* <-- print */
-#include <stdio.h>	/* sprintf */
+#ifdef ARRAY_TO_STRING /* <!-- print */
+#include <stdio.h>	/* strlen */
 #endif /* print --> */
 
 
 /* Check defines. */
-#ifndef ARRAY_NAME /* <-- error */
+#ifndef ARRAY_NAME /* <!-- error */
 #error Generic ARRAY_NAME undefined.
 #endif /* error --> */
-#ifndef ARRAY_TYPE /* <-- error */
+#ifndef ARRAY_TYPE /* <!-- error */
 #error Generic ARRAY_TYPE undefined.
 #endif /* --> */
-#if defined(ARRAY_TEST) && !defined(ARRAY_TO_STRING) /* <-- error */
+#if defined(ARRAY_TEST) && !defined(ARRAY_TO_STRING) /* <!-- error */
 #error ARRAY_TEST requires ARRAY_TO_STRING.
 #endif /* error --> */
 
@@ -100,7 +97,7 @@ typedef ARRAY_TYPE PT_(Type);
 
 
 
-#ifdef ARRAY_TO_STRING /* <-- string */
+#ifdef ARRAY_TO_STRING /* <!-- string */
 /** Responsible for turning `<T>` (the first argument) into a 12 `char`
  null-terminated output string (the second.) Private; must re-declare. Used for
  `ARRAY_TO_STRING`. */
@@ -131,7 +128,7 @@ struct T_(Array) {
 };
 
 /* `{0}` is `C99`. */
-#ifndef ARRAY_ZERO /* <-- !zero */
+#ifndef ARRAY_ZERO /* <!-- !zero */
 #define ARRAY_ZERO { 0, 0, 0, 0 }
 #endif /* !zero --> */
 
@@ -139,10 +136,12 @@ struct T_(Array) {
 
 /** Ensures `min_capacity` of `a`.
  @param[update_ptr] Must be in the array or null, it updates this value.
- @return Success; otherwise, `errno` may be set.
- @throws[ERANGE] Tried allocating more then can fit in `size_t`.
- @throws[realloc] [IEEE Std 1003.1-2001
- ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html). */
+ @return Success; otherwise, `errno` will be set.
+ @throws[ERANGE] Tried allocating more then can fit in `size_t` or doesn't
+ follow [IEEE Std 1003.1-2001
+ ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html)
+ with `realloc`.
+ @throws[realloc] */
 static int PT_(reserve)(struct T_(Array) *const a,
 	const size_t min_capacity, T **const update_ptr) {
 	size_t c0, c1;
@@ -165,7 +164,8 @@ static int PT_(reserve)(struct T_(Array) *const a,
 		size_t temp = c0 + c1; c0 = c1; c1 = temp;
 		if(c1 > max_size || c1 < c0) c1 = max_size;
 	}
-	if(!(data = realloc(a->data, c0 * sizeof *a->data))) return 0;
+	if(!(data = realloc(a->data, c0 * sizeof *a->data)))
+		{ if(!errno) errno = ERANGE; return 0; }
 	if(update_ptr && a->data != data)
 		*update_ptr = data + (*update_ptr - a->data);
 	a->data = data;
@@ -220,9 +220,7 @@ static int PT_(replace)(struct T_(Array) *const a, const size_t i0,
 	return 1;
 }
 
-/** Zeros `a` except for `ARRAY_MIGRATE_ALL` which is initialised in the
- containing function, and not `!ARRAY_FREE_LIST`, which is initialised in
- <fn:<PT>reserve>. */
+/** Zeros `a`. */
 static void PT_(array)(struct T_(Array) *const a) {
 	assert(a);
 	a->data          = 0;
@@ -252,23 +250,23 @@ static void T_(Array)(struct T_(Array) *const a) {
 
 /** @param[a] If null, returns zero.
  @return The size of `a`.
- @order O(1)
+ @order \O(1)
  @allow */
 static size_t T_(ArraySize)(const struct T_(Array) *const a) {
 	if(!a) return 0;
 	return a->size;
 }
 
-#ifndef ARRAY_STACK /* <-- !stack */
+#ifndef ARRAY_STACK /* <!-- !stack */
 
-/** Removes `data` from `a`.
+/** Removes `data` from `a`. Only defined if not `ARRAY_STACK`.
  @param[a, data] If null, returns false.
  @param[data] Will be removed; data will remain the same but be updated to the
  next element, or if this was the last element, the pointer will be past the
  end.
  @return Success, otherwise `errno` will be set for valid input.
  @throws[EDOM] `data` is not part of `a`.
- @order O(n).
+ @order \O(n).
  @allow */
 static int T_(ArrayRemove)(struct T_(Array) *const a, T *const data) {
 	size_t n;
@@ -279,14 +277,15 @@ static int T_(ArrayRemove)(struct T_(Array) *const a, T *const data) {
 	return 1;
 }
 
-/** Removes `data` from `a` and replaces the spot it was in with the tail.
+/** Removes `data` from `a` and replaces the spot it was in with the tail. Only
+ defined if not `ARRAY_STACK`.
  @param[a, data] If null, returns false.
  @param[data] Will be removed; data will remain the same but be updated to the
  last element, or if this was the last element, the pointer will be past the
  end.
  @return Success, otherwise `errno` will be set for valid input.
  @throws[EDOM] `data` is not part of `a`.
- @order O(1).
+ @order \O(1).
  @allow */
 static int T_(ArrayLazyRemove)(struct T_(Array) *const a, T *const data) {
 	size_t n;
@@ -320,38 +319,34 @@ static T *T_(ArrayGet)(const struct T_(Array) *const a) {
 	return a ? a->data : 0;
 }
 
-/** Causing something to be added to the `<T>Array` may invalidate this
- pointer, see <fn:<T>ArrayUpdateNew>.
- @param[a] If null, returns null.
- @return One past the end of the array; take care when dereferencing, as it is
- not part of the array.
- @order \Theta(1)
- @allow */
-static T *T_(ArrayEnd)(const struct T_(Array) *const a) {
-	return a ? a->data + a->size : 0;
-}
-
 /** Gets an index given `data`.
  @param[a] Must be a valid object that stores `data`.
  @param[data] If the element is not part of the `a`, behaviour is undefined.
  @return An index.
  @order \Theta(1)
- @fixme Untested.
  @allow */
 static size_t T_(ArrayIndex)(const struct T_(Array) *const a,
 	const T *const data) {
 	return data - a->data;
 }
 
+/** Causing something to be added to the `<T>Array` may invalidate this
+ pointer, see <fn:<T>ArrayUpdateNew>.
+ @param[a] If null, returns null.
+ @return One past the end of the array; take care when dereferencing.
+ @order \Theta(1)
+ @allow */
+static T *T_(ArrayEnd)(const struct T_(Array) *const a) {
+	return a && a->data ? a->data + a->size : 0;
+}
+
 /** @param[a] If null, returns null.
  @return The last element or null if the a is empty. Causing something to be
  added to the `a` may invalidate this pointer.
  @order \Theta(1)
- @fixme Untested.
  @allow */
 static T *T_(ArrayPeek)(const struct T_(Array) *const a) {
-	if(!a || !a->size) return 0;
-	return a->data + a->size - 1;
+	return a && a->size ? a->data + a->size - 1 : 0;
 }
 
 /** The same value as <fn:<T>ArrayPeek>.
@@ -362,13 +357,13 @@ static T *T_(ArrayPeek)(const struct T_(Array) *const a) {
  @order \Theta(1)
  @allow */
 static T *T_(ArrayPop)(struct T_(Array) *const a) {
-	if(!a || !a->size) return 0;
-	return a->data + --a->size;
+	return a && a->size ? a->data + --a->size : 0;
 }
 
 /** Iterate through `a` backwards.
  @param[a] The array; if null, returns null.
- @param[here] Set it to null to get the last element, if it exists.
+ @param[here] Set it to the current element; when null, it will be last
+ element, if it exists.
  @return A pointer to the previous element or null if it does not exist.
  @order \Theta(1)
  @allow */
@@ -408,14 +403,15 @@ static T *PT_(new)(struct T_(Array) *const a, T **const update_ptr) {
 	return a->data + a->size++;
 }
 
-/** Gets an uninitialised new element. May move the `a` to a new memory
- location to fit the new size.
+/** Gets an uninitialised new element. May move the elements of `a` to a new
+ memory location to fit the new size and then all the pointers will be stale.
  @param[a] If is null, returns null.
- @return A new, un-initialised, element, or null and `errno` may be set.
- @throws[ERANGE] Tried allocating more then can fit in `size_t` objects.
- @throws[realloc] [IEEE Std 1003.1-2001
+ @return A new, un-initialised, element, or null and `errno` will be set.
+ @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
+ error and doesn't follow [IEEE Std 1003.1-2001
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
- @order Amortised O(1).
+ @throws[realloc]
+ @order Amortised \O(1).
  @allow */
 static T *T_(ArrayNew)(struct T_(Array) *const a) {
 	if(!a) return 0;
@@ -426,12 +422,12 @@ static T *T_(ArrayNew)(struct T_(Array) *const a) {
  is within the memory region that was changed to accomodate new space.
  @param[a] If null, returns null.
  @param[update_ptr] Pointer to update on memory move. If null, does nothing.
- @return A new, un-initialised, element, or null and `errno` may be set.
- @throws[ERANGE] Tried allocating more then can fit in `size_t`.
- @throws[realloc] [IEEE Std 1003.1-2001
+ @return A new, un-initialised, element, or null and `errno` will be set.
+ @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
+ error and doesn't follow [IEEE Std 1003.1-2001
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
- @order amortised O(1)
- @fixme Untested.
+ @throws[realloc]
+ @order Amortised \O(1).
  @allow */
 static T *T_(ArrayUpdateNew)(struct T_(Array) *const a,
 	T **const update_ptr) {
@@ -444,11 +440,11 @@ static T *T_(ArrayUpdateNew)(struct T_(Array) *const a,
  @param[a] If is null, returns null.
  @param[buffer] If this is zero, returns null.
  @return One past the end of the array, or null and `errno` may be set.
- @throws[ERANGE] Tried allocating more then can fit in `size_t`.
- @throws[realloc] [IEEE Std 1003.1-2001
+ @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
+ error and doesn't follow [IEEE Std 1003.1-2001
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
- @order Amortised O(`buffer`).
- @fixme Test.
+ @throws[realloc]
+ @order Amortised \O(`buffer`).
  @allow */
 static T *T_(ArrayBuffer)(struct T_(Array) *const a, const size_t buffer) {
 	if(!a || !buffer || !PT_(reserve)(a, a->size + buffer, 0)) return 0;
@@ -459,8 +455,7 @@ static T *T_(ArrayBuffer)(struct T_(Array) *const a, const size_t buffer) {
  @return Success.
  @throws[ERANGE] The size added is greater than the capacity. To avoid this,
  call <fn:<T>ArrayBuffer> before.
- @order O(1)
- @fixme Test.
+ @order \O(1)
  @allow */
 static int T_(ArrayExpand)(struct T_(Array) *const a, const size_t add) {
 	if(!a) return 0;
@@ -470,13 +465,11 @@ static int T_(ArrayExpand)(struct T_(Array) *const a, const size_t add) {
 	return 1;
 }
 
-/** Iterates through `a` and calls `action` on all the elements. The topology of
- the list can not change while in this function. That is, don't call
+/** Iterates through `a` and calls `action` on all the elements. The topology
+ of the list can not change while in this function. That is, don't call
  <fn:<T>ArrayNew>, <fn:<T>ArrayRemove>, _etc_ in `action`.
  @param[a, action] If null, does nothing.
- @order O(`size` \times `action`)
- @fixme Untested.
- @fixme Sequence interface.
+ @order \O(`size` \times `action`)
  @allow */
 static void T_(ArrayEach)(struct T_(Array) *const a,
 	const PT_(Action) action) {
@@ -489,9 +482,7 @@ static void T_(ArrayEach)(struct T_(Array) *const a,
  `predicate` returns true. The topology of the list can not change while in
  this function.
  @param[a, predicate, action] If null, does nothing.
- @order O(`size` \times `action`)
- @fixme Untested.
- @fixme Sequence interface.
+ @order \O(`size` \times `action`)
  @allow */
 static void T_(ArrayIfEach)(struct T_(Array) *const a,
 	const PT_(Predicate) predicate, const PT_(Action) action) {
@@ -505,9 +496,7 @@ static void T_(ArrayIfEach)(struct T_(Array) *const a,
  @param[a, predicate] If null, returns null.
  @return The first `predicate` that returned true, or, if the statement is
  false on all, null.
- @order O(`size` \times `action`)
- @fixme Untested.
- @fixme Sequence interface.
+ @order \O(`size` \times `action`)
  @allow */
 static T *T_(ArrayAny)(const struct T_(Array) *const a,
 	const PT_(Predicate) predicate) {
@@ -521,7 +510,7 @@ static T *T_(ArrayAny)(const struct T_(Array) *const a,
 /** For all elements of `a`, calls `keep`, and for each element, if the return
  value is false, lazy deletes that item.
  @param[a, keep] If null, does nothing.
- @order O(`size`)
+ @order \O(`size`)
  @allow */
 static void T_(ArrayKeepIf)(struct T_(Array) *const a,
 	const PT_(Predicate) keep) {
@@ -559,7 +548,7 @@ static void T_(ArrayKeepIf)(struct T_(Array) *const a,
 
 /** Removes at either end of `a` of things that `predicate` returns true.
  @param[a, predicate] If null, does nothing.
- @order O(`size`)
+ @order \O(`size`)
  @allow */
 static void T_(ArrayTrim)(struct T_(Array) *const a,
 	const PT_(Predicate) predicate) {
@@ -587,10 +576,9 @@ static void T_(ArrayTrim)(struct T_(Array) *const a,
  @throws[ERANGE] `anchor` is not null and not in `a`.
  @throws[ERANGE] `range` is greater then 65535 or smaller then -65534.
  @throws[ERANGE] `b` would cause the array to overflow.
- @throws[realloc] [IEEE Std 1003.1-2001
- ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
+ @throws[realloc]
  @order \Theta(`b.size`) if the elements have the same size, otherwise,
- amortised O(`a.size` + `b.size`).
+ amortised \O(`a.size` + `b.size`).
  @allow */
 static int T_(ArraySplice)(struct T_(Array) *const a, const T *anchor,
 	const long range, const struct T_(Array) *const b) {
@@ -611,10 +599,9 @@ static int T_(ArraySplice)(struct T_(Array) *const a, const T *anchor,
  @throws[EDOM] `a` and `b` are not null and the same.
  @throws[EDOM] `i0` or `i1` are out-of-bounds or `i0 > i1`.
  @throws[ERANGE] `b` would cause the array to overflow.
- @throws[realloc] [IEEE Std 1003.1-2001
- ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
+ @throws[realloc]
  @order \Theta(`b.size`) if the elements have the same size, otherwise,
- amortised O(`a.size` + `b.size`).
+ amortised \O(`a.size` + `b.size`).
  @allow */
 static int T_(ArrayIndexSplice)(struct T_(Array) *const a, const size_t i0,
 	const size_t i1, const struct T_(Array) *const b) {
@@ -623,85 +610,61 @@ static int T_(ArrayIndexSplice)(struct T_(Array) *const a, const size_t i0,
 	return PT_(replace)(a, i0, i1, b);
 }
 
-#ifdef ARRAY_TO_STRING /* <-- print */
-
-#ifndef ARRAY_PRINT_THINGS /* <-- once inside translation unit */
-#define ARRAY_PRINT_THINGS
-
-static const char *const array_cat_start     = "[";
-static const char *const array_cat_end       = "]";
-static const char *const array_cat_alter_end = "...]";
-static const char *const array_cat_sep       = ", ";
-static const char *const array_cat_star      = "*";
-static const char *const array_cat_null      = "null";
-
-struct Array_SuperCat {
-	char *print, *cursor;
-	size_t left;
-	int is_truncated;
-};
-/** Initialises `cat` to a static array `print` and `print_size`. */
-static void array_super_cat_init(struct Array_SuperCat *const cat,
-	char *const print, const size_t print_size) {
-	cat->print = cat->cursor = print;
-	cat->left = print_size;
-	cat->is_truncated = 0;
-	print[0] = '\0';
-}
-/** `append`s the string to `cat` */
-static void array_super_cat(struct Array_SuperCat *const cat,
-	const char *const append) {
-	size_t lu_took; int took;
-	if(cat->is_truncated) return;
-	took = sprintf(cat->cursor, "%.*s", (int)cat->left, append);
-	if(took < 0)  { cat->is_truncated = -1; return; } /*implementation defined*/
-	if(took == 0) { return; }
-	if((lu_took = (size_t)took) >= cat->left)
-		cat->is_truncated = -1, lu_took = cat->left - 1;
-	cat->cursor += lu_took, cat->left -= lu_took;
-}
-#endif /* once --> */
+#ifdef ARRAY_TO_STRING /* <!-- print */
 
 /** Can print 4 things at once before it overwrites. One must a
  `ARRAY_TO_STRING` to a function implementing <typedef:<PT>ToString> to get
  this functionality.
  @return Prints `a` in a static buffer.
  @order \Theta(1); it has a 255 character limit; every element takes some of it.
- @fixme ToString interface.
  @allow */
 static const char *T_(ArrayToString)(const struct T_(Array) *const a) {
-	static char buffer[4][256];
-	static unsigned buffer_i;
-	struct Array_SuperCat cat;
-	int is_first = 1;
-	char scratch[12];
+	static char buffers[4][256];
+	static size_t buffer_i;
+	char *buffer = buffers[buffer_i++], *b = buffer;
+	const size_t buffers_no = sizeof buffers / sizeof *buffers,
+		buffer_size = sizeof *buffers / sizeof **buffers;
+	const char start = '(', comma = ',', space = ' ', end = ')',
+		*const ellipsis_end = ",…)", *const null = "null";
+	const size_t ellipsis_end_len = strlen(ellipsis_end),
+		null_len = strlen(null);
 	size_t i;
-	assert(strlen(array_cat_alter_end) >= strlen(array_cat_end));
-	assert(sizeof buffer > strlen(array_cat_alter_end));
-	array_super_cat_init(&cat, buffer[buffer_i],
-		sizeof *buffer / sizeof **buffer - strlen(array_cat_alter_end));
-	buffer_i++, buffer_i &= 3;
-	if(!a) {
-		array_super_cat(&cat, array_cat_null);
-		return cat.print;
+	PT_(Type) *e, *e_end;
+	int is_first = 1;
+	assert(!(buffers_no & (buffers_no - 1)) && ellipsis_end_len >= 1
+		&& buffer_size >= 1 + 11 + ellipsis_end_len + 1
+		&& buffer_size >= null_len + 1);
+	/* Advance the buffer for next time. */
+	buffer_i &= buffers_no - 1;
+	/* Null array. */
+	if(!a) { memcpy(b, null, null_len), b += null_len; goto terminate; }
+	/* Otherwise. */
+	*b++ = start;
+	if(!a->data || !a->size) goto end_array;
+	for(e = a->data, e_end = a->data + a->size; ; ) {
+		if(!is_first) *b++ = comma, *b++ = space;
+		else is_first = 0;
+		PT_(to_string)(e, (char (*)[12])b);
+		for(i = 0; *b != '\0' && i < 12; b++, i++);
+		if(++e >= e_end) break;
+		if((size_t)(b - buffer) > buffer_size - 2 - 11 - ellipsis_end_len - 1)
+			goto ellipsis;
 	}
-	array_super_cat(&cat, array_cat_start);
-	for(i = 0; i < a->size; i++) {
-		if(!is_first) array_super_cat(&cat, array_cat_sep); else is_first = 0;
-		PT_(to_string)(a->data + i, &scratch),
-		scratch[sizeof scratch - 1] = '\0';
-		array_super_cat(&cat, scratch);
-		if(cat.is_truncated) break;
-	}
-	sprintf(cat.cursor, "%s",
-		cat.is_truncated ? array_cat_alter_end : array_cat_end);
-	return cat.print; /* Static buffer. */
+end_array:
+	*b++ = end;
+	goto terminate;
+ellipsis:
+	memcpy(b, ellipsis_end, ellipsis_end_len), b += ellipsis_end_len;
+terminate:
+	*b++ = '\0';
+	assert(b <= buffer + buffer_size);
+	return buffer;
 }
 
 #endif /* print --> */
 
-#ifdef ARRAY_TEST /* <-- test */
-#include "../test/TestArray.h" /* Need this file if one is going to run tests.*/
+#ifdef ARRAY_TEST /* <!-- test */
+#include "../test/TestArray.h" /** \include */
 #endif /* test --> */
 
 /* Prototype. */
@@ -713,7 +676,7 @@ static void PT_(unused_set)(void) {
 	T_(Array_)(0);
 	T_(Array)(0);
 	T_(ArraySize)(0);
-#ifndef ARRAY_STACK /* <-- !stack */
+#ifndef ARRAY_STACK /* <!-- !stack */
 	T_(ArrayRemove)(0, 0);
 	T_(ArrayLazyRemove)(0, 0);
 #endif /* !stack --> */
@@ -741,7 +704,7 @@ static void PT_(unused_set)(void) {
 #endif
 	PT_(unused_coda)();
 }
-/** `clang`'s pre-processor is not fooled if you have one function. */
+/* Some newer compilers are smart. */
 static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 
 
@@ -751,9 +714,9 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #undef ARRAY_TYPE
 /* Undocumented; allows nestled inclusion so long as: `CAT_`, `CAT`, `PCAT`,
  `PCAT_` conform, and `T` is not used. */
-#ifdef ARRAY_SUBTYPE /* <-- sub */
+#ifdef ARRAY_SUBTYPE /* <!-- sub */
 #undef ARRAY_SUBTYPE
-#else /* sub --><-- !sub */
+#else /* sub --><!-- !sub */
 #undef CAT
 #undef CAT_
 #undef PCAT
