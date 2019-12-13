@@ -1105,6 +1105,7 @@ int ReportOut(void) {
 	style_pop_level();
 	assert(!StyleArraySize(&mode.styles));
 
+#if 0
 	fprintf(stderr, "format: %s\n", format_strings[format]);
 	/* Preamble contents; it shows up as the more-aptly nammed "desciption" but
 	 I didn't want to type that much. */
@@ -1226,6 +1227,7 @@ int ReportOut(void) {
 		style_pop_level();
 		style_pop_level();
 	}
+#endif
 
 	if(format == OUT_HTML) printf("</body>\n\n"
 		"</html>\n");

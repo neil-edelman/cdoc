@@ -240,7 +240,7 @@ int main(int argc, char **argv) {
 	/* Output the results. */
 	ReportWarn();
 	ReportCull();
-	if(!ReportOut()) goto catch;
+	/*if(!ReportOut()) goto catch;*/
 
 	exit_code = EXIT_SUCCESS; goto finally;
 	
@@ -253,7 +253,6 @@ catch:
 	
 finally:
 	Buffer_();
-	Semantic_();
 	Scanner_(&scanner);
 	Report_();
 	TextCloseAll();

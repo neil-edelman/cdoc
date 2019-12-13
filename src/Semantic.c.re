@@ -93,13 +93,6 @@ static struct {
 	size_t line;
 } semantic;
 
-/** The destructor for the dynamic values used by any semantic calls. */
-void Semantic_(void) {
-	CharArray_(&semantic.buffer);
-	CharArray_(&semantic.work);
-	IndexArray_(&semantic.params);
-}
-
 /** @param[name] In `semantic.buffer`.
  @return False on error. */
 static int add_param(const char *const label) {
@@ -287,7 +280,7 @@ check:
  <fn:SemanticParams>.
  @param[code] If null, frees the global semantic data. Otherwise, a string that
  consists of characters from `symbol_marks` defined in `Symbol.h`.
- @return Success, otherwise `errno` may (POSIX will) be set. */
+ @return Success, otherwise `errno` be set. */
 int Semantic(const struct TokenArray *const code) {
 	size_t buffer_size;
 	char *buffer;
