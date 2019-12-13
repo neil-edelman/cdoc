@@ -134,10 +134,11 @@ static const struct Token *segment_fallback(const struct Segment *const segment)
 	return IndexArraySize(&segment->code_params)
 		? TokenArrayGet(&segment->code)
 		+ IndexArrayGet(&segment->code_params)[0]
-		: TokenArraySize(&segment->code) ? TokenArrayGet(&segment->code)
+		: /*TokenArraySize(&segment->code) ? TokenArrayGet(&segment->code)
 		: TokenArraySize(&segment->doc) ? TokenArrayGet(&segment->doc)
 		: AttributeArraySize(&segment->attributes)
-		? &AttributeArrayGet(&segment->attributes)->token : 0;
+		? &AttributeArrayGet(&segment->attributes)->token :
+		<- doesn't really help */ 0;
 }
 static void segment_to_string(const struct Segment *segment,
 	char (*const a)[12]) {
@@ -561,10 +562,10 @@ static int is_static(const struct TokenArray *const code) {
 
 /** @implements{Predicate<Segment>} */
 static int keep_segment(struct Segment *const s) {
-	struct Attribute *a = 0;
 	assert(s);
 	if(TokenArraySize(&s->doc) || AttributeArraySize(&s->attributes)
 		|| s->division == DIV_FUNCTION) {
+		struct Attribute *a = 0;
 		/* `static` and containing `@allow`. */
 		if(is_static(&s->code)) {
 			while((a = AttributeArrayNext(&s->attributes, a))
@@ -572,6 +573,11 @@ static int keep_segment(struct Segment *const s) {
 			return a ? 1 : 0;
 		}
 		return 1;
+	}
+	{
+		char a[12];
+		segment_to_string(s, &a);
+		fprintf(stderr, "keep_segment: erasing %s.\n", a);
 	}
 	erase_segment(s);
 	return 0;
