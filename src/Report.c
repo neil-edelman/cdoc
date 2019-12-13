@@ -261,7 +261,7 @@ static struct Token *new_token(struct TokenArray *const tokens,
 }
 
 /** Wrapper for `Semantic.h`; extracts semantic information from `segment`. */
-static int semantic(struct Segment *const segment) {
+static int report_semantic(struct Segment *const segment) {
 	size_t no, i;
 	const size_t *source;
 	size_t *dest;
@@ -394,7 +394,7 @@ int ReportNotify(const struct Scanner *const scan) {
 		/* Break on global semicolons only. */
 		if(ScannerIndentLevel(scan) != 0 || !sorter.segment) break;
 		/* Find out what this line means if one hasn't already. */
-		if(!sorter.is_semantic_set && !semantic(sorter.segment)) return 0;
+		if(!sorter.is_semantic_set && !report_semantic(sorter.segment)) return 0;
 		sorter.is_semantic_set = 1;
 		is_differed_cut = 1;
 		break;
@@ -402,7 +402,7 @@ int ReportNotify(const struct Scanner *const scan) {
 		/* If it's a leading brace, see what the Semantic says about it. */
 		if(ScannerIndentLevel(scan) != 1 || sorter.is_semantic_set
 			|| !sorter.segment) break;
-		if(!semantic(sorter.segment)) return 0;
+		if(!report_semantic(sorter.segment)) return 0;
 		sorter.is_semantic_set = 1;
 		if(sorter.segment->division == DIV_FUNCTION) sorter.is_code_ignored = 1;
 		break;
