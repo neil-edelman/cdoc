@@ -1,0 +1,434 @@
+<!doctype html public "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+
+<head>
+<meta http-equiv = "Content-Type" content = "text/html;charset=UTF-8">
+<!-- Steal these colour values from JavaDocs. -->
+<style type = "text/css">
+	a:link,  a:visited { color: #4a6782; }
+	a:hover, a:focus   { color: #bb7a2a; }
+	a:active           { color: #4A6782; }
+	tr:nth-child(even) { background: #dee3e9; }
+	div {
+		margin:  4px 0;
+		padding: 0 4px 4px 4px;
+	}
+	table      { width: 100%; }
+	td         { padding: 4px; }
+	h3, h1 {
+		color: #2c4557;
+		background-color: #dee3e9;
+		padding:          4px;
+	}
+	h3 {
+		margin:           0 -4px;
+		padding:          4px;
+	}
+</style>
+<title>foo.c</title>
+</head>
+
+<body>
+
+<h1>foo.c</h1>
+
+<h2>The Subtitle &lt;&gt;&amp;*{}[]()#+-.!<code>_</code> &amp;lt;&amp;gt;&amp;amp; &lt;&gt;\&amp;\*\{\}[]\(\)\#\+\-\.!`_; Link <a href = "http://127.0.0.1/">http://127.0.0.1/</a></h2>
+
+<ul>
+	<li><a href = "#preamble:">Description</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>Type">&lt;PT&gt;Type</a>, <a href = "#typedef:<A>Foo<B>Bar">&lt;A&gt;Foo&lt;B&gt;Bar</a>, <a href = "#typedef:<PT>ToString">&lt;PT&gt;ToString</a>, <a href = "#typedef:<PT>Action">&lt;PT&gt;Action</a>, <a href = "#typedef:<PT>Predicate">&lt;PT&gt;Predicate</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:Cee">Cee</a>, <a href = "#tag:Scanner">Scanner</a>, <a href = "#tag:Token">Token</a></li>
+	<li><a href = "#data:">General Declarations</a>: <a href = "#data:Cee">Cee</a>, <a href = "#data:y">y</a>, <a href = "#data:foo">foo</a>, <a href = "#data:c">c</a>, <a href = "#data:<T>foo">&lt;T&gt;foo</a></li>
+	<li><a href = "#summary:">Function Summary</a></li>
+	<li><a href = "#fn:">Function Definitions</a></li>
+	<li><a href = "#license:">License</a></li>
+</ul>
+
+<div><h2><a id = "preamble:" name = "preamble:">Description</a></h2>
+
+<p><code>Code</code>.</p>
+
+<p><a href = "http://yo.c">This is text &amp;&amp;</a> Header. Yo <a href = "http://foo.org/">http://foo.org/</a> <a href = "https://mit.edu/">MIT</a></p>
+
+<ul>
+	<li>Paragraph @ @a &#8239;&nbsp;&nbsp;</li>
+	<li>Links to entities: <a href = "#fn:&lt;T&gt;fun4">&lt;T&gt;fun4</a>, <a href = "#data:y">y</a>.</li>
+	<li>Broken: <a href = "#fn:not_fn">not_fn</a>, <a href = "#fn:&lt;T&gt;not_fn">&lt;T&gt;not_fn</a>.</li>
+	<li>Citation <a href = "https://scholar.google.ca/scholar?q=%C3%80%C3%A6%C4%94ge2007">ÀæĔge2007</a>.</li>
+	<li><a href = "http://arr.com/index.html#ddddd<u>sfdg">absolute</a>.</li>
+	<li><a href = "../../samples/foo.h">relative</a> <a href = "../../src/Cdoc.c.re">relative</a>.</li>
+	<li>png: <img alt = "Ellen Ripley" src = "../../diagrams/Ellen_Ripley_badass.png" width = 150 height = 190>.</li>
+	<li>jpeg: <img alt = "Inigo Montoya" src = "../../diagrams/Inigo_Montoya.jpeg" width = 150 height = 100>.</li>
+</ul>
+
+<p>Escapes. \ ` @ _ ` This is not prefomated.</p>
+
+<pre>
+This is preformated &lt;http://foo.com/&gt;*
+ 
+pre***
+</pre>
+
+<p>para: &lt;&gt;&amp;*{}[]()#+-.!<code>_</code> &amp;lt;&amp;gt;&amp;amp; &lt;&gt;\&amp;\*\{\}[]\(\)\#\+\-\.!`_</p>
+
+<p>code: <code>&lt;&gt;&amp;*{}[]()#+-.!_ &amp;lt;&amp;gt;&amp;amp; &lt;&gt;\&amp;\*\{\}[]\(\)\#\+\-\.!_</code> (cannot `?)</p>
+
+<p>em: <em>&lt;&gt;&amp;*{}[]()#+-.!`&amp;lt;&amp;gt;&amp;amp;&lt;&gt;\&amp;\*\{\}[]\(\)\#\+\-\.!`</em> (cannot _?)</p>
+
+<pre>
+pre: &lt;&gt;&amp;\*{}[]()#+-.!`_` &amp;lt;&amp;gt;&amp;amp; \&lt;\&gt;\&amp;\\\*\{\}\[\]\(\)\#\+\-\.\!\`\_
+</pre>
+
+<ul>
+	<li>list: &lt;&gt;&amp;*{}[]()#+-.!<code>_</code> &amp;lt;&amp;gt;&amp;amp; &lt;&gt;\&amp;\*\{\}[]\(\)\#\+\-\.!`_</li>
+</ul>
+
+<p>image: *{}[]()#+-.!<code>_</code> &amp;lt;&amp;gt;&amp;amp; &lt;&gt;\&amp;\*\{\}[]\(\)\#\+\-\.!`_ <img alt = "&lt;&gt;&amp;*+-.!" src = "../../diagrams/Ellen_Ripley_badass.png" width = 150 height = 190>.</p>
+
+<p>link: <a href = "../../samples/foo.c">&lt;&gt;&amp;*#+-.!\(</a>.</p>
+
+<p>Headings accept html entities; accept &lt;&gt;&amp;; accept backslash escapes; normal code-em; but if enclosed in html, transfer to html.</p>
+
+<p>Para accepts entities; accept &lt;&gt;&amp;; accept backslash</p>
+
+<p>Code does not accept entities; escapes all</p>
+
+<p>Em accepts entities; accept &lt;&gt;&amp;; accepts backslash</p>
+
+<p>Image/link accepts html entities but doesn't accept ()[]{}, but does \(\).</p>
+
+<p>Pre is not working.</p>
+
+</div>
+
+<p>Header. That also goes in the header.</p>
+
+<p>This is a kernel-style comment. <a href = "http://www.`@.com/index.html">http://www.`@.com/index.html</a> <a href = "https://scholar.google.ca/scholar?q=Yo2019">Yo2019</a> ?&lt;&gt;&amp;! <a href = "#fn:fun1">fun1</a></p>
+
+<p>Header. This is an ascii art comment. Eww.</p>
+
+<p>There should be <a href = "#fn:fun1">fun1</a> to <a href = "#fn:fun7">fun7</a> and <a href = "#fn:main">main</a>.</p>
+
+<dl>
+FIXMESomebody, Nobody, (<a href = "#tag:Cee">Cee</a>: , <a href = "#fn:fun2_scan_eof">fun2_scan_eof</a>: External Author, <a href = "#fn:fun3_scan_comment">fun3_scan_comment</a>: Prof. Snape, <a href = "#fn:fun6">fun6</a>: Nobody, <a href = "#fn:fun6">fun6</a>: Sombody)</dd>
+FIXME(<a href = "#fn:fun6">fun6</a>: C, <a href = "#fn:fun6">fun6</a>: Java)</dd>
+FIXMEC89, (<a href = "#fn:fun6">fun6</a>: Meh, <a href = "#fn:fun6">fun6</a>: Duh)</dd>
+FIXME (<a href = "#tag:Cee">Cee</a><a href = "#fn:fun2_scan_eof">fun2_scan_eof</a><a href = "#fn:fun6">fun6</a>)</dd>
+FIXME<a href = "../../samples/foo.h">foo.h</a>; ; <a href = "../../samples/foo.c">foo.c</a></dd>
+</dl>
+
+<h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
+
+<div><h3><a id = "typedef:<PT>Type" name = "typedef:<PT>Type">&lt;PT&gt;Type</a></h3>
+
+<p><code>typedef int <strong>&lt;PT&gt;Type</strong>;</code></p>
+
+<p>Troubles with this line? check to ensure that <code>ARRAY_TYPE</code> is a valid type, whose definition is placed above <code>#include "Array.h"</code>.</p>
+
+</div>
+
+<div><h3><a id = "typedef:<A>Foo<B>Bar" name = "typedef:<A>Foo<B>Bar">&lt;A&gt;Foo&lt;B&gt;Bar</a></h3>
+
+<p><code>typedef int(*<strong>&lt;A&gt;Foo&lt;B&gt;Bar</strong>)(int);</code></p>
+
+<p>Typedef.</p>
+
+</div>
+
+<div><h3><a id = "typedef:<PT>ToString" name = "typedef:<PT>ToString">&lt;PT&gt;ToString</a></h3>
+
+<p><code>typedef void(*<strong>&lt;PT&gt;ToString</strong>)(const T *, char(*const)[12]);</code></p>
+
+<p>Typedef.</p>
+
+</div>
+
+<div><h3><a id = "typedef:<PT>Action" name = "typedef:<PT>Action">&lt;PT&gt;Action</a></h3>
+
+<p><code>typedef void(*<strong>&lt;PT&gt;Action</strong>)(T *const data);</code></p>
+
+<p>Typedef. Operates by side-effects on <code>data</code> only.</p>
+
+</div>
+
+<div><h3><a id = "typedef:<PT>Predicate" name = "typedef:<PT>Predicate">&lt;PT&gt;Predicate</a></h3>
+
+<p><code>typedef int(*<strong>&lt;PT&gt;Predicate</strong>)(const T *const data);</code></p>
+
+<p>Typedef. Given constant <code>data</code>, returns a boolean.</p>
+
+</div>
+
+<h2><a id = "tag:" name = "tag:">Struct, Union, and Enum Definitions</a></h2>
+
+<div><h3><a id = "tag:Cee" name = "tag:Cee">Cee</a></h3>
+
+<p><code>struct <strong>Cee</strong>;</code></p>
+
+<p>In the header.</p>
+
+<dl>
+	<dt>Parameter: ALLYOURBASE</dt>
+	<dd>Also in the header.</dd>
+</dl>
+
+</div>
+
+<div><h3><a id = "tag:Scanner" name = "tag:Scanner">Scanner</a></h3>
+
+<p><code>struct <strong>Scanner</strong>;</code></p>
+
+<p>Tag</p>
+
+</div>
+
+<div><h3><a id = "tag:Token" name = "tag:Token">Token</a></h3>
+
+<p><code>enum <strong>Token</strong> { END };</code></p>
+
+<p>Tag</p>
+
+</div>
+
+<h2><a id = "data:" name = "data:">General Declarations</a></h2>
+
+<div><h3><a id = "data:Cee" name = "data:Cee">Cee</a></h3>
+
+<p><code>struct Cee *<strong>Cee</strong>();</code></p>
+
+<p>Prototype!</p>
+
+</div>
+
+<div><h3><a id = "data:y" name = "data:y">y</a></h3>
+
+<p><code>char(*(*<strong>y</strong>[3])())[5];</code></p>
+
+<p>declare x as array 3 of pointer to function returning pointer to array 5 of char</p>
+
+</div>
+
+<div><h3><a id = "data:foo" name = "data:foo">foo</a></h3>
+
+<p><code>int(*(*<strong>foo</strong>)(void))[3];</code></p>
+
+<p>declare foo as pointer to function (void) returning pointer to array 3 of int</p>
+
+</div>
+
+<div><h3><a id = "data:c" name = "data:c">c</a></h3>
+
+<p><code>int(*<strong>c</strong>);</code></p>
+
+<p>Declare a pointer-to-int?</p>
+
+</div>
+
+<div><h3><a id = "data:<T>foo" name = "data:<T>foo">&lt;T&gt;foo</a></h3>
+
+<p><code>int <strong>&lt;T&gt;foo</strong>;</code></p>
+
+<p>Test parameter.</p>
+
+</div>
+
+<div><h2><a id = "summary:" name = "summary:">Function Summary</a></h2>
+
+<table>
+
+<tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
+
+<tr><td align = right>void</td><td><a href = "#fn:Cee_">Cee_</a></td><td>ceeptr</td></tr>
+
+<tr><td align = right>char *</td><td><a href = "#fn:CeeGetVar">CeeGetVar</a></td><td>cee</td></tr>
+
+<tr><td align = right>int</td><td><a href = "#fn:fun0">fun0</a></td><td>arg1_2, arg2_2</td></tr>
+
+<tr><td align = right>int <em>function</em></td><td><a href = "#fn:fun1">fun1</a></td><td>arg1_1</td></tr>
+
+<tr><td align = right>static enum Token</td><td><a href = "#fn:fun2_scan_eof">fun2_scan_eof</a></td><td>arg1_2, arg2_2</td></tr>
+
+<tr><td align = right>static enum Token</td><td><a href = "#fn:fun3_scan_comment">fun3_scan_comment</a></td><td>arg1_1</td></tr>
+
+<tr><td align = right>void</td><td><a href = "#fn:<T>fun4">&lt;T&gt;fun4</a></td><td></td></tr>
+
+<tr><td align = right>T</td><td><a href = "#fn:fun5_">fun5_</a></td><td>arg1_2, arg2_3, arg3_3</td></tr>
+
+<tr><td align = right>int</td><td><a href = "#fn:fun6">fun6</a></td><td>oy, vey</td></tr>
+
+<tr><td align = right>void</td><td><a href = "#fn:fun7">fun7</a></td><td>a, b, c</td></tr>
+
+<tr><td align = right>int</td><td><a href = "#fn:main">main</a></td><td></td></tr>
+
+</table>
+
+</div>
+
+<div><h2><a id = "fn:" name = "fn:">Function Definitions</a></h2>
+
+<div><h3><a id = "fn:Cee_" name = "fn:Cee_">Cee_</a></h3>
+
+<p><code>void <strong>Cee_</strong>(struct Cee **<em>ceeptr</em>);</code></p>
+
+</div>
+
+<div><h3><a id = "fn:CeeGetVar" name = "fn:CeeGetVar">CeeGetVar</a></h3>
+
+<p><code>char *<strong>CeeGetVar</strong>(const struct Cee *<em>cee</em>);</code></p>
+
+</div>
+
+<div><h3><a id = "fn:fun0" name = "fn:fun0">fun0</a></h3>
+
+<p><code>int <strong>fun0</strong>(int(*<em>arg1_2</em>)(int, int(*not)(int)), int <em>arg2_2</em>)</code></p>
+
+</div>
+
+<div><h3><a id = "fn:fun1" name = "fn:fun1">fun1</a></h3>
+
+<p><code>int(*(*<strong>fun1</strong>(const int <em>arg1_1</em>))(int))(int(*)(int))</code></p>
+
+<p>Function declare x as function (int) returning pointer to function (int) returning pointer to function (pointer to function (int) returning int) returning int</p>
+
+<dl>
+	<dt>Parameter: <em>arg1_1</em></dt>
+	<dd>Yes.</dd>
+</dl>
+
+</div>
+
+<div><h3><a id = "fn:fun2_scan_eof" name = "fn:fun2_scan_eof">fun2_scan_eof</a></h3>
+
+<p><code>static enum Token <strong>fun2_scan_eof</strong>(struct Scanner *const <em>arg1_2</em>, int <em>arg2_2</em>)</code></p>
+
+<p>Returns eof.</p>
+
+<dl>
+	<dt>Parameter: <em>arg1_2</em></dt>
+	<dd>Arg 1/2.</dd>
+	<dt>Parameter: <em>arg2_2</em></dt>
+	<dd>Arg 2/2.</dd>
+	<dt>Return:</dt>
+	<dd>END.</dd>
+	<dt>Implements:</dt>
+	<dd>ScannerFn</dd>
+	<dt>Author:</dt>
+	<dd>External Author</dd>
+	<dt>License:</dt>
+	<dd>External license!</dd>
+</dl>
+
+</div>
+
+<div><h3><a id = "fn:fun3_scan_comment" name = "fn:fun3_scan_comment">fun3_scan_comment</a></h3>
+
+<p><code>static enum Token <strong>fun3_scan_comment</strong>(struct Scanner *const <em>arg1_1</em>)</code></p>
+
+<p>Function.</p>
+
+<dl>
+	<dt>Implements:</dt>
+	<dd>ScannerFn</dd>
+	<dt>Author:</dt>
+	<dd>Prof. Snape</dd>
+	<dt>License:</dt>
+	<dd>Other license!!</dd>
+</dl>
+
+</div>
+
+<div><h3><a id = "fn:<T>fun4" name = "fn:<T>fun4">&lt;T&gt;fun4</a></h3>
+
+<p><code>void <strong>&lt;T&gt;fun4</strong>(void)</code></p>
+
+<p>This is a foo.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#937; &#920; &#927; &#215; &#183; O</dd>
+</dl>
+
+</div>
+
+<div><h3><a id = "fn:fun5_" name = "fn:fun5_">fun5_</a></h3>
+
+<p><code>T <strong>fun5_</strong>(int(*<em>arg1_2</em>)(int arg1_3, int(*fn)(void)), Foo <em>arg2_3</em>, struct &lt;T&gt;Array <em>arg3_3</em>)</code></p>
+
+<p>Function <code>arg1_2</code>. yo</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Function of <code>arg2_2</code>.</dd>
+</dl>
+
+</div>
+
+<div><h3><a id = "fn:fun6" name = "fn:fun6">fun6</a></h3>
+
+<p><code>int <strong>fun6</strong>(<em>oy</em>, <em>vey</em>)</code></p>
+
+<p>Oyvey lipsum.</p>
+
+<p>O!!!!</p>
+
+<p>&lt;&gt; &lt;foo&gt; <a href = "i.">i.</a> <a href = "i.o">i.o</a> <a href = "i/o">i/o</a></p>
+
+</div>
+
+<dl>
+	<dt>Parameter: <em>oy</em></dt>
+	<dd>Nothing. Maybe something.</dd>
+	<dt>Parameter: <em>vey</em></dt>
+	<dd>Nothing.</dd>
+	<dt>Return:</dt>
+	<dd>No. Way.</dd>
+	<dt>Implements:</dt>
+	<dd>Foo, Bar</dd>
+	<dt>Exceptional return: AUGH, OY</dt>
+	<dd>Bad.</dd>
+	<dt>Exceptional return: RUN, AWAY</dt>
+	<dd>Ohno.</dd>
+	<dt>Author:</dt>
+	<dd>Nobody, Sombody</dd>
+	<dt>Standard:</dt>
+	<dd>C; Java</dd>
+	<dt>Dependancies:</dt>
+	<dd>Meh; Duh</dd>
+	<dt>Caveat:</dt>
+	<dd>Ohoh. Ohno.</dd>
+	<dt>License:</dt>
+	<dd>No. Way.</dd>
+</dl>
+
+</div>
+
+<div><h3><a id = "fn:fun7" name = "fn:fun7">fun7</a></h3>
+
+<p><code>void <strong>fun7</strong>(char(*const <em>a</em>)[12], int(*<em>b</em>)(int a, int b), int(((<em>c</em>))))</code></p>
+
+<p>Does nothing to <code>a</code> and <code>b</code>.</p>
+
+</div>
+
+<div><h3><a id = "fn:main" name = "fn:main">main</a></h3>
+
+<p><code>int <strong>main</strong>(void)</code></p>
+
+<p>Does main stuff.</p>
+
+</div>
+
+<div><h2><a id = "license:" name = "license:">License</a></h2>
+
+<p>Lol I don't need a license.</p>
+
+<p>No.</p>
+
+<p>(See license details <a href = "#fn:fun2_scan_eof">fun2_scan_eof</a><a href = "#fn:fun3_scan_comment">fun3_scan_comment</a><a href = "#fn:fun6">fun6</a>.)</p>
+
+</div>
+
+</body>
+
+</html>
