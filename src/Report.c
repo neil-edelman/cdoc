@@ -128,8 +128,16 @@ struct Segment {
 	struct AttributeArray attributes;
 };
 static void segment_to_string(const struct Segment *seg, char (*const a)[12]) {
-	strncpy(*a, divisions[seg->division], sizeof *a - 1);
-	(*a)[sizeof *a - 1] = '\0';
+	if(IndexArraySize(&seg->code_params)) {
+		const struct Token *const tok
+			= TokenArrayGet(&seg->code) + *IndexArrayGet(&seg->code_params);
+		const size_t len = tok->length < 11 ? tok->length : 11;
+		memcpy(*a, tok->from, len);
+		(*a)[len] = '\0';
+	} else {
+		strncpy(*a, divisions[seg->division], sizeof *a - 1);
+		(*a)[sizeof *a - 1] = '\0';
+	}
 }
 #define ARRAY_NAME Segment
 #define ARRAY_TYPE struct Segment
@@ -258,6 +266,11 @@ static int semantic(struct Segment *const segment) {
 	if(!(dest = IndexArrayBuffer(&segment->code_params, no))) return 0;
 	for(i = 0; i < no; i++) dest[i] = source[i];
 	IndexArrayExpand(&segment->code_params, no);
+	{
+		char a[12];
+		segment_to_string(segment, &a);
+		fprintf(stderr, "Segment %s: index array %s.\n", a, IndexArrayToString(&segment->code_params));
+	}
 	return 1;
 }
 
