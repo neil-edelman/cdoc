@@ -137,11 +137,12 @@ static void style_clear(void) {
 	mode.is_before_sep = 0;
 }
 
+/* fixme: failing inexplicably. */
 static void style_push(const struct StyleText *const text) {
 	/*struct Style *const push = StyleArrayNew(&mode.styles);*/
 	struct Style *push;
 	assert(text);
-	fprintf(stderr, "style_push before %s <- %s\n", StyleArrayToString(&mode.styles), text->name);
+	/*fprintf(stderr, "style_push before %s <- %s\n", StyleArrayToString(&mode.styles), text->name);*/
 	push = StyleArrayNew(&mode.styles);
 	/* There's so many void functions that rely on this function and it's such
 	 a small amount of memory, that it's useless to recover. The OS will have
@@ -150,7 +151,7 @@ static void style_push(const struct StyleText *const text) {
 	/*printf("<!-- push %s -->", text->name);*/
 	push->text = text;
 	push->lazy = BEGIN;
-	fprintf(stderr, "style_push after %s\n", StyleArrayToString(&mode.styles));
+	/*fprintf(stderr, "style_push after %s\n", StyleArrayToString(&mode.styles));*/
 }
 
 static void style_pop(void) {
