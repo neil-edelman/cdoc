@@ -193,12 +193,15 @@ static struct SegmentArray report, brief;
 
 
 
+static void style_(void);
+
 /** Destructor for the static document. Also destucts the string used for
  tokens. */
 void Report_(void) {
 	segment_array_(&brief);
 	segment_array_(&report);
 	Semantic(0);
+	style_();
 }
 
 /** @return A new empty segment from `segments`, defaults to the preamble, or

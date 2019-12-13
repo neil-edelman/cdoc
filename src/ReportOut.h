@@ -1231,6 +1231,6 @@ int ReportOut(void) {
 
 	if(format == OUT_HTML) printf("</body>\n\n"
 		"</html>\n");
-	style_clear();
+	assert(!StyleArraySize(&mode.styles) && !style_highlight.on);
 	return errno ? 0 : 1;
 }

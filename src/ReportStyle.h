@@ -131,8 +131,7 @@ static struct {
 
 static void unrecoverable(void) { perror("Unrecoverable"), exit(EXIT_FAILURE); }
 
-static void style_clear(void) {
-	assert(!StyleArraySize(&mode.styles) && !style_highlight.on);
+static void style_(void) {
 	StyleArray_(&mode.styles);
 	mode.is_before_sep = 0;
 }
