@@ -147,10 +147,12 @@ static void segment_array_(struct SegmentArray *const sa) {
 	struct Segment *segment;
 	if(!sa) return;
 	while((segment = SegmentArrayPop(sa))) {
+		char a[12];
+		segment_to_string(segment, &a);
 		TokenArray_(&segment->doc);
 		TokenArray_(&segment->code);
 		fprintf(stderr, "Clearing %s %s index array.\n",
-			SegmentArrayToString(sa), IndexArrayToString(&segment->code_params));
+			a, IndexArrayToString(&segment->code_params));
 		IndexArray_(&segment->code_params);
 		attributes_(&segment->attributes);
 	}
@@ -269,7 +271,8 @@ static int semantic(struct Segment *const segment) {
 	{
 		char a[12];
 		segment_to_string(segment, &a);
-		fprintf(stderr, "Segment %s: index array %s.\n", a, IndexArrayToString(&segment->code_params));
+		fprintf(stderr, "Segment %s: added %lu to index array %s.\n",
+			a, (unsigned long)no, IndexArrayToString(&segment->code_params));
 	}
 	return 1;
 }
