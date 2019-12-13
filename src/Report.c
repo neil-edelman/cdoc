@@ -127,17 +127,32 @@ struct Segment {
 	struct IndexArray code_params;
 	struct AttributeArray attributes;
 };
-static void segment_to_string(const struct Segment *seg, char (*const a)[12]) {
-	if(IndexArraySize(&seg->code_params)) {
-		const struct Token *const tok
-			= TokenArrayGet(&seg->code) + *IndexArrayGet(&seg->code_params);
-		const size_t len = tok->length < 11 ? tok->length : 11;
-		memcpy(*a, tok->from, len);
-		(*a)[len] = '\0';
-	} else {
-		strncpy(*a, divisions[seg->division], sizeof *a - 1);
-		(*a)[sizeof *a - 1] = '\0';
-	}
+/** Provides a default token for `segment` to print. */
+static const struct Token *segment_fallback(const struct Segment *const segment)
+{
+	assert(segment);
+	return IndexArraySize(&segment->code_params)
+		? TokenArrayGet(&segment->code)
+		+ IndexArrayGet(&segment->code_params)[0]
+		: TokenArraySize(&segment->code) ? TokenArrayGet(&segment->code)
+		: TokenArraySize(&segment->doc) ? TokenArrayGet(&segment->doc)
+		: AttributeArraySize(&segment->attributes)
+		? &AttributeArrayGet(&segment->attributes)->token : 0;
+}
+static void segment_to_string(const struct Segment *segment,
+	char (*const a)[12]) {
+	const struct Token *const fallback = segment_fallback(segment);
+	const char *const rep
+		= fallback ? fallback->from : divisions[segment->division];
+	size_t rep_len = fallback ? (size_t)fallback->length : strlen(rep), i = 0;
+	if(rep_len > sizeof *a - 4) rep_len = sizeof *a - 4;
+	(*a)[i++] = 'S';
+	(*a)[i++] = '<';
+	memcpy(*a + i, rep, rep_len);
+	i += rep_len;
+	(*a)[i++] = '>';
+	(*a)[i++] = '\0';
+	assert(i <= sizeof *a);
 }
 static void erase_segment(struct Segment *const segment) {
 	char a[12];
@@ -560,19 +575,6 @@ static int keep_segment(struct Segment *const s) {
 	}
 	erase_segment(s);
 	return 0;
-}
-
-/** Provides a default token for `segment` to print. */
-static const struct Token *segment_fallback(const struct Segment *const segment)
-{
-	assert(segment);
-	return IndexArraySize(&segment->code_params)
-		? TokenArrayGet(&segment->code)
-		+ IndexArrayGet(&segment->code_params)[0]
-		: TokenArraySize(&segment->code) ? TokenArrayGet(&segment->code)
-		: TokenArraySize(&segment->doc) ? TokenArrayGet(&segment->doc)
-		: AttributeArraySize(&segment->attributes)
-		? &AttributeArrayGet(&segment->attributes)->token : 0;
 }
 
 /** Keeps only the stuff we care about; discards no docs except fn and `static`
