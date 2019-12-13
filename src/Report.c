@@ -139,6 +139,18 @@ static void segment_to_string(const struct Segment *seg, char (*const a)[12]) {
 		(*a)[sizeof *a - 1] = '\0';
 	}
 }
+static void erase_segment(struct Segment *const segment) {
+	char a[12];
+	assert(segment);
+	segment_to_string(segment, &a);
+	segment->division = DIV_PREAMBLE;
+	TokenArray_(&segment->doc);
+	TokenArray_(&segment->code);
+	fprintf(stderr, "*** Clearing %s %s index array.\n",
+		a, IndexArrayToString(&segment->code_params));
+	IndexArray_(&segment->code_params);
+	attributes_(&segment->attributes);
+}
 #define ARRAY_NAME Segment
 #define ARRAY_TYPE struct Segment
 #define ARRAY_TO_STRING &segment_to_string
@@ -146,16 +158,7 @@ static void segment_to_string(const struct Segment *seg, char (*const a)[12]) {
 static void segment_array_(struct SegmentArray *const sa) {
 	struct Segment *segment;
 	if(!sa) return;
-	while((segment = SegmentArrayPop(sa))) {
-		char a[12];
-		segment_to_string(segment, &a);
-		TokenArray_(&segment->doc);
-		TokenArray_(&segment->code);
-		fprintf(stderr, "*** Clearing %s %s index array.\n",
-			a, IndexArrayToString(&segment->code_params));
-		IndexArray_(&segment->code_params);
-		attributes_(&segment->attributes);
-	}
+	while((segment = SegmentArrayPop(sa))) erase_segment(segment);
 	SegmentArray_(sa);
 }
 static void segment_array_clear(struct SegmentArray *const sa) {
@@ -539,8 +542,9 @@ static int is_static(const struct TokenArray *const code) {
 }
 
 /** @implements{Predicate<Segment>} */
-static int keep_segment(const struct Segment *const s) {
+static int keep_segment(struct Segment *const s) {
 	struct Attribute *a = 0;
+	assert(s);
 	if(TokenArraySize(&s->doc) || AttributeArraySize(&s->attributes)
 		|| s->division == DIV_FUNCTION) {
 		/* `static` and containing `@allow`. */
@@ -551,6 +555,7 @@ static int keep_segment(const struct Segment *const s) {
 		}
 		return 1;
 	}
+	erase_segment(s);
 	return 0;
 }
 

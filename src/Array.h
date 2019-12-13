@@ -101,7 +101,7 @@ typedef ARRAY_TYPE PT_(Type);
 /** Responsible for turning `<T>` (the first argument) into a 12 `char`
  null-terminated output string (the second.) Private; must re-declare. Used for
  `ARRAY_TO_STRING`. */
-typedef void (*PT_(ToString))(const T *, char (*const)[12]);
+typedef void (*PT_(ToString))(const T *, char (*)[12]);
 /* Check that `ARRAY_TO_STRING` is a function implementing
  <typedef:<PT>ToString>, whose definition is placed above
  `#include "Array.h"`. */
@@ -109,10 +109,10 @@ static const PT_(ToString) PT_(to_string) = (ARRAY_TO_STRING);
 #endif /* string --> */
 
 /** Operates by side-effects on `data` only. Private; must re-declare. */
-typedef void (*PT_(Action))(T *const data);
+typedef void (*PT_(Action))(T *data);
 
 /** Given constant `data`, returns a boolean. Private; must re-declare. */
-typedef int (*PT_(Predicate))(const T *const data);
+typedef int (*PT_(Predicate))(T *data);
 
 
 
