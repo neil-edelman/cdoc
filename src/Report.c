@@ -139,10 +139,12 @@ static const struct Token *segment_fallback(const struct Segment *const segment,
 	} else if(TokenArraySize(&segment->code)) {
 		ta = &segment->code;
 		t = TokenArrayGet(ta);
-	} else if(TokenArraySize(&segment->doc)) {
+	} else if(!ta_ptr && TokenArraySize(&segment->doc)) {
+		/* Raw pointers in the text are problematic since maybe we will convert
+		 it to a string and most text does not support that. */
 		ta = &segment->doc;
 		t = TokenArrayGet(ta);
-	} else if(AttributeArraySize(&segment->attributes)) {
+	} else if(!ta_ptr && AttributeArraySize(&segment->attributes)) {
 		ta = &segment->doc;
 		t = &AttributeArrayGet(&segment->attributes)->token;
 	}
