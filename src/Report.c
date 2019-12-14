@@ -193,7 +193,7 @@ static void erase_segment(struct Segment *const segment) {
 	TokenArray_(&segment->doc);
 	TokenArray_(&segment->code);
 	if(IndexArraySize(&segment->code_params))
-		fprintf(stderr, "*** Clearing %s: %s.\n",
+		fprintf(stderr, "*** Erasing %s: %s.\n",
 		a, IndexArrayToString(&segment->code_params));
 	IndexArray_(&segment->code_params);
 	attributes_(&segment->attributes);
