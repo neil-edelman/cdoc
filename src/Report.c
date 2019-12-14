@@ -128,30 +128,58 @@ struct Segment {
 	struct AttributeArray attributes;
 };
 /** Provides a default token for `segment` to print. */
-static const struct Token *segment_fallback(const struct Segment *const segment)
-{
+static const struct Token *segment_fallback(const struct Segment *const segment,
+	const struct TokenArray **const ta_ptr) {
+	const struct TokenArray *ta = 0;
+	const struct Token *t = 0;
 	assert(segment);
-	return IndexArraySize(&segment->code_params)
+	if(IndexArraySize(&segment->code_params)) {
+		ta = &segment->code;
+		t = TokenArrayGet(ta) + IndexArrayGet(&segment->code_params)[0];
+	} else if(TokenArraySize(&segment->code)) {
+		ta = &segment->code;
+		t = TokenArrayGet(ta);
+	} else if(TokenArraySize(&segment->doc)) {
+		ta = &segment->doc;
+		t = TokenArrayGet(ta);
+	} else if(AttributeArraySize(&segment->attributes)) {
+		ta = &segment->doc;
+		t = &AttributeArrayGet(&segment->attributes)->token;
+	}
+	if(ta_ptr) *ta_ptr = ta;
+	return t;
+	/*return IndexArraySize(&segment->code_params)
 		? TokenArrayGet(&segment->code)
 		+ IndexArrayGet(&segment->code_params)[0]
-		: /*TokenArraySize(&segment->code) ? TokenArrayGet(&segment->code)
+		: TokenArraySize(&segment->code) ? TokenArrayGet(&segment->code)
 		: TokenArraySize(&segment->doc) ? TokenArrayGet(&segment->doc)
 		: AttributeArraySize(&segment->attributes)
-		? &AttributeArrayGet(&segment->attributes)->token :
-		<- doesn't really help */ 0;
+		? &AttributeArrayGet(&segment->attributes)->token : 0;*/
 }
+
+/* For <fn:segment_to_string>. */
+static const char *print_token_s(const struct TokenArray *const tokens,
+	const struct Token *token);
+static void style_push_raw(void);
+static void style_pop(void);
+
 static void segment_to_string(const struct Segment *segment,
 	char (*const a)[12]) {
-	const struct Token *const fallback = segment_fallback(segment);
-	const char *const rep
-		= fallback ? fallback->from : divisions[segment->division];
-	size_t rep_len = fallback ? (size_t)fallback->length : strlen(rep), i = 0;
-	if(rep_len > sizeof *a - 4) rep_len = sizeof *a - 4;
+	const struct TokenArray *ta;
+	const struct Token *const fallback = segment_fallback(segment, &ta);
+	const char *temp = divisions[segment->division];
+	size_t temp_len, i = 0;
+	if(fallback) {
+		style_push_raw();
+		temp = print_token_s(ta, fallback);
+		style_pop();
+	}
+	temp_len = strlen(temp);
+	if(temp_len > sizeof *a - 3) temp_len = sizeof *a - 3;
 	(*a)[i++] = 'S';
-	(*a)[i++] = '<';
-	memcpy(*a + i, rep, rep_len);
-	i += rep_len;
-	(*a)[i++] = '>';
+	(*a)[i++] = '_';
+	memcpy(*a + i, temp, temp_len);
+	i += temp_len;
 	(*a)[i++] = '\0';
 	assert(i <= sizeof *a);
 }
@@ -562,7 +590,7 @@ static int is_static(const struct TokenArray *const code) {
 }
 
 /** @implements{Predicate<Segment>} */
-static int keep_segment(struct Segment *const s) {
+static int keep_segment(const struct Segment *const s) {
 	assert(s);
 	if(TokenArraySize(&s->doc) || AttributeArraySize(&s->attributes)
 		|| s->division == DIV_FUNCTION) {
@@ -578,16 +606,15 @@ static int keep_segment(struct Segment *const s) {
 	{
 		char a[12];
 		segment_to_string(s, &a);
-		fprintf(stderr, "keep_segment: erasing %s with index array %s.\n", a, IndexArrayToString(&s->code_params));
+		fprintf(stderr, "keep_segment: erasing %s.\n", a);
 	}
-	erase_segment(s);
 	return 0;
 }
 
 /** Keeps only the stuff we care about; discards no docs except fn and `static`
  if not `@allow`. */
 void ReportCull(void) {
-	SegmentArrayKeepIf(&report, &keep_segment);
+	SegmentArrayKeepIf(&report, &keep_segment, &erase_segment);
 }
 
 #include "ReportStyle.h"

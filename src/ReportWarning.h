@@ -153,7 +153,7 @@ static void warn_internal_link(const struct Token *const token) {
 static void warn_segment(const struct Segment *const segment) {
 	struct Attribute *attribute = 0;
 	const size_t *code_param;
-	const struct Token *const fallback = segment_fallback(segment);
+	const struct Token *const fallback = segment_fallback(segment, 0);
 	struct Token *token = 0;
 	assert(segment);
 	/* Check for empty (or full, as the case may be) attributes. */

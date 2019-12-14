@@ -153,6 +153,9 @@ static void style_push(const struct StyleText *const text) {
 	/*fprintf(stderr, "style_push after %s\n", StyleArrayToString(&mode.styles));*/
 }
 
+/** Report needs this above. */
+static void style_push_raw(void) { style_push(&to_raw); }
+
 static void style_pop(void) {
 	struct Style *const pop = StyleArrayPop(&mode.styles)/*,
 		*const top = StyleArrayPeek(&mode.styles)*/;

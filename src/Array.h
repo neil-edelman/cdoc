@@ -112,7 +112,7 @@ static const PT_(ToString) PT_(to_string) = (ARRAY_TO_STRING);
 typedef void (*PT_(Action))(T *data);
 
 /** Given constant `data`, returns a boolean. Private; must re-declare. */
-typedef int (*PT_(Predicate))(T *data);
+typedef int (*PT_(Predicate))(const T *data);
 
 
 
@@ -508,18 +508,18 @@ static T *T_(ArrayAny)(const struct T_(Array) *const a,
 }
 
 /** For all elements of `a`, calls `keep`, and for each element, if the return
- value is false, lazy deletes that item.
+ value is false, lazy deletes that item, calling `destruct` if not-null.
  @param[a, keep] If null, does nothing.
  @order \O(`size`)
  @allow */
 static void T_(ArrayKeepIf)(struct T_(Array) *const a,
-	const PT_(Predicate) keep) {
+	const PT_(Predicate) keep, const PT_(Action) destruct) {
 	T *erase = 0, *t;
 	const T *retain = 0, *end;
 	int keep0 = 1, keep1 = 0;
 	if(!a || !keep) return;
 	for(t = a->data, end = a->data + a->size; t < end; keep0 = keep1, t++) {
-		keep1 = !!keep(t);
+		if(!(keep1 = !!keep(t)) && destruct) destruct(t);
 		if(!(keep0 ^ keep1)) continue; /* Not a falling/rising edge. */
 		if(keep1) { /* Rising edge. */
 			assert(erase && !retain);
@@ -695,7 +695,7 @@ static void PT_(unused_set)(void) {
 	T_(ArrayEach)(0, 0);
 	T_(ArrayIfEach)(0, 0, 0);
 	T_(ArrayAny)(0, 0);
-	T_(ArrayKeepIf)(0, 0);
+	T_(ArrayKeepIf)(0, 0, 0);
 	T_(ArrayTrim)(0, 0);
 	T_(ArraySplice)(0, 0, 0, 0);
 	T_(ArrayIndexSplice)(0, 0, 0, 0);
