@@ -252,11 +252,11 @@ catch:
 	}
 	
 finally:
-	Buffer_();
 	Scanner_(&scanner);
 	Report_();
 	TextCloseAll();
 	Path_();
+	Buffer_(); /* Should be after ~Report because might do debug print. */
 	if(fp) fclose(fp);
 
 	return exit_code;
