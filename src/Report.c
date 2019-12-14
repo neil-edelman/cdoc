@@ -2,10 +2,7 @@
  [MIT License](https://opensource.org/licenses/MIT).
 
  Organises tokens into sections, each section can have some documentation,
- code, and maybe attributes.
-
- @title Report
- @author Neil */
+ code, and maybe attributes. */
 
 #include <string.h> /* size_t strncpy strncmp */
 #include <limits.h> /* INT_MAX */
