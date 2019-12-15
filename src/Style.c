@@ -159,23 +159,9 @@ static void style_to_string(const struct Style *s, char (*const a)[12]) {
 #define ARRAY_STACK
 #include "Array.h"
 
-static void format_to_string(const enum Format *f, char (*const a)[12]) {
-	const char *const fstr = format_strings[*f];
-	size_t fstr_len = strlen(fstr);
-	if(fstr_len > sizeof *a - 1) fstr_len = sizeof *a - 1;
-	memcpy(*a, fstr, fstr_len);
-	(*a)[fstr_len] = '\0';
-}
-#define ARRAY_NAME Format
-#define ARRAY_TYPE enum Format
-#define ARRAY_TO_STRING &format_to_string
-#define ARRAY_STACK
-#include "Array.h"
-
 /** Style stack with more. */
 static struct {
 	struct StyleArray styles;
-	struct FormatArray formats;
 	int is_before_sep;
 	struct { const struct Punctuate *punctuate; int on; } highlight;
 } style;
@@ -188,8 +174,7 @@ static void unrecoverable(void)
 	StyleArrayToString(&style.styles)), assert(0), exit(EXIT_FAILURE); }
 
 /** Expects the stack to be bounded. If `will_be_popped`, starts searching one
- spot below the top.
- @fixme This is stupid; just have another Format stack. */
+ spot below the top. */
 static enum Format effective_format_search(const int will_be_popped) {
 	struct Style *s = 0;
 	const enum Format f = CdocGetFormat();
@@ -209,10 +194,8 @@ enum Format StyleFormat(void) { return effective_format(); }
 
 /** Destructor for styles. */
 void Style_(void) {
-	assert(!StyleArraySize(&style.styles) && !FormatArraySize(&style.formats)
-		&& !style.highlight.on);
+	assert(!StyleArraySize(&style.styles) && !style.highlight.on);
 	StyleArray_(&style.styles);
-	FormatArray_(&style.formats);
 	style.is_before_sep = 0;
 }
 
