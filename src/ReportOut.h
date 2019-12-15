@@ -873,19 +873,14 @@ static void dl_segment_att(const struct Segment *const segment,
 static void dl_preamble_att(const enum Symbol attribute,
 	const enum AttShow show, const enum StylePunctuate p) {
 	assert(!StyleIsEmpty());
-	/* `style_title` is static in `Styles.h`. Hack. */
-	/*if(format == OUT_HTML) sprintf(style_title, "\t<dt>%.128s:</dt>\n"
-	 "\t<dd>", symbol_attribute_titles[attribute]);
-	 else sprintf(style_title, " * %.128s:  \n   ",
-	 symbol_attribute_titles[attribute]);*/
-	fprintf(stderr, "A\n");
-	StylePush(ST_DESC), fprintf(stderr, "Ab\n"), StylePush(p),
-	StylePush(ST_PLAIN);
+	fprintf(stderr, "dl_preamble_att for %s.\n", symbols[attribute]);
+	StylePush(ST_DT), StyleFlush();
+	printf("%s:", symbol_attribute_titles[attribute]);
+	StylePop();
+	StylePush(ST_DD), StylePush(p), StylePush(ST_PLAIN);
 	div_att_print(&is_div_preamble, attribute, SHOW_TEXT);
 	StylePop(), StylePush(ST_PAREN), StylePush(ST_CSV), StylePush(ST_PLAIN);
 	div_att_print(&is_not_div_preamble, attribute, show);
-	/* fixme */
-	fprintf(stderr, "dl_preamble_att for %s.\n", symbols[attribute]);
 	StylePop(), StylePop(), StylePop(), StylePop(), StylePop();
 }
 

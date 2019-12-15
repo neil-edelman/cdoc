@@ -113,10 +113,6 @@ static const struct Punctuate {
 		{ "html_dd", "\t<dd>", "", "</dd>\n", 0, 0, 0 },
 		{ "md_dd", "   ", "", "\n", 0, 0, 0 }
 	}, {
-		{ "raw_ddtitle", "FIXME"/*style_title*/, "", "", 0, 0, 0 },
-		{ "html_ddtitle", "FIXME"/*style_title*/, "", "</dd>\n", 0, 0, 0 },
-		{ "md_ddtitle", "FIXME"/*style_title*/, "", "\n", 0, 0, 0 }
-	}, {
 		{ "raw_em", "", "", "", 0, 0, 0 },
 		{ "html_em", "<em>", "", "</em>", 0, 0, 0 },
 		{ "md_em", "_", "", "_", 0, 0, 0 }
