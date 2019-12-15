@@ -7,19 +7,15 @@
 
 #include <string.h> /* strlen memcpy */
 #include <stdio.h>  /* fprintf */
+#include <limits.h> /* INT_MAX */
 #include "Cdoc.h"
 #include "Symbol.h"
-#include "Format.h"
 #include "Buffer.h"
 #include "Style.h" /** \include */
 
 /* `SYMBOL` is declared in `Symbol.h`. */
 static const int symbol_before_sep[] = { SYMBOL(PARAM6D) };
 static const int symbol_after_sep[]  = { SYMBOL(PARAM6E) };
-
-#define HTML_AMP "&amp;"
-#define HTML_GT  "&gt;"
-#define HTML_LT  "&lt;"
 
 /* Can have a beginning, a separator, and an end, which will be printed around
  literals. Must match the <tag:StylePunctuate>. */
@@ -89,9 +85,9 @@ static const struct Punctuate {
 		{ "html_pre", "<pre>\n", "", "</pre>\n\n", 1, 0, 0 },
 		{ "md_pre", "", "", "\n", 1, 1, OUT_HTML }
 	}, {
-		{ "raw_pretext", "", "\n", "", 0, 0, 0 },
-		{ "html_pretext", "", "\n", "\n", 0, 0, 0 },
-		{ "md_pretext", "", "\n    ", "\n", 0, 0, 0 }
+		{ "raw_preline", "", "\n", "", 0, 0, 0 },
+		{ "html_preline", "", "\n", "\n", 0, 0, 0 },
+		{ "md_preline", "", "\n    ", "\n", 0, 0, 0 }
 	}, {
 		{ "raw_h1", "", "", "", 1, 0, 0 },
 		{ "html_h1", "<h1>", "", "</h1>\n\n", 1, 0, 0 },
@@ -170,17 +166,17 @@ static struct {
 	struct { const struct Punctuate *punctuate; int on; } highlight;
 } style;
 
-/** This is supposed to take a bounded and small amount of memory, so unless
- one has an infinite style-push loop or one's memory is very small and one just
- happened to knick this small piece, this is not going to happen. */
+/** This takes a bounded and small amount of memory, so unless one has an
+ infinite style-push loop or one's memory is very small and one just happened
+ to knick this small piece, this is not going to happen. */
 static void unrecoverable(void)
 	{ perror("Unrecoverable"), fprintf(stderr, "Styles stack: %s.\n",
 	StyleArrayToString(&style.styles)), assert(0), exit(EXIT_FAILURE); }
 
-
-
-/** Expects the stack to be bounded. */
-static int effective_format_search(const int will_be_popped) {
+/** Expects the stack to be bounded. If `will_be_popped`, starts searching one
+ spot below the top.
+ @fixme This is stupid; just have another Format stack. */
+static enum Format effective_format_search(const int will_be_popped) {
 	struct Style *s = 0;
 	const enum Format f = CdocGetFormat();
 	/* If the style will be popped, don't include it. */
@@ -189,14 +185,17 @@ static int effective_format_search(const int will_be_popped) {
 		if(s->punctuate->is_to) return s->punctuate->to_format;
 	return f;
 }
-static int effective_format(void) { return effective_format_search(0); }
-static int effective_format_will_be_popped(void)
+static enum Format effective_format(void) { return effective_format_search(0); }
+static enum Format effective_format_will_be_popped(void)
 	{ return effective_format_search(1); }
 
+/** @return Unlike `CdocGetFormat` which always returns the same thing, this is
+ the style format, which could change. */
+enum Format StyleFormat(void) { return effective_format(); }
 
-
+/** Destructor for styles. */
 void Style_(void) {
-	/* fixme: assert */
+	assert(!StyleArraySize(&style.styles) && !style.highlight.on);
 	StyleArray_(&style.styles);
 	style.is_before_sep = 0;
 }
@@ -245,6 +244,16 @@ void StylePopPush(void) {
 	pop();
 	if((top = StyleArrayPeek(&style.styles))) top->lazy = SEPARATE;
 	push(peek->punctuate);
+}
+
+/** @return The top style's is strong or false if there are no styles. */
+int StylePeekAtIsStrong(void) {
+	struct Style *const top = StyleArrayPeek(&style.styles);
+	return top ? top->punctuate->is_strong : 0;
+}
+
+int StyleIsEmpty(void) {
+	return !StyleArraySize(&style.styles);
 }
 
 /** Differed space; must have a style. */
@@ -314,7 +323,7 @@ void StyleHighlightOff(void) {
  were.
  @param[is_buffer] Appends to the buffer chosen in `Buffer.c`. */
 static void encode_len_choose(int length, const char *from,
-							  const enum Format f, const int is_buffer) {
+	const enum Format f, const int is_buffer) {
 	int ahead = 0;
 	char *b;
 	const char *str;
@@ -322,15 +331,15 @@ static void encode_len_choose(int length, const char *from,
 	assert(length >= 0 && from);
 	
 	switch(f) {
-		case OUT_HTML:
-			if(is_buffer) goto html_encode_buffer;
-			else goto html_encode_print;
-		case OUT_MD:
-			if(is_buffer) goto md_encode_buffer;
-			else goto md_encode_print;
-		case OUT_RAW:
-			if(is_buffer) goto raw_encode_buffer;
-			goto raw_encode_print; /* This is `things in math/code` only in MD. */
+	case OUT_HTML:
+		if(is_buffer) goto html_encode_buffer;
+		else goto html_encode_print;
+	case OUT_MD:
+		if(is_buffer) goto md_encode_buffer;
+		else goto md_encode_print;
+	case OUT_RAW:
+		if(is_buffer) goto raw_encode_buffer;
+		goto raw_encode_print; /* This is `things in math/code` only in MD. */
 	}
 	
 raw_encode_buffer:
@@ -447,26 +456,41 @@ md_encode_print:
 	 return; */
 }
 
-static const char *encode_len_s_raw(const int length, const char *const from) {
-	BufferClear();
-	encode_len_choose(length, from, OUT_RAW, 1);
-	return BufferGet();
-}
-
-static void encode_cat_len_s(const int length, const char *const from) {
-	encode_len_choose(length, from, effective_format(), 1);
-}
-
 static void encode_len(const int length, const char *const from) {
+	assert(length > 0);
 	encode_len_choose(length, from, effective_format(), 0);
 }
 
-/** Encodes the string in the style chosen to `stdout`. */
-void StyleEncode(const char *const str) {
-	size_t length = strlen(str);
+/** Encodes `from` with the `length` in the style chosen to `stdout`. */
+void StyleEncodeLength(const int length, const char *const from) {
+	if(!from || length <= 0) return;
+	encode_len(length, from);
+}
+
+/** Encodes `string` in the style chosen to `stdout`. */
+void StyleEncode(const char *const string) {
+	size_t length;
+	if(!string) return;
+	length = strlen(string);
 	if(length > INT_MAX) { fprintf(stderr,
-		"StyleEncode: \"%.10s...\" length is greater then the maximum integer;"
-		" clipped at %d.\n", str, INT_MAX);
+		"StyleEncode \"%.10s...\" length clipped at %d.\n", string, INT_MAX);
 		length = INT_MAX; }
-	encode_len((int)length, str);
+	encode_len((int)length, string);
+}
+
+/** Encodes `from` to `length` in the style chosen and returns the buffer.
+ @return The buffer or null if . */
+const char *StyleEncodeLengthCatToBuffer(const int length,
+	const char *const from) {
+	if(length <= 0 || !from) return BufferGet();
+	encode_len_choose(length, from, effective_format(), 1);
+	return BufferGet();
+}
+	   
+/** @return The buffer or null. */
+const char *StyleEncodeLengthRawToBuffer(const int length,
+	const char *const from) {
+	BufferClear();
+	if(length > 0 && from) encode_len_choose(length, from, OUT_RAW, 1);
+	return BufferGet();
 }

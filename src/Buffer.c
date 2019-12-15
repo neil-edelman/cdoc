@@ -23,7 +23,7 @@ void Buffer_(void) {
 	CharArray_(buffers + 1);
 }
 
-/** Get the buffer. */
+/** Get the buffer. Always return a string. */
 const char *BufferGet(void) {
 	if(!CharArraySize(buffer)) return "";
 	return CharArrayGet(buffer);

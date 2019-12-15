@@ -129,7 +129,7 @@ static void warn_internal_link(const struct Token *const token) {
 	}
 	BufferSwap();
 	/* Encode the link text. */
-	a = encode_len_s_raw(token->length, token->from);
+	a = StyleEncodeLengthRawToBuffer(token->length, token->from);
 	BufferSwap();
 	/* Search for it. Not really efficient as it builds up labels from scratch,
 	 then discards them, over and over. */
@@ -141,9 +141,9 @@ static void warn_internal_link(const struct Token *const token) {
 			|| *fun_index >= TokenArraySize(&segment->code)) continue;
 		compare = TokenArrayGet(&segment->code) + *fun_index;
 		/* Use raw encoding to match raw in `a`. */
-		style_push(&to_raw);
+		StylePush(ST_TO_RAW);
 		b = print_token_s(&segment->code, compare);
-		style_pop();
+		StylePop();
 		if(!strcmp(a, b)) { if(CdocGetDebug()) fprintf(stderr,
 			"%s: link okay.\n", pos(token)); return; }
 	}

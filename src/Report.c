@@ -15,6 +15,7 @@
 #include "Buffer.h"
 #include "Path.h"
 #include "Text.h"
+#include "Style.h"
 #include "ImageDimension.h"
 #include "Cdoc.h"
 #include "Report.h"
@@ -159,8 +160,6 @@ static const struct Token *segment_fallback(const struct Segment *const segment,
 /* For <fn:segment_to_string>. */
 static const char *print_token_s(const struct TokenArray *const tokens,
 	const struct Token *token);
-static void style_push_raw(void);
-static void style_pop(void);
 
 static void segment_to_string(const struct Segment *segment,
 	char (*const a)[12]) {
@@ -169,9 +168,9 @@ static void segment_to_string(const struct Segment *segment,
 	const char *temp = divisions[segment->division];
 	size_t temp_len, i = 0;
 	if(fallback) {
-		style_push_raw();
+		StylePush(ST_TO_RAW);
 		temp = print_token_s(ta, fallback);
-		style_pop();
+		StylePop();
 	}
 	temp_len = strlen(temp);
 	if(temp_len > sizeof *a - 3) temp_len = sizeof *a - 3;
@@ -237,15 +236,13 @@ static struct SegmentArray report, brief;
 
 
 
-static void style_(void);
-
 /** Destructor for the static document. Also destucts the string used for
  tokens. */
 void Report_(void) {
 	segment_array_(&brief);
 	segment_array_(&report);
 	Semantic(0);
-	style_();
+	Style_();
 }
 
 /** @return A new empty segment from `segments`, defaults to the preamble, or
@@ -616,6 +613,5 @@ void ReportCull(void) {
 	SegmentArrayKeepIf(&report, &keep_segment, &erase_segment);
 }
 
-#include "ReportStyle.h"
 #include "ReportOut.h"
 #include "ReportWarning.h"

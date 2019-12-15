@@ -16,7 +16,13 @@ static unsigned fnv_32a_str(const char *str) {
 	return hval & 0xffffffff;
 }
 
-/* This is very `GitHub` specific. */
+/* This is very `GitHub`-2019 specific: all anchor names are pre-concatenated
+ with this string _except_ those that already have it, but the fragment
+ links are unchanged. To make them line up and also be a valid Markdown for
+ other sites, we must always start the anchor with this string. (Seems not to
+ affect the latest browsers; possibly some JavaScript trickery going on, as
+ happens with JavaScript.) We also must use a very restricted version of
+ Unicode, but those restrictions are heretofore undocumented, thus the hash. */
 static const char *const md_fragment_extra = "user-content-";
 
 /* `SYMBOL` is declared in `Scanner.h`. */
@@ -40,15 +46,15 @@ typedef int (*OutFn)(const struct TokenArray *const tokens,
 OUT(ws) {
 	const struct Token *const space = *ptoken;
 	assert(tokens && space && space->symbol == SPACE && !is_buffer);
-	style_separate();
+	StyleSeparate();
 	*ptoken = TokenArrayNext(tokens, space);
 	return 1;
 }
 OUT(par) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == NEWLINE && !is_buffer);
-	style_pop_level();
-	style_push(&styles[ST_P][effective_format()]);
+	StylePopStrong();
+	StylePush(ST_P);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -56,10 +62,10 @@ OUT(lit) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->length > 0 && t->from);
 	if(is_buffer) {
-		encode_cat_len_s(t->length, t->from);
+		StyleEncodeLengthCatToBuffer(t->length, t->from);
 	} else {
-		style_prepare_output(t->symbol);
-		encode_len(t->length, t->from);
+		StyleFlushSymbol(t->symbol);
+		StyleEncodeLength(t->length, t->from);
 	}
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
@@ -71,7 +77,7 @@ OUT(gen1) {
 		*const rparen = TokenArrayNext(tokens, param1);
 	const char *b, *type1;
 	int type1_size;
-	const enum Format f = effective_format();
+	const enum Format f = StyleFormat();
 	const char *const format =
 		f == OUT_HTML ? HTML_LT "%.*s" HTML_GT "%.*s" : "<%.*s>%.*s";
 	assert(tokens && t && t->symbol == ID_ONE_GENERIC);
@@ -88,7 +94,7 @@ OUT(gen1) {
 			+ type1_size + param1->length))) return 0;		
 		sprintf(a, format, type1_size, type1, param1->length, param1->from);
 	} else {
-		style_prepare_output(t->symbol);
+		StyleFlushSymbol(t->symbol);
 		printf(format, type1_size, type1, param1->length, param1->from);
 	}
 	*ptoken = TokenArrayNext(tokens, rparen);
@@ -107,7 +113,7 @@ OUT(gen2) {
 		*const rparen = TokenArrayNext(tokens, param2);
 	const char *b, *type1, *type2;
 	int type1_size, type2_size;
-	const enum Format f = effective_format();
+	const enum Format f = StyleFormat();
 	const char *const format = f == OUT_HTML ? HTML_LT "%.*s" HTML_GT "%.*s"
 		HTML_LT "%.*s" HTML_GT "%.*s" : "<%.*s>%.*s<%.*s>%.*s";
 	assert(tokens && t && t->symbol == ID_TWO_GENERICS);
@@ -129,7 +135,7 @@ OUT(gen2) {
 		sprintf(a, format, type1_size, type1, param1->length, param1->from,
 			type2_size, type2, param2->length, param2->from);
 	} else {
-		style_prepare_output(t->symbol);
+		StyleFlushSymbol(t->symbol);
 		printf(format, type1_size, type1, param1->length, param1->from,
 			type2_size, type2, param2->length, param2->from);
 	}
@@ -150,7 +156,7 @@ OUT(gen3) {
 		*const rparen = TokenArrayNext(tokens, param3);
 	const char *b, *type1, *type2, *type3;
 	int type1_size, type2_size, type3_size;
-	const enum Format f = effective_format();
+	const enum Format f = StyleFormat();
 	const char *const format = f == OUT_HTML ? HTML_LT "%.*s" HTML_GT "%.*s"
 		HTML_LT "%.*s" HTML_GT "%.*s" HTML_LT "%.*s" HTML_GT "%.*s"
 		: "<%.*s>%.*s<%.*s>%.*s<%.*s>%.*s";
@@ -179,7 +185,7 @@ OUT(gen3) {
 			type2_size, type2, param2->length, param2->from, type3_size, type3,
 			param3->length, param3->from);
 	} else {
-		style_prepare_output(t->symbol);
+		StyleFlushSymbol(t->symbol);
 		printf(format, type1_size, type1, param1->length, param1->from,
 			type2_size, type2, param2->length, param2->from, type3_size, type3,
 			param3->length, param3->from);
@@ -193,23 +199,23 @@ catch:
 OUT(escape) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == ESCAPE && t->length == 2 && !is_buffer);
-	style_prepare_output(t->symbol);
-	encode_len(1, t->from + 1);
+	StyleFlushSymbol(t->symbol);
+	StyleEncodeLength(1, t->from + 1);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
 OUT(url) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == URL && !is_buffer);
-	style_prepare_output(t->symbol);
+	StyleFlushSymbol(t->symbol);
 	/* I think it can't contain '<>()\"' by the parser. */
-	if(effective_format() == OUT_HTML) {
+	if(StyleFormat() == OUT_HTML) {
 		printf("<a href = \"%.*s\">", t->length, t->from);
-		encode_len(t->length, t->from);
+		StyleEncodeLength(t->length, t->from);
 		printf("</a>");
 	} else {
 		printf("[");
-		encode_len(t->length, t->from);
+		StyleEncodeLength(t->length, t->from);
 		printf("](%.*s)", t->length, t->from);
 	}
 	*ptoken = TokenArrayNext(tokens, t);
@@ -220,21 +226,21 @@ OUT(cite) {
 	const char *const url_encoded = UrlEncode(t->from, t->length);
 	assert(tokens && t && t->symbol == CITE && !is_buffer);
 	if(!url_encoded) goto catch;
-	style_prepare_output(t->symbol);
-	if(effective_format() == OUT_HTML) {
+	StyleFlushSymbol(t->symbol);
+	if(StyleFormat() == OUT_HTML) {
 		printf("<a href = \"https://scholar.google.ca/scholar?q=%s\">",
 			url_encoded);
-		encode_len(t->length, t->from);
+		StyleEncodeLength(t->length, t->from);
 		printf("</a>");
 	} else {
 		printf("[");
-		encode_len(t->length, t->from);
+		StyleEncodeLength(t->length, t->from);
 		printf("](https://scholar.google.ca/scholar?q=%s)", url_encoded);
 	}
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 catch:
-	fprintf(stderr, "%s: expected <short source>.\n", pos(t));
+	fprintf(stderr, "%s: expected <source>.\n", pos(t));
 	return 0;
 }
 static int see(const struct TokenArray *const tokens,
@@ -246,20 +252,20 @@ static int see(const struct TokenArray *const tokens,
 		|| (tok->symbol == SEE_TAG && divn == DIV_TAG)
 		|| (tok->symbol == SEE_TYPEDEF && divn == DIV_TYPEDEF)
 		|| (tok->symbol == SEE_DATA && divn == DIV_DATA)));
-	style_prepare_output(tok->symbol);
-	if(effective_format() == OUT_HTML) {
+	StyleFlushSymbol(tok->symbol);
+	if(StyleFormat() == OUT_HTML) {
 		printf("<a href = \"#%s:", division_strings[divn]);
-		encode_len(tok->length, tok->from);
+		StyleEncodeLength(tok->length, tok->from);
 		printf("\">");
-		encode_len(tok->length, tok->from);
+		StyleEncodeLength(tok->length, tok->from);
 		printf("</a>");
 	} else {
 		printf("[");
-		style_push(&to_html); /* This is not escaped by `GitHub` Markdown. */
-		encode_len(tok->length, tok->from);
-		style_pop();
+		StylePush(ST_TO_HTML); /* <-- html: this is not escaped by Markdown. */
+		StyleEncodeLength(tok->length, tok->from);
+		StylePop(); /* html --> */
 		printf("](#%s%s-%x)", md_fragment_extra, division_strings[divn],
-			   fnv_32a_str(encode_len_s_raw(tok->length, tok->from)));
+			fnv_32a_str(StyleEncodeLengthRawToBuffer(tok->length, tok->from)));
 	}
 	*ptoken = TokenArrayNext(tokens, tok);
 	return 1;
@@ -271,58 +277,42 @@ OUT(see_data) { return see(tokens, ptoken, is_buffer, DIV_DATA); }
 OUT(math_begin) { /* Math and code. */
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == MATH_BEGIN && !is_buffer);
-	style_push(&styles[ST_CODE][effective_format()]);
+	StylePush(ST_CODE);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
 OUT(math_end) {
 	const struct Token *const t = *ptoken;
-	const struct StyleText *const st = style_text_peek(),
-		*const st_expect = &styles[ST_CODE][effective_format_will_be_popped()];
 	assert(tokens && t && t->symbol == MATH_END && !is_buffer);
-	if(st != st_expect) {
-		char st_str[12], st_expect_str[12];
-		style_text_to_string(st, &st_str);
-		style_text_to_string(st_expect, &st_expect_str);
-		return fprintf(stderr, "%s: expected %s but got %s.\n",
-			StyleArrayToString(&mode.styles), st_expect_str, st_str), 0;
-	}
-	style_pop();
+	StyleExpect(ST_CODE);
+	StylePop();
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
 OUT(em_begin) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == EM_BEGIN && !is_buffer);
-	style_push(&styles[ST_EM][effective_format()]);
+	StylePush(ST_EM);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
 OUT(em_end) {
 	const struct Token *const t = *ptoken;
-	const struct StyleText *const st = style_text_peek(),
-		*const st_expect = &styles[ST_EM][effective_format_will_be_popped()];
 	assert(tokens && t && t->symbol == EM_END && !is_buffer);
-	if(st != st_expect) {
-		char st_str[12], st_expect_str[12];
-		style_text_to_string(st, &st_str);
-		style_text_to_string(st_expect, &st_expect_str);
-		return fprintf(stderr, "%s: expected %s but got %s.\n",
-			StyleArrayToString(&mode.styles), st_expect_str, st_str), 0;
-	}
-	style_pop();
+	StyleExpect(ST_EM);
+	StylePop();
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
 OUT(link) {
 	const struct Token *const t = *ptoken, *text, *turl;
-	const enum Format f = effective_format();
+	const enum Format f = StyleFormat();
 	const char *fn;
 	size_t fn_len;
 	FILE *fp;
 	int success = 0;
 	assert(tokens && t && t->symbol == LINK_START && !is_buffer);
-	style_prepare_output(t->symbol);
+	StyleFlushSymbol(t->symbol);
 	/* The expected format is LINK_START [^URL]* URL. */
 	for(turl = TokenArrayNext(tokens, t);;turl = TokenArrayNext(tokens, turl)) {
 		if(!turl) goto catch;
@@ -350,11 +340,11 @@ output:
 	assert(fn_len <= INT_MAX);
 	if(f == OUT_HTML) printf("<a href = \"%.*s\">", (int)fn_len, fn);
 	else printf("[");
-	/* This is html even in md in `GitHub`. */
-	style_push(&to_html), style_push(&plain_text);
+	/* This is html even in Md because it's surrounded by `a`. */
+	StylePush(ST_TO_HTML), StylePush(ST_PLAIN);
 	for(text = TokenArrayNext(tokens, t); text->symbol != URL; )
 		if(!(text = print_token(tokens, text))) goto catch;
-	style_pop(), style_pop();
+	StylePop(), StylePop();
 	if(f == OUT_HTML) printf("</a>");
 	else printf("](%.*s)", (int)fn_len, fn);
 	success = 1;
@@ -367,21 +357,21 @@ finally:
 }
 OUT(image) {
 	const struct Token *const t = *ptoken, *text, *turl;
-	const enum Format f = effective_format();
+	const enum Format f = StyleFormat();
 	const char *fn;
 	unsigned width = 1, height = 1;
 	int success = 0;
 	assert(tokens && t && t->symbol == IMAGE_START && !is_buffer);
-	style_prepare_output(t->symbol);
+	StyleFlushSymbol(t->symbol);
 	/* The expected format is IMAGE_START [^URL]* URL. */
 	for(turl = TokenArrayNext(tokens, t); turl->symbol != URL;
 		turl = TokenArrayNext(tokens, turl)) if(!turl) goto catch;
 	printf("%s", f == OUT_HTML ? "<img alt = \"" : "![");
-	/* This is html even in md in `GitHub`. */
-	style_push(&to_html), style_push(&plain_text);
+	/* This is html even in Md. */
+	StylePush(ST_TO_HTML), StylePush(ST_PLAIN);
 	for(text = TokenArrayNext(tokens, t); text->symbol != URL; )
 		if(!(text = print_token(tokens, text))) goto catch;
-	style_pop(), style_pop();
+	StylePop(), StylePop();
 	/* We want to open this file to check if it's on the up-and-up. */
 	if(!(errno = 0, fn = PathFromHere(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
@@ -414,7 +404,7 @@ finally:
 OUT(nbsp) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == NBSP && !is_buffer);
-	style_prepare_output(t->symbol);
+	StyleFlushSymbol(t->symbol);
 	printf("&nbsp;");
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
@@ -422,7 +412,7 @@ OUT(nbsp) {
 OUT(nbthinsp) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == NBTHINSP && !is_buffer);
-	style_prepare_output(t->symbol);
+	StyleFlushSymbol(t->symbol);
 	printf("&#8239;" /* "&thinsp;" <- breaking? */);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
@@ -430,7 +420,7 @@ OUT(nbthinsp) {
 OUT(mathcalo) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == MATHCALO && !is_buffer);
-	style_prepare_output(t->symbol);
+	StyleFlushSymbol(t->symbol);
 	/* Omicron. It looks like a stylised "O"? The actual is "&#120030;" but
 	 good luck finding a font that supports that. If one was using JavaScript
 	 and had a constant connection, we could use MathJax. */
@@ -441,7 +431,7 @@ OUT(mathcalo) {
 OUT(ctheta) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == CTHETA && !is_buffer);
-	style_prepare_output(t->symbol);
+	StyleFlushSymbol(t->symbol);
 	printf("&#920;" /* "&Theta;" This is supported on more browsers. */);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
@@ -449,7 +439,7 @@ OUT(ctheta) {
 OUT(comega) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == COMEGA && !is_buffer);
-	style_prepare_output(t->symbol);
+	StyleFlushSymbol(t->symbol);
 	printf("&#937;" /* "&Omega;" */);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
@@ -457,7 +447,7 @@ OUT(comega) {
 OUT(times) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == TIMES && !is_buffer);
-	style_prepare_output(t->symbol);
+	StyleFlushSymbol(t->symbol);
 	printf("&#215;");
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
@@ -465,40 +455,34 @@ OUT(times) {
 OUT(cdot) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == CDOT && !is_buffer);
-	style_prepare_output(t->symbol);
+	StyleFlushSymbol(t->symbol);
 	printf("&#183;" /* &middot; */);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
 OUT(list) {
-	const struct StyleText *const peek = style_text_peek();
 	const struct Token *const t = *ptoken;
-	const enum Format format = effective_format();
-	const struct StyleText *const li = &styles[ST_LI][format],
-		*const ul = &styles[ST_UL][format];
-	assert(tokens && t && t->symbol == LIST_ITEM && peek && !is_buffer);
-	if(peek == li) {
-		style_pop_push();
+	assert(tokens && t && t->symbol == LIST_ITEM && !is_buffer);
+	if(StylePeekAtIsStrong()) {
+		StylePopStrong();
+		StylePush(ST_UL), StylePush(ST_LI);
 	} else {
-		style_pop_level();
-		style_push(ul), style_push(li);
+		StyleExpect(ST_LI);
+		StylePopPush();
 	}
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
 OUT(pre) {
-	const struct StyleText *const peek = style_text_peek();
 	const struct Token *const t = *ptoken;
-	const enum Format format = effective_format();
-	const struct StyleText *const line = &styles[ST_PRELINE][format],
-		*const pref = &styles[ST_PRE][format];
-	assert(tokens && t && t->symbol == PREFORMATTED && peek && !is_buffer);
-	if(peek != line) {
-		style_pop_level();
-		style_push(pref), style_push(line);
+	assert(tokens && t && t->symbol == PREFORMATTED && !is_buffer);
+	if(StylePeekAtIsStrong()) {
+		StyleExpect(ST_PRE);
+		StylePopStrong();
+		StylePush(ST_PRE), StylePush(ST_PRELINE);
 	}
-	style_prepare_output(t->symbol);
-	encode_len(t->length, t->from);
+	StyleFlushSymbol(t->symbol);
+	StyleEncodeLength(t->length, t->from);
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
 }
@@ -528,7 +512,7 @@ static const struct Token *print_token_choose(
 	return token;
 }
 
-/** This is only for invididual tokens.
+/** This is only for individual tokens.
  @return The temporary buffer that stores the token. */
 static const char *print_token_s(const struct TokenArray *const tokens,
 	const struct Token *token) {
@@ -552,10 +536,9 @@ static void highlight_tokens(const struct TokenArray *const tokens,
 	const struct Token *const first = TokenArrayNext(tokens, 0), *token = first;
 	size_t *highlight = IndexArrayNext(highlights, 0);
 	int is_highlight, is_first_highlight = 1;
-	const enum Format f = effective_format();
 	assert(tokens);
 	if(!token) return;
-	style_push(&plain_text);
+	StylePush(ST_PLAIN);
 	while(token) {
 		if(highlight && *highlight == (size_t)(token - first)) {
 			is_highlight = 1;
@@ -563,12 +546,12 @@ static void highlight_tokens(const struct TokenArray *const tokens,
 		} else {
 			is_highlight = 0;
 		}
-		if(is_highlight) style_highlight_on(&styles[is_first_highlight
-			? ST_STRONG_HTML : ST_EM_HTML][f]);
+		if(is_highlight) StyleHighlightOn(is_first_highlight
+			? ST_STRONG_HTML : ST_EM_HTML);
 		token = print_token(tokens, token);
-		if(is_highlight) style_highlight_off(), is_first_highlight = 0;
+		if(is_highlight) StyleHighlightOff(), is_first_highlight = 0;
 	}
-	style_pop();
+	StylePop();
 }
 
 static void print_tokens(const struct TokenArray *const tokens) {
@@ -668,26 +651,24 @@ static void print_best_guess_at_modifiers(const struct Segment *const segment) {
 		> *IndexArrayGet(&segment->code_params));
 	while(code < stop) {
 		if(code->symbol == LPAREN) {
-			style_separate();
-			style_push(&styles[ST_EM][effective_format()]);
-			style_string_output();
+			StyleSeparate();
+			StylePush(ST_EM), StyleFlush();
 			printf("function");
-			style_pop();
+			StylePop();
 			return;
 		}
 		code = print_token(&segment->code, code);
 	}
 }
 
-
-
 /** Scan the `str`, used below. */
 static void scan_doc_string(const char *const str) {
 	struct Scanner *scan;
 	assert(str);
+	/* Generally this will be a bug in the programme, not in the input. */
 	if(!(scan = Scanner("string", str, &notify_brief, SSDOC)))
-		{ perror(str); unrecoverable(); return; }
-	style_string_output(), print_brief();
+		{ perror(str); assert(0); exit(EXIT_FAILURE); return; }
+	StyleFlush(), print_brief();
 	Scanner_(&scan);
 }
 
@@ -725,7 +706,7 @@ static void print_fragment_for(const enum Division d, const char *const label) {
 	BufferSwap();
 	BufferClear();
 	if(!(b = BufferPrepare(fmt_len)))
-		{ perror(label); unrecoverable(); return; }
+		{ perror(label); assert(0); exit(EXIT_FAILURE); return; }
 	len = f == OUT_HTML ? sprintf(b, fmt_html, label, division, label)
 		: sprintf(b, fmt_md, label, md_fragment_extra, division, hash);
 	assert(len == fmt_len);
@@ -735,7 +716,7 @@ static void print_fragment_for(const enum Division d, const char *const label) {
 
 static void print_custom_heading_fragment_for(const char *const division,
 	const char *const desc) {
-	const enum Format f = effective_format();
+	const enum Format f = StyleFormat();
 	/* "*.0s" does not work on all libraries? */
 	const char *const fmt_html = "[%s](#%s:)", *const fmt_md = "[%s](#%s%s)";
 	const size_t fmt_len = (f == OUT_HTML)
@@ -747,7 +728,7 @@ static void print_custom_heading_fragment_for(const char *const division,
 	assert(division && desc);
 	BufferClear();
 	if(!(b = BufferPrepare(fmt_len)))
-		{ perror(division); unrecoverable(); return; }
+		{ perror(division); assert(0); exit(EXIT_FAILURE); return; }
 	len = (f == OUT_HTML) ? sprintf(b, fmt_html, desc, division) :
 		sprintf(b, fmt_md, desc, md_fragment_extra, division);
 	assert(len == fmt_len);
@@ -758,15 +739,12 @@ static void print_heading_fragment_for(const enum Division d) {
 	print_custom_heading_fragment_for(division_strings[d], division_desc[d]);
 }
 
-
-
 /** @param[label] In HTML. */
 static void print_anchor_for(const enum Division d, const char *const label) {
-	const enum Format f = effective_format();
+	const enum Format f = StyleFormat();
 	const char *const division = division_strings[d];
 	assert(label);
-	style_push(&styles[ST_H3][f]);
-	style_string_output();
+	StylePush(ST_H3), StyleFlush();
 	printf("<a ");
 	if(f == OUT_HTML) {
 		printf("id = \"%s:%s\" name = \"%s:%s\"",
@@ -777,33 +755,30 @@ static void print_anchor_for(const enum Division d, const char *const label) {
 			division, hash, md_fragment_extra, division, hash);
 	}
 	fputc('>', stdout);
-	style_push(&to_html); /* The format is HTML because it's in an HTML tag. */
-	encode(label);
-	style_pop();
+	StylePush(ST_TO_HTML); /* The format is HTML because it's in an HTML tag. */
+	StyleEncode(label);
+	StylePop();
 	fputs("</a>", stdout);
-	style_pop(); /* h2 */
+	StylePop(); /* h2 */
 }
 
 static void print_custom_heading_anchor_for(const char *const division,
 	const char *const desc) {
-	const enum Format f = effective_format();
 	assert(division && desc);
-	style_push(&styles[ST_H2][f]);
-	style_string_output();
+	StylePush(ST_H2);
+	StyleFlush();
 	printf("<a ");
-	(f == OUT_HTML)
+	(StyleFormat() == OUT_HTML)
 		? printf("id = \"%s:\" name = \"%s:\"", division, division)
 		: printf("id = \"%s%s\" name = \"%s%s\"", md_fragment_extra, division,
 		md_fragment_extra, division);
 	printf(">%s</a>", desc);
-	style_pop(); /* h2 */
+	StylePop(); /* h2 */
 }
 
 static void print_heading_anchor_for(enum Division d) {
 	print_custom_heading_anchor_for(division_strings[d], division_desc[d]);
 }
-
-
 
 /** Toc subcategories. */
 static void print_toc_extra(const enum Division d) {
@@ -812,7 +787,7 @@ static void print_toc_extra(const enum Division d) {
 	struct Token *params;
 	const char *b;
 	printf(": ");
-	style_push(&plain_csv), style_push(&no_style);
+	StylePush(ST_CSV), StylePush(ST_NO_STYLE);
 	while((segment = SegmentArrayNext(&report, segment))) {
 		if(segment->division != d) continue;
 		if(!IndexArraySize(&segment->code_params)) { fprintf(stderr,
@@ -821,16 +796,14 @@ static void print_toc_extra(const enum Division d) {
 		idxs = IndexArrayGet(&segment->code_params);
 		params = TokenArrayGet(&segment->code);
 		assert(idxs[0] < TokenArraySize(&segment->code));
-		style_push(&to_raw);
+		StylePush(ST_TO_RAW);
 		b = print_token_s(&segment->code, params + idxs[0]);
-		style_pop();
+		StylePop();
 		print_fragment_for(d, b);
-		style_pop_push();
+		StylePopPush();
 	}
-	style_pop(), style_pop();
+	StylePop(), StylePop();
 }
-
-
 
 /** Functions as a bit-vector. */
 enum AttShow { SHOW_NONE, SHOW_WHERE, SHOW_TEXT, SHOW_ALL };
@@ -841,12 +814,12 @@ static void segment_att_print_all(const struct Segment *const segment,
 	struct Attribute *attribute = 0;
 	assert(segment);
 	if(!show) return;
-	fprintf(stderr, "segment_att_print_all segment %s and symbol %s: %s.\n", divisions[segment->division], symbols[symbol], StyleArrayToString(&mode.styles));
+	fprintf(stderr, "segment_att_print_all segment %s and symbol %s.\n", divisions[segment->division], symbols[symbol]);
 	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
 		size_t *pindex;
 		if(attribute->token.symbol != symbol
 		   || (match && !any_token(&attribute->header, match))) continue;
-		style_string_output();
+		StyleFlush();
 		if(show & SHOW_WHERE) {
 			if((pindex = IndexArrayNext(&segment->code_params, 0))
 			   && *pindex < TokenArraySize(&segment->code)) {
@@ -863,7 +836,7 @@ static void segment_att_print_all(const struct Segment *const segment,
 		/* Only do one if `SHOW_TEXT` is not set; in practice, this affects
 		 license, only showing one _per_ function. */
 		if(!(show & SHOW_TEXT)) break;
-		style_pop_push();
+		StylePopPush();
 	}
 }
 
@@ -881,66 +854,59 @@ static void div_att_print(const DivisionPredicate div_pred,
 
 static void dl_segment_att(const struct Segment *const segment,
 	const enum Symbol attribute, const struct Token *match,
-	const struct StyleText *const style) {
-	const enum Format format = effective_format();
-	assert(segment && attribute && style);
+	const enum StylePunctuate p) {
+	assert(segment && attribute);
 	if((match && !segment_attribute_match_exists(segment, attribute, match))
 	   || (!match && !segment_attribute_exists(segment, attribute))) return;
-	style_push(&styles[ST_DT][format]), style_push(&plain_text);
-	style_string_output();
+	StylePush(ST_DT), StylePush(ST_PLAIN), StyleFlush();
 	printf("%s:", symbol_attribute_titles[attribute]);
-	if(match) style_separate(), style_push(&styles[ST_EM][format]),
-		print_token(&segment->code, match), style_pop();
-	style_pop(), style_pop();
-	style_push(&styles[ST_DD][format]), style_push(style),
-	style_push(&plain_text);
+	if(match) StyleSeparate(), StylePush(ST_EM),
+		print_token(&segment->code, match), StylePop();
+	StylePop(), StylePop();
+	StylePush(ST_DD), StylePush(p), StylePush(ST_PLAIN);
 	segment_att_print_all(segment, attribute, match, SHOW_TEXT);
 	/* fixme */
-	fprintf(stderr, "dl_segment_att for %s: %s.\n", symbols[attribute], StyleArrayToString(&mode.styles));
-	style_pop(), style_pop(), style_pop();
+	fprintf(stderr, "dl_segment_att for %s.\n", symbols[attribute]);
+	StylePop(), StylePop(), StylePop();
 }
 
 /** This is used in preamble for attributes inside a `dl`.
  @param[is_recursive]  */
 static void dl_preamble_att(const enum Symbol attribute,
-	const enum AttShow show, const struct StyleText *const style) {
-	const enum Format format = effective_format();
-	assert(style);
+	const enum AttShow show, const enum StylePunctuate p) {
+	assert(!StyleIsEmpty());
 	/* `style_title` is static in `Styles.h`. Hack. */
 	/*if(format == OUT_HTML) sprintf(style_title, "\t<dt>%.128s:</dt>\n"
 	 "\t<dd>", symbol_attribute_titles[attribute]);
 	 else sprintf(style_title, " * %.128s:  \n   ",
 	 symbol_attribute_titles[attribute]);*/
-	fprintf(stderr, "A %s\n", StyleArrayToString(&mode.styles));
-	style_push(&styles[ST_DESC][format]), fprintf(stderr, "Ab %s\n", StyleArrayToString(&mode.styles)), style_push(style),
-	style_push(&plain_text);
+	fprintf(stderr, "A\n");
+	StylePush(ST_DESC), fprintf(stderr, "Ab\n"), StylePush(p),
+	StylePush(ST_PLAIN);
 	div_att_print(&is_div_preamble, attribute, SHOW_TEXT);
-	style_pop(), style_push(&plain_parenthetic), style_push(&plain_csv),
-	style_push(&plain_text);
+	StylePop(), StylePush(ST_PAREN), StylePush(ST_CSV), StylePush(ST_PLAIN);
 	div_att_print(&is_not_div_preamble, attribute, show);
 	/* fixme */
-	fprintf(stderr, "dl_preamble_att for %s: %s.\n", symbols[attribute], StyleArrayToString(&mode.styles));
-	style_pop(), style_pop(), style_pop(), style_pop(), style_pop();
+	fprintf(stderr, "dl_preamble_att for %s.\n", symbols[attribute]);
+	StylePop(), StylePop(), StylePop(), StylePop(), StylePop();
 }
 
 static void dl_segment_specific_att(const struct Attribute *const attribute) {
-	const enum Format format = effective_format();
 	assert(attribute);
-	style_push(&styles[ST_DT][format]), style_push(&plain_text);
-	style_string_output();
+	StylePush(ST_DT), StylePush(ST_PLAIN), StyleFlush();
 	printf("%s:", symbol_attribute_titles[attribute->token.symbol]);
 	if(TokenArraySize(&attribute->header)) {
 		const struct Token *token = 0;
-		style_separate();
-		style_push(&plain_csv);
+		StyleSeparate();
+		StylePush(ST_CSV);
 		while((token = TokenArrayNext(&attribute->header, token)))
-			print_token(&attribute->header, token), style_separate();
-		style_pop();
+			print_token(&attribute->header, token), StyleSeparate();
+		StylePop();
 	}
-	style_pop(), style_pop();
-	style_push(&styles[ST_DD][format]), style_push(&plain_text);
+	StylePop(), StylePop();
+	StylePush(ST_DD), StylePush(ST_PLAIN);
 	print_tokens(&attribute->contents);
-	style_pop(), style_pop();
+	StylePop(), StylePop();
 }
 
 
@@ -948,50 +914,48 @@ static void dl_segment_specific_att(const struct Attribute *const attribute) {
 /** Prints all a `segment`.
  @implements division_act */
 static void segment_print_all(const struct Segment *const segment) {
-	const enum Format f = effective_format();
 	const struct Token *param;
 	const char *b;
 	assert(segment && segment->division != DIV_PREAMBLE);
-	style_push(&styles[ST_DIV][f]);
+	StylePush(ST_DIV);
 
 	/* The title is generally the first param. Only single-words. */
 	if((param = param_no(segment, 0))) {
-		style_push(&to_raw); /* Anchors are always raw. */
+		StylePush(ST_TO_RAW); /* Anchors are always raw. */
 		b = print_token_s(&segment->code, param);
-		style_pop();
+		StylePop();
 		print_anchor_for(segment->division, b);
-		style_push(&styles[ST_P][f]), style_push(&to_html);
-		style_string_output();
+		StylePush(ST_P), StylePush(ST_TO_HTML);
+		StyleFlush();
 		printf("<code>");
 		highlight_tokens(&segment->code, &segment->code_params);
 		printf("</code>");
-		style_pop_level();
+		StylePopStrong();
 	} else {
-		style_push(&styles[ST_H3][f]);
-		style_string_output();
+		StylePush(ST_H3), StyleFlush();
 		printf("Unknown");
-		style_pop_level();
+		StylePopStrong();
 	}
 
 	/* Now text. */
-	style_push(&styles[ST_P][f]);
+	StylePush(ST_P);
 	print_tokens(&segment->doc);
-	style_pop_level();
+	StylePopStrong();
 
 	/* Attrubutes. */
-	style_push(&styles[ST_DL][f]);
+	StylePush(ST_DL);
 	if(segment->division == DIV_FUNCTION) {
 		const struct Attribute *att = 0;
 		size_t no;
 		for(no = 1; (param = param_no(segment, no)); no++)
-			dl_segment_att(segment, ATT_PARAM, param, &plain_text);
-		dl_segment_att(segment, ATT_RETURN, 0, &plain_text);
-		dl_segment_att(segment, ATT_IMPLEMENTS, 0, &plain_csv);
+			dl_segment_att(segment, ATT_PARAM, param, ST_PLAIN);
+		dl_segment_att(segment, ATT_RETURN, 0, ST_PLAIN);
+		dl_segment_att(segment, ATT_IMPLEMENTS, 0, ST_CSV);
 		while((att = AttributeArrayNext(&segment->attributes, att))) {
 			if(att->token.symbol != ATT_THROWS) continue;
 			dl_segment_specific_att(att);
 		}
-		dl_segment_att(segment, ATT_ORDER, 0, &plain_text);
+		dl_segment_att(segment, ATT_ORDER, 0, ST_PLAIN);
 	} else if(segment->division == DIV_TAG) {
 		const struct Attribute *att = 0;
 		while((att = AttributeArrayNext(&segment->attributes, att))) {
@@ -999,14 +963,14 @@ static void segment_print_all(const struct Segment *const segment) {
 			dl_segment_specific_att(att);
 		}
 	}
-	dl_segment_att(segment, ATT_AUTHOR, 0, &plain_csv);
-	dl_segment_att(segment, ATT_STD, 0, &plain_ssv);
-	dl_segment_att(segment, ATT_DEPEND, 0, &plain_ssv);
-	dl_segment_att(segment, ATT_FIXME, 0, &plain_text);
-	dl_segment_att(segment, ATT_LICENSE, 0, &plain_text);
-	dl_segment_att(segment, ATT_CF, 0, &plain_ssv);
-	style_pop_level(); /* dl */
-	style_pop_level(); /* div */
+	dl_segment_att(segment, ATT_AUTHOR, 0, ST_CSV);
+	dl_segment_att(segment, ATT_STD, 0, ST_SSV);
+	dl_segment_att(segment, ATT_DEPEND, 0, ST_SSV);
+	dl_segment_att(segment, ATT_FIXME, 0, ST_PLAIN);
+	dl_segment_att(segment, ATT_LICENSE, 0, ST_PLAIN);
+	dl_segment_att(segment, ATT_CF, 0, ST_SSV);
+	StylePopStrong(); /* dl */
+	StylePopStrong(); /* div */
 }
 
 
@@ -1026,12 +990,12 @@ int ReportOut(void) {
 		is_data = division_exists(DIV_DATA),
 		is_license = attribute_exists(ATT_LICENSE);
 	const struct Segment *segment = 0;
-	const enum Format format = effective_format();
+	const enum Format format = StyleFormat();
 	const char *const in_fn = CdocGetInput(),
 		*const base_fn = strrchr(in_fn, *path_dirsep),
 		*const title = base_fn ? base_fn + 1 : in_fn;
 
-	assert(in_fn);
+	assert(in_fn && StyleIsEmpty());
 
 	/* Set `errno` here so that we don't have to test output each time. */
 	errno = 0;
@@ -1064,66 +1028,58 @@ int ReportOut(void) {
 			"\t\tpadding:          4px;\n"
 			"\t}\n"
 			"</style>\n");
-		style_push(&html_title), style_push(&plain_ssv),
-			style_push(&plain_text);
-		style_string_output();
-		encode(title);
-		style_pop_level();
-		assert(!StyleArraySize(&mode.styles));
+		StylePush(ST_TITLE), StylePush(ST_SSV), StylePush(ST_PLAIN);
+		StyleFlush(), StyleEncode(title), StylePopStrong();
+		assert(StyleIsEmpty());
 		printf("</head>\n\n"
 			"<body>\n\n");
 	}
 	/* Title. */
-	style_push(&styles[ST_H1][format]), style_push(&plain_ssv),
-		style_push(&plain_text);
-	style_string_output();
-	encode(title);
-	style_pop_level();
-	assert(!StyleArraySize(&mode.styles));
+	StylePush(ST_H1), StylePush(ST_SSV), StylePush(ST_PLAIN);
+	StyleFlush(), StyleEncode(title), StylePopStrong();
+	assert(StyleIsEmpty());
 
 	/* Subtitle. */
-	style_push(&styles[ST_H2][format]), style_push(&plain_ssv),
-	style_push(&plain_text);
+	StylePush(ST_H2), StylePush(ST_SSV), StylePush(ST_PLAIN);
 	div_att_print(&is_div_preamble, ATT_SUBTITLE, SHOW_TEXT);
-	style_pop_level();
-	assert(!StyleArraySize(&mode.styles));
+	StylePopStrong();
+	assert(StyleIsEmpty());
 
 	/* TOC. */
-	style_push(&styles[ST_UL][format]), style_push(&styles[ST_LI][format]);
-	if(is_preamble) print_heading_fragment_for(DIV_PREAMBLE), style_pop_push();
+	StylePush(ST_UL), StylePush(ST_LI);
+	if(is_preamble) print_heading_fragment_for(DIV_PREAMBLE), StylePopPush();
 	if(is_typedef) print_heading_fragment_for(DIV_TYPEDEF),
-		print_toc_extra(DIV_TYPEDEF), style_pop_push();
+		print_toc_extra(DIV_TYPEDEF), StylePopPush();
 	if(is_tag) print_heading_fragment_for(DIV_TAG),
-		print_toc_extra(DIV_TAG), style_pop_push();
+		print_toc_extra(DIV_TAG), StylePopPush();
 	if(is_data) print_heading_fragment_for(DIV_DATA),
-		print_toc_extra(DIV_DATA), style_pop_push();
+		print_toc_extra(DIV_DATA), StylePopPush();
 	if(is_function) print_custom_heading_fragment_for(summary, summary_desc),
-		style_pop_push(), print_heading_fragment_for(DIV_FUNCTION),
-		style_pop_push();
+		StylePopPush(), print_heading_fragment_for(DIV_FUNCTION),
+		StylePopPush();
 	if(is_license) print_custom_heading_fragment_for(license, license_desc),
-		style_pop_push();
-	style_pop_level();
-	assert(!StyleArraySize(&mode.styles));
+		StylePopPush();
+	StylePopStrong();
+	assert(StyleIsEmpty());
 
-#if 0
-	fprintf(stderr, "format: %s\n", format_strings[format]);
-	/* Preamble contents; it shows up as the more-aptly nammed "desciption" but
+#if 1
+	/* Preamble contents; it shows up as the more-aptly named "description" but
 	 I didn't want to type that much. */
 	if(is_preamble) {
-		style_push(&styles[ST_DIV][format]);
+		StylePush(ST_DIV);
 		print_heading_anchor_for(DIV_PREAMBLE);
 		while((segment = SegmentArrayNext(&report, segment))) {
 			if(segment->division != DIV_PREAMBLE) continue;
 #if 1
-			style_push(&styles[ST_P][format]);
+			StylePush(ST_P);
 #if 1
 			print_tokens(&segment->doc);
 #endif
-			style_pop_level();
+			StylePopStrong();
 #endif
 		}
 #if 1
-		style_push(&styles[ST_DL][format]);
+		StylePush(ST_DL);
 #if 1
 		/* `ATT_TITLE` is above. */
 		while((segment = SegmentArrayNext(&report, segment))) {
@@ -1136,21 +1092,21 @@ int ReportOut(void) {
 		}
 #endif
 #if 1
-		fprintf(stderr, "ReportOut: going into dl_preamble_att(ATT_AUTHOR, SHOW_ALL, &plain_csv) with mode.styles = %s;\n", StyleArrayToString(&mode.styles));
-		dl_preamble_att(ATT_AUTHOR, SHOW_ALL, &plain_csv);
+		fprintf(stderr, "ReportOut: going into dl_preamble_att(ATT_AUTHOR, SHOW_ALL, &plain_csv);\n");
+		dl_preamble_att(ATT_AUTHOR, SHOW_ALL, ST_CSV);
 		fprintf(stderr, "ReportOut: returned.\n");
-		dl_preamble_att(ATT_STD, SHOW_ALL, &plain_csv);
-		dl_preamble_att(ATT_DEPEND, SHOW_ALL, &plain_csv);
-		dl_preamble_att(ATT_FIXME, SHOW_WHERE, &plain_text);
-		dl_preamble_att(ATT_CF, SHOW_ALL, &plain_ssv);
+		dl_preamble_att(ATT_STD, SHOW_ALL, ST_CSV);
+		dl_preamble_att(ATT_DEPEND, SHOW_ALL, ST_CSV);
+		dl_preamble_att(ATT_FIXME, SHOW_WHERE, ST_PLAIN);
+		dl_preamble_att(ATT_CF, SHOW_ALL, ST_SSV);
 		/* `ATT_RETURN`, `ATT_THROWS`, `ATT_IMPLEMENTS`, `ATT_ORDER`,
 		 `ATT_ALLOW` have warnings. `ATT_LICENSE` is below. */
 #endif
-		style_pop_level();
+		StylePopStrong();
 #endif
-		style_pop_level();
+		StylePopStrong();
 	}
-	assert(!StyleArraySize(&mode.styles));
+	assert(StyleIsEmpty());
 
 	/* Print typedefs. */
 	if(is_typedef) {
@@ -1170,10 +1126,10 @@ int ReportOut(void) {
 	/* Print functions. */
 	if(is_function) {
 		/* Function table. */
-		style_push(&styles[ST_DIV][format]);
+		StylePush(ST_DIV);
 		print_custom_heading_anchor_for(summary, summary_desc);
-		style_push(&to_html);
-		style_string_output();
+		StylePush(ST_TO_HTML);
+		StyleFlush();
 		printf("<table>\n\n"
 			   "<tr><th>Modifiers</th><th>Function Name</th>"
 			   "<th>Argument List</th></tr>\n\n");
@@ -1188,13 +1144,13 @@ int ReportOut(void) {
 			paramn = TokenArraySize(&segment->code);
 			assert(idxs[0] < paramn);
 			printf("<tr><td align = right>");
-			style_push(&plain_text);
+			StylePush(ST_PLAIN);
 			print_best_guess_at_modifiers(segment);
-			style_pop();
+			StylePop();
 			printf("</td><td>");
-			style_push(&to_raw); /* Always get raw; translate after. */
+			StylePush(ST_TO_RAW); /* Always get raw; translate after. */
 			b = print_token_s(&segment->code, params + idxs[0]);
-			style_pop();
+			StylePop();
 			print_fragment_for(DIV_FUNCTION, b);
 			printf("</td><td>");
 			for(idx = 1; idx < idxn; idx++) {
@@ -1205,32 +1161,32 @@ int ReportOut(void) {
 			printf("</td></tr>\n\n");
 		}
 		printf("</table>\n\n");
-		style_pop(); /* to_html */
-		style_pop(); /* div */
-		assert(!StyleArraySize(&mode.styles));
+		StylePop(); /* to_html */
+		StylePop(); /* div */
+		assert(StyleIsEmpty());
 
 		/* Functions. */
-		style_push(&styles[ST_DIV][format]);
+		StylePush(ST_DIV);
 		print_heading_anchor_for(DIV_FUNCTION);
 		division_act(DIV_FUNCTION, &segment_print_all);
-		style_pop_level();
+		StylePopStrong();
 	}
 	/* License. */
 	if(is_license) {
-		style_push(&styles[ST_DIV][format]);
+		StylePush(ST_DIV);
 		print_custom_heading_anchor_for(license, license_desc);
-		style_push(&styles[ST_P][format]);
+		StylePush(ST_P);
 		div_att_print(&is_div_preamble, ATT_LICENSE, SHOW_TEXT);
-		style_pop_push();
-		style_push(&plain_see_license), style_push(&plain_text);
+		StylePopPush();
+		StylePush(ST_LICENSE), StylePush(ST_PLAIN);
 		div_att_print(&is_not_div_preamble, ATT_LICENSE, SHOW_WHERE);
-		style_pop_level();
-		style_pop_level();
+		StylePopStrong();
+		StylePopStrong();
 	}
 #endif
 
 	if(format == OUT_HTML) printf("</body>\n\n"
 		"</html>\n");
-	assert(!StyleArraySize(&mode.styles) && !style_highlight.on);
+	Style_();
 	return errno ? 0 : 1;
 }
