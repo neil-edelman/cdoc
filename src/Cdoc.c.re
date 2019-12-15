@@ -126,7 +126,7 @@ static struct {
 	enum { EXPECT_NOTHING, EXPECT_OUT, EXPECT_FORMAT } expect;
 	const char *in_fn, *out_fn;
 	enum Format format;
-	int debug, github;
+	int debug;
 } args;
 
 /** Parses the one `argument`; global state may be modified.
@@ -170,7 +170,7 @@ static int parse_arg(const char *const argument) {
 */
 }
 
-/** @return Whether the command-line option to spam on `stderr` was set. */
+/** @return Whether the command-line was set. */
 int CdocGetDebug(void) {
 	return args.debug;
 }
@@ -194,7 +194,7 @@ static void guess(void) {
 }
 
 /** @return What format the output was specified to be in `enum Format`. If
- there was no output specified, guess before from the output filename. */
+ there was no output format specified, guess. */
 enum Format CdocGetFormat(void) {
 	guess();
 	assert(args.format > 0 && args.format <= 2);
@@ -239,8 +239,8 @@ int main(int argc, char **argv) {
 
 	/* Output the results. */
 	ReportWarn();
-	ReportCull();
-	if(!ReportOut()) goto catch;
+	/*ReportCull();*/
+	/*if(!ReportOut()) goto catch;*/
 
 	exit_code = EXIT_SUCCESS; goto finally;
 	

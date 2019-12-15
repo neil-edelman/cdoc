@@ -132,8 +132,11 @@ static const struct Token *segment_fallback(const struct Segment *const segment,
 	const struct Token *t = 0;
 	assert(segment);
 	if(IndexArraySize(&segment->code_params)) {
+		const size_t i = IndexArrayGet(&segment->code_params)[0];
 		ta = &segment->code;
-		t = TokenArrayGet(ta) + IndexArrayGet(&segment->code_params)[0];
+		assert(i < TokenArraySize(ta));
+		t = TokenArrayGet(ta) + i;
+		fprintf(stderr, "seg_fall: *.*s.\n", t->length, t->from);
 	} else if(TokenArraySize(&segment->code)) {
 		ta = &segment->code;
 		t = TokenArrayGet(ta);
