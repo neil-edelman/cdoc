@@ -463,12 +463,11 @@ OUT(cdot) {
 OUT(list) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == LIST_ITEM && !is_buffer);
-	if(StylePeekAtIsStrong()) {
+	if(StyleIsTop(ST_LI)) {
+		StylePopPush();
+	} else {
 		StylePopStrong();
 		StylePush(ST_UL), StylePush(ST_LI);
-	} else {
-		StyleExpect(ST_LI);
-		StylePopPush();
 	}
 	*ptoken = TokenArrayNext(tokens, t);
 	return 1;
@@ -476,8 +475,7 @@ OUT(list) {
 OUT(pre) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == PREFORMATTED && !is_buffer);
-	if(StylePeekAtIsStrong()) {
-		StyleExpect(ST_PRE);
+	if(StyleIsTop(ST_PRELINE)) {
 		StylePopStrong();
 		StylePush(ST_PRE), StylePush(ST_PRELINE);
 	}

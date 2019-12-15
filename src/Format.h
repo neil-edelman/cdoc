@@ -3,6 +3,8 @@
 
 #include "XMacro.h"
 
+/* `punctuates` in `Style.c` is dependant on this order and size. */
+
 #define FORMAT(X) \
 	X(OUT_RAW), \
 	X(OUT_HTML), \

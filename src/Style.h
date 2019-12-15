@@ -16,7 +16,7 @@ void StylePush(const enum StylePunctuate);
 void StylePop(void);
 void StylePopStrong(void);
 void StylePopPush(void);
-int StylePeekAtIsStrong(void);
+int StyleIsTop(const enum StylePunctuate p);
 int StyleIsEmpty(void);
 void StyleSeparate(void);
 void StyleExpect(const enum StylePunctuate);
