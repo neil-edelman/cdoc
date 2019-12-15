@@ -136,7 +136,7 @@ static const struct Token *segment_fallback(const struct Segment *const segment,
 		ta = &segment->code;
 		assert(i < TokenArraySize(ta));
 		t = TokenArrayGet(ta) + i;
-		fprintf(stderr, "seg_fall: *.*s.\n", t->length, t->from);
+		fprintf(stderr, "seg_fall: %.*s.\n", t->length, t->from);
 	} else if(TokenArraySize(&segment->code)) {
 		ta = &segment->code;
 		t = TokenArrayGet(ta);
@@ -590,6 +590,7 @@ static int is_static(const struct TokenArray *const code) {
 
 /** @implements{Predicate<Segment>} */
 static int keep_segment(const struct Segment *const s) {
+	int keep = 0;
 	assert(s);
 	if(TokenArraySize(&s->doc) || AttributeArraySize(&s->attributes)
 		|| s->division == DIV_FUNCTION) {
@@ -597,17 +598,19 @@ static int keep_segment(const struct Segment *const s) {
 		/* `static` and containing `@allow`. */
 		if(is_static(&s->code)) {
 			while((a = AttributeArrayNext(&s->attributes, a))
-				  && a->token.symbol != ATT_ALLOW);
-			return a ? 1 : 0;
-		}
-		return 1;
+				&& a->token.symbol != ATT_ALLOW);
+			if(a) keep = 1;
+		} else keep = 1;
 	}
-	{
+	/* But wait, everything except the preamble has to have a title! */
+	if(s->division != DIV_PREAMBLE && !IndexArraySize(&s->code_params))
+		keep = 0;
+	if(!keep) {
 		char a[12];
 		segment_to_string(s, &a);
 		fprintf(stderr, "keep_segment: erasing %s.\n", a);
 	}
-	return 0;
+	return keep;
 }
 
 /** Keeps only the stuff we care about; discards no docs except fn and `static`

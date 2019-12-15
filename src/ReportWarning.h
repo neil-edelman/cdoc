@@ -222,9 +222,9 @@ static void warn_segment(const struct Segment *const segment) {
 		unused_attribute(segment, ATT_ALLOW);
 		break;
 	case DIV_TAG:
-		/* Should have one. */
-		if(IndexArraySize(&segment->code_params) != 1) fprintf(stderr,
-			"%s: unable to extract one tag name.\n", pos(fallback));
+		/* Should have one or zero. */
+		if(IndexArraySize(&segment->code_params) > 1) fprintf(stderr,
+			"%s: extracted mutiple tag names.\n", pos(fallback));
 		/* Unused in tags. */
 		unused_attribute(segment, ATT_SUBTITLE);
 		unused_attribute(segment, ATT_RETURN);

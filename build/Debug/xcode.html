@@ -1,0 +1,107 @@
+<!doctype html public "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+
+<head>
+<meta http-equiv = "Content-Type" content = "text/html;charset=UTF-8">
+<!-- Steal these colour values from JavaDocs. -->
+<style type = "text/css">
+	a:link,  a:visited { color: #4a6782; }
+	a:hover, a:focus   { color: #bb7a2a; }
+	a:active           { color: #4A6782; }
+	tr:nth-child(even) { background: #dee3e9; }
+	div {
+		margin:  4px 0;
+		padding: 0 4px 4px 4px;
+	}
+	table      { width: 100%; }
+	td         { padding: 4px; }
+	h3, h1 {
+		color: #2c4557;
+		background-color: #dee3e9;
+		padding:          4px;
+	}
+	h3 {
+		margin:           0 -4px;
+		padding:          4px;
+	}
+</style>
+<title>Cdoc.c.re</title>
+</head>
+
+<body>
+
+<h1>Cdoc.c.re</h1>
+
+<ul>
+	<li><a href = "#preamble:">Description</a></li>
+	<li><a href = "#license:">License</a></li>
+</ul>
+
+<div><h2><a id = "preamble:" name = "preamble:">Description</a></h2>
+
+<p>A context-sensitive parser intended to process parts of a <code>C</code> compilation unit and extract documentation, as well as outputting that documentation into the format specified. Designed to be very strict, warning one of documentation errors; and simple, made for self-contained independent documenatation. This does not do any compiling, just text-parsing. Thus, one can easily confuse by redefining symbols. However, it assumes the macro <code>A_B_(Foo,Bar)</code> is transformed into <code>&lt;A&gt;Foo&lt;B&gt;Bar</code>.</p>
+
+<p>Documentation commands are <code>/</code> <code>**…</code> (together) and are ended with <code>*…/</code>, but not <code>/</code> <code>*…*</code> <code>/</code>, (common code break.) Asterisks at the start of a line, like Kernel comments, or asterisks all over like some crazy ASCII art, are supported. Documentation appearing at most two lines above <code>typedef</code>, <code>tag</code> (<code>struct</code>, <code>enum</code>, <code>union</code>,) data, and functions, is associated therewith; everything else is automatically inserted into the description. Multiple documentation on the same command is appended. Two hard returns is a paragraph. Supports some <code>Markdown</code> commands included in the documentation,</p>
+
+<ul>
+	<li><code>\</code> escapes <code>_~!@&lt;&gt;[]</code> and "`"; "`" can not be represented in math/code, (multiple escapes aren't supported); in paragraph mode, except in ambiguous cases, the only ones that are needed are \` and \_;</li>
+	<li>_emphasised_: <em>emphasised</em>;</li>
+	<li>`code/math`: <code>code/math</code>;</li>
+	<li>start lists with <code>\*</code> (including spaces) and end with a new paragraph; these are simple, can be anywhere and don't nest;</li>
+	<li><code>\"</code> (and optionally a space) causes all the line after to be pre-formatted;</li>
+	<li>Escapes included for convenience: <code>\,</code> "&#8239;" non-breaking thin space, <code>\O</code> "&#927;" Bachmann–Landau notation, (but really capital omicron because not many fonts have a shape for code-point 120030,) <code>\Theta</code> "&#920;", <code>\Omega</code> "&#937;", <code>\times</code> "&#215;", <code>\cdot</code> "&#183;".</li>
+	<li><code>~</code> "&nbsp;" non-breaking space;</li>
+	<li><code>&lt;url&gt;</code>: relative URIs must have a slash or a dot to distinguish it from text;</li>
+	<li><code>&lt;Source, 1999, pp. 1-2&gt;</code>: citation;</li>
+	<li><code>&lt;fn:&lt;function&gt;&gt;</code>: function reference;</li>
+	<li><code>&lt;tag:&lt;tag&gt;&gt;</code>: struct, union, or enum (tag) reference;</li>
+	<li><code>&lt;typedef:&lt;typedef&gt;&gt;</code>: typedef reference;</li>
+	<li><code>&lt;data:&lt;identifier&gt;&gt;</code>: data reference;</li>
+	<li><code>[The link text](url)</code>: link, Markdown doesn't like <code>{}[]()</code> in text;</li>
+	<li><code>![Caption text](url.image)</code>: image, same;</li>
+	<li>a local include directive has a documentation comment immediately after that reads only <code>\include</code>, it will also be included in the documentation.</li>
+</ul>
+
+<p>Each-block-tags separate the documentation until the next paragraph or until the next each-block-tag, and specify a specific documentation structure. Each-block-tags that overlap are concatenated in the file order. Not all of these are applicable for all segments of text. These are:</p>
+
+<ul>
+	<li><code>@subtitle</code>: only makes sense for preamble, (it doesn't matter what case one writes it, but multiple are concatenated using semicolons);</li>
+	<li><code>@param[&lt;param1&gt;[, ...]]</code>: parameters, (multiple are concatenated using spaces, so this really should be sentence case);</li>
+	<li><code>@author</code> (commas);</li>
+	<li><code>@std</code>: standard, eg, <code>@std GNU-C99</code>, (semicolons);</li>
+	<li><code>@depend</code>: dependancy, (semicolons);</li>
+	<li><code>@fixme</code>: something doesn't work as expected, (spaces);</li>
+	<li><code>@return</code>: normal function return, (spaces);</li>
+	<li><code>@throws[&lt;exception1&gt;[, ...]]</code>: exceptional function return; <code>C</code> doesn't have native exceptions, so <code>@throws</code> means whatever one desires; perhaps a null pointer or false is returned and <code>errno</code> is set to <code>exception1</code>, (spaces);</li>
+	<li><code>@implements</code>: <code>C</code> doesn't have the concept of implements, but we would say that a function having a prototype of <code>(int (*)(const void *, const void *))</code> implements <code>bsearch</code> and <code>qsort</code>, (commas);</li>
+	<li><code>@order</code>: comments about the run-time or space, (spaces);</li>
+	<li>and <code>@allow</code>, the latter being to allow <code>static</code> functions or data in the documentation, which are usually culled; one will be warned if this has any text.</li>
+</ul>
+
+<p>Perhaps the most striking difference from <code>Javadoc</code> and <code>Doxygen</code> is the <code>@param</code> has to be followed by a braced list, (it's confusing to have the variable be indistinguishable from the text.)</p>
+
+<p>If one sets <code>md</code> as output, it goes to <code>GitHub</code> Markdown that is specifically visible on the <code>GitHub</code> page, (including working anchor links on browsers &gt; 2000.) It bears little to Markdown supported in the documentation.</p>
+
+</div>
+
+<dl>
+	<dt>Author:</dt>
+	<dt>Standard:</dt>
+	<dd>C89</dd>
+	<dt>Dependancies:</dt>
+	<dd><a href = "http://re2c.org/">re2c</a></dd>
+	<dt>Caveat:</dt>
+	<dd>Old-style function support. Trigraph support, (haha.) Hide <code>const</code> on params when it can not affect function calls. Documentation on functions should be added to documentation on prototypes with the same (similar) prototype. Links to non-documented code which sometimes doesn't show up, work without error, and create broken links. 80-characters <em>per</em> line limit, <a href = "https://xxyxyz.org/line-breaking/">https://xxyxyz.org/line-breaking/</a>, (needs buffering.) Eg, fixme with no args disappears; we should NOT check if the string is empty for these values. Better yet, have a flag. pre needs to be investigated in md; it's not doing "<a href = "#user-content-ATT_PARAM-407e96bd">fun1</a>" when link? This needs to be fixed: Somebody, Nobody, (fixme: Cee: , fixme:)... Now <code>dl...att</code> scrunched up; push <code>plain_text</code>?</dd>
+	<dt>See also:</dt>
+</dl>
+
+<div><h2><a id = "license:" name = "license:">License</a></h2>
+
+<p>2019 Neil Edelman, distributed under the terms of the <a href = "https://opensource.org/licenses/MIT">MIT License</a>.</p>
+
+</div>
+
+</body>
+
+</html>

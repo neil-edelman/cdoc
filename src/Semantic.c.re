@@ -167,11 +167,15 @@ static int parse(void) {
 		if(!add_param(label)) return 0;
 		return 1;
 	}
-	// "something tag [id]" is a tag. fixme: what to do with unlabeled tags?
-	// re2c: tag 'label' has 2nd degree of nondeterminism
-	skip_simple* tag @label generic? redact* end {
+	// "something tag [id]" is a tag.
+	skip_simple* tag @label generic redact* end {
 		semantic.division = DIV_TAG;
 		if(!add_param(label)) return 0;
+		return 1;
+	}
+	// "something [id]" is an anonymous tag and it is unlabelled.
+	skip_simple* tag redact* end {
+		semantic.division = DIV_TAG;
 		return 1;
 	}
 	// Fixme: this is one of the . . . four? ways to define a function?
@@ -324,14 +328,13 @@ int Semantic(const struct TokenArray *const code) {
 	remove_recursive(buffer, '[', ']', '_');
 	/* Now with the {}[] removed. */
 	effectively_typedef_fn_ptr(buffer);
-	/* Get rid of all parentheses after the first level. This is sketchy, but
-	 allows parameters `int (*a)[2]`, however it will break something. */
-	/*remove_bottom_levels(buffer, '(', ')', '_'); That didn't work. */
 	if(!parse()) return 0;
 	if(CdocGetDebug())
 		fprintf(stderr, "%.32s:%lu: \"%s\" -> %s with params %s.\n",
 		semantic.label, (unsigned long)semantic.line, buffer,
 		divisions[semantic.division], IndexArrayToString(&semantic.params));
+	assert(!IndexArraySize(&semantic.params)
+		|| *IndexArrayPeek(&semantic.params) < buffer_size - 1);
 	/* It has been determined to be `divisions[semantic.division]`. */
 	return 1;
 }
