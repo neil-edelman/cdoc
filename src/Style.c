@@ -209,6 +209,8 @@ static void push(const struct Punctuate *const p) {
 /** Push the style `e`. @fixme Failing inexplicably? */
 void StylePush(const enum StylePunctuate p) {
 	push(&punctuates[p][effective_format()]);
+	if(CdocGetDebug() & DBG_STYLE) fprintf(stderr, "Push style %s.\n",
+		StyleArrayToString(&style.styles));	
 }
 
 static void pop(void) {
@@ -436,21 +438,6 @@ md_encode_print:
 		from++, length--;
 	}
 	return;
-	
-	/* This is how we would `[sfgsg\(dfg]()` but it hardly seems worth it -- maybe
-	 Markdown will change?
-	 md_square_encode_print:
-	 while(length) {
-	 switch(*from) {
-	 case '\0': fprintf(stderr, "Encoded null with %d left.\n", length);
-	 return;
-	 case '{': case '}': case '[': case ']': case '(': case ')':
-	 printf("\\%c", *from); break;
-	 default: fputc(*from, stdout); break;
-	 }
-	 from++, length--;
-	 }
-	 return; */
 }
 
 static void encode_len(const int length, const char *const from) {

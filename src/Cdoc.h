@@ -1,6 +1,7 @@
+#include "Debug.h"
 #include "Format.h"
 
-int CdocGetDebug(void);
+enum Debug CdocGetDebug(void);
 enum Format CdocGetFormat(void);
 const char *CdocGetInput(void);
 const char *CdocGetOutput(void);

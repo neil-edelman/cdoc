@@ -6,9 +6,9 @@
 #define PARAM(A) A
 #define STRINGISE(A) #A
 
-/*#define PARAM2A(A, B) A
+/* #define PARAM2A(A, B) A
 #define PARAM2B(A, B) B
-#define STRINGISE2A(A, B) #A*/
+#define STRINGISE2A(A, B) #A */
 
 #define PARAM3A(A, B, C) A
 #define PARAM3B(A, B, C) B

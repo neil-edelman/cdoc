@@ -105,28 +105,39 @@
 #include "../src/Path.h"
 #include "../src/Text.h"
 #include "../src/Buffer.h"
+#include "../src/Debug.h"
 #include "../src/Scanner.h"
 #include "../src/Report.h"
 #include "../src/Semantic.h"
 #include "../src/Cdoc.h"
 
+/*!re2c
+re2c:define:YYCTYPE = char;
+re2c:define:YYCURSOR = a;
+re2c:define:YYMARKER = m;
+re2c:yyfill:enable = 0;
+end = "\x00";
+*/
+
 static void usage(void) {
-	fprintf(stderr, "Usage: cdoc [options] <input-file>\n"
+	fprintf(stderr,
+		"Given <input-file>, a C file with encoded documentation,\n"
+		"outputs that documentation.\n"
+		"\n"
+		"Usage: cdoc [options] <input-file>\n"
 		"Where options are:\n"
 		"  -h | --help               This information.\n"
-		"  -d | --debug              Prints a lot of debug information.\n"
-		"  -f | --format (html | md) Overrides built-in guessing.\n"
-		"  -o | --output <filename>  Stick the output file in this.\n"
-		"\n"
-		"Given <input-file>, a C file with encoded documentation,\n"
-		"outputs that documentation.\n");
+		"  -d | --debug <read | output | semantic | hash | erase | style>\n"
+		"                            Prints a lot of debug information.\n"
+		"  -f | --format <html | md> Overrides built-in guessing.\n"
+		"  -o | --output <filename>  Stick the output file in this.\n");
 }
 
 static struct {
-	enum { EXPECT_NOTHING, EXPECT_OUT, EXPECT_FORMAT } expect;
+	enum { EXPECT_NOTHING, EXPECT_DEBUG, EXPECT_OUT, EXPECT_FORMAT } expect;
 	const char *in_fn, *out_fn;
 	enum Format format;
-	int debug;
+	enum Debug debug;
 } args;
 
 /** Parses the one `argument`; global state may be modified.
@@ -137,41 +148,37 @@ static int parse_arg(const char *const argument) {
 	case EXPECT_NOTHING: break;
 	case EXPECT_OUT: assert(!args.out_fn); args.expect = EXPECT_NOTHING;
 		args.out_fn = argument; return 1;
+	case EXPECT_DEBUG: args.expect = EXPECT_NOTHING;
+/*!re2c
+	*              { return 0; }
+	"read"   end   { args.debug |= DBG_READ; return 1; }
+	"output" end   { args.debug |= DBG_OUTPUT; return 1; }
+	"semantic" end { args.debug |= DBG_SEMANTIC; return 1; }
+	"hash" end     { args.debug |= DBG_HASH; return 1; }
+	"erase" end    { args.debug |= DBG_ERASE; return 1; }
+	"style" end    { args.debug |= DBG_STYLE; return 1; }
+*/
 	case EXPECT_FORMAT: assert(!args.format); args.expect = EXPECT_NOTHING;
-		if(!strcmp("md", argument)) args.format = OUT_MD;
-		else if(!strcmp("html", argument)) args.format = OUT_HTML;
-		else return 0;
-		return 1;
+/*!re2c
+	*      { return 0; }
+	"md"   end { args.format = OUT_MD; return 1; }
+	"html" end { args.format = OUT_HTML; return 1; }
+*/
 	}
 /*!re2c
-	re2c:define:YYCTYPE = char;
-	re2c:define:YYCURSOR = a;
-	re2c:define:YYMARKER = m;
-	re2c:yyfill:enable = 0;
-	end = "\x00";
 	// If it's not any other, it's probably an input filename?
-	* {
-		if(args.in_fn) return 0;
-		args.in_fn = argument;
-		return 1;
-	}
+	* { if(args.in_fn) return 0; args.in_fn = argument; return 1; }
 	("-h" | "--help") end { usage(); exit(EXIT_SUCCESS); }
-	("-d" | "--debug") end { args.debug = 1; return 1; }
-	("-f" | "--format") end {
-		if(args.format) return 0;
-		args.expect = EXPECT_FORMAT;
-		return 1;
-	}
-	("-o" | "--output") end {
-		if(args.out_fn) return 0;
-		args.expect = EXPECT_OUT;
-		return 1;
-	}
+	("-d" | "--debug") end { args.expect = EXPECT_DEBUG; return 1; }
+	("-f" | "--format") end
+		{ if(args.format) return 0; args.expect = EXPECT_FORMAT; return 1; }
+	("-o" | "--output") end
+		{ if(args.out_fn) return 0; args.expect = EXPECT_OUT; return 1; }
 */
 }
 
 /** @return Whether the command-line was set. */
-int CdocGetDebug(void) {
+enum Debug CdocGetDebug(void) {
 	return args.debug;
 }
 
@@ -188,7 +195,7 @@ static void guess(void) {
 		if(args.out_fn && (is_suffix(args.out_fn, ".html")
 			|| is_suffix(args.out_fn, ".htm"))) args.format = OUT_HTML;
 		else args.format = OUT_MD;
-		if(args.debug) fprintf(stderr, "Guess format is %s.\n",
+		if(args.debug & DBG_OUTPUT) fprintf(stderr, "Guess format is %s.\n",
 			format_strings[args.format]);
 	}
 }

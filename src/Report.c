@@ -136,13 +136,12 @@ static const struct Token *segment_fallback(const struct Segment *const segment,
 		ta = &segment->code;
 		assert(i < TokenArraySize(ta));
 		t = TokenArrayGet(ta) + i;
-		fprintf(stderr, "seg_fall: %.*s.\n", t->length, t->from);
 	} else if(TokenArraySize(&segment->code)) {
 		ta = &segment->code;
 		t = TokenArrayGet(ta);
 	} else if(!ta_ptr && TokenArraySize(&segment->doc)) {
-		/* Raw pointers in the text are problematic since maybe we will convert
-		 it to a string and most text does not support that. */
+		/* /\ Raw pointers in the text are problematic since maybe we will
+		 convert it to a string and most text does not support that. */
 		ta = &segment->doc;
 		t = TokenArrayGet(ta);
 	} else if(!ta_ptr && AttributeArraySize(&segment->attributes)) {
@@ -191,7 +190,7 @@ static void erase_segment(struct Segment *const segment) {
 	segment->division = DIV_PREAMBLE;
 	TokenArray_(&segment->doc);
 	TokenArray_(&segment->code);
-	if(IndexArraySize(&segment->code_params))
+	if(CdocGetDebug() & DBG_ERASE && IndexArraySize(&segment->code_params))
 		fprintf(stderr, "*** Erasing %s: %s.\n",
 		a, IndexArrayToString(&segment->code_params));
 	IndexArray_(&segment->code_params);
@@ -318,7 +317,7 @@ static int report_semantic(struct Segment *const segment) {
 	if(!(dest = IndexArrayBuffer(&segment->code_params, no))) return 0;
 	for(i = 0; i < no; i++) dest[i] = source[i];
 	IndexArrayExpand(&segment->code_params, no);
-	{
+	if(CdocGetDebug() & DBG_ERASE) {
 		char a[12];
 		segment_to_string(segment, &a);
 		fprintf(stderr, "*** Adding %lu to %s: %s.\n",
@@ -333,7 +332,7 @@ static int report_semantic(struct Segment *const segment) {
 static void print_segment_debug(const struct Segment *const segment) {
 	struct Attribute *att = 0;
 	struct Token *doc, *code;
-	if(!CdocGetDebug()) return;
+	if(!(CdocGetDebug() & DBG_OUTPUT)) return;
 	code = TokenArrayNext(&segment->code, 0);
 	doc  = TokenArrayNext(&segment->doc,  0);
 	fprintf(stderr, "Segment division %s:\n"
@@ -605,7 +604,7 @@ static int keep_segment(const struct Segment *const s) {
 	/* But wait, everything except the preamble has to have a title! */
 	if(s->division != DIV_PREAMBLE && !IndexArraySize(&s->code_params))
 		keep = 0;
-	if(!keep) {
+	if(!keep & CdocGetDebug() & DBG_ERASE) {
 		char a[12];
 		segment_to_string(s, &a);
 		fprintf(stderr, "keep_segment: erasing %s.\n", a);

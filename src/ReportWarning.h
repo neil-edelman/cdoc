@@ -144,7 +144,7 @@ static void warn_internal_link(const struct Token *const token) {
 		StylePush(ST_TO_RAW);
 		b = print_token_s(&segment->code, compare);
 		StylePop();
-		if(!strcmp(a, b)) { if(CdocGetDebug()) fprintf(stderr,
+		if(!strcmp(a, b)) { if(CdocGetDebug() & DBG_OUTPUT) fprintf(stderr,
 			"%s: link okay.\n", pos(token)); return; }
 	}
 	fprintf(stderr, "%s: link broken.\n", pos(token));

@@ -12,7 +12,8 @@ static unsigned fnv_32a_str(const char *str) {
 		hval ^= *s++;
 		hval += (hval<<1) + (hval<<4) + (hval<<7) + (hval<<8) + (hval<<24);
 	}
-	if(CdocGetDebug()) fprintf(stderr, "fnv32: %s -> %u\n", str, hval);
+	if(CdocGetDebug() & DBG_HASH)
+		fprintf(stderr, "fnv32: %s -> %u\n", str, hval);
 	return hval & 0xffffffff;
 }
 
@@ -327,14 +328,14 @@ OUT(link) {
 		{ if(errno) goto catch; else goto raw; }
 	fn_len = strlen(fn);
 	assert(fn_len < INT_MAX);
-	if(CdocGetDebug())
+	if(CdocGetDebug() & DBG_OUTPUT)
 		fprintf(stderr, "%s: local link %.*s.\n", pos(t), (int)fn_len, fn);
 	goto output;
 raw:
 	/* Maybe it's an external link? Just put it unmolested. */
 	fn = turl->from;
 	fn_len = turl->length;
-	if(CdocGetDebug())
+	if(CdocGetDebug() & DBG_OUTPUT)
 		fprintf(stderr, "%s: absolute link %.*s.\n", pos(t), (int)fn_len, fn);
 output:
 	assert(fn_len <= INT_MAX);
@@ -379,7 +380,8 @@ OUT(image) {
 	/* We want the path to print, now. */
 	if(!(errno = 0, fn = PathFromOutput(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
-	if(CdocGetDebug()) fprintf(stderr, "%s: local image %s.\n", pos(t), fn);
+	if(CdocGetDebug() & DBG_OUTPUT)
+		fprintf(stderr, "%s: local image %s.\n", pos(t), fn);
 	if(f == OUT_HTML) {
 		printf("\" src = \"%s\" width = %u height = %u>", fn, width, height);
 	} else {
@@ -389,7 +391,7 @@ OUT(image) {
 	goto finally;
 raw:
 	/* Maybe it's an external link? */
-	if(CdocGetDebug()) fprintf(stderr, "%s: remote image %.*s.\n",
+	if(CdocGetDebug() & DBG_OUTPUT) fprintf(stderr, "%s: remote image %.*s.\n",
 		pos(t), turl->length, turl->from);
 	printf("%s%.*s%s", f == OUT_HTML ? "\" src = \"" : "](",
 		turl->length, turl->from, f == OUT_HTML ? "\">" : ")");
@@ -812,7 +814,9 @@ static void segment_att_print_all(const struct Segment *const segment,
 	struct Attribute *attribute = 0;
 	assert(segment);
 	if(!show) return;
-	fprintf(stderr, "segment_att_print_all segment %s and symbol %s.\n", divisions[segment->division], symbols[symbol]);
+	/* fixme */
+	if(CdocGetDebug() & DBG_ERASE)
+		fprintf(stderr, "segment_att_print_all segment %s and symbol %s.\n", divisions[segment->division], symbols[symbol]);
 	while((attribute = AttributeArrayNext(&segment->attributes, attribute))) {
 		size_t *pindex;
 		if(attribute->token.symbol != symbol
@@ -864,7 +868,8 @@ static void dl_segment_att(const struct Segment *const segment,
 	StylePush(ST_DD), StylePush(p), StylePush(ST_PLAIN);
 	segment_att_print_all(segment, attribute, match, SHOW_TEXT);
 	/* fixme */
-	fprintf(stderr, "dl_segment_att for %s.\n", symbols[attribute]);
+	if(CdocGetDebug() & DBG_ERASE)
+		fprintf(stderr, "dl_segment_att for %s.\n", symbols[attribute]);
 	StylePop(), StylePop(), StylePop();
 }
 
@@ -873,7 +878,9 @@ static void dl_segment_att(const struct Segment *const segment,
 static void dl_preamble_att(const enum Symbol attribute,
 	const enum AttShow show, const enum StylePunctuate p) {
 	assert(!StyleIsEmpty());
-	fprintf(stderr, "dl_preamble_att for %s.\n", symbols[attribute]);
+	/* fixme */
+	if(CdocGetDebug() & DBG_ERASE)
+		fprintf(stderr, "dl_preamble_att for %s.\n", symbols[attribute]);
 	StylePush(ST_DT), StyleFlush();
 	printf("%s:", symbol_attribute_titles[attribute]);
 	StylePop();
@@ -1085,9 +1092,13 @@ int ReportOut(void) {
 		}
 #endif
 #if 1
-		fprintf(stderr, "ReportOut: going into dl_preamble_att(ATT_AUTHOR, SHOW_ALL, &plain_csv);\n");
+		/* fixme */
+		if(CdocGetDebug() & DBG_ERASE)
+			fprintf(stderr, "ReportOut: going into dl_preamble_att(ATT_AUTHOR, SHOW_ALL, &plain_csv);\n");
 		dl_preamble_att(ATT_AUTHOR, SHOW_ALL, ST_CSV);
-		fprintf(stderr, "ReportOut: returned.\n");
+		/* fixme */
+		if(CdocGetDebug() & DBG_ERASE)
+			fprintf(stderr, "ReportOut: returned.\n");
 		dl_preamble_att(ATT_STD, SHOW_ALL, ST_CSV);
 		dl_preamble_att(ATT_DEPEND, SHOW_ALL, ST_CSV);
 		dl_preamble_att(ATT_FIXME, SHOW_WHERE, ST_PLAIN);
