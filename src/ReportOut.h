@@ -831,6 +831,7 @@ static void segment_att_print_all(const struct Segment *const segment,
 				print_fragment_for(segment->division,
 					print_token_s(&segment->code, token));
 			} else {
+				/* Not going to happen -- cull takes care of it. */
 				printf("%s", division_strings[segment->division]);
 			}
 		}
@@ -882,6 +883,7 @@ static void dl_preamble_att(const enum Symbol attribute,
 	/* fixme */
 	if(CdocGetDebug() & DBG_ERASE)
 		fprintf(stderr, "dl_preamble_att for %s.\n", symbols[attribute]);
+	if(!attribute_exists(attribute)) return;
 	StylePush(ST_DT), StyleFlush();
 	printf("%s:", symbol_attribute_titles[attribute]);
 	StylePop();
