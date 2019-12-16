@@ -1,9 +1,11 @@
- # Cdoc\.c\.re #
+# Cdoc\.c\.re #
 
  * [Description](#user-content-preamble)
+ * [Function Summary](#user-content-summary)
+ * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
 
- ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
+## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
 A context\-sensitive parser intended to process parts of a `C` compilation unit and extract documentation, as well as outputting that documentation into the format specified\. Designed to be very strict, warning one of documentation errors; and simple, made for self\-contained independent documenatation\. This does not do any compiling, just text\-parsing\. Thus, one can easily confuse by redefining symbols\. However, it assumes the macro `A_B_(Foo,Bar)` is transformed into `<A>Foo<B>Bar`\.
 
@@ -46,17 +48,77 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is specifically vi
 
 
 
- - Author:  
- - Standard:  
+ * Standard:  
    C89
- - Dependancies:  
+ * Dependancies:  
    [re2c](http://re2c.org/)
- - Caveat:  
-   Old\-style function support\. Trigraph support, \(haha\.\) Hide `const` on params when it can not affect function calls\. Documentation on functions should be added to documentation on prototypes with the same \(similar\) prototype\. Links to non\-documented code which sometimes doesn't show up, work without error, and create broken links\. 80\-characters _per_ line limit, [https://xxyxyz\.org/line\-breaking/](https://xxyxyz.org/line-breaking/), \(needs buffering\.\) Eg, fixme with no args disappears; we should NOT check if the string is empty for these values\. Better yet, have a flag\. pre needs to be investigated in md; it's not doing "[fun1](#user-content-ATT_PARAM-407e96bd)" when link? This needs to be fixed: Somebody, Nobody, \(fixme: Cee: , fixme:\)\.\.\. Now `dl...att` scrunched up; push `plain_text`?
- - See also:  
+ * Caveat:  
+   Old\-style function support\. Trigraph support, \(haha\.\) Hide `const` on params when it can not affect function calls\. Documentation on functions should be added to documentation on prototypes with the same \(similar\) prototype\. Links to non\-documented code which sometimes doesn't show up, work without error, and create broken links\. 80\-characters _per_ line limit, [https://xxyxyz\.org/line\-breaking/](https://xxyxyz.org/line-breaking/), \(needs buffering\.\) Eg, fixme with no args disappears; we should NOT check if the string is empty for these values\. Better yet, have a flag\.
 
 
- ## <a id = "user-content-license" name = "user-content-license">License</a> ##
+## <a id = "user-content-summary" name = "user-content-summary">Function Summary</a> ##
+
+<table>
+
+<tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
+
+<tr><td align = right>enum Debug</td><td><a href = "#user-content-fn-155d6ff">CdocGetDebug</a></td><td></td></tr>
+
+<tr><td align = right>enum Format</td><td><a href = "#user-content-fn-334aa1ab">CdocGetFormat</a></td><td></td></tr>
+
+<tr><td align = right>const char *</td><td><a href = "#user-content-fn-7ee5d21c">CdocGetInput</a></td><td></td></tr>
+
+<tr><td align = right>const char *</td><td><a href = "#user-content-fn-18fcd065">CdocGetOutput</a></td><td></td></tr>
+
+</table>
+
+
+
+## <a id = "user-content-fn" name = "user-content-fn">Function Definitions</a> ##
+
+### <a id = "user-content-fn-155d6ff" name = "user-content-fn-155d6ff">CdocGetDebug</a> ###
+
+<code>enum Debug <strong>CdocGetDebug</strong>(void)</code>
+
+ * Return:  
+   Whether the command\-line was set\.
+
+
+
+
+### <a id = "user-content-fn-334aa1ab" name = "user-content-fn-334aa1ab">CdocGetFormat</a> ###
+
+<code>enum Format <strong>CdocGetFormat</strong>(void)</code>
+
+ * Return:  
+   What format the output was specified to be in `enum Format`\. If there was no output format specified, guess\.
+
+
+
+
+### <a id = "user-content-fn-7ee5d21c" name = "user-content-fn-7ee5d21c">CdocGetInput</a> ###
+
+<code>const char *<strong>CdocGetInput</strong>(void)</code>
+
+ * Return:  
+   The input filename\.
+
+
+
+
+### <a id = "user-content-fn-18fcd065" name = "user-content-fn-18fcd065">CdocGetOutput</a> ###
+
+<code>const char *<strong>CdocGetOutput</strong>(void)</code>
+
+ * Return:  
+   The output filename\.
+
+
+
+
+
+
+## <a id = "user-content-license" name = "user-content-license">License</a> ##
 
 2019 Neil Edelman, distributed under the terms of the [MIT License](https://opensource.org/licenses/MIT)\.
 
