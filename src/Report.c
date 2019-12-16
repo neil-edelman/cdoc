@@ -206,14 +206,14 @@ static void segment_array_(struct SegmentArray *const sa) {
 	while((segment = SegmentArrayPop(sa))) erase_segment(segment);
 	SegmentArray_(sa);
 }
-static void segment_array_clear(struct SegmentArray *const sa) {
+/*static void segment_array_clear(struct SegmentArray *const sa) {
 	struct Segment *segment;
 	if(!sa) return;
 	while((segment = SegmentArrayPop(sa)))
 		TokenArrayClear(&segment->doc), TokenArrayClear(&segment->code),
 		IndexArrayClear(&segment->code_params),
 		attributes_(&segment->attributes);
-}
+}*/
 static const struct Token *param_no(const struct Segment *const segment,
 	const size_t param) {
 	size_t *pidx;
@@ -234,14 +234,15 @@ static const struct Token *param_no(const struct Segment *const segment,
 
 
 /** Top-level static document. */
-static struct SegmentArray report, brief;
+static struct SegmentArray report;
+static struct TokenArray brief;
 
 
 
 /** Destructor for the static document. Also destucts the string used for
  tokens. */
 void Report_(void) {
-	segment_array_(&brief);
+	TokenArray_(&brief);
 	segment_array_(&report);
 	Semantic(0);
 	Style_();
@@ -543,14 +544,13 @@ include_finally:
 	return 1;
 }
 
-/** Used for temporary things in doc mode. */
+/** Used for temporary things in doc mode.
+ @fixme Memory leak. See <fn:new_token>. */
 static int notify_brief(const struct Scanner *const scan) {
-	struct Segment *segment;
 	struct Token *tok;
 	assert(scan);
-	if((!(segment = SegmentArrayBack(&brief, 0))
-		&& !(segment = new_segment(&brief)))
-		|| !(tok = new_token(&segment->doc, scan))) fprintf(stderr,
+	/* `brief` is just documentation; no code. */
+	if(!(tok = new_token(&brief, scan))) fprintf(stderr,
 		"%s: something went wrong with this operation.\n", oops(scan)), 0;
 	return 1;
 }
@@ -605,7 +605,7 @@ static int keep_segment(const struct Segment *const s) {
 	/* But wait, everything except the preamble has to have a title! */
 	if(s->division != DIV_PREAMBLE && !IndexArraySize(&s->code_params))
 		keep = 0;
-	if(!keep & CdocGetDebug() & DBG_ERASE) {
+	if(!keep && CdocGetDebug() & DBG_ERASE) {
 		char a[12];
 		segment_to_string(s, &a);
 		fprintf(stderr, "keep_segment: erasing %s.\n", a);

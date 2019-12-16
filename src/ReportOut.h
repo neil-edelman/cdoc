@@ -562,10 +562,8 @@ static void print_tokens(const struct TokenArray *const tokens) {
 
 /** Prints the documentation part of `brief` and erases it. */
 static void print_brief(void) {
-	struct Segment *segment = 0;
-	while((segment = SegmentArrayNext(&brief, segment)))
-		print_tokens(&segment->doc);
-	segment_array_clear(&brief);
+	print_tokens(&brief);
+	TokenArrayClear(&brief);
 }
 
 
