@@ -128,7 +128,7 @@ static void usage(void) {
 		"Where options are:\n"
 		"  -h | --help               This information.\n"
 		"  -d | --debug <read | output | semantic | hash | erase | style>\n"
-		"                            Prints a lot of debug information.\n"
+		"                            Prints debug information.\n"
 		"  -f | --format <html | md> Overrides built-in guessing.\n"
 		"  -o | --output <filename>  Stick the output file in this.\n");
 }
