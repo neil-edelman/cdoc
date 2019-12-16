@@ -314,6 +314,7 @@ static int report_semantic(struct Segment *const segment) {
 	/* Copy `Semantic` size array to this size array,
 	 (not the same, local scope; kind of a hack.) */
 	SemanticParams(&no, &source);
+	if(!no) return 1; /* We will cull them later. */
 	if(!(dest = IndexArrayBuffer(&segment->code_params, no))) return 0;
 	for(i = 0; i < no; i++) dest[i] = source[i];
 	IndexArrayExpand(&segment->code_params, no);

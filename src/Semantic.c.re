@@ -329,13 +329,12 @@ int Semantic(const struct TokenArray *const code) {
 	/* Now with the {}[] removed. */
 	effectively_typedef_fn_ptr(buffer);
 	if(!parse()) return 0;
-	if(CdocGetDebug())
+	if(CdocGetDebug() & DBG_SEMANTIC)
 		fprintf(stderr, "%.32s:%lu: \"%s\" -> %s with params %s.\n",
 		semantic.label, (unsigned long)semantic.line, buffer,
 		divisions[semantic.division], IndexArrayToString(&semantic.params));
 	assert(!IndexArraySize(&semantic.params)
 		|| *IndexArrayPeek(&semantic.params) < buffer_size - 1);
-	/* It has been determined to be `divisions[semantic.division]`. */
 	return 1;
 }
 
