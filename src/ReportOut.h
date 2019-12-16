@@ -680,7 +680,8 @@ static unsigned log2u(unsigned i) {
 
 /** For computing the number of digits. */
 static unsigned compute_digits_x(unsigned x) {
-	unsigned digits = log2u(x) >> 2;
+	unsigned digits = (log2u(x) + 3) >> 2;
+	/*fprintf(stderr, "digits log_16(%x) -> %u\n", x, digits);*/
 	return digits ? digits : 1;
 }
 
