@@ -835,10 +835,10 @@ static void segment_att_print_all(const struct Segment *const segment,
 		}
 		if(show == SHOW_ALL) fputs(": ", stdout);
 		if(show & SHOW_TEXT) print_tokens(&attribute->contents);
+		StylePopPush();
 		/* Only do one if `SHOW_TEXT` is not set; in practice, this affects
 		 license, only showing one _per_ function. */
 		if(!(show & SHOW_TEXT)) break;
-		StylePopPush();
 	}
 }
 
@@ -990,7 +990,7 @@ int ReportOut(void) {
 		is_data = division_exists(DIV_DATA),
 		is_license = attribute_exists(ATT_LICENSE);
 	const struct Segment *segment = 0;
-	const enum Format format = StyleFormat();
+	const int is_html = StyleFormat() == OUT_HTML;
 	const char *const in_fn = CdocGetInput(),
 		*const base_fn = strrchr(in_fn, *path_dirsep),
 		*const title = base_fn ? base_fn + 1 : in_fn;
@@ -999,7 +999,7 @@ int ReportOut(void) {
 
 	/* Set `errno` here so that we don't have to test output each time. */
 	errno = 0;
-	if(format == OUT_HTML) {
+	if(is_html) {
 		printf("<!doctype html public \"-//W3C//DTD HTML 4.01//EN\" "
 			"\"http://www.w3.org/TR/html4/strict.dtd\">\n\n"
 			"<html>\n\n"
@@ -1062,7 +1062,6 @@ int ReportOut(void) {
 	StylePopStrong();
 	assert(StyleIsEmpty());
 
-#if 1
 	/* Preamble contents; it shows up as the more-aptly named "description" but
 	 I didn't want to type that much. */
 	if(is_preamble) {
@@ -1070,17 +1069,11 @@ int ReportOut(void) {
 		print_heading_anchor_for(DIV_PREAMBLE);
 		while((segment = SegmentArrayNext(&report, segment))) {
 			if(segment->division != DIV_PREAMBLE) continue;
-#if 1
 			StylePush(ST_P);
-#if 1
 			print_tokens(&segment->doc);
-#endif
 			StylePopStrong();
-#endif
 		}
-#if 1
 		StylePush(ST_DL);
-#if 1
 		/* `ATT_TITLE` is above. */
 		while((segment = SegmentArrayNext(&report, segment))) {
 			const struct Attribute *att = 0;
@@ -1090,11 +1083,10 @@ int ReportOut(void) {
 				dl_segment_specific_att(att);
 			}
 		}
-#endif
-#if 1
 		/* fixme */
 		if(CdocGetDebug() & DBG_ERASE)
-			fprintf(stderr, "ReportOut: going into dl_preamble_att(ATT_AUTHOR, SHOW_ALL, &plain_csv);\n");
+			fprintf(stderr, "ReportOut: going into dl_preamble_att(ATT_AUTHOR,"
+			" SHOW_ALL, &plain_csv);\n");
 		dl_preamble_att(ATT_AUTHOR, SHOW_ALL, ST_CSV);
 		/* fixme */
 		if(CdocGetDebug() & DBG_ERASE)
@@ -1105,9 +1097,7 @@ int ReportOut(void) {
 		dl_preamble_att(ATT_CF, SHOW_ALL, ST_SSV);
 		/* `ATT_RETURN`, `ATT_THROWS`, `ATT_IMPLEMENTS`, `ATT_ORDER`,
 		 `ATT_ALLOW` have warnings. `ATT_LICENSE` is below. */
-#endif
 		StylePopStrong();
-#endif
 		StylePopStrong();
 	}
 	assert(StyleIsEmpty());
@@ -1135,14 +1125,14 @@ int ReportOut(void) {
 		StylePush(ST_TO_HTML);
 		StyleFlush();
 		printf("<table>\n\n"
-			   "<tr><th>Modifiers</th><th>Function Name</th>"
-			   "<th>Argument List</th></tr>\n\n");
+			"<tr><th>Modifiers</th><th>Function Name</th>"
+			"<th>Argument List</th></tr>\n\n");
 		while((segment = SegmentArrayNext(&report, segment))) {
 			struct Token *params;
 			size_t *idxs, idxn, idx, paramn;
 			const char *b;
 			if(segment->division != DIV_FUNCTION
-			   || !(idxn = IndexArraySize(&segment->code_params))) continue;
+				|| !(idxn = IndexArraySize(&segment->code_params))) continue;
 			idxs = IndexArrayGet(&segment->code_params);
 			params = TokenArrayGet(&segment->code);
 			paramn = TokenArraySize(&segment->code);
@@ -1187,9 +1177,7 @@ int ReportOut(void) {
 		StylePopStrong();
 		StylePopStrong();
 	}
-#endif
-
-	if(format == OUT_HTML) printf("</body>\n\n"
+	if(is_html) printf("</body>\n\n"
 		"</html>\n");
 	Style_();
 	return errno ? 0 : 1;
