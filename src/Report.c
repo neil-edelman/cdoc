@@ -318,7 +318,6 @@ static int report_semantic(struct Segment *const segment) {
 	if(!no) return 1; /* We will cull them later. */
 	if(!(dest = IndexArrayBuffer(&segment->code_params, no))) return 0;
 	for(i = 0; i < no; i++) dest[i] = source[i];
-	IndexArrayExpand(&segment->code_params, no);
 	if(CdocGetDebug() & DBG_ERASE) {
 		char a[12];
 		segment_to_string(segment, &a);

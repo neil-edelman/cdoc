@@ -58,9 +58,9 @@ static struct Text *Text(const char *const fn) {
 		? base + 1 : t->filename;
 	/* Read all contents at once and close the file; now in memory. */
 	do {
-		if(!(read_here = CharArrayBuffer(&t->buffer, granularity))
+		if(!(read_here = CharArrayReserve(&t->buffer, granularity))
 			|| (nread = fread(read_here, 1, granularity, fp), ferror(fp))
-			|| !CharArrayExpand(&t->buffer, nread)) goto catch;
+			|| !CharArrayBuffer(&t->buffer, nread)) goto catch;
 	} while(nread == granularity);
 	fclose(fp), fp = 0;
 	/* Embed '\0' on the end for simple lexing. */

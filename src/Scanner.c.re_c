@@ -167,15 +167,18 @@ uri = absolute_uri | relative_uri | uri_fragment;
 // Citation format. Not authoritative.
 // Author is equivalent to <[A-Z][A-Za-z'`-]+>, except accepting all code
 // points after ASCII. It supports accents, but includes stuff that it shoudn't.
-author = [^\x00-\x40\x5B-\x7F][^\x00-\x26\x28-\x2C\x2E-\x40\x5B-\x5F\x7b-\x7f]+;
+letter = [^\x00-\x40\x5B-\x7F][^\x00-\x26\x28-\x2C\x2E-\x40\x5B-\x5F\x7b-\x7f];
+author = letter+;
 etalia = "et" whitespace? "al" "."?;
 authorsep = ","? (whitespace? "and" whitespace | whitespace? "&" whitespace?
 	| whitespace?);
+oneword = letter+;
 closing = ","? whitespace?;
 date = [1-3][0-9][0-9][0-9];
 page = ","? whitespace? (("pp" | "p") "."?)? whitespace?
 	[0-9]+ (whitespace? "-"{1,2} whitespace? [0-9]+)?;
-citation = author (authorsep author)* (closing etalia)? closing date page?;
+citation = author (authorsep author)* (closing etalia)? closing oneword?
+	closing date page?;
 // Lists.
 list = " \\* ";
 */
@@ -233,13 +236,13 @@ scan:
 		"%s: documentation inside macro.\n", pos(scan)), errno = EILSEQ,
 		END; }
 	// Everything is ignored except comments.
-	<macro> ([^\x00\n\r] \ [/])+  { goto scan; }
-	<macro> [/] / [^*]  { goto scan; }
+	<macro> ([^\x00\n\r] \ [/])+ { goto scan; }
+	<macro> [/] / [^*] { goto scan; }
 	<macro> begin_comment :=> macro_comment
 	<code> comment_break { goto reset; } // Like this: /*****/.
 	<code> begin_comment :=> comment
-	<code> "#include" whitespace+ "\"" @sub0 qfile @sub1 "\"" whitespace*
-		begin_doc whitespace* "\\include" whitespace* end_doc
+	<code> macro_start "include" whitespace+ "\"" @sub0 qfile @sub1 "\""
+		whitespace* begin_doc whitespace* "\\include" whitespace* end_doc
 		{ scan->sub0 = sub0, scan->sub1 = sub1;
 		return scan->state = yycmacro, LOCAL_INCLUDE; }
 	<code> macro_start :=> macro

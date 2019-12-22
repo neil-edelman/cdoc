@@ -308,10 +308,8 @@ int Semantic(const struct TokenArray *const code) {
 	/* Make a string from `symbol_marks` and allocate maximum memory. */
 	buffer_size = TokensMarkSize(code);
 	assert(buffer_size);
-	if(!CharArrayBuffer(&semantic.buffer, buffer_size)) return 0;
-	buffer = CharArrayGet(&semantic.buffer);
+	if(!(buffer = CharArrayBuffer(&semantic.buffer, buffer_size))) return 0;
 	TokensMark(code, buffer);
-	CharArrayExpand(&semantic.buffer, buffer_size);
 	assert(buffer[buffer_size - 1] == '\0');
 
 	{ /* Checks whether this makes sense. */

@@ -34,13 +34,6 @@ void BufferClear(void) {
 	CharArrayClear(buffer);
 }
 
-/** Buffers `size`.
- @throws[malloc] */
-int BufferBuffer(const size_t size) {
-	assert(size + 1 > size);
-	return !!CharArrayBuffer(buffer, size + 1);
-}
-
 /** Expands the buffer to include `length`, (not including the terminating
  null.) This must be followed by a write of `length`.
  @param[length] The length the string, not including the terminating null.
@@ -53,7 +46,6 @@ char *BufferPrepare(const size_t length) {
 	char *s;
 	assert(length + !is_null_term >= length);
 	if(!(s = CharArrayBuffer(buffer, length + !is_null_term))) return 0;
-	CharArrayExpand(buffer, length + !is_null_term);
 	*CharArrayPeek(buffer) = '\0';
 	return s - is_null_term;
 }

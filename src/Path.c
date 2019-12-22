@@ -34,7 +34,7 @@ static const char *path_to_string(struct CharArray *const str,
 		/* Print the next part. */
 		if((len = strlen(*p))) {
 			if(!(buf = CharArrayBuffer(str, len))) return 0;
-			memcpy(buf, *p, len), CharArrayExpand(str, len);
+			memcpy(buf, *p, len);
 		}
 		/* Is it at the end. */
 		if(!(p = PathArrayNext(path, p))) break;
@@ -125,7 +125,7 @@ static int inverse_path(struct PathArray *const path,
 	while((p = PathArrayNext(inv, p))) if(strcmp(path_dot, *p) == 0
 		|| strcmp(path_twodots, *p) == 0) return fprintf(stderr,
 		"inverse_path: \"..\" is not surjective.\n"), 0;
-	if(!PathArrayBuffer(path, inv_size)) return 0;
+	if(!PathArrayReserve(path, inv_size)) return 0;
 	while((inv_size)) p = PathArrayNew(path), *p = path_twodots, inv_size--;
 	return 1;
 }
@@ -153,16 +153,18 @@ static void clear_paths(void) {
 /** Helper for <fn:Path>. Puts `string` into `extra`. */
 static int extra_path(struct PathExtra *const extra, const char *const string) {
 	size_t string_size;
+	char *buf;
 	assert(extra);
 	PathArrayClear(&extra->path), CharArrayClear(&extra->buffer);
 	if(!string) return 1;
 	if(!looks_like_path(string)) return fprintf(stderr,
 		"%s: does not appear to be a path.\n", string), 1;
+	assert(strlen(string) < (size_t)-1);
 	string_size = strlen(string) + 1;
-	if(!CharArrayBuffer(&extra->buffer, string_size)) return 0;
-	memcpy(CharArrayGet(&extra->buffer), string, string_size);
-	CharArrayExpand(&extra->buffer, string_size);
-	if(!sep_path(&extra->path, CharArrayGet(&extra->buffer))) return 0;
+	if(!(buf = CharArrayBuffer(&extra->buffer, string_size))) return 0;
+	memcpy(buf, string, string_size);
+	assert(string[string_size - 1] == '\0');
+	if(!sep_path(&extra->path, buf)) return 0;
 	strip_path(&extra->path);
 	simplify_path(&extra->path);
 	return 1;
@@ -188,7 +190,6 @@ static int append_working_path(const size_t fn_len, const char *const fn) {
 	CharArrayClear(&paths.working.buffer);
 	if(!(workfn = CharArrayBuffer(&paths.working.buffer, fn_len + 1))) return 0;
 	memcpy(workfn, fn, fn_len), workfn[fn_len] = '\0';
-	CharArrayExpand(&paths.working.buffer, fn_len + 1);
 	if(!looks_like_relative_path(workfn)
 		|| !sep_path(&paths.working.path, workfn)) return 0;
 	return 1;
