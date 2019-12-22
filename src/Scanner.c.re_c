@@ -167,18 +167,18 @@ uri = absolute_uri | relative_uri | uri_fragment;
 // Citation format. Not authoritative.
 // Author is equivalent to <[A-Z][A-Za-z'`-]+>, except accepting all code
 // points after ASCII. It supports accents, but includes stuff that it shoudn't.
-letter = [^\x00-\x40\x5B-\x7F][^\x00-\x26\x28-\x2C\x2E-\x40\x5B-\x5F\x7b-\x7f];
-author = letter+;
+cap_word = [^\x00-\x40\x5B-\x7F]
+	[^\x00-\x26\x28-\x2C\x2E-\x40\x5B-\x5F\x7b-\x7f]*;
+author = cap_word;
 etalia = "et" whitespace? "al" "."?;
 authorsep = ","? (whitespace? "and" whitespace | whitespace? "&" whitespace?
 	| whitespace?);
-oneword = letter+;
 sep = ","? whitespace?;
 date = [1-3][0-9][0-9][0-9];
 page = ","? whitespace? (("pp" | "p") "."?)? whitespace?
 	[0-9]+ (whitespace? "-"{1,2} whitespace? [0-9]+)?;
 citation = author (authorsep author)* (sep etalia)?
-	(sep date) (sep oneword)? (sep page?);
+	(sep date) (sep cap_word)? (sep page)?;
 // Lists.
 list = " \\* ";
 */

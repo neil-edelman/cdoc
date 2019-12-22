@@ -9,7 +9,8 @@ text
  \* Paragraph @ @a \,~~
  \* Links to entities: <fn:<T>fun4>, <data:y>.
  \* Broken: <fn:not_fn>, <fn:<T>not_fn>.
- \* Citation <ÀæĔge2007>.
+ \* Citation <ÀæĔge2007> <Peters 2002> <Peters2002Optimistic>
+    <Peters 2002, Optimistic>.
  \* [absolute](http://arr.com/index.html#ddddd<u>sfdg).
  \* [relative](foo.h) [relative](../src/Cdoc.c.re).
  \* png: ![Ellen Ripley](../diagrams/Ellen_Ripley_badass.png).
