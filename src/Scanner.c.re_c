@@ -173,12 +173,12 @@ etalia = "et" whitespace? "al" "."?;
 authorsep = ","? (whitespace? "and" whitespace | whitespace? "&" whitespace?
 	| whitespace?);
 oneword = letter+;
-closing = ","? whitespace?;
+sep = ","? whitespace?;
 date = [1-3][0-9][0-9][0-9];
 page = ","? whitespace? (("pp" | "p") "."?)? whitespace?
 	[0-9]+ (whitespace? "-"{1,2} whitespace? [0-9]+)?;
-citation = author (authorsep author)* (closing etalia)? closing oneword?
-	closing date page?;
+citation = author (authorsep author)* (sep etalia)?
+	(sep date) (sep oneword)? (sep page?);
 // Lists.
 list = " \\* ";
 */
