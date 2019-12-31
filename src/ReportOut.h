@@ -477,10 +477,9 @@ OUT(list) {
 OUT(pre) {
 	const struct Token *const t = *ptoken;
 	assert(tokens && t && t->symbol == PREFORMATTED && !is_buffer);
-	if(StyleIsTop(ST_PRELINE)) {
-		StylePopStrong();
-		StylePush(ST_PRE), StylePush(ST_PRELINE);
-	}
+	/* fixme: fixed??? */
+	if(StyleIsTop(ST_PRELINE)) StylePopStrong();
+	StylePush(ST_PRE), StylePush(ST_PRELINE);
 	StyleFlushSymbol(t->symbol);
 	StyleEncodeLength(t->length, t->from);
 	*ptoken = TokenArrayNext(tokens, t);
@@ -1066,14 +1065,15 @@ int ReportOut(void) {
 	/* Preamble contents; it shows up as the more-aptly named "description" but
 	 I didn't want to type that much. */
 	if(is_preamble) {
-		StylePush(ST_DIV);
+		StylePush(ST_DIV), StylePush(ST_NO_STYLE);
 		print_heading_anchor_for(DIV_PREAMBLE);
+		StylePush(ST_P);
 		while((segment = SegmentArrayNext(&report, segment))) {
 			if(segment->division != DIV_PREAMBLE) continue;
-			StylePush(ST_P);
 			print_tokens(&segment->doc);
-			StylePopStrong();
+			StylePopPush();
 		}
+		StylePopStrong(); /* P */
 		StylePush(ST_DL);
 		/* `ATT_TITLE` is above. */
 		while((segment = SegmentArrayNext(&report, segment))) {
@@ -1084,14 +1084,7 @@ int ReportOut(void) {
 				dl_segment_specific_att(att);
 			}
 		}
-		/* fixme */
-		if(CdocGetDebug() & DBG_ERASE)
-			fprintf(stderr, "ReportOut: going into dl_preamble_att(ATT_AUTHOR,"
-			" SHOW_ALL, &plain_csv);\n");
 		dl_preamble_att(ATT_AUTHOR, SHOW_ALL, ST_CSV);
-		/* fixme */
-		if(CdocGetDebug() & DBG_ERASE)
-			fprintf(stderr, "ReportOut: returned.\n");
 		dl_preamble_att(ATT_STD, SHOW_ALL, ST_CSV);
 		dl_preamble_att(ATT_DEPEND, SHOW_ALL, ST_CSV);
 		dl_preamble_att(ATT_FIXME, SHOW_WHERE, ST_PLAIN);

@@ -62,7 +62,7 @@ static const struct Punctuate {
 		{ "title", "<title>", "", "</title>\n", 1, 0, 0 }
 	}, {
 		{ "raw_div", "", "", "", 1, 0, 0 },
-		{ "html_div", "<div>", "", "</div>\n\n", 1, 0, 0 },
+		{ "html_div", "<div>\n\n", "", "</div>\n\n", 1, 0, 0 },
 		{ "md_div", "", "", "\n\n", 1, 0, 0 }
 	}, {
 		{ "raw_p", "", " ", "", 1, 0, 0 },
@@ -204,13 +204,13 @@ static void push(const struct Punctuate *const p) {
 	/*printf("<!-- push %s -->", text->name);*/
 	s->punctuate = p;
 	s->lazy = BEGIN;
+	if(CdocGetDebug() & DBG_STYLE) fprintf(stderr, "Push style, now %s.\n",
+		StyleArrayToString(&style.styles));	
 }
 
 /** Push the style `e`. @fixme Failing inexplicably? */
 void StylePush(const enum StylePunctuate p) {
 	push(&punctuates[p][effective_format()]);
-	if(CdocGetDebug() & DBG_STYLE) fprintf(stderr, "Push style %s.\n",
-		StyleArrayToString(&style.styles));	
 }
 
 static void pop(void) {
@@ -219,6 +219,8 @@ static void pop(void) {
 	/*printf("<!-- pop %s -->", pop->text->name);*/
 	if(s->lazy == BEGIN) return;
 	fputs(s->punctuate->end, stdout);
+	if(CdocGetDebug() & DBG_STYLE) fprintf(stderr, "Pop style, now %s.\n",
+		StyleArrayToString(&style.styles));	
 }
 
 /** Pop the style. One must have pushed. */

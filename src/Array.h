@@ -127,8 +127,8 @@ struct T_(Array) {
 };
 
 /* `{0}` is `C99`. */
-#ifndef ARRAY_ZERO /* <!-- !zero */
-#define ARRAY_ZERO { 0, 0, 0, 0 }
+#ifndef ARRAY_IDLE /* <!-- !zero */
+#define ARRAY_IDLE { 0, 0, 0, 0 }
 #endif /* !zero --> */
 
 
@@ -274,8 +274,8 @@ static int T_(ArrayRemove)(struct T_(Array) *const a, T *const data) {
 	return 1;
 }
 
-/** Removes `data` from `a` and replaces the spot it was in with the tail. Only
- defined if not `ARRAY_STACK`.
+/** Removes `data` from `a` and replaces it with the tail. Only defined if not
+ `ARRAY_STACK`.
  @param[a, data] If null, returns false.
  @param[data] Will be removed; data will remain the same but be updated to the
  last element, or if this was the last element, the pointer will be past the
@@ -501,7 +501,7 @@ static void T_(ArrayIfEach)(struct T_(Array) *const a,
  @param[a, predicate] If null, returns null.
  @return The first `predicate` that returned true, or, if the statement is
  false on all, null.
- @order \O(`size` \times `action`)
+ @order \O(`size` \times `predicate`)
  @allow */
 static T *T_(ArrayAny)(const struct T_(Array) *const a,
 	const PT_(Predicate) predicate) {
