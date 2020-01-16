@@ -222,7 +222,7 @@ scan:
 
 	// Continuation.
 	<string, character, macro, include> "\\" newline
-		{ printf("\\ encoded.\n"); scan->line++; goto scan; }
+		{ scan->line++; goto scan; }
 	<string> "\"" { scan->state = yyccode; return CONSTANT; }
 	<character> "'" { scan->state = yyccode; return CONSTANT; }
 	<string, character> "\\". { goto scan; }
