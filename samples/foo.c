@@ -92,7 +92,12 @@ text
 #define T_(thing) CAT(array, thing)
 #define PT_(thing) PCAT(array, PCAT(int, thing))
 #define A_B_(a, b) CAT(CAT(array, a), b)
-#define A_B_C_(a, b, c) CAT(CAT(CAT(array, a), b), c)
+#define A_B_C_(a, b, c) \
+	CAT(CAT(CAT(array, a), b), c)
+#if defined(ARRAY_CHILD) && (defined(ARRAY_STACK) || defined(ARRAY_TO_STRING) \
+	|| defined(ARRAY_TEST)) /* <!-- error */
+#error With ARRAY_CHILD, defining public interface functions is useless.
+#endif /* error --> */
 
 /** Troubles with this line? check to ensure that `ARRAY_TYPE` is a valid type,
  whose definition is placed above `#include "Array.h"`. */

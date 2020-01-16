@@ -222,7 +222,7 @@ scan:
 
 	// Continuation.
 	<string, character, macro, include> "\\" newline
-		{ scan->line++; goto scan; }
+		{ printf("\\ encoded.\n"); scan->line++; goto scan; }
 	<string> "\"" { scan->state = yyccode; return CONSTANT; }
 	<character> "'" { scan->state = yyccode; return CONSTANT; }
 	<string, character> "\\". { goto scan; }
@@ -236,7 +236,8 @@ scan:
 		"%s: documentation inside macro.\n", pos(scan)), errno = EILSEQ,
 		END; }
 	// Everything is ignored except comments.
-	<macro> ([^\x00\n\r] \ [/])+ { goto scan; }
+	<macro> ([^\x00\n\r] \ [/\\])+ { goto scan; }
+	<macro> [\\] / [^\n\r] { goto scan; }
 	<macro> [/] / [^*] { goto scan; }
 	<macro> begin_comment :=> macro_comment
 	<code> comment_break { goto reset; } // Like this: /*****/.
