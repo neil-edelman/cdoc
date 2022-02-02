@@ -4,7 +4,7 @@
  A context-sensitive parser intended to process parts of a `C` compilation unit
  and extract documentation, as well as outputting that documentation into the
  format specified. Designed to be very strict, warning one of documentation
- errors; and simple, made for self-contained independent documenatation. This
+ errors; and simple, made for self-contained independent documentation. This
  does not do any compiling, just text-parsing. Thus, one can easily confuse by
  redefining symbols. However, it assumes the macro `A_B_(Foo,Bar)` is
  transformed into `<A>Foo<B>Bar`.
