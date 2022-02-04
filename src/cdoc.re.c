@@ -95,8 +95,6 @@
 #include <string.h> /* strcmp */
 #include <errno.h>  /* errno */
 #include <assert.h> /* assert */
-#include "../src/url.h"
-#include "../src/text.h"
 #include "../src/buffer.h"
 #include "../src/debug.h"
 #include "../src/report.h"

@@ -46,6 +46,7 @@ static void effectively_typedef_fn_ptr(char *const buffer) {
 	char *ret_type;
 	int level;
 	assert(buffer);
+	/* fixme: agh. */
 	for(middle = buffer; (middle = strstr(middle, ")(")); middle += 2) {
 		/* `suffix` after the params of the function pointer. */
 		suffix = middle + 1, level = 1; do {
