@@ -222,6 +222,7 @@ setup: default icon
 
 # this needs work
 release: clean default
+	strip $(bin)/$(project)
 	# define NDEBUG
 
 install: release

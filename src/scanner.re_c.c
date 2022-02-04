@@ -31,15 +31,33 @@ struct scanner {
 
 /** Prints line info in a static buffer, (to be printed?) */
 static const char *pos(const struct scanner *const scan) {
+	/* fixme: THERE IS NOTHING LINKING THESE TO REAL VALUES, I just pasted. */
+	static const char *scanner_state_str[] = {
+		"yyccharacter",
+		"yyccomment",
+		"yycmacro_comment",
+		"yycstring",
+		"yycdoc",
+		"yycem",
+		"yycmath",
+		"yyccode",
+		"yycinclude",
+		"yycmacro",
+		"yycparam_item",
+		"yycparam_more",
+		"yycanchor",
+		"yycpre",
+		"yycparam_begin",
+	};
 	static char p[128];
 	if(!scan) {
 		sprintf(p, "No scanner loaded");
 	} else {
 		const int max_size = 32, from_len = (scan->from + max_size
 			< scan->cursor) ? max_size : (int)(scan->cursor - scan->from);
-		sprintf(p, "%.32s:%lu, %s \"%.*s\" state %d", scan->label,
+		sprintf(p, "%.32s:%lu, %s \"%.*s\" -> %s", scan->label,
 			(unsigned long)scan->line, symbols[scan->symbol], from_len,
-			scan->from, scan->state);
+			scan->from, scanner_state_str[scan->state]);
 	}
 	return p;
 }

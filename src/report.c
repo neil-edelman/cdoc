@@ -464,8 +464,7 @@ int report_notify(const struct scanner *const scan) {
 		if(sorter.segment->division == DIV_FUNCTION) is_differed_cut = 1;
 		break;
 	case LOCAL_INCLUDE: /* Include file. */
-		assert(sorter.state == SORT_CODE); /* fixme: What?? that isn't even the
-		 right enum, yycdoc? */
+		assert(sorter.state == SORT_CODE);
 		{
 			const char *fn = 0;
 			struct scanner *subscan = 0;
@@ -483,7 +482,7 @@ int report_notify(const struct scanner *const scan) {
 include_catch:
 			fprintf(stderr, "%s: \"%s\" couldn't resolve name.\n",
 				oops(scan), fn);
-			if(errno) perror("including");
+			/* if(errno) perror("including"); <- Handled farther up. */
 include_finally:
 			scanner_(&subscan);
 			return success;
