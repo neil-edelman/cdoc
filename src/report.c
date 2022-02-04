@@ -392,7 +392,7 @@ int report_notify(const struct scanner *const scan) {
 	const char symbol_mark = symbol_marks[symbol];
 	int is_differed_cut = 0;
 	static struct {
-		enum { S_CODE, S_DOC, S_ARGS } state;
+		enum { SORT_CODE, SORT_DOC, SORT_ARGS } state;
 		size_t last_doc_line;
 		struct segment *segment;
 		struct attribute *attribute;
@@ -402,10 +402,10 @@ int report_notify(const struct scanner *const scan) {
 	/* These symbols require special consideration. */
 	switch(symbol) {
 	case DOC_BEGIN:
-		if(sorter.state != S_CODE) return fprintf(stderr,
+		if(sorter.state != SORT_CODE) return fprintf(stderr,
 			"%s: sneak url; was expecting code.\n",
 			oops(scan)), errno = EDOM, 0;
-		sorter.state = S_DOC;
+		sorter.state = SORT_DOC;
 		/* Reset attribute. */
 		sorter.attribute = 0;
 		/* Two docs on top of each other without code, the top one belongs to
@@ -414,28 +414,28 @@ int report_notify(const struct scanner *const scan) {
 			cut_segment_here(&sorter.segment);
 		return 1;
 	case DOC_END:
-		if(sorter.state != S_DOC) return fprintf(stderr,
+		if(sorter.state != SORT_DOC) return fprintf(stderr,
 			"%s: sneak url; was expecting doc.\n",
 			oops(scan)), errno = EDOM, 0;
-		sorter.state = S_CODE;
+		sorter.state = SORT_CODE;
 		sorter.last_doc_line = scanner_line(scan);
 		return 1;
 	case DOC_LEFT:
-		if(sorter.state != S_DOC || !sorter.segment || !sorter.attribute)
+		if(sorter.state != SORT_DOC || !sorter.segment || !sorter.attribute)
 			return fprintf(stderr,
 			"%s: sneak url; was expecting doc with attribute.\n", oops(scan)),
 			errno = EDOM, 0;
-		sorter.state = S_ARGS;
+		sorter.state = SORT_ARGS;
 		return 1;
 	case DOC_RIGHT:
-		if(sorter.state != S_ARGS || !sorter.segment || !sorter.attribute)
+		if(sorter.state != SORT_ARGS || !sorter.segment || !sorter.attribute)
 			return fprintf(stderr,
 			"%s: sneak url; was expecting args with attribute.\n", oops(scan)),
 			errno = EDOM, 0;
-		sorter.state = S_DOC;
+		sorter.state = SORT_DOC;
 		return 1;
 	case DOC_COMMA: /* @arg[,,] */
-		if(sorter.state != S_ARGS || !sorter.segment || !sorter.attribute)
+		if(sorter.state != SORT_ARGS || !sorter.segment || !sorter.attribute)
 			return fprintf(stderr,
 			"%s: sneak url; was expecting args with attribute.\n", oops(scan)),
 			errno = EDOM, 0;
@@ -464,7 +464,8 @@ int report_notify(const struct scanner *const scan) {
 		if(sorter.segment->division == DIV_FUNCTION) is_differed_cut = 1;
 		break;
 	case LOCAL_INCLUDE: /* Include file. */
-		assert(sorter.state == S_CODE);
+		assert(sorter.state == SORT_CODE); /* fixme: What?? that isn't even the
+		 right enum, yycdoc? */
 		{
 			const char *fn = 0;
 			struct scanner *subscan = 0;
@@ -507,10 +508,10 @@ include_finally:
 	/* Make a `token` where the context places us. */
 	switch(symbol_mark) {
 	case '~': /* General docs. */
-		assert(sorter.state == S_DOC || sorter.state == S_ARGS);
+		assert(sorter.state == SORT_DOC || sorter.state == SORT_ARGS);
 		{ /* This lazily places whitespace and newlines. */
 			struct token_array *selected = sorter.attribute
-				? (sorter.state == S_ARGS ? &sorter.attribute->header
+				? (sorter.state == SORT_ARGS ? &sorter.attribute->header
 				: &sorter.attribute->contents) : &sorter.segment->doc;
 			struct token *tok;
 			const int is_para = sorter.newline > 1,
@@ -520,7 +521,7 @@ include_finally:
 			sorter.space = sorter.newline = 0;
 			if(is_para) {
 				/* Switch out of attribute when on new paragraph. */
-				sorter.attribute = 0, sorter.state = S_DOC;
+				sorter.attribute = 0, sorter.state = SORT_DOC;
 				selected = &sorter.segment->doc;
 				if(!is_doc_empty) {
 					if(!(tok = new_token(selected, scan))) return 0;
@@ -534,13 +535,13 @@ include_finally:
 		}
 		break;
 	case '@': /* An attribute marker. */
-		assert(sorter.state == S_DOC);
+		assert(sorter.state == SORT_DOC);
 		if(!(sorter.attribute = new_attribute(sorter.segment, scan)))
 			return 0;
 		sorter.space = sorter.newline = 0; /* Also reset this for attributes. */
 		break;
 	default: /* Code. */
-		assert(sorter.state == S_CODE);
+		assert(sorter.state == SORT_CODE);
 		if(sorter.is_code_ignored) break;
 		if(!new_token(&sorter.segment->code, scan)) return 0;
 		break;
