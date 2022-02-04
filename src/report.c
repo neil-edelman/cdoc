@@ -480,8 +480,9 @@ int report_notify(const struct scanner *const scan) {
 			success = 1;
 			goto include_finally;
 include_catch:
+			fprintf(stderr, "%s: \"%s\" couldn't resolve name.\n",
+				oops(scan), fn);
 			if(errno) perror("including");
-			else fprintf(stderr, "%s: couldn't resolve name.\n", oops(scan));
 include_finally:
 			scanner_(&subscan);
 			return success;
