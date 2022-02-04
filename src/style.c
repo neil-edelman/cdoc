@@ -6,7 +6,6 @@
  strict. */
 
 #include "cdoc.h"
-#include "symbol.h"
 #include "buffer.h"
 #include "style.h" /** \include */
 #include <string.h> /* strlen memcpy */

@@ -10,6 +10,8 @@
 #define ARRAY_TYPE char
 #include "array.h"
 
+
+
 #define ARRAY_NAME string
 #define ARRAY_TYPE char *
 #include "array.h"
@@ -167,7 +169,7 @@ static const char *url_to_string(struct char_array *const str,
 		char **s = url->data + i;
 		/* Print the next part. */
 		if((len = strlen(*s))) {
-			if(!(buf = char_array_buffer(str, len))) return 0;
+			if(!(buf = char_array_append(str, len))) return 0;
 			memcpy(buf, *s, len);
 		}
 		/* Is it at the end. */
@@ -304,7 +306,7 @@ static int extra_url(struct url_extra *const extra, const char *const string) {
 		"%s: does not appear to be a url.\n", string), 1;
 	assert(strlen(string) < (size_t)-1);
 	string_size = strlen(string) + 1;
-	if(!(buf = char_array_buffer(&extra->buffer, string_size))) return 0;
+	if(!(buf = char_array_append(&extra->buffer, string_size))) return 0;
 	memcpy(buf, string, string_size);
 	assert(string[string_size - 1] == '\0');
 	if(!sep_url(&extra->url, buf)) return 0;
@@ -331,7 +333,7 @@ static int append_working_url(const size_t fn_len, const char *const fn) {
 	char *workfn;
 	assert(fn);
 	char_array_clear(&urls.working.buffer);
-	if(!(workfn = char_array_buffer(&urls.working.buffer, fn_len + 1))) return 0;
+	if(!(workfn = char_array_append(&urls.working.buffer, fn_len + 1))) return 0;
 	memcpy(workfn, fn, fn_len), workfn[fn_len] = '\0';
 	if(!looks_like_relative_url(workfn)
 		|| !sep_url(&urls.working.url, workfn)) return 0;
