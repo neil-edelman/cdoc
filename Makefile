@@ -1,4 +1,4 @@
-# GNU Make 3.81; MacOSX gcc 4.2.1; MacOSX MinGW 4.3.0
+# GNU Make 3.81; MacOSX gcc 4.2.1; clang 19.6.0; MacOSX MinGW 4.3.0
 
 # https://stackoverflow.com/questions/18136918/how-to-get-current-relative-directory-of-your-makefile
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
@@ -21,37 +21,45 @@ PREFIX := /usr/local
 install := $(project)-`date +%Y-%m-%d`
 
 # extra stuff we should back up
-extra := $(project).xcodeproj
+extra :=
 
 # John Graham-Cumming: rwildcard is a recursive wildcard
 rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) \
 $(filter $(subst *,%,$2),$d))
 
 java_srcs    := $(call rwildcard, $(src), *.java)
-c_srcs       := $(call rwildcard, $(src), *.c)
+all_c_srcs   := $(call rwildcard, $(src), *.c)
+c_re_srcs    := $(call rwildcard, $(src), *.re.c)
+c_rec_srcs   := $(call rwildcard, $(src), *.re_c.c)
+c_gperf_srcs := $(call rwildcard, $(src), *.gperf.c)
+c_srcs       := $(filter-out $(c_re_srcs) $(c_rec_srcs) $(c_gperf_srcs), $(all_c_srcs))
 h_srcs       := $(call rwildcard, $(src), *.h)
-c_re_srcs    := $(call rwildcard, $(src), *.c.re)
-c_rec_srcs   := $(call rwildcard, $(src), *.c.re_c)
 y_srcs       := $(call rwildcard, $(src), *.y)
-c_tests      := $(call rwildcard, $(test), *.c)
+all_c_tests  := $(call rwildcard, $(test), *.c)
+c_re_tests   := $(call rwildcard, $(test), *.re.c)
+c_rec_tests  := $(call rwildcard, $(test), *.re_c.c)
+c_tests      := $(filter-out $(c_re_tests) $(c_rec_tests), $(all_c_tests))
 h_tests      := $(call rwildcard, $(test), *.h)
 icons        := $(call rwildcard, $(media), *.ico)
 
 # combinations
 all_h      := $(h_srcs) $(h_tests)
-all_srcs   := $(java_srcs) $(c_srcs) $(c_re_srcs) $(c_rec_srcs) $(y_srcs)
-all_tests  := $(c_tests)
+all_srcs   := $(java_srcs) $(all_c_srcs) $(y_srcs)
+all_tests  := $(all_c_tests)
 all_icons  := $(icons)
 
 java_class := $(patsubst $(src)/%.java, $(build)/%.class, $(java_srcs))
 c_objs     := $(patsubst $(src)/%.c, $(build)/%.o, $(c_srcs))
 # must not conflict, eg, foo.c.re and foo.c would go to the same thing
-c_re_builds := $(patsubst $(src)/%.c.re, $(build)/%.c, $(c_re_srcs))
-c_rec_builds := $(patsubst $(src)/%.c.re_c, $(build)/%.c, $(c_rec_srcs))
+c_re_builds := $(patsubst $(src)/%.re.c, $(build)/%.c, $(c_re_srcs))
+c_re_test_builds := $(patsubst $(test)/%.re.c, $(build)/$(test)/%.c, $(c_re_tests))
+c_rec_builds := $(patsubst $(src)/%.re_c.c, $(build)/%.c, $(c_rec_srcs))
+c_rec_test_builds := $(patsubst $(test)/%.re_c.c, $(build)/%.c, $(c_rec_tests))
 c_y_builds := $(patsubst $(src)/%.y, $(build)/%.c, $(y_srcs))
-# together .re/.re_c/.y
+c_gperf_builds := $(patsubst $(src)/%.gperf.c, $(build)/%.c, $(c_gperf_srcs))
+# together .re/.re_c/.y/.gperf.c
 c_other_objs := $(patsubst $(build)/%.c, $(build)/%.o, $(c_re_builds) \
-$(c_rec_builds) $(c_y_builds))
+$(c_rec_builds) $(c_re_test_builds) $(c_rec_test_builds) $(c_y_builds) $(c_gperf_builds))
 test_c_objs := $(patsubst $(test)/%.c, $(build)/$(test)/%.o, $(c_tests))
 html_docs  := $(patsubst $(src)/%.c, $(doc)/%.html, $(c_srcs))
 
@@ -62,14 +70,30 @@ cat   := cat
 zip   := zip
 bison := bison
 #lemon := lemon
+gperf := gperf
 
-CC   := clang #gcc
-CF   := -Wall -Wextra -pedantic -ansi -Wno-format-y2k -Wstrict-prototypes \
--Wmissing-prototypes -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings \
--Wswitch -Wshadow -Wcast-align -Wbad-function-cast -Wchar-subscripts -Winline \
--Wnested-externs -Wredundant-decls -Wfatal-errors -O3 -ffast-math \
--funroll-loops # or -g -std=c99 -mwindows
-OF   := -O3 # -framework OpenGL -framework GLUT or -lglut -lGLEW
+target    := # -mwindows
+optimize  := -ffast-math
+warnbasic := -Wall -pedantic -ansi # -std=c99
+# Some stuff is really new.
+warnclang := -Wextra \
+-Weverything \
+-Wno-comma \
+-Wno-logical-op-parentheses \
+-Wno-parentheses \
+-Wno-poison-system-directories \
+-Wno-documentation-unknown-command \
+-Wno-documentation \
+-Wno-shift-op-parentheses \
+-Wno-empty-body \
+-Wno-padded \
+-Wno-switch-enum \
+-Wno-missing-noreturn
+warn := $(warnbasic) $(warnclang)
+
+CC   := clang # gcc
+CF   := $(target) $(optimize) $(warn)
+OF   := # -lm -framework OpenGL -framework GLUT or -lglut -lGLEW
 
 # Jakob Borg and Eldar Abusalimov
 # $(ARGS) is all the extra arguments; $(BRGS) is_all_the_extra_arguments
@@ -83,6 +107,12 @@ ifeq (backup, $(firstword $(MAKECMDGOALS)))
   endif
   $(eval $(ARGS):;@:)
 endif
+ifeq (release, $(firstword $(MAKECMDGOALS)))
+	CF += -funroll-loops -Ofast -D NDEBUG # -O3
+	OF += -Ofast
+else
+	CF += -g
+endif
 
 ######
 # compiles the programme by default
@@ -93,7 +123,7 @@ default: $(bin)/$(project)
 docs: $(html_docs)
 
 # linking
-$(bin)/$(project): $(c_objs) $(c_other_objs) #$(test_c_objs)
+$(bin)/$(project): $(c_objs) $(c_other_objs) $(test_c_objs)
 	# linking rule
 	@$(mkdir) $(bin)
 	$(CC) $(OF) -o $@ $^
@@ -119,20 +149,39 @@ $(test_c_objs): $(build)/$(test)/%.o: $(test)/%.c $(all_h)
 	@$(mkdir) $(build)/$(test)
 	$(CC) $(CF) -c -o $@ $<
 
-$(c_re_builds): $(build)/%: $(src)/%.re
-	# *.re build rule
+# -8 made my file 32767 lines or longer
+
+$(c_re_builds): $(build)/%.c: $(src)/%.re.c
+	# *.re.c build rule
 	@$(mkdir) $(build)
 	$(re2c) -W -T -o $@ $<
 
-$(c_rec_builds): $(build)/%: $(src)/%.re_c
-	# *.re_c (conditions) build rule
+$(c_re_test_builds): $(build)/$(test)/%.c: $(test)/%.re.c
+	# *.re.c tests rule
 	@$(mkdir) $(build)
+	@$(mkdir) $(build)/$(test)
+	$(re2c) -W -T -o $@ $<
+
+$(c_rec_builds): $(build)/%.c: $(src)/%.re_c.c
+	# *.re_c.c (conditions) build rule
+	@$(mkdir) $(build)
+	$(re2c) -W -T -c -o $@ $<
+
+$(c_rec_test_builds): $(build)/$(test)/%.c: $(test)/%.re_c.c
+	# *.re_c.c (conditions) tests rule
+	@$(mkdir) $(build)
+	@$(mkdir) $(build)/$(test)
 	$(re2c) -W -T -c -o $@ $<
 
 $(c_y_builds): $(build)/%.c: $(src)/%.y # $(lemon)/$(bin)/$(lem)
 	# .y rule
 	@$(mkdir) $(build)
 	$(bison) -o $@ $<
+
+$(c_gperf_builds): $(build)/%.c: $(src)/%.gperf.c
+	# *.gperf.c build rule
+	@$(mkdir) $(build)
+	$(gperf) $@ --output-file $<
 
 $(html_docs): $(doc)/%.html: $(src)/%.c $(src)/%.h
 	# docs rule
@@ -142,7 +191,7 @@ $(html_docs): $(doc)/%.html: $(src)/%.c $(src)/%.h
 ######
 # phoney targets
 
-.PHONY: setup clean backup icon install uninstall test docs
+.PHONY: setup clean backup icon install uninstall test docs release
 
 clean:
 	-rm -f $(c_objs) $(test_c_objs) $(c_other_objs) $(c_re_builds) \
@@ -171,7 +220,11 @@ setup: default icon
 	# or zip $(BDIR)/$(INST)-Win32.zip -r $(BDIR)/$(INST)
 	rm -R $(bin)/$(install)
 
-install: default
+# this needs work
+release: clean default
+	# define NDEBUG
+
+install: release
 	@$(mkdir) -p $(DESTDIR)$(PREFIX)/bin
 	cp $(bin)/$(project) $(DESTDIR)$(PREFIX)/bin/$(project)
 

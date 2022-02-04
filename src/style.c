@@ -5,24 +5,28 @@
  this before every token group thing. It also encodes things. Is is really
  strict. */
 
+#include "cdoc.h"
+#include "symbol.h"
+#include "buffer.h"
+#include "style.h" /** \include */
 #include <string.h> /* strlen memcpy */
 #include <stdio.h>  /* fprintf */
 #include <limits.h> /* INT_MAX */
-#include "Cdoc.h"
-#include "Symbol.h"
-#include "Buffer.h"
-#include "Style.h" /** \include */
 
-/* `SYMBOL` is declared in `Symbol.h`. */
-static const int symbol_before_sep[] = { SYMBOL(PARAM6D) };
-static const int symbol_after_sep[]  = { SYMBOL(PARAM6E) };
+/* `SYMBOL` is declared in `symbol.h`. */
+#define X(a, b, c, d, e, f) d
+static const int symbol_before_sep[] = { SYMBOL };
+#undef X
+#define X(a, b, c, d, e, f) e
+static const int symbol_after_sep[]  = { SYMBOL };
+#undef X
 
 /* Can have a beginning, a separator, and an end, which will be printed around
- literals. Must match the <tag:StylePunctuate>. */
-static const struct Punctuate {
+ literals. Must match the <tag:style_punctuate>. */
+static const struct punctuate {
 	const char *name, *begin, *sep, *end;
 	int is_strong, is_to;
-	const enum Format to_format;
+	const enum format to_format;
 } punctuates[][3] = {
 	{
 		{ "nosty", "", "", "", 0, 0, 0 },
@@ -131,7 +135,7 @@ static const struct Punctuate {
 	}
 };
 
-static void punctuate_to_string(const struct Punctuate *p,
+static void punctuate_to_string(const struct punctuate *p,
 	char (*const a)[12]) {
 	const char *name = p->name;
 	size_t name_len = strlen(name);
@@ -141,62 +145,65 @@ static void punctuate_to_string(const struct Punctuate *p,
 }
 
 /** This does a delayed lazy unencoded surrounding text. */
-struct Style {
-	const struct Punctuate *punctuate;
+struct style {
+	const struct punctuate *punctuate;
 	enum { BEGIN, ITEM, SEPARATE } lazy;
 };
 
-static void style_to_string(const struct Style *s, char (*const a)[12]) {
+static void style_to_string(const struct style *s, char (*const a)[12]) {
 	punctuate_to_string(s->punctuate, a);
 }
-#define ARRAY_NAME Style
-#define ARRAY_TYPE struct Style
+#define ARRAY_NAME style
+#define ARRAY_TYPE struct style
+#define ARRAY_EXPECT_TRAIT
+#include "array.h"
 #define ARRAY_TO_STRING &style_to_string
-#define ARRAY_STACK
-#include "Array.h"
+#include "array.h"
 
-/** Style stack with more. */
+/** Singleton style stack (array) with temporary values. */
 static struct {
-	struct StyleArray styles;
+	struct style_array styles;
 	int is_before_sep;
-	struct { const struct Punctuate *punctuate; int on; } highlight;
+	struct { const struct punctuate *punctuate; int on; } highlight;
 } style;
 
 /** This takes a bounded and small amount of memory, so unless one has an
- infinite style-push loop or one's memory is very small and one just happened
- to knick this small piece, this is not going to happen. */
+ infinite style-push loop or one's memory is very small, this is not going to
+ happen. (We think.) */
 static void unrecoverable(void)
-	{ perror("Unrecoverable"), fprintf(stderr, "Styles stack: %s.\n",
-	StyleArrayToString(&style.styles)), assert(0), exit(EXIT_FAILURE); }
+	{ perror("Unrecoverable"), fprintf(stderr, "style stack: %s.\n",
+	style_array_to_string(&style.styles)), assert(0), exit(EXIT_FAILURE); }
 
 /** Expects the stack to be bounded. If `will_be_popped`, starts searching one
  spot below the top. */
-static enum Format effective_format_search(const int will_be_popped) {
-	struct Style *s = 0;
-	const enum Format f = CdocGetFormat();
+static enum format effective_format_search(const int will_be_popped) {
+	size_t i = style.styles.size;
+	const enum format f = cdoc_get_format();
 	/* If the style will be popped, don't include it. */
-	if(will_be_popped) s = StyleArrayBack(&style.styles, s);
-	while((s = StyleArrayBack(&style.styles, s)))
+	if(i && will_be_popped) i--;
+	while(i) {
+		const struct style *const s = style.styles.data + --i;
 		if(s->punctuate->is_to) return s->punctuate->to_format;
+	}
 	return f;
 }
-static enum Format effective_format(void) { return effective_format_search(0); }
-static enum Format effective_format_will_be_popped(void)
+static enum format effective_format(void) { return effective_format_search(0); }
+static enum format effective_format_will_be_popped(void)
 	{ return effective_format_search(1); }
 
-/** @return Unlike `CdocGetFormat` which always returns the same thing, this is
- the style format, which could change. */
-enum Format StyleFormat(void) { return effective_format(); }
+/** @return Unlike `cdoc_get_format` which always returns the same thing, this
+ is the style format, which could change. */
+enum format style_format(void) { return effective_format(); }
 
 /** Destructor for styles. */
-void Style_(void) {
-	assert(!StyleArraySize(&style.styles) && !style.highlight.on);
-	StyleArray_(&style.styles);
+void style_(void) {
+	assert(!style.styles.size && !style.highlight.on);
+	style_array_(&style.styles);
 	style.is_before_sep = 0;
 }
 
-static void push(const struct Punctuate *const p) {
-	struct Style *const s = StyleArrayNew(&style.styles);
+static void push(const struct punctuate *const p) {
+	struct style *const s = style_array_new(&style.styles);
 	/* There's so many void functions that rely on this function and it's such
 	 a small amount of memory, that it's useless to recover. The OS will have
 	 to clean up our mess. Hack. */
@@ -204,75 +211,73 @@ static void push(const struct Punctuate *const p) {
 	/*printf("<!-- push %s -->", text->name);*/
 	s->punctuate = p;
 	s->lazy = BEGIN;
-	if(CdocGetDebug() & DBG_STYLE) fprintf(stderr, "Push style, now %s.\n",
-		StyleArrayToString(&style.styles));	
+	if(cdoc_get_debug() & DBG_STYLE) fprintf(stderr, "Push style, now %s.\n",
+		style_array_to_string(&style.styles));
 }
 
 /** Push the style `e`. @fixme Failing inexplicably? */
-void StylePush(const enum StylePunctuate p) {
+void style_push(const enum style_punctuate p) {
 	push(&punctuates[p][effective_format()]);
 }
 
 static void pop(void) {
-	struct Style *const s = StyleArrayPop(&style.styles);
+	struct style *const s = style_array_pop(&style.styles);
 	if(!s) unrecoverable();
 	/*printf("<!-- pop %s -->", pop->text->name);*/
 	if(s->lazy == BEGIN) return;
 	fputs(s->punctuate->end, stdout);
-	if(CdocGetDebug() & DBG_STYLE) fprintf(stderr, "Pop style, now %s.\n",
-		StyleArrayToString(&style.styles));	
+	if(cdoc_get_debug() & DBG_STYLE) fprintf(stderr, "Pop style, now %s.\n",
+		style_array_to_string(&style.styles));
 }
 
 /** Pop the style. One must have pushed. */
-void StylePop(void) { pop(); }
+void style_pop(void) { pop(); }
 
 /** Pops until the the element that is popped is strong or the style list is
  empty. Is strong means it can appear on it's own; _eg_, a list item is not
  strong because it can not appear without a list, but a list is. This allows
  simplified lists. */
-void StylePopStrong(void) {
-	struct Style *top;
-	while((top = StyleArrayPeek(&style.styles)))
+void style_pop_strong(void) {
+	struct style *top;
+	while((top = style_array_peek(&style.styles)))
 		{ pop(); if(top->punctuate->is_strong) break; }
 }
 
 /** Pops, separates, and then pushes the same element. */
-void StylePopPush(void) {
-	struct Style *const peek = StyleArrayPeek(&style.styles), *top;
+void style_pop_push(void) {
+	struct style *const peek = style_array_peek(&style.styles), *top;
 	assert(peek);
 	pop();
-	if((top = StyleArrayPeek(&style.styles))) top->lazy = SEPARATE;
+	if((top = style_array_peek(&style.styles))) top->lazy = SEPARATE;
 	push(peek->punctuate);
 }
 
 /** @return Is the top style `p`? */
-int StyleIsTop(const enum StylePunctuate p) {
-	struct Style *const peek = StyleArrayPeek(&style.styles);
+int style_Is_top(const enum style_punctuate p) {
+	struct style *const peek = style_array_peek(&style.styles);
 	return peek && (peek->punctuate == &punctuates[p][OUT_RAW]
 		|| peek->punctuate == &punctuates[p][OUT_HTML]
 		|| peek->punctuate == &punctuates[p][OUT_MD]);
 }
 
 /** @return Is the style stack empty? */
-int StyleIsEmpty(void) {
-	return !StyleArraySize(&style.styles);
-}
+int style_is_empty(void) { return !style.styles.size; }
 
 /** Differed space; must have a style. */
-void StyleSeparate(void) {
-	struct Style *const top = StyleArrayPeek(&style.styles);
+void style_separate(void) {
+	struct style *const top = style_array_peek(&style.styles);
 	if(!top) unrecoverable();
 	if(top->lazy == ITEM) top->lazy = SEPARATE;
 }
 
-/** Crashes the programme if it doesn't find `e`. */
-void StyleExpect(const enum StylePunctuate p) {
-	const struct Style *const s = StyleArrayPeek(&style.styles);
+/** Crashes the programme if it doesn't find `p`. */
+void style_expect(const enum style_punctuate p) {
+	const struct style *const s = style_array_peek(&style.styles);
 	if((!p && !s) || (s && s->punctuate
 		== &punctuates[p][effective_format_will_be_popped()])) return;
 	{
 		char a[12];
-		const enum Format f = effective_format();
+		const enum format f = effective_format();
 		punctuate_to_string(&punctuates[p][f], &a);
 		fprintf(stderr, "Expected %s.\n", a);
 	}
@@ -282,11 +287,13 @@ void StyleExpect(const enum StylePunctuate p) {
 /** Right before we commit to print, call this to prepare extra characters,
  _eg_, space.
  @param[symbol] What output symbol we are going to print. */
-void StyleFlushSymbol(const enum Symbol symbol) {
-	struct Style *const top = StyleArrayPeek(&style.styles), *s = 0;
+void style_flush_symbol(const enum symbol symbol) {
+	size_t i = 0;
+	struct style *const top = style_array_peek(&style.styles);
 	assert(top);
 	/* Make sure all the stack is on `ITEM`. */
-	while((s = StyleArrayNext(&style.styles, s))) {
+	while(i < style.styles.size) {
+		struct style *const s = style.styles.data + i;
 		switch(s->lazy) {
 			case ITEM: continue;
 			case SEPARATE: fputs(s->punctuate->sep, stdout); break;
@@ -306,14 +313,14 @@ void StyleFlushSymbol(const enum Symbol symbol) {
 }
 
 /** If we want to print a string. */
-void StyleFlush(void) { StyleFlushSymbol(END); }
+void style_flush(void) { style_flush_symbol(END); }
 
-void StyleHighlightOn(const enum StylePunctuate p) {
+void style_highlight_on(const enum style_punctuate p) {
 	assert(!style.highlight.punctuate && !style.highlight.on);
 	style.highlight.punctuate = &punctuates[p][effective_format()];
 }
 
-void StyleHighlightOff(void) {
+void style_highlight_off(void) {
 	assert(style.highlight.punctuate);
 	if(style.highlight.on)
 		fputs(style.highlight.punctuate->end, stdout), style.highlight.on = 0;
@@ -322,10 +329,10 @@ void StyleHighlightOff(void) {
 
 /** Encode a bunch of arbitrary text `from` to `length` as whatever the options
  were.
- @param[is_buffer] Appends to the buffer chosen in `Buffer.c`. */
-static void encode_len_choose(int length, const char *from,
-	const enum Format f, const int is_buffer) {
-	int ahead = 0;
+ @param[is_buffer] Appends to the buffer chosen in `buffer.c`. */
+static void encode_len_choose(size_t length, const char *from,
+	const enum format f, const int is_buffer) {
+	size_t ahead = 0;
 	char *b;
 	const char *str;
 	size_t str_len;
@@ -344,7 +351,7 @@ static void encode_len_choose(int length, const char *from,
 	}
 	
 raw_encode_buffer:
-	if(!(b = BufferPrepare(length))) { unrecoverable(); return; }
+	if(!(b = buffer_prepare(length))) { unrecoverable(); return; }
 	memcpy(b, from, length);
 	return;
 	
@@ -358,19 +365,19 @@ html_encode_buffer:
 			default: ahead++; continue;
 		}
 		if(ahead) {
-			if(!(b = BufferPrepare(ahead))) { unrecoverable(); return; }
+			if(!(b = buffer_prepare(ahead))) { unrecoverable(); return; }
 			memcpy(b, from, ahead);
 			length -= ahead;
 			from += ahead;
 			ahead = 0;
 		}
-		if(!(b = BufferPrepare(str_len))) { unrecoverable(); return; }
+		if(!(b = buffer_prepare(str_len))) { unrecoverable(); return; }
 		memcpy(b, str, str_len);
 		from++, length--;
 	}
 terminate_html:
 	if(ahead) {
-		if(!(b = BufferPrepare(ahead))) { unrecoverable(); return; }
+		if(!(b = buffer_prepare(ahead))) { unrecoverable(); return; }
 		memcpy(b, from, ahead);
 	}
 	return;
@@ -379,14 +386,14 @@ md_encode_buffer:
 	while(length - ahead) {
 		const char *escape = 0;
 		switch(from[ahead]) {
-			case '\0': goto terminate_md;
-			case '\\': case '`': case '*': case '_': case '{': case '}': case '[':
-			case ']': case '(': case ')': case '#': case '+': case '-': case '.':
-			case '!': break;
-			default: ahead++; continue;
+		case '\0': goto terminate_md;
+		case '\\': case '`': case '*': case '_': case '{': case '}': case '[':
+		case ']': case '(': case ')': case '#': case '+': case '-': case '.':
+		case '!': break;
+		default: ahead++; continue;
 		}
 		if(ahead) {
-			if(!(b = BufferPrepare(ahead))) { unrecoverable(); return; }
+			if(!(b = buffer_prepare(ahead))) { unrecoverable(); return; }
 			memcpy(b, from, ahead);
 			length -= ahead;
 			from += ahead;
@@ -394,23 +401,24 @@ md_encode_buffer:
 		}
 		if(escape) {
 			const size_t e_len = strlen(escape);
-			if(!(b = BufferPrepare(e_len))) { unrecoverable(); return; }
+			if(!(b = buffer_prepare(e_len))) { unrecoverable(); return; }
 			memcpy(b, escape, e_len);
 		} else {
-			if(!(b = BufferPrepare(2))) { unrecoverable(); return; }
+			if(!(b = buffer_prepare(2))) { unrecoverable(); return; }
 			b[0] = '\\', b[1] = *from;
 		}
 		from++, length--;
 	}
 terminate_md:
 	if(ahead) {
-		if(!(b = BufferPrepare(ahead))) { unrecoverable(); return; }
+		if(!(b = buffer_prepare(ahead))) { unrecoverable(); return; }
 		memcpy(b, from, ahead);
 	}
 	return;
 	
 raw_encode_print:
-	printf("%.*s", length, from);
+	if(length > INT_MAX) unrecoverable();
+	printf("%.*s", (int)length, from);
 	return;
 	
 html_encode_print:
@@ -419,7 +427,8 @@ html_encode_print:
 			case '<': fputs(HTML_LT, stdout); break;
 			case '>': fputs(HTML_GT, stdout); break;
 			case '&': fputs(HTML_AMP, stdout); break;
-			case '\0': fprintf(stderr, "Encoded null with %d left.\n", length);
+			case '\0':
+				fprintf(stderr, "Encoded null with %d left.\n", (int)length);
 				return;
 			default: fputc(*from, stdout); break;
 		}
@@ -430,7 +439,8 @@ html_encode_print:
 md_encode_print:
 	while(length) {
 		switch(*from) {
-			case '\0': fprintf(stderr, "Encoded null with %d left.\n", length);
+			case '\0':
+				fprintf(stderr, "Encoded null with %d left.\n", (int)length);
 				return;
 			case '\\': case '`': case '*': case '_': case '{': case '}': case '[':
 			case ']': case '(': case ')': case '#': case '+': case '-': case '.':
@@ -442,41 +452,41 @@ md_encode_print:
 	return;
 }
 
-static void encode_len(const int length, const char *const from) {
+static void encode_len(const size_t length, const char *const from) {
 	assert(length > 0);
 	encode_len_choose(length, from, effective_format(), 0);
 }
 
 /** Encodes `from` with the `length` in the style chosen to `stdout`. */
-void StyleEncodeLength(const int length, const char *const from) {
+void style_encode_length(const size_t length, const char *const from) {
 	if(!from || length <= 0) return;
 	encode_len(length, from);
 }
 
 /** Encodes `string` in the style chosen to `stdout`. */
-void StyleEncode(const char *const string) {
+void style_encode(const char *const string) {
 	size_t length;
 	if(!string) return;
 	length = strlen(string);
 	if(length > INT_MAX) { fprintf(stderr,
-		"StyleEncode \"%.10s...\" length clipped at %d.\n", string, INT_MAX);
+		"style_encode \"%.10s...\" length clipped at %d.\n", string, INT_MAX);
 		length = INT_MAX; }
-	encode_len((int)length, string);
+	encode_len(length, string);
 }
 
 /** Encodes `from` to `length` in the style chosen and returns the buffer.
  @return The buffer or null if . */
-const char *StyleEncodeLengthCatToBuffer(const int length,
+const char *style_encode_length_cat_to_buffer(const size_t length,
 	const char *const from) {
-	if(length <= 0 || !from) return BufferGet();
+	if(length <= 0 || !from) return buffer_get();
 	encode_len_choose(length, from, effective_format(), 1);
-	return BufferGet();
+	return buffer_get();
 }
 	   
 /** @return The buffer or null. */
-const char *StyleEncodeLengthRawToBuffer(const int length,
+const char *style_encode_length_raw_to_buffer(const size_t length,
 	const char *const from) {
-	BufferClear();
+	buffer_clear();
 	if(length > 0 && from) encode_len_choose(length, from, OUT_RAW, 1);
-	return BufferGet();
+	return buffer_get();
 }

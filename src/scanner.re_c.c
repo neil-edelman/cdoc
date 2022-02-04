@@ -1,36 +1,36 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT). */
 
+#include "../src/symbol.h"
+#include "../src/cdoc.h"
+#include "../src/scanner.h"
 #include <stdio.h>  /* .printf */
 #include <stdlib.h> /* malloc free */
 #include <assert.h> /* assert */
 #include <errno.h>  /* errno EILSEQ */
-#include "../src/Symbol.h"
-#include "../src/Cdoc.h"
-#include "../src/Scanner.h"
 
 
-/* This defines `ScanState`; the trailing comma on an `enum` is not in proper
- compliance with `C90`, hopefully they will fix it. */
+/* This defines `scanner_state`; the trailing comma on an `enum` is not in
+ proper compliance with `C90`, hopefully they will fix it. */
 /*!types:re2c*/
 
 
-/** Scanner reads a file and extracts semantic information. Valid to access
+/** scanner reads a file and extracts semantic information. Valid to access
  only while underlying pointers do not change. */
-struct Scanner {
+struct scanner {
 	/* `re2c` variables; these point directly into `buffer`. */
 	const char *marker, *ctx_marker, *from, *cursor;
 	/* Weird `c2re` stuff: these fields have to come after when >5? */
 	const char *label, *buffer, *sub0, *sub1;
-	enum ScanState state;
-	enum Symbol symbol;
+	enum scanner_state state;
+	enum symbol symbol;
 	int indent_level;
 	int ignore_block;
 	size_t line, doc_line;
 };
 
 /** Prints line info in a static buffer, (to be printed?) */
-static const char *pos(const struct Scanner *const scan) {
+static const char *pos(const struct scanner *const scan) {
 	static char p[128];
 	if(!scan) {
 		sprintf(p, "No scanner loaded");
@@ -44,20 +44,18 @@ static const char *pos(const struct Scanner *const scan) {
 	return p;
 }
 
-/*!stags:re2c format = 'const char *@@;'; */
-
 /*!re2c
-re2c:yyfill:enable   = 0;
-re2c:define:YYCTYPE  = char;
+re2c:yyfill:enable = 0;
+re2c:define:YYCTYPE = char;
 re2c:define:YYCURSOR = scan->cursor;
-re2c:define:YYMARKER = scan->marker; // Rules overlap.
+re2c:define:YYMARKER = scan->marker;
 re2c:define:YYCTXMARKER = scan->ctx_marker;
-re2c:define:YYCONDTYPE = "ScanState";
-re2c:define:YYGETCONDITION = "scan->state";
+re2c:define:YYCONDTYPE = 'scanner_state';
+re2c:define:YYGETCONDITION = 'scan->state';
 re2c:define:YYGETCONDITION:naked = 1;
-re2c:define:YYSETCONDITION = "scan->state = @@;";
+re2c:define:YYSETCONDITION = 'scan->state = @@;';
 re2c:define:YYSETCONDITION:naked = 1;
-re2c:flags:tags      = 1;
+re2c:flags:tags = 1;
 
 // Eof is marked by null when preparing files for lexing.
 eof = "\x00";
@@ -101,15 +99,14 @@ art = whitespace* "*"? newline " *";
 white_inside = whitespace | newline | art [^/[\]\x00];
 all_inside = word_inside | "\\" escape_except_asterisk | white_inside
 	| "\\*" [^/[\]\x00] | escapes;
-qfile = [^"\t\n\r\v\f]+;
+qfile = [^"\t\n\r\v\f\x00]+;
 include_comment = whitespace*
-	"/*""*"+ whitespace* "@include" whitespace* "*"+"/";
+	"/""*""*"+ whitespace* "@include" whitespace* "*"+"/";
 comment_break = "/" "*"+ "*" "/";
 begin_comment = "/""*";
 end_comment = "*""/";
 cxx_comment = "//" [^\n\x00]*;
 macro_start = "#" | "%:";
-// fixme: No trigraph support.
 // char_type = "u8"|"u"|"U"|"L"; <- These get caught in id; don't care.
 oct = "0" [0-7]*;
 dec = [1-9][0-9]*;
@@ -142,10 +139,10 @@ generic_id = (("<" [A-Z]+ ">")? id)+;
 // '<' 3C, '>' 3E, '#' 23, '(' %28, ')' %29, '*' %2A, ' ' %20
 uri_scheme = [^:/?# \t\n\v\f\r*<>()&\x00]+ ":";
 uri_authority = "//" [^/?# \t\n\v\f\r*<>()&\x00]*;
-uri_path = [^?# \t\n\v\f\r*<>()&\x00]+;
+uri_url = [^?# \t\n\v\f\r*<>()&\x00]+;
 // It has to have a * or / in it or else it's just a word, which might be a
 // uri, but mmm, really?
-looks_like_uri_path = (
+looks_like_uri_url = (
 	("." "."? "/")* (
 	([^?# \t\n\v\f\r*<>()&./\x00]* ("/" | ".") [^?# \t\n\v\f\r*<>()&./\x00]+)
 	| ([^?# \t\n\v\f\r*<>()&./\x00]+ ("/" | ".") [^?# \t\n\v\f\r*<>()&./\x00]*)
@@ -160,9 +157,9 @@ uri_query = ("?" [^# \t\n\v\f\r\x00]*);
 // represent data within the fragment identifier."
 // <https://tools.ietf.org/html/rfc3986>
 uri_fragment = ("#" [^ \t\n\v\f\r/?\x00]*);
-absolute_uri = uri_scheme uri_authority uri_path uri_query? uri_fragment?;
+absolute_uri = uri_scheme uri_authority uri_url uri_query? uri_fragment?;
 relative_uri = uri_scheme? uri_authority?
-	looks_like_uri_path uri_query? uri_fragment?;
+	looks_like_uri_url uri_query? uri_fragment?;
 uri = absolute_uri | relative_uri | uri_fragment;
 // Citation format. Not authoritative.
 // Author is equivalent to <[A-Z][A-Za-z'`-]+>, except accepting all code
@@ -184,8 +181,14 @@ list = " \\* ";
 */
 
 /** Scans. */
-static enum Symbol scan_next(struct Scanner *const scan) {
+static enum symbol scan_next(struct scanner *const scan) {
 	const char *sub0, *sub1;
+	/*!stags:re2c format = 'const char *@@;'; */
+
+	/* fixme: warning: variable 'yyt1' may be uninitialized when used
+	 here [-Wconditional-uninitialized] */
+	yyt1 = 0;
+
 	assert(scan);
 	scan->sub0 = scan->sub1 = 0;
 	scan->doc_line = scan->line;
@@ -230,7 +233,7 @@ scan:
 	<macro_comment> end_comment :=> macro
 	// C++ comments we aren't concerned with.
 	<code, macro> cxx_comment { goto reset; }
-	// With flattening the `ScanState` stack, this is not actually worth
+	// With flattening the stack, this is not actually worth
 	// the effort; honestly, it's not going to matter.
 	<macro> begin_doc / [^/] { return fprintf(stderr,
 		"%s: documentation inside macro.\n", pos(scan)), errno = EILSEQ,
@@ -240,7 +243,7 @@ scan:
 	<macro> [\\] / [^\n\r] { goto scan; }
 	<macro> [/] / [^*] { goto scan; }
 	<macro> begin_comment :=> macro_comment
-	<code> comment_break { goto reset; } // Like this: /*****/.
+	<code> comment_break { goto reset; } // Like this: / ***** /.
 	<code> begin_comment :=> comment
 	<code> macro_start "include" whitespace+ "\"" @sub0 qfile @sub1 "\""
 		whitespace* begin_doc whitespace* "\\include" whitespace* end_doc
@@ -369,17 +372,17 @@ scan:
 */
 }
 
-static enum ScanState scanner_to_scan_state(const enum ScannerState
-	scanner_state) {
-	switch(scanner_state) {
-	case SSCODE: return yyccode;
-	case SSDOC:  return yycdoc;
+static enum scanner_state scanner_start_to_state(const enum scanner_start start)
+{
+	switch(start) {
+	case START_CODE: return yyccode;
+	case START_DOC:  return yycdoc;
 	}
 	assert(0);
 	return yyccode;
 }
 
-static void zero_scanner(struct Scanner *const scanner) {
+static void zero_scanner(struct scanner *const scanner) {
 	assert(scanner);
 	scanner->marker = scanner->ctx_marker = scanner->from = scanner->cursor = 0;
 	scanner->label = scanner->buffer = scanner->sub0 = scanner->sub1 = 0;
@@ -391,8 +394,8 @@ static void zero_scanner(struct Scanner *const scanner) {
 }
 
 /** Unloads scanner from memory. */
-void Scanner_(struct Scanner **const pscanner) {
-	struct Scanner *scanner;
+void scanner_(struct scanner **const pscanner) {
+	struct scanner *scanner;
 	if(!pscanner || !(scanner = *pscanner)) return;
 	zero_scanner(scanner);
 	free(scanner);
@@ -406,13 +409,13 @@ void Scanner_(struct Scanner **const pscanner) {
  throughout the scanners lifetime; if null, returns null.
  @param[notify] The function that is notified when it gets a match. It
  interprets return of false for error; if null, returns null.
- @return The scanner which must be passed to <fn:Scanner_>.
+ @return The scanner which must be passed to <fn:scanner_>.
  @throws[malloc, fopen, fread]
  @throws[EILSEQ] File has embedded nulls. */
-struct Scanner *Scanner(const char *const label, const char *const buffer,
-	const ScannerPredicate notify, const enum ScannerState state) {
-	struct Scanner *scan = 0;
-	const enum ScanState underlying_state = scanner_to_scan_state(state);
+struct scanner *scanner(const char *const label, const char *const buffer,
+	const scanner_predicate notify, const enum scanner_start start) {
+	struct scanner *scan = 0;
+	const enum scanner_state state = scanner_start_to_state(start);
 	if(!label || !buffer || !notify) goto catch;
 	if(!(scan = malloc(sizeof *scan))) goto catch;
 	zero_scanner(scan);
@@ -422,44 +425,44 @@ struct Scanner *Scanner(const char *const label, const char *const buffer,
 	 growing, or we could not do this. */
 	scan->marker = scan->ctx_marker = scan->from = scan->cursor = buffer;
 	scan->line = scan->doc_line = 1;
-	scan->state = underlying_state;
+	scan->state = state;
 	/* Scans all. */
 	errno = 0;
 	while((scan->symbol = scan_next(scan)) && notify(scan))
-		if(CdocGetDebug() & DBG_READ) fprintf(stderr, "%s.\n", pos(scan));
+		if(cdoc_get_debug() & DBG_READ) fprintf(stderr, "%s.\n", pos(scan));
 	if(errno) goto catch;
-	if(scan->state != underlying_state) {
+	if(scan->state != state) {
 		fprintf(stderr, "%s: enexpected mode at end of buffer.\n",
 		pos(scan)); errno = EILSEQ; goto catch; }
 	goto finally;
 catch:
-	Scanner_(&scan), scan = 0;
+	scanner_(&scan), scan = 0;
 finally:
 	return scan;
 }
 
-enum Symbol ScannerSymbol(const struct Scanner *const scan) {
+enum symbol scanner_symbol(const struct scanner *const scan) {
 	if(!scan) return END;
 	return scan->symbol;
 }
-const char *ScannerFrom(const struct Scanner *const scan) {
+const char *scanner_from(const struct scanner *const scan) {
 	if(!scan) return 0;
 	if(scan->sub0) return assert(scan->sub0 < scan->sub1), scan->sub0;
 	else if(scan->from) return assert(scan->from < scan->cursor), scan->from;
 	return 0;
 }
-const char *ScannerTo(const struct Scanner *const scan) {
+const char *scanner_to(const struct scanner *const scan) {
 	if(!scan) return 0;
 	if(scan->sub1) return scan->sub1;
 	else if(scan->cursor) return scan->cursor;
 	return 0;
 }
-const char *ScannerLabel(const struct Scanner *const scan) {
+const char *scanner_label(const struct scanner *const scan) {
 	return scan ? scan->label : 0;
 }
-size_t ScannerLine(const struct Scanner *const scan) {
+size_t scanner_line(const struct scanner *const scan) {
 	return scan ? scan->line : 0;
 }
-int ScannerIndentLevel(const struct Scanner *const scan) {
+int scanner_indent_level(const struct scanner *const scan) {
 	return scan ? scan->indent_level : 0;
 }

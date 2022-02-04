@@ -1,41 +1,49 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- Organises tokens into sections, each section can have some documentation,
+ Organizes tokens into sections, each section can have some documentation,
  code, and maybe attributes. */
 
+#include "division.h"
+#include "format.h"
+#include "semantic.h"
+#include "url_encode.h"
+#include "buffer.h"
+#include "url.h"
+#include "text.h"
+#include "style.h"
+#include "image_dimension.h"
+#include "cdoc.h"
+#include "report.h"
 #include <string.h> /* size_t strncpy strncmp */
 #include <limits.h> /* INT_MAX */
 #include <stdio.h>  /* .printf */
-#include "Division.h"
-#include "Format.h"
-#include "Scanner.h"
-#include "Semantic.h"
-#include "UrlEncode.h"
-#include "Buffer.h"
-#include "Path.h"
-#include "Text.h"
-#include "Style.h"
-#include "ImageDimension.h"
-#include "Cdoc.h"
-#include "Report.h"
 
+#include <stdlib.h>
+#include <assert.h>
+/** Ludicrous. fixme: putting them in we check, this should be an assert. */
+static void unrecoverable(void) {
+	fprintf(stderr, "report: couldn't write file because it is too big.\n");
+	assert(0), exit(EXIT_FAILURE);
+}
 
-/** `Token` has a `Symbol` and is associated with an area of the text. */
-struct Token {
-	enum Symbol symbol;
+/** `token` has a `symbol` and is associated with an area of the text. */
+struct token {
+	enum symbol symbol;
 	const char *from;
-	int length;
+	size_t length;
 	const char *label;
 	size_t line;
 };
-static void token_to_string(const struct Token *t, char (*const a)[12]) {
+static void token_to_string(const struct token *t, char (*const a)[12]) {
 	switch(t->symbol) {
-	case WORD: { int len = t->length >= 9 ? 9 : t->length;
-		sprintf(*a, "<%.*s>", len, t->from); break; }
+	case WORD: { size_t len = t->length >= 9 ? 9 : t->length;
+		if(len > INT_MAX) unrecoverable();
+		sprintf(*a, "<%.*s>", (int)len, t->from); break; }
 	case DOC_ID:
-	case ID: { int len = t->length >= 8 ? 8 : t->length;
-		sprintf(*a, "ID:%.*s", len, t->from); break; }
+	case ID: { size_t len = t->length >= 8 ? 8 : t->length;
+		if(len > INT_MAX) unrecoverable();
+		sprintf(*a, "ID:%.*s", (int)len, t->from); break; }
 	case SPACE: { (*a)[0] = '~', (*a)[1] = '\0'; break; }
 	default:
 		strncpy(*a, symbols[t->symbol], sizeof *a - 1);
@@ -43,136 +51,137 @@ static void token_to_string(const struct Token *t, char (*const a)[12]) {
 	}
 }
 /** Compares the _contents_ of the tokens. */
-static int token_compare(const struct Token *const a,
-	const struct Token *const b) {
+static int token_compare(const struct token *const a,
+	const struct token *const b) {
 	const int len_cmp = (a->length > b->length) - (b->length > a->length);
 	const int str_cmp = strncmp(a->from, b->from,
 		len_cmp >= 0 ? b->length : a->length);
 	return str_cmp ? str_cmp : len_cmp;
 }
-#define ARRAY_NAME Token
-#define ARRAY_TYPE struct Token
+#define ARRAY_NAME token
+#define ARRAY_TYPE struct token
+#define ARRAY_CONTIGUOUS
+#define ARRAY_EXPECT_TRAIT
+#include "array.h"
 #define ARRAY_TO_STRING &token_to_string
-#include "Array.h"
-/** This is used in `Semantic.c.re` to get the first file:line for error. */
-const char *TokensFirstLabel(const struct TokenArray *const tokens) {
-	const struct Token *const first = TokenArrayNext(tokens, 0);
-	return first ? first->label : "unlabelled";
-}
-size_t TokensFirstLine(const struct TokenArray *const tokens) {
-	const struct Token *const first = TokenArrayNext(tokens, 0);
-	return first ? first->line : 0;
-}
-/** This is used in `Semantic.c.re` to get the size of the string for
+#include "array.h"
+/** This is used in `semantic.c.re` to get the first file:line for error. */
+const char *tokens_first_label(const struct token_array *const tokens)
+	{ return tokens->size ? tokens->data[0].label : "unlabelled"; }
+size_t tokens_first_line(const struct token_array *const tokens)
+	{ return tokens->size ? tokens->data[0].line : 0; }
+/** This is used in `semantic.c.re` to get the size of the string for
  `tokens`. */
-size_t TokensMarkSize(const struct TokenArray *const tokens) {
+size_t tokens_mark_size(const struct token_array *const tokens) {
 	if(!tokens) return 0;
-	return TokenArraySize(tokens) + 1;
+	return tokens->size + 1;
 }
-/** @param[tokens] The `TokenArray` that converts to a string.
- @param[marks] Must be an at-least `TokensMarkSize` buffer, or null.
+/** @param[tokens] The `token_array_` that converts to a string.
+ @param[marks] Must be an at-least the size of `tokens`, or null.
  @return The size of the string, including null. */
-void TokensMark(const struct TokenArray *const tokens, char *const marks) {
-	struct Token *token = 0;
+void tokens_mark(const struct token_array *const tokens, char *const marks) {
+	size_t i = 0;
 	char *mark = marks;
 	if(!marks) return;
-	while((token = TokenArrayNext(tokens, token)))
-		*mark++ = symbol_marks[token->symbol];
+	while(i < tokens->size)
+		*mark++ = symbol_marks[tokens->data[i].symbol];
 	*mark = '\0';
-	assert((size_t)(mark - marks) == TokenArraySize(tokens));
 }
 
 
 static void index_to_string(const size_t *const n, char (*const a)[12]) {
 	sprintf(*a, "%lu", (unsigned long)*n % 1000000000lu);
 }
-#define ARRAY_NAME Index
+#define ARRAY_NAME index
 #define ARRAY_TYPE size_t
+#define ARRAY_EXPECT_TRAIT
+#include "array.h"
 #define ARRAY_TO_STRING &index_to_string
-#include "Array.h"
-
+#include "array.h"
 
 /** `Attribute` is a specific structure of array of `Token` representing
  each-attributes, "\@param ...". */
-struct Attribute {
-	struct Token token;
-	struct TokenArray header;
-	struct TokenArray contents;
+struct attribute {
+	struct token token;
+	struct token_array header;
+	struct token_array contents;
 };
-static void attribute_to_string(const struct Attribute *t, char (*const a)[12])
+static void attribute_to_string(const struct attribute *t, char (*const a)[12])
 {
 	strncpy(*a, symbols[t->token.symbol], sizeof *a - 1);
 	(*a)[sizeof *a - 1] = '\0';
 }
-#define ARRAY_NAME Attribute
-#define ARRAY_TYPE struct Attribute
+#define ARRAY_NAME attribute
+#define ARRAY_TYPE struct attribute
+#define ARRAY_EXPECT_TRAIT
+#include "../src/array.h"
 #define ARRAY_TO_STRING &attribute_to_string
-#include "../src/Array.h"
-static void attributes_(struct AttributeArray *const atts) {
-	struct Attribute *a;
+#include "../src/array.h"
+static void attributes_(struct attribute_array *const atts) {
+	struct attribute *a;
 	if(!atts) return;
-	while((a = AttributeArrayPop(atts)))
-		TokenArray_(&a->header), TokenArray_(&a->contents);
-	AttributeArray_(atts);
+	while((a = attribute_array_pop(atts)))
+		token_array_(&a->header), token_array_(&a->contents);
+	attribute_array_(atts);
 }
 
 
-/** `Segment` is classified to a section of the document and can have
- documentation including attributes and code. */
-struct Segment {
-	enum Division division;
-	struct TokenArray doc, code;
-	struct IndexArray code_params;
-	struct AttributeArray attributes;
+/** Classified to a section of the document and can have documentation
+ including attributes and code. */
+struct segment {
+	enum division division;
+	struct token_array doc, code;
+	struct index_array code_params;
+	struct attribute_array attributes;
 };
 /** Provides a default token for `segment` to print. */
-static const struct Token *segment_fallback(const struct Segment *const segment,
-	const struct TokenArray **const ta_ptr) {
-	const struct TokenArray *ta = 0;
-	const struct Token *t = 0;
+static const struct token *segment_fallback(const struct segment *const segment,
+	const struct token_array **const ta_ptr) {
+	const struct token_array *ta = 0;
+	const struct token *t = 0;
 	assert(segment);
-	if(IndexArraySize(&segment->code_params)) {
-		const size_t i = IndexArrayGet(&segment->code_params)[0];
+	if(segment->code_params.size) {
+		const size_t i = segment->code_params.data[0];
 		ta = &segment->code;
-		assert(i < TokenArraySize(ta));
-		t = TokenArrayGet(ta) + i;
-	} else if(TokenArraySize(&segment->code)) {
+		assert(i < ta->size);
+		t = ta->data + i;
+	} else if(segment->code.size) {
 		ta = &segment->code;
-		t = TokenArrayGet(ta);
-	} else if(!ta_ptr && TokenArraySize(&segment->doc)) {
+		t = ta->data;
+	} else if(!ta_ptr && segment->doc.size) {
 		/* /\ Raw pointers in the text are problematic since maybe we will
 		 convert it to a string and most text does not support that. */
 		ta = &segment->doc;
-		t = TokenArrayGet(ta);
-	} else if(!ta_ptr && AttributeArraySize(&segment->attributes)) {
+		t = ta->data;
+	} else if(!ta_ptr && segment->attributes.size) {
 		ta = &segment->doc;
-		t = &AttributeArrayGet(&segment->attributes)->token;
+		t = &segment->attributes.data->token;
 	}
 	if(ta_ptr) *ta_ptr = ta;
 	return t;
-	/*return IndexArraySize(&segment->code_params)
-		? TokenArrayGet(&segment->code)
-		+ IndexArrayGet(&segment->code_params)[0]
-		: TokenArraySize(&segment->code) ? TokenArrayGet(&segment->code)
-		: TokenArraySize(&segment->doc) ? TokenArrayGet(&segment->doc)
-		: AttributeArraySize(&segment->attributes)
-		? &AttributeArrayGet(&segment->attributes)->token : 0;*/
+	/*return index_array_size(&segment->code_params)
+		? segment->code.data
+		+ segment->code_params.data[0]
+		: token_array_size(&segment->code) ? segment->code.data
+		: token_array_size(&segment->doc) ? segment->doc.data
+		: attribute_array_size(&segment->attributes)
+		? &attribute_array_get(&segment->attributes)->token : 0;*/
 }
 
 /* For <fn:segment_to_string>. */
-static const char *print_token_s(const struct TokenArray *const tokens,
-	const struct Token *token);
+static const char *print_token_s(const struct token_array *const tokens,
+	const struct token *token);
 
-static void segment_to_string(const struct Segment *segment,
+static void segment_to_string(const struct segment *segment,
 	char (*const a)[12]) {
-	const struct TokenArray *ta;
-	const struct Token *const fallback = segment_fallback(segment, &ta);
+	const struct token_array *ta;
+	const struct token *const fallback = segment_fallback(segment, &ta);
 	const char *temp = divisions[segment->division];
 	size_t temp_len, i = 0;
 	if(fallback) {
-		StylePush(ST_TO_RAW);
+		style_push(ST_TO_RAW);
 		temp = print_token_s(ta, fallback);
-		StylePop();
+		style_pop();
 	}
 	temp_len = strlen(temp);
 	if(temp_len > sizeof *a - 3) temp_len = sizeof *a - 3;
@@ -183,146 +192,144 @@ static void segment_to_string(const struct Segment *segment,
 	(*a)[i++] = '\0';
 	assert(i <= sizeof *a);
 }
-static void erase_segment(struct Segment *const segment) {
+static void erase_segment(struct segment *const segment) {
 	char a[12];
 	assert(segment);
 	segment_to_string(segment, &a);
 	segment->division = DIV_PREAMBLE;
-	TokenArray_(&segment->doc);
-	TokenArray_(&segment->code);
-	if(CdocGetDebug() & DBG_ERASE && IndexArraySize(&segment->code_params))
+	token_array_(&segment->doc);
+	token_array_(&segment->code);
+	if(cdoc_get_debug() & DBG_ERASE && segment->code_params.size)
 		fprintf(stderr, "*** Erasing %s: %s.\n",
-		a, IndexArrayToString(&segment->code_params));
-	IndexArray_(&segment->code_params);
+		a, index_array_to_string(&segment->code_params));
+	index_array_(&segment->code_params);
 	attributes_(&segment->attributes);
 }
-#define ARRAY_NAME Segment
-#define ARRAY_TYPE struct Segment
+#define ARRAY_NAME segment
+#define ARRAY_TYPE struct segment
+#define ARRAY_CONTIGUOUS
+#define ARRAY_EXPECT_TRAIT
+#include "../src/array.h"
 #define ARRAY_TO_STRING &segment_to_string
-#include "../src/Array.h"
-static void segment_array_(struct SegmentArray *const sa) {
-	struct Segment *segment;
+#include "../src/array.h"
+/*static void segment_array_clear(struct segment_array *const sa) {
+	struct segment *segment;
 	if(!sa) return;
-	while((segment = SegmentArrayPop(sa))) erase_segment(segment);
-	SegmentArray_(sa);
-}
-/*static void segment_array_clear(struct SegmentArray *const sa) {
-	struct Segment *segment;
-	if(!sa) return;
-	while((segment = SegmentArrayPop(sa)))
-		TokenArrayClear(&segment->doc), TokenArrayClear(&segment->code),
-		IndexArrayClear(&segment->code_params),
+	while((segment = segment_arrayPop(sa)))
+		token_array_Clear(&segment->doc), token_array_Clear(&segment->code),
+		Indexarray_clear(&segment->code_params),
 		attributes_(&segment->attributes);
 }*/
-static const struct Token *param_no(const struct Segment *const segment,
+static const struct token *param_no(const struct segment *const segment,
 	const size_t param) {
 	size_t *pidx;
 	assert(segment);
-	if(param >= IndexArraySize(&segment->code_params)) return 0;
-	pidx = IndexArrayGet(&segment->code_params) + param;
+	if(param >= segment->code_params.size) return 0;
+	pidx = segment->code_params.data + param;
 	/* This is really careful. */
-	if(*pidx >= TokenArraySize(&segment->code)) {
+	if(*pidx >= segment->code.size) {
 		char a[12];
 		segment_to_string(segment, &a);
 		fprintf(stderr, "%s: param index %lu is greater then code size.\n",
-			a, (unsigned long)TokenArraySize(&segment->code));
+			a, (unsigned long)segment->code.size);
 		return 0;
 	}
-	return TokenArrayGet(&segment->code) + *pidx;
+	return segment->code.data + *pidx;
 }
 
 
 
 /** Top-level static document. */
-static struct SegmentArray report;
-static struct TokenArray brief;
+static struct segment_array report;
+static struct token_array brief;
 
 
 
 /** Destructor for the static document. Also destucts the string used for
  tokens. */
-void Report_(void) {
-	TokenArray_(&brief);
+void report_(void) {
+	struct segment *segment;
+	token_array_(&brief);
+	while(segment = segment_array_pop(&report)) erase_segment(segment);
 	segment_array_(&report);
-	Semantic(0);
-	Style_();
+	semantic(0);
+	style_();
 }
 
 /** @return A new empty segment from `segments`, defaults to the preamble, or
  null on error. */
-static struct Segment *new_segment(struct SegmentArray *const segments) {
-	struct Segment *segment;
+static struct segment *new_segment(struct segment_array *const segments) {
+	struct segment *segment;
 	assert(segments);
-	if(!(segment = SegmentArrayNew(segments))) return 0;
+	if(!(segment = segment_array_new(segments))) return 0;
 	segment->division = DIV_PREAMBLE; /* Default. */
-	TokenArray(&segment->doc);
-	TokenArray(&segment->code);
-	IndexArray(&segment->code_params);
-	AttributeArray(&segment->attributes);
+	token_array_(&segment->doc);
+	token_array_(&segment->code);
+	index_array(&segment->code_params);
+	attribute_array(&segment->attributes);
 	return segment;
 }
 
-/** Initialises `token` with `scan`.
- @return Success.
+/** Initializes `token` with `scan`. @return Success.
  @throws[EILSEQ] The token cannot be represented as an `int` offset. */
-static int init_token(struct Token *const token,
-	const struct Scanner *const scan) {
-	const char *const from = ScannerFrom(scan), *const to = ScannerTo(scan);
+static int init_token(struct token *const token,
+	const struct scanner *const scan) {
+	const char *const from = scanner_from(scan), *const to = scanner_to(scan);
 	assert(scan && token && from && from <= to);
 	if(from + INT_MAX < to) return errno = EILSEQ, 0;
-	token->symbol = ScannerSymbol(scan);
+	token->symbol = scanner_symbol(scan);
 	token->from = from;
-	token->length = (int)(to - from);
-	token->label = ScannerLabel(scan);
-	token->line = ScannerLine(scan);
+	token->length = (size_t)(to - from);
+	token->label = scanner_label(scan);
+	token->line = scanner_line(scan);
 	return 1;
 }
 
 /** @return A new `Attribute` on `segment` with `symbol`, (should be a
  attribute symbol.) Null on error. */
-static struct Attribute *new_attribute(struct Segment *const segment,
-	const struct Scanner *const scan) {
-	struct Attribute *att;
+static struct attribute *new_attribute(struct segment *const segment,
+	const struct scanner *const scan) {
+	struct attribute *att;
 	assert(scan && segment);
-	if(!(att = AttributeArrayNew(&segment->attributes))) return 0;
+	if(!(att = attribute_array_new(&segment->attributes))) return 0;
 	init_token(&att->token, scan);
-	TokenArray(&att->header);
-	TokenArray(&att->contents);
+	token_array_(&att->header);
+	token_array_(&att->contents);
 	return att;
 }
 
 /** Creates a new token from `tokens` and fills it with `symbol` and the
  most recent scanner location.
  @return Token or failure. */
-static struct Token *new_token(struct TokenArray *const tokens,
-	const struct Scanner *const scan) {
-	struct Token *token;
-	if(!(token = TokenArrayNew(tokens))) return 0;
+static struct token *new_token(struct token_array *const tokens,
+	const struct scanner *const scan) {
+	struct token *token;
+	if(!(token = token_array_new(tokens))) return 0;
 	init_token(token, scan);
 	/*fprintf(stderr, "new_token: %s %.*s\n", symbols[token->symbol],
 		token->length, token->from); <- If one really wants spam. */
 	return token;
 }
 
-/** Wrapper for `Semantic.h`; extracts semantic information from `segment`. */
-static int report_semantic(struct Segment *const segment) {
+/** Wrapper for `semantic.h`; extracts semantic information from `segment`. */
+static int report_semantic(struct segment *const segment) {
 	size_t no, i;
 	const size_t *source;
 	size_t *dest;
 	if(!segment) return 0;
-	if(!Semantic(&segment->code)) return 0;
-	segment->division = SemanticDivision();
-	/* Copy `Semantic` size array to this size array,
+	if(!semantic(&segment->code)) return 0;
+	segment->division = semantic_division();
+	/* Copy `semantic` size array to this size array,
 	 (not the same, local scope; kind of a hack.) */
-	SemanticParams(&no, &source);
+	semantic_params(&no, &source);
 	if(!no) return 1; /* We will cull them later. */
-	if(!(dest = IndexArrayBuffer(&segment->code_params, no))) return 0;
+	if(!(dest = index_array_append(&segment->code_params, no))) return 0;
 	for(i = 0; i < no; i++) dest[i] = source[i];
-	if(CdocGetDebug() & DBG_ERASE) {
+	if(cdoc_get_debug() & DBG_ERASE) {
 		char a[12];
 		segment_to_string(segment, &a);
 		fprintf(stderr, "*** Adding %lu to %s: %s.\n",
-			(unsigned long)no, a, IndexArrayToString(&segment->code_params));
+			(unsigned long)no, a, index_array_to_string(&segment->code_params));
 	}
 	return 1;
 }
@@ -330,32 +337,34 @@ static int report_semantic(struct Segment *const segment) {
 
 
 /** Prints `segment` to `stderr`. */
-static void print_segment_debug(const struct Segment *const segment) {
-	struct Attribute *att = 0;
-	struct Token *doc, *code;
-	if(!(CdocGetDebug() & DBG_OUTPUT)) return;
-	code = TokenArrayNext(&segment->code, 0);
-	doc  = TokenArrayNext(&segment->doc,  0);
-	fprintf(stderr, "Segment division %s:\n"
+static void print_segment_debug(const struct segment *const segment) {
+	struct token *doc, *code;
+	size_t i = 0;
+	if(!(cdoc_get_debug() & DBG_OUTPUT)) return;
+	code = segment->code.size ? segment->code.data + 0 : 0;
+	doc  = segment->doc.size ? segment->doc.data + 0 : 0;
+	fprintf(stderr, "segment_ division %s:\n"
 		"%s:%lu code: %s;\n"
 		"of which params: %s;\n"
 		"%s:%lu doc: %s.\n",
 		divisions[segment->division],
 		code ? code->label : "N/A", code ? code->line : 0,
-		TokenArrayToString(&segment->code),
-		IndexArrayToString(&segment->code_params),
+		token_array_to_string(&segment->code),
+		index_array_to_string(&segment->code_params),
 		doc ? doc->label : "N/A", doc ? doc->line : 0,
-		TokenArrayToString(&segment->doc));
-	while((att = AttributeArrayNext(&segment->attributes, att)))
+		token_array_to_string(&segment->doc));
+	while(i < segment->attributes.size) {
+		const struct attribute *const att = segment->attributes.data + i;
 		fprintf(stderr, "%s{%s} %s.\n", symbols[att->token.symbol],
-		TokenArrayToString(&att->header),
-		TokenArrayToString(&att->contents));
+			token_array_to_string(&att->header),
+			token_array_to_string(&att->contents));
+	}
 }
 
 /** Helper for next. Note that if it stops on a preamble command, this is not
  printed. */
-static void cut_segment_here(struct Segment **const psegment) {
-	const struct Segment *segment = 0;
+static void cut_segment_here(struct segment **const psegment) {
+	const struct segment *segment = 0;
 	assert(psegment);
 	if(!(segment = *psegment)) return;
 	print_segment_debug(segment);
@@ -363,31 +372,30 @@ static void cut_segment_here(struct Segment **const psegment) {
 }
 
 /** Prints line info into a static buffer. */
-static const char *oops(const struct Scanner *const scan) {
+static const char *oops(const struct scanner *const scan) {
 	static char p[128];
 	assert(scan);
-	sprintf(p, "%.32s:%lu, %s", ScannerLabel(scan),
-		(unsigned long)ScannerLine(scan), symbols[ScannerSymbol(scan)]);
+	sprintf(p, "%.32s:%lu, %s", scanner_label(scan),
+		(unsigned long)scanner_line(scan), symbols[scanner_symbol(scan)]);
 	return p;
 }
 
-void ReportLastSegmentDebug(void) {
-	const struct Segment *const segment = SegmentArrayBack(&report, 0);
-	if(!segment) return;
-	print_segment_debug(segment);
+void report_last_segment_debug(void) {
+	if(!report.size) return;
+	print_segment_debug(report.data + report.size - 1);
 }
 
 /** This appends the current token based on the state it was last in.
  @return Success. */
-int ReportNotify(const struct Scanner *const scan) {
-	const enum Symbol symbol = ScannerSymbol(scan);
+int report_notify(const struct scanner *const scan) {
+	const enum symbol symbol = scanner_symbol(scan);
 	const char symbol_mark = symbol_marks[symbol];
 	int is_differed_cut = 0;
 	static struct {
 		enum { S_CODE, S_DOC, S_ARGS } state;
 		size_t last_doc_line;
-		struct Segment *segment;
-		struct Attribute *attribute;
+		struct segment *segment;
+		struct attribute *attribute;
 		unsigned space, newline;
 		int is_code_ignored, is_semantic_set;
 	} sorter = { 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -395,56 +403,56 @@ int ReportNotify(const struct Scanner *const scan) {
 	switch(symbol) {
 	case DOC_BEGIN:
 		if(sorter.state != S_CODE) return fprintf(stderr,
-			"%s: sneak path; was expecting code.\n",
+			"%s: sneak url; was expecting code.\n",
 			oops(scan)), errno = EDOM, 0;
 		sorter.state = S_DOC;
 		/* Reset attribute. */
 		sorter.attribute = 0;
 		/* Two docs on top of each other without code, the top one belongs to
 		 the preamble. */
-		if(sorter.segment && !TokenArraySize(&sorter.segment->code))
+		if(sorter.segment && !sorter.segment->code.size)
 			cut_segment_here(&sorter.segment);
 		return 1;
 	case DOC_END:
 		if(sorter.state != S_DOC) return fprintf(stderr,
-			"%s: sneak path; was expecting doc.\n",
+			"%s: sneak url; was expecting doc.\n",
 			oops(scan)), errno = EDOM, 0;
 		sorter.state = S_CODE;
-		sorter.last_doc_line = ScannerLine(scan);
+		sorter.last_doc_line = scanner_line(scan);
 		return 1;
 	case DOC_LEFT:
 		if(sorter.state != S_DOC || !sorter.segment || !sorter.attribute)
 			return fprintf(stderr,
-			"%s: sneak path; was expecting doc with attribute.\n", oops(scan)),
+			"%s: sneak url; was expecting doc with attribute.\n", oops(scan)),
 			errno = EDOM, 0;
 		sorter.state = S_ARGS;
 		return 1;
 	case DOC_RIGHT:
 		if(sorter.state != S_ARGS || !sorter.segment || !sorter.attribute)
 			return fprintf(stderr,
-			"%s: sneak path; was expecting args with attribute.\n", oops(scan)),
+			"%s: sneak url; was expecting args with attribute.\n", oops(scan)),
 			errno = EDOM, 0;
 		sorter.state = S_DOC;
 		return 1;
 	case DOC_COMMA: /* @arg[,,] */
 		if(sorter.state != S_ARGS || !sorter.segment || !sorter.attribute)
 			return fprintf(stderr,
-			"%s: sneak path; was expecting args with attribute.\n", oops(scan)),
+			"%s: sneak url; was expecting args with attribute.\n", oops(scan)),
 			errno = EDOM, 0;
 		return 1;
 	case SPACE:   sorter.space++; return 1;
 	case NEWLINE: sorter.newline++; return 1;
 	case SEMI:
 		/* Break on global semicolons only. */
-		if(ScannerIndentLevel(scan) != 0 || !sorter.segment) break;
+		if(scanner_indent_level(scan) != 0 || !sorter.segment) break;
 		/* Find out what this line means if one hasn't already. */
 		if(!sorter.is_semantic_set && !report_semantic(sorter.segment)) return 0;
 		sorter.is_semantic_set = 1;
 		is_differed_cut = 1;
 		break;
 	case LBRACE:
-		/* If it's a leading brace, see what the Semantic says about it. */
-		if(ScannerIndentLevel(scan) != 1 || sorter.is_semantic_set
+		/* If it's a leading brace, see what the semantic says about it. */
+		if(scanner_indent_level(scan) != 1 || sorter.is_semantic_set
 			|| !sorter.segment) break;
 		if(!report_semantic(sorter.segment)) return 0;
 		sorter.is_semantic_set = 1;
@@ -452,22 +460,22 @@ int ReportNotify(const struct Scanner *const scan) {
 		break;
 	case RBRACE:
 		/* Functions don't have ';' to end them. */
-		if(ScannerIndentLevel(scan) != 0 || !sorter.segment) break;
+		if(scanner_indent_level(scan) != 0 || !sorter.segment) break;
 		if(sorter.segment->division == DIV_FUNCTION) is_differed_cut = 1;
 		break;
 	case LOCAL_INCLUDE: /* Include file. */
 		assert(sorter.state == S_CODE);
 		{
 			const char *fn = 0;
-			struct Scanner *subscan = 0;
-			struct Text *text = 0;
+			struct scanner *subscan = 0;
+			struct text *text = 0;
 			int success = 0;
-			if(!(fn = PathFromHere(ScannerTo(scan) - ScannerFrom(scan),
-				ScannerFrom(scan)))) goto include_catch;
-			if(!(text = TextOpen(fn))) goto include_catch;
+			if(!(fn = url_from_here((size_t)(scanner_to(scan)
+				- scanner_from(scan)), scanner_from(scan)))) goto include_catch;
+			if(!(text = text_open(fn))) goto include_catch;
 			cut_segment_here(&sorter.segment);
-			if(!(subscan = Scanner(TextBaseName(text), TextGet(text),
-				&ReportNotify, SSCODE))) goto include_catch;
+			if(!(subscan = scanner(text_base_name(text), text_get(text),
+				&report_notify, START_CODE))) goto include_catch;
 			cut_segment_here(&sorter.segment);
 			success = 1;
 			goto include_finally;
@@ -475,7 +483,7 @@ include_catch:
 			if(errno) perror("including");
 			else fprintf(stderr, "%s: couldn't resolve name.\n", oops(scan));
 include_finally:
-			Scanner_(&subscan);
+			scanner_(&subscan);
 			return success;
 		}
 	default: break;
@@ -483,8 +491,8 @@ include_finally:
 
 	/* Code that starts far away from docs goes in it's own segment. */
 	if(sorter.segment && symbol_mark != '~' && symbol_mark != '@'
-		&& !TokenArraySize(&sorter.segment->code) && sorter.last_doc_line
-		&& sorter.last_doc_line + 2 < ScannerLine(scan))
+		&& !sorter.segment->code.size && sorter.last_doc_line
+		&& sorter.last_doc_line + 2 < scanner_line(scan))
 		cut_segment_here(&sorter.segment);
 
 	/* Make a new segment if needed. */
@@ -500,14 +508,14 @@ include_finally:
 	case '~': /* General docs. */
 		assert(sorter.state == S_DOC || sorter.state == S_ARGS);
 		{ /* This lazily places whitespace and newlines. */
-			struct TokenArray *selected = sorter.attribute
+			struct token_array *selected = sorter.attribute
 				? (sorter.state == S_ARGS ? &sorter.attribute->header
 				: &sorter.attribute->contents) : &sorter.segment->doc;
-			struct Token *tok;
+			struct token *tok;
 			const int is_para = sorter.newline > 1,
 				is_space = sorter.space || sorter.newline,
-				is_doc_empty = !TokenArraySize(&sorter.segment->doc),
-				is_selected_empty = !TokenArraySize(selected);
+				is_doc_empty = !sorter.segment->doc.size,
+				is_selected_empty = !selected->size;
 			sorter.space = sorter.newline = 0;
 			if(is_para) {
 				/* Switch out of attribute when on new paragraph. */
@@ -545,8 +553,8 @@ include_finally:
 
 /** Used for temporary things in doc mode.
  @fixme Memory leak. See <fn:new_token>. */
-static int notify_brief(const struct Scanner *const scan) {
-	struct Token *tok;
+static int notify_brief(const struct scanner *const scan) {
+	struct token *tok;
 	assert(scan);
 	/* `brief` is just documentation; no code. */
 	if(!(tok = new_token(&brief, scan))) fprintf(stderr,
@@ -557,13 +565,13 @@ static int notify_brief(const struct Scanner *const scan) {
 /* Output. */
 
 /** Prints line info in a static buffer, (to be printed?) */
-static const char *pos(const struct Token *const token) {
+static const char *pos(const struct token *const token) {
 	static char p[128];
 	if(!token) {
 		sprintf(p, "Unknown position in report");
 	} else {
-		const int max_size = 16,
-			tok_len = (token->length > max_size) ? max_size : token->length;
+		const int max_size = 16, tok_len = (token->length > max_size)
+			? max_size : (int)token->length;
 		sprintf(p, "%.32s:%lu, %s \"%.*s\"", token->label,
 			(unsigned long)token->line, symbols[token->symbol], tok_len,
 			token->from);
@@ -572,9 +580,9 @@ static const char *pos(const struct Token *const token) {
 }
 
 /** @return If the `code` is static. */
-static int is_static(const struct TokenArray *const code) {
-	const size_t code_size = TokenArraySize(code);
-	const struct Token *const tokens = TokenArrayGet(code);
+static int is_static(const struct token_array *const code) {
+	const size_t code_size = code->size;
+	const struct token *const tokens = code->data;
 	assert(code);
 	/* `main` is static, so hack it; we can't really do this because it's
 	 general, but it works 99%. */
@@ -587,24 +595,25 @@ static int is_static(const struct TokenArray *const code) {
 		&& !strncmp(tokens[1].from, "main", 4));
 }
 
-/** @implements{Predicate<Segment>} */
-static int keep_segment(const struct Segment *const s) {
+/** @implements{Predicate<segment_>} */
+static int keep_segment(const struct segment *const s) {
 	int keep = 0;
 	assert(s);
-	if(TokenArraySize(&s->doc) || AttributeArraySize(&s->attributes)
+	if(s->doc.size || s->attributes.size
 		|| s->division == DIV_FUNCTION) {
-		struct Attribute *a = 0;
+		struct attribute *a = 0;
 		/* `static` and containing `@allow`. */
 		if(is_static(&s->code)) {
-			while((a = AttributeArrayNext(&s->attributes, a))
-				&& a->token.symbol != ATT_ALLOW);
+			size_t i = 0;
+			while(i < s->attributes.size
+				&& s->attributes.data[i].token.symbol != ATT_ALLOW);
 			if(a) keep = 1;
 		} else keep = 1;
 	}
 	/* But wait, everything except the preamble has to have a title! */
-	if(s->division != DIV_PREAMBLE && !IndexArraySize(&s->code_params))
+	if(s->division != DIV_PREAMBLE && !s->code_params.size)
 		keep = 0;
-	if(!keep && CdocGetDebug() & DBG_ERASE) {
+	if(!keep && cdoc_get_debug() & DBG_ERASE) {
 		char a[12];
 		segment_to_string(s, &a);
 		fprintf(stderr, "keep_segment: erasing %s.\n", a);
@@ -614,9 +623,10 @@ static int keep_segment(const struct Segment *const s) {
 
 /** Keeps only the stuff we care about; discards no docs except fn and `static`
  if not `@allow`. */
-void ReportCull(void) {
-	SegmentArrayKeepIf(&report, &keep_segment, &erase_segment);
+void report_cull(void) {
+	segment_array_keep_if(&report, &keep_segment, &erase_segment);
 }
 
-#include "ReportOut.h"
-#include "ReportWarning.h"
+/* fixme: More. */
+#include "report_out.h"
+#include "report_warning.h"

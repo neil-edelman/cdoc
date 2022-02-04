@@ -1,22 +1,20 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- A context-sensitive parser intended to process parts of a `C` compilation unit
- and extract documentation, as well as outputting that documentation into the
- format specified. Designed to be very strict, warning one of documentation
- errors; and simple, made for self-contained independent documentation. This
- does not do any compiling, just text-parsing. Thus, one can easily confuse by
- redefining symbols. However, it assumes the macro `A_B_(Foo,Bar)` is
- transformed into `<A>Foo<B>Bar`.
+ Static documentation generator for one independent `C` translation unit. This
+ does not do any parsing, only lexical analysis, (thus can be confused by
+ remapping and complex values.) Does not support K&R style function
+ definitions nor trigraphs.
 
  Documentation commands are `/` `**…` (together) and are ended with `*…/`, but
- not `/` `*…*` `/`, (common code break.) Asterisks at the start of a line, like
- Kernel comments, or asterisks all over like some crazy ASCII art, are
- supported. Documentation appearing at most two lines above `typedef`, `tag`
- (`struct`, `enum`, `union`,) data, and functions, is associated therewith;
- everything else is automatically inserted into the description. Multiple
- documentation on the same command is appended. Two hard returns is a paragraph.
- Supports some `Markdown` commands included in the documentation,
+ not `/` `*…*` `/`. Asterisks at the start of a line, like Kernel comments, or
+ asterisks all over like some crazy ASCII art, are supported. Documentation
+ appearing at most two lines above `typedef`, `tag` (`struct`, `enum`,
+ `union`,) data, and functions, is associated therewith; everything else is
+ automatically inserted into the description. Multiple documentation on the
+ same command is appended. Two hard returns is a paragraph. It assumes the
+ macro `A_B_(Foo,Bar)` is transformed into `<A>Foo<B>Bar`. Supports some
+ `Markdown` commands included in the documentation,
 
  \* `\\` escapes `_\~!\@<>[]` and "\`"; "\`" can not be represented in
     math/code, (multiple escapes aren't supported); in paragraph mode, except
@@ -74,7 +72,7 @@
 
  Perhaps the most striking difference from `Javadoc` and `Doxygen` is the
  `\@param` has to be followed by a braced list, (it's confusing to have the
- variable be indistinguishable from the text.)
+ variable be indistinguishable from the text, so we fixed it.)
 
  If one sets `md` as output, it goes to `GitHub` Markdown that is specifically
  visible on the `GitHub` page, (including working anchor links on browsers
@@ -82,7 +80,6 @@
 
  @std C89
  @depend [re2c](http://re2c.org/)
- @fixme Old-style function support. Trigraph support, (haha.)
  @fixme Hide `const` on params when it can not affect function calls.
  @fixme Documentation on functions should be added to documentation on
  prototypes with the same (similar) prototype.
@@ -98,21 +95,20 @@
 #include <string.h> /* strcmp */
 #include <errno.h>  /* errno */
 #include <assert.h> /* assert */
-#include "../src/Path.h"
-#include "../src/Text.h"
-#include "../src/Buffer.h"
-#include "../src/Debug.h"
-#include "../src/Scanner.h"
-#include "../src/Report.h"
-#include "../src/Semantic.h"
-#include "../src/Cdoc.h"
+#include "../src/url.h"
+#include "../src/text.h"
+#include "../src/buffer.h"
+#include "../src/debug.h"
+#include "../src/report.h"
+#include "../src/semantic.h"
+#include "../src/cdoc.h"
 
 /*!re2c
 re2c:define:YYCTYPE = char;
 re2c:define:YYCURSOR = a;
 re2c:define:YYMARKER = m;
 re2c:yyfill:enable = 0;
-end = "\x00";
+end = [\x00];
 */
 
 static void usage(void) {
@@ -126,18 +122,17 @@ static void usage(void) {
 		"  -d | --debug <read | output | semantic | hash | erase | style>\n"
 		"                            Prints debug information.\n"
 		"  -f | --format <html | md> Overrides built-in guessing.\n"
-		"  -o | --output <filename>  Stick the output file in this.\n");
+		"  -o | --output <filename>  Output file.\n");
 }
 
 static struct {
 	enum { EXPECT_NOTHING, EXPECT_DEBUG, EXPECT_OUT, EXPECT_FORMAT } expect;
 	const char *in_fn, *out_fn;
-	enum Format format;
-	enum Debug debug;
+	enum format format;
+	enum debug debug;
 } args;
 
-/** Parses the one `argument`; global state may be modified.
- @return Success. */
+/** Parses the one `argument` to `args`. @return Success. */
 static int parse_arg(const char *const argument) {
 	const char *a = argument, *m = a;
 	switch(args.expect) {
@@ -147,7 +142,7 @@ static int parse_arg(const char *const argument) {
 	case EXPECT_DEBUG: args.expect = EXPECT_NOTHING;
 /*!re2c
 	*              { return 0; }
-	"read"   end   { args.debug |= DBG_READ; return 1; }
+	"read" end     { args.debug |= DBG_READ; return 1; }
 	"output" end   { args.debug |= DBG_OUTPUT; return 1; }
 	"semantic" end { args.debug |= DBG_SEMANTIC; return 1; }
 	"hash" end     { args.debug |= DBG_HASH; return 1; }
@@ -174,9 +169,7 @@ static int parse_arg(const char *const argument) {
 }
 
 /** @return Whether the command-line was set. */
-enum Debug CdocGetDebug(void) {
-	return args.debug;
-}
+enum debug cdoc_get_debug(void) { return args.debug; }
 
 /** @return True if `suffix` is a suffix of `string`. */
 static int is_suffix(const char *const string, const char *const suffix) {
@@ -196,70 +189,61 @@ static void guess(void) {
 	}
 }
 
-/** @return What format the output was specified to be in `enum Format`. If
+/** @return What format the output was specified to be in `enum format`. If
  there was no output format specified, guess. */
-enum Format CdocGetFormat(void) {
+enum format cdoc_get_format(void) {
 	guess();
 	assert(args.format > 0 && args.format <= 2);
 	return args.format;
 }
 
 /** @return The input filename. */
-const char *CdocGetInput(void) {
-	return args.in_fn;
-}
+const char *cdoc_get_input(void) { return args.in_fn; }
 
 /** @return The output filename. */
-const char *CdocGetOutput(void) {
-	return args.out_fn;
-}
+const char *cdoc_get_output(void) { return args.out_fn; }
 
 /** @param[argc, argv] Argument vectors. */
 int main(int argc, char **argv) {
 	FILE *fp = 0;
-	struct Scanner *scanner = 0;
+	struct scanner *scan = 0;
 	int exit_code = EXIT_FAILURE, i;
-	struct Text *text = 0;
+	struct text *text = 0;
 
-	/* Parse args. Expecting something more? */
 	for(i = 1; i < argc; i++) if(!parse_arg(argv[i])) goto catch;
 	if(args.expect) goto catch;
 
-	/* This prints to `stdout`. If the args have specified that it goes into a
-	 file, then redirect. */
+	/* If the args have specified that it goes into a file, then redirect. */
 	if(args.out_fn && !freopen(args.out_fn, "w", stdout)) goto catch;
 
-	/* Set up the paths. */
-	if(!Path(args.in_fn, args.out_fn)) goto catch;
+	/* Set up the urls. */
+	if(!url(args.in_fn, args.out_fn)) goto catch;
 
-	/* Buffer the file. */
-	if(!(text = TextOpen(args.in_fn))) goto catch;
+	/* buffer the file. */
+	if(!(text = text_open(args.in_fn))) goto catch;
 
 	/* Open the input file and parse. The last segment is on-going. */
-	if(!(scanner = Scanner(TextBaseName(text), TextGet(text), &ReportNotify,
-		SSCODE))) goto catch;
-	ReportLastSegmentDebug();
+	if(!(scan = scanner(text_base_name(text), text_get(text), &report_notify,
+		START_CODE))) goto catch;
+	report_last_segment_debug();
 
 	/* Output the results. */
-	ReportWarn();
-	ReportCull();
-	if(!ReportOut()) goto catch;
+	report_warn();
+	report_cull();
+	if(!report_out()) goto catch;
 
 	exit_code = EXIT_SUCCESS; goto finally;
 	
 catch:
-	if(errno) {
-		perror(args.in_fn ? args.in_fn : "(no file)");
-	} else {
-		usage();
-	}
+	if(errno) perror(args.in_fn ? args.in_fn : "(no file)");
+	else usage();
 	
 finally:
-	Scanner_(&scanner);
-	Report_();
-	TextCloseAll();
-	Path_();
-	Buffer_(); /* Should be after ~Report because might do debug print. */
+	scanner_(&scan);
+	report_();
+	text_close_all();
+	url_();
+	buffer_(); /* Should be after ~report because might do debug print. */
 	if(fp) fclose(fp);
 
 	return exit_code;

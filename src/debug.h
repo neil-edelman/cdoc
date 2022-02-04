@@ -1,10 +1,8 @@
-#ifndef DEBUG_H /* <!-- !debug */
+#ifndef DEBUG_H
 #define DEBUG_H
 
-#include "XMacro.h"
-
-/* Bit-vector. */
-#define DEBUG(X) \
+/* `DEBUG` will not work on my compiler. */
+#define DBG \
 	X(DBG_0), \
 	X(DBG_READ), \
 	X(DBG_OUTPUT), X(DBG_3), \
@@ -21,7 +19,11 @@
 	X(DBG_56), X(DBG_57), X(DBG_58), X(DBG_59), X(DBG_60), X(DBG_61), \
 	X(DBG_62), X(DBG_63)
 
-enum Debug { DEBUG(PARAM) };
-static const char *const debugs[] = { DEBUG(STRINGISE) };
+#define X(n) n
+enum debug { DBG };
+#undef X
+#define X(n) #n
+static const char *const debug[] = { DBG };
+#undef X
 
-#endif /* !debug --> */
+#endif

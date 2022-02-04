@@ -1,20 +1,20 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- Divides up the code into divisions based on `symbol_marks` in `Symbol.h`. */
+ Divides up the code into divisions based on `symbol_marks` in `symbol.h`. */
 
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include "../src/Cdoc.h"
-#include "../src/Report.h"
-#include "../src/Semantic.h"
+#include "../src/cdoc.h"
+#include "../src/report.h"
+#include "../src/semantic.h"
 
 /** `right` is in the string `buffer`. Has assumed <fn:remove_recursive> has
  been called to eliminate `[]`. Very ad-hoc.
  @return What looks like a type starting at the right. */
-static char *type_from_right(const char *const buffer, char *const right,
-	const int is_eager) {
+static char *type_from_right(const char *const buffer,
+	char *const right, const int is_eager) {
 	int is_type = 0;
 	char *left = 0, *ch = right;
 	assert(buffer && right);
@@ -75,39 +75,39 @@ static void index_to_string(const size_t *i, char (*const a)[12]) {
 	sprintf(*a, "%lu", *(const unsigned long *)i % 100000000000u);
 }
 
-#define ARRAY_NAME Index
+#define ARRAY_NAME index
 #define ARRAY_TYPE size_t
+#define ARRAY_EXPECT_TRAIT
+#include "../src/array.h"
 #define ARRAY_TO_STRING &index_to_string
-#include "../src/Array.h"
+#include "../src/array.h"
 
-/* Define {CharArray}, a vector of characters -- (again!) */
-#define ARRAY_NAME Char
+/* A vector of characters -- (again!) */
+#define ARRAY_NAME char
 #define ARRAY_TYPE char
-#include "../src/Array.h"
+#include "../src/array.h"
 
 static struct {
-	struct CharArray buffer, work;
-	enum Division division;
-	struct IndexArray params;
+	struct char_array buffer, work;
+	enum division division;
+	struct index_array params;
 	const char *label;
 	size_t line;
-} semantic;
+} semantics;
 
-/** @param[name] In `semantic.buffer`.
+/** @param[name] In `semantics.buffer`.
  @return False on error. */
 static int add_param(const char *const label) {
 	size_t *param;
 	const char *const acceptable = "x123";
 	if(!label || !strchr(acceptable, *label)) return fprintf(stderr,
-		"%.32s:%lu: param is '%c', not %s.\n", semantic.label,
-		(unsigned long)semantic.line, label ? *label : '0', acceptable),
+		"%.32s:%lu: param is '%c', not %s.\n", semantics.label,
+		(unsigned long)semantics.line, label ? *label : '0', acceptable),
 		errno = EILSEQ, 0;
-	if(!(param = IndexArrayNew(&semantic.params))) return 0;
-	*param = (size_t)(label - CharArrayGet(&semantic.buffer));
+	if(!(param = index_array_new(&semantics.params))) return 0;
+	*param = (size_t)(label - semantics.buffer.data);
 	return 1;
 }
-
-/*!stags:re2c format = 'char *@@;'; */
 
 /*!re2c
 re2c:yyfill:enable   = 0;
@@ -118,8 +118,8 @@ re2c:flags:tags      = 1;
 
 // The entire C language has been reduced to these tokens.
 end = "\x00";
-symbol = "*" | "," | "#" | "x" | "1" | "2" | "3" | "s" | "t" | "z" | "v" | "."
-| "=";
+symbol
+ = "*" | "," | "#" | "x" | "1" | "2" | "3" | "s" | "t" | "z" | "v" | "." | "=";
 separator = ";";
 recursion = "{" | "}" | "(" | ")" | "[" | "]";
 redact = "_";
@@ -140,48 +140,53 @@ part = "x" | "s" | "t" | "z" | "v"; // Part of an identifier.
 generic = "x"
 | "1(" part ")"
 | "2(" part "," part ")"
-| "3(" part "," part "," part ")"; // Eg, X_(Array)
-type = tag? redact* generic; // Eg, struct X_(Array)
+| "3(" part "," part "," part ")"; // Eg, X_(array)
+type = tag? redact* generic; // Eg, struct X_(array)
 type_or_void = type | void;
 argument = ("v" | "_" | "*" | "s" | "x" | "(" | ")" | generic)*
 	("_" | "*" | "s" | "x" | "(" | ")" | generic)+;
 */
 
 static int parse(void) {
-	char *const buffer = CharArrayGet(&semantic.buffer), *cursor = buffer,
+	char *const buffer = semantics.buffer.data, *cursor = buffer,
 		*marker = cursor, *args = 0, *begin, *label = 0;
 	int parens = 0;
 	int is_not_likely = 0;
+	/*!stags:re2c format = 'char *@@;'; */
+
+	/* fixme: warning: variable 'yyt2' may be uninitialized when
+	 used here [-Wconditional-uninitialized]; I don't know what I'm doing. */
+	yyt2 = 0;
 
 	assert(buffer);
 /*!re2c
 	// If there is no code, put it in the header.
 	end {
-		semantic.division = DIV_PREAMBLE;
+		semantics.division = DIV_PREAMBLE;
 		return 1;
 	}
 	// "typedef anything" is considered a typedef.
 	typedef redact* skip_complex+ @label redact* end {
-		semantic.division = DIV_TYPEDEF;
+		semantics.division = DIV_TYPEDEF;
 		label = type_from_right(buffer, label - 1, 1);
 		if(!add_param(label)) return 0;
 		return 1;
 	}
 	// "something tag [id]" is a tag.
 	skip_simple* tag @label generic redact* end {
-		semantic.division = DIV_TAG;
+		semantics.division = DIV_TAG;
 		if(!add_param(label)) return 0;
 		return 1;
 	}
 	// "something [id]" is an anonymous tag and it is unlabelled.
 	skip_simple* tag redact* end {
-		semantic.division = DIV_TAG;
+		semantics.division = DIV_TAG;
 		return 1;
 	}
 	// Fixme: this is one of the . . . four? ways to define a function?
 	static? redact* (@label (generic | type_or_void | qualifier) redact*){2,}
 		@args "(" ( (argument ("," argument)* ",."?) | void ) ")" redact* end {
-		semantic.division = DIV_FUNCTION;
+		semantics.division = DIV_FUNCTION;
 		if(!add_param(label)) return 0;
 		label = 0; /* For the args. */
 		cursor = marker = args;
@@ -189,7 +194,7 @@ static int parse(void) {
 	}
 	// All others are general declaration. See if we can extract a label.
 	* {
-		semantic.division = DIV_DATA;
+		semantics.division = DIV_DATA;
 		/* Start at the right of '=' and scan left until something looks like
 		 a label. */
 		if(!(label = strchr(buffer, '='))) label = buffer + strlen(buffer);
@@ -233,7 +238,7 @@ params:
 */
 unable:
 	fprintf(stderr, "%.32s:%lu: unable to extract parameter list from %s.\n",
-		semantic.label, (unsigned long)semantic.line, buffer);
+		semantics.label, (unsigned long)semantics.line, buffer);
 	return 1;
 }
 
@@ -254,62 +259,62 @@ static void remove_recursive(char *const buffer,
 
 /** Checks that `checks`, a string, braces' match up. */
 static int check_symbols(int *const checks) {
-	const char *cursor = CharArrayGet(&semantic.buffer);
+	const char *cursor = semantics.buffer.data;
 	char *stack;
 	assert(checks && cursor);
-	CharArrayClear(&semantic.work);
+	char_array_clear(&semantics.work);
 	*checks = 1;
 check:
 /*!re2c
 	symbol { goto check; }
 	"{" | "(" | "[" {
-		if(!(stack = CharArrayNew(&semantic.work))) return 0;
+		if(!(stack = char_array_new(&semantics.work))) return 0;
 		*stack = yych;
 		goto check;
 	}
 	"}" | ")" | "]" {
 		char left = yych == '}' ? '{' : yych == ')' ? '(' : '[';
-		stack = CharArrayPop(&semantic.work);
+		stack = char_array_pop(&semantics.work);
 		if(!stack || *stack != left) { *checks = 0; return 1; }
 		goto check;
 	}
-	"\x00" { if(CharArraySize(&semantic.work)) *checks = 0; return 1; }
+	"\x00" { if(semantics.work.size) *checks = 0; return 1; }
 	* { *checks = 0; return 1; }
 */
 }
 
 /************/
 
-/** Analyse a new string. Updates <fn:SemanticDivision> and
- <fn:SemanticParams>.
+/** Analyse a new string. Updates <fn:semantic_division> and
+ <fn:semantic_params>.
  @param[code] If null, frees the global semantic data. Otherwise, a string that
  consists of characters from `symbol_marks` defined in `Symbol.h`.
  @return Success, otherwise `errno` be set. */
-int Semantic(const struct TokenArray *const code) {
+int semantic(const struct token_array *const code) {
 	size_t buffer_size;
 	char *buffer;
 
-	/* `Semantic(0)` should clear out memory and reset. */
+	/* `semantic(0)` should clear out memory and reset. */
 	if(!code) {
-		CharArray_(&semantic.buffer);
-		CharArray_(&semantic.work);
-		semantic.division = DIV_PREAMBLE;
-		IndexArray_(&semantic.params);
+		char_array_(&semantics.buffer);
+		char_array_(&semantics.work);
+		semantics.division = DIV_PREAMBLE;
+		index_array_(&semantics.params);
 		return 1;
 	}
 
 	/* Reset the semantic to the most general state. */
-	CharArrayClear(&semantic.buffer);
-	semantic.division = DIV_DATA;
-	IndexArrayClear(&semantic.params);
-	semantic.label = TokensFirstLabel(code);
-	semantic.line = TokensFirstLine(code);
+	char_array_clear(&semantics.buffer);
+	semantics.division = DIV_DATA;
+	index_array_clear(&semantics.params);
+	semantics.label = tokens_first_label(code);
+	semantics.line = tokens_first_line(code);
 
 	/* Make a string from `symbol_marks` and allocate maximum memory. */
-	buffer_size = TokensMarkSize(code);
+	buffer_size = tokens_mark_size(code);
 	assert(buffer_size);
-	if(!(buffer = CharArrayBuffer(&semantic.buffer, buffer_size))) return 0;
-	TokensMark(code, buffer);
+	if(!(buffer = char_array_buffer(&semantics.buffer, buffer_size))) return 0;
+	tokens_mark(code, buffer);
 	assert(buffer[buffer_size - 1] == '\0');
 
 	{ /* Checks whether this makes sense. */
@@ -317,7 +322,7 @@ int Semantic(const struct TokenArray *const code) {
 		if(!check_symbols(&checks)) return 0;
 		if(!checks) return fprintf(stderr,
 		"%.32s:%lu: classifying unknown statement as a general declaration.\n",
-			semantic.label, (unsigned long)semantic.line), 1;
+			semantics.label, (unsigned long)semantics.line), 1;
 	}
 
 	/* Git rid of code. (Shouldn't happen!) */
@@ -327,26 +332,27 @@ int Semantic(const struct TokenArray *const code) {
 	/* Now with the {}[] removed. */
 	effectively_typedef_fn_ptr(buffer);
 	if(!parse()) return 0;
-	if(CdocGetDebug() & DBG_SEMANTIC)
+	if(cdoc_get_debug() & DBG_SEMANTIC)
 		fprintf(stderr, "%.32s:%lu: \"%s\" -> %s with params %s.\n",
-		semantic.label, (unsigned long)semantic.line, buffer,
-		divisions[semantic.division], IndexArrayToString(&semantic.params));
-	assert(!IndexArraySize(&semantic.params)
-		|| *IndexArrayPeek(&semantic.params) < buffer_size - 1);
+		semantics.label, (unsigned long)semantics.line, buffer,
+		divisions[semantics.division],
+		index_array_to_string(&semantics.params));
+	assert(!semantics.params.size
+		|| *index_array_peek(&semantics.params) < buffer_size - 1);
 	return 1;
 }
 
 /** Analyses of the last string's division. */
-enum Division SemanticDivision(void) {
-	return semantic.division;
+enum division semantic_division(void) {
+	return semantics.division;
 }
 
 /** Analyses of the last string's parameters, which can be anything.
  @param[no] Pass to get the number of `size_t`'s in the array.
  @param[array] Pass to get the size_t array. */
-void SemanticParams(size_t *const no, const size_t **const array) {
+void semantic_params(size_t *const no, const size_t **const array) {
 	if(!no) { if(array) *array = 0; return; }
-	*no = IndexArraySize(&semantic.params);
+	*no = semantics.params.size;
 	if(!array) return;
-	*array = IndexArrayGet(&semantic.params);
+	*array = semantics.params.data;
 }
