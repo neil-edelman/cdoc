@@ -76,7 +76,7 @@ size_t tokens_mark_size(const struct token_array *const tokens) {
 	if(!tokens) return 0;
 	return tokens->size + 1;
 }
-/** @param[tokens] The `token_array_` that converts to a string.
+/** @param[tokens] The `token_array` that converts to a string.
  @param[marks] Must be an at-least the size of `tokens`, or null.
  @return The size of the string, including null. */
 void tokens_mark(const struct token_array *const tokens, char *const marks) {
@@ -263,8 +263,8 @@ static struct segment *new_segment(struct segment_array *const segments) {
 	assert(segments);
 	if(!(segment = segment_array_new(segments))) return 0;
 	segment->division = DIV_PREAMBLE; /* Default. */
-	token_array_(&segment->doc);
-	token_array_(&segment->code);
+	token_array(&segment->doc);
+	token_array(&segment->code);
 	index_array(&segment->code_params);
 	attribute_array(&segment->attributes);
 	return segment;
@@ -293,8 +293,8 @@ static struct attribute *new_attribute(struct segment *const segment,
 	assert(scan && segment);
 	if(!(att = attribute_array_new(&segment->attributes))) return 0;
 	init_token(&att->token, scan);
-	token_array_(&att->header);
-	token_array_(&att->contents);
+	token_array(&att->header);
+	token_array(&att->contents);
 	return att;
 }
 

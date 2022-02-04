@@ -210,8 +210,9 @@ int main(int argc, char **argv) {
 	int exit_code = EXIT_FAILURE, i;
 	struct text *text = 0;
 
+	errno = 0;
 	for(i = 1; i < argc; i++) if(!parse_arg(argv[i])) goto catch;
-	if(args.expect) goto catch;
+	if(!args.in_fn || args.expect) goto catch;
 
 	/* If the args have specified that it goes into a file, then redirect. */
 	if(args.out_fn && !freopen(args.out_fn, "w", stdout)) goto catch;
@@ -233,11 +234,11 @@ int main(int argc, char **argv) {
 	if(!report_out()) goto catch;
 
 	exit_code = EXIT_SUCCESS; goto finally;
-	
+
 catch:
 	if(errno) perror(args.in_fn ? args.in_fn : "(no file)");
 	else usage();
-	
+
 finally:
 	scanner_(&scan);
 	report_();
