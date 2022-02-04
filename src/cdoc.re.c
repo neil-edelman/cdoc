@@ -96,7 +96,6 @@
 #include <errno.h>  /* errno */
 #include <assert.h> /* assert */
 #include "../src/buffer.h"
-#include "../src/debug.h"
 #include "../src/report.h"
 #include "../src/semantic.h"
 #include "../src/cdoc.h"
