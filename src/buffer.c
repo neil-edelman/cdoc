@@ -45,8 +45,9 @@ char *buffer_prepare(const size_t length) {
 	const char *const last = char_array_peek(buffer);
 	int is_null_term = !!last && *last == '\0';
 	char *s;
+	/* fixme: this is stupid. */
 	assert(length + !is_null_term >= length);
-	if(!(s = char_array_buffer(buffer, length + !is_null_term))) return 0;
+	if(!(s = char_array_append(buffer, length + !is_null_term))) return 0;
 	*char_array_peek(buffer) = '\0';
 	return s - is_null_term;
 }

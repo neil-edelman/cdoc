@@ -598,13 +598,12 @@ static int keep_segment(const struct segment *const s) {
 	assert(s);
 	if(s->doc.size || s->attributes.size
 		|| s->division == DIV_FUNCTION) {
-		struct attribute *a = 0;
 		/* `static` and containing `@allow`. */
 		if(is_static(&s->code)) {
 			size_t i = 0;
 			while(i < s->attributes.size
-				&& s->attributes.data[i].token.symbol != ATT_ALLOW);
-			if(a) keep = 1;
+				&& s->attributes.data[i].token.symbol != ATT_ALLOW) i++;
+			if(i != s->attributes.size) keep = 1;
 		} else keep = 1;
 	}
 	/* But wait, everything except the preamble has to have a title! */

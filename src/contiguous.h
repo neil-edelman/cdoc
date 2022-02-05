@@ -43,24 +43,23 @@ typedef void (*PCG_(action_fn))(PCG_(type) *);
 typedef int (*PCG_(predicate_fn))(const PCG_(type) *);
 
 /** @param[x] A valid entry or null to start from the last.
- @return The previous valid entry from `box` or null if this was the first.
- @allow */
+ @return The previous valid entry from `box` (which could be null) or null if
+ this was the first. @allow */
 static PCG_(type) *CG_(previous)(const PCG_(box) *const box,
 	const PCG_(type) *const x) {
 	size_t i;
-	assert(box);
-	if(!box->data) return 0;
+	if(!box || !box->data) return 0;
 	if(!x) return box->size ? box->data + box->size - 1 : 0;
 	return (i = (size_t)(x - box->data)) ? box->data + i - 1 : 0;
 }
 
 /** @param[x] A valid entry or null to start from the first.
- @return The next valid entry from `box` or null if this was the last. @allow */
+ @return The next valid entry from `box` (which could be null) or null if this
+ was the last. @allow */
 static PCG_(type) *CG_(next)(const PCG_(box) *const box,
 	const PCG_(type) *const x) {
 	size_t i;
-	assert(box);
-	if(!box->data) return 0;
+	if(!box || !box->data) return 0;
 	if(!x) return box->size ? box->data + 0 : 0;
 	return (i = (size_t)(x - box->data) + 1) < box->size ? box->data + i : 0;
 }

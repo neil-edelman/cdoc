@@ -572,9 +572,8 @@ static void highlight_tokens(const struct token_array *const tokens,
 	style_pop();
 }
 
-static void print_tokens(const struct token_array *const tokens) {
-	highlight_tokens(tokens, 0);
-}
+static void print_tokens(const struct token_array *const tokens)
+	{ highlight_tokens(tokens, 0); }
 
 
 

@@ -287,11 +287,11 @@ void style_expect(const enum style_punctuate p) {
  _eg_, space.
  @param[symbol] What output symbol we are going to print. */
 void style_flush_symbol(const enum symbol symbol) {
-	size_t i = 0;
+	size_t i;
 	struct style *const top = style_array_peek(&style.styles);
 	assert(top);
 	/* Make sure all the stack is on `ITEM`. */
-	while(i < style.styles.size) {
+	for(i = 0; i < style.styles.size; i++) {
 		struct style *const s = style.styles.data + i;
 		switch(s->lazy) {
 			case ITEM: continue;
