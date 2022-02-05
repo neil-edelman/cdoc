@@ -1053,18 +1053,18 @@ int report_out(void) {
 	style_flush(), style_encode(title), style_pop_strong();
 	assert(style_is_empty());
 
-	/* Subtitle. */
-	style_push(ST_H2), style_push(ST_SSV), style_push(ST_PLAIN);
-	div_att_print(&is_div_preamble, ATT_SUBTITLE, SHOW_TEXT);
-	style_pop_strong();
-	assert(style_is_empty());
-
 	/* Abstract, (_ie_, tl;dr.) */
 	if(is_abstract) {
 		style_push(ST_P);
 		div_att_print(&is_div_preamble, ATT_ABSTRACT, SHOW_TEXT);
 		style_pop_strong();
 	}
+
+	/* Subtitle. */
+	style_push(ST_H2), style_push(ST_SSV), style_push(ST_PLAIN);
+	div_att_print(&is_div_preamble, ATT_SUBTITLE, SHOW_TEXT);
+	style_pop_strong();
+	assert(style_is_empty());
 
 	/* TOC. */
 	style_push(ST_UL), style_push(ST_LI);

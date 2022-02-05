@@ -203,11 +203,11 @@ static enum symbol scan_next(struct scanner *const scan) {
 	const char *sub0, *sub1;
 	/*!stags:re2c format = 'const char *@@;'; */
 
+	assert(scan);
 	/* fixme: warning: variable 'yyt1' may be uninitialized when used
 	 here [-Wconditional-uninitialized] */
-	yyt1 = buffer;
+	yyt1 = scan->cursor;
 
-	assert(scan);
 	scan->sub0 = scan->sub1 = 0;
 	scan->doc_line = scan->line;
 reset:
