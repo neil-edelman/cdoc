@@ -1052,14 +1052,6 @@ int report_out(void) {
 			"<body>\n\n");
 	}
 
-	/* Abstract. Traditionally, this goes below the title, but this is more of
-	 a tl;dr thing. */
-	if(is_abstract) {
-		style_push(ST_P);
-		div_att_print(&is_div_preamble, ATT_ABSTRACT, SHOW_TEXT);
-		style_pop_strong();
-	}
-
 	/* Title. */
 	style_push(ST_H1), style_push(ST_SSV), style_push(ST_PLAIN);
 	style_flush(), style_encode(title), style_pop_strong();
@@ -1070,6 +1062,13 @@ int report_out(void) {
 	div_att_print(&is_div_preamble, ATT_SUBTITLE, SHOW_TEXT);
 	style_pop_strong();
 	assert(style_is_empty());
+
+	/* Abstract, (_ie_, tl;dr.) */
+	if(is_abstract) {
+		style_push(ST_P);
+		div_att_print(&is_div_preamble, ATT_ABSTRACT, SHOW_TEXT);
+		style_pop_strong();
+	}
 
 	/* TOC. */
 	style_push(ST_UL), style_push(ST_LI);

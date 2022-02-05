@@ -33,6 +33,7 @@ Supports some `Markdown` commands included in the documentation,
 Each\-block\-tags separate the documentation until the next paragraph or until the next each\-block\-tag, and specify a specific documentation structure\. Each\-block\-tags that overlap are concatenated in the file order\. Not all of these are applicable for all segments of text\. These are:
 
  * `@subtitle`: only makes sense for preamble, \(it doesn't matter what case one writes it, but multiple are concatenated using semicolons\);
+ * `@abstract`: tl;dr appearing first;
  * `@param[<param1>[, ...]]`: parameters, \(multiple are concatenated using spaces, so this really should be sentence case\);
  * `@author` \(commas\);
  * `@std`: standard, eg, `@std GNU-C99`, \(semicolons\);
