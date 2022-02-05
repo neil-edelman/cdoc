@@ -10,11 +10,10 @@
 #define ARRAY_TYPE char
 #include "array.h"
 
-
-
 #define ARRAY_NAME string
 #define ARRAY_TYPE char *
 #include "array.h"
+
 
 /* This is a temporary double-buffer. */
 
@@ -152,7 +151,6 @@ void text_close_all(void) {
 }
 
 
-
 /* Singleton temporary strings for working with urls. The constructor <fn:url>,
  destructor <fn:url_>. */
 
@@ -229,11 +227,11 @@ static void strip_url(struct string_array *const args) {
 	string_array_pop(args);
 }
 
-/** Cat `url`(`cat`). */
-static int cat_url(struct string_array *const url,
-	const struct string_array *const cat) {
-	assert(url && cat);
-	return string_array_splice(url, 0, 0, cat);
+/** Concatenates a copy of `before` in `url`. */
+static int prepend_url(struct string_array *const url,
+	const struct string_array *const before) {
+	assert(url && before);
+	return string_array_splice(url, before, 0, 0);
 }
 
 /** I think we can only do this, but urls will be, in `foo`, `../foo/bar`, but
@@ -242,19 +240,34 @@ static void simplify_url(struct string_array *const url) {
 	char **p1, **p2;
 	size_t i;
 	assert(url);
-	if(url->size < 2) return;
-	for(i = 1; ; i++) {
-		p1 = url->data + i - 1, p2 = url->data + i;
+	for(i = 0; i < url->size; i++) {
+		p1 = url->data + i;
 		/* "./" -> "" */
 		if(strcmp(url_dot, *p1) == 0)
 			{ string_array_remove(url, p1); continue; }
-		if(i + 1 == url->size) break;
+		if(i + 1 >= url->size) continue;
+		p2 = url->data + i + 1;
 		/* "<dir>/../" -> "" */
 		if(strcmp(url_twodots, *p1) != 0
-			&& strcmp(url_twodots, p2[1]) == 0)
-			string_array_splice(url, i - 1, 2, 0);
+			&& strcmp(url_twodots, *p2) == 0)
+			string_array_splice(url, 0, i, i + 2);
 	}
 }
+#if 0
+static void simplify_path(struct PathArray *const path) {
+	const char **p0 = 0, **p1, **p2;
+	assert(path);
+	while((p1 = PathArrayNext(path, p0))) {
+		/* "./" -> "" */
+		if(strcmp(path_dot, *p1) == 0) { PathArrayRemove(path, p1); continue; }
+		/* "<dir>/../" -> "" */
+		if((p2 = PathArrayNext(path, p1)) && strcmp(path_twodots, *p1) != 0
+			&& strcmp(path_twodots, *p2) == 0)
+			{ PathArraySplice(path, p1, 2, 0); continue; }
+		p0 = p1;
+	}
+}
+#endif
 
 /** Should do `strip_url` as needed, `simplify_url` first. */
 static int inverse_url(struct string_array *const url,
@@ -368,7 +381,7 @@ static int looks_like_fragment(const size_t fn_len, const char *const fn) {
 const char *url_from_here(const size_t fn_len, const char *const fn) {
 	if(looks_like_fragment(fn_len, fn)) return 0;
 	string_array_clear(&urls.working.url);
-	if(!cat_url(&urls.working.url, &urls.input.url)
+	if(!prepend_url(&urls.working.url, &urls.input.url)
 		|| (fn && !append_working_url(strip_query_fragment(fn_len, fn), fn)))
 		return 0;
 	simplify_url(&urls.working.url);
@@ -387,8 +400,8 @@ const char *url_from_output(const size_t fn_len, const char *const fn) {
 		return url_from_here(fn_len, fn);
 	if(looks_like_fragment(fn_len, fn)) return 0;
 	string_array_clear(&urls.working.url);
-	if(!cat_url(&urls.working.url, &urls.outinv)
-		|| !cat_url(&urls.working.url, &urls.input.url)
+	if(!prepend_url(&urls.working.url, &urls.outinv)
+		|| !prepend_url(&urls.working.url, &urls.input.url)
 		|| (fn && !append_working_url(fn_len, fn))) return 0;
 	simplify_url(&urls.working.url);
 	return url_to_string(&urls.result, &urls.working.url);

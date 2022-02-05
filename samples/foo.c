@@ -12,7 +12,7 @@ text
  \* Citation <ÀæĔge2007> <Peters 2002> <Peters2002Optimistic>
     <Peters 2002, Optimistic>.
  \* [absolute](http://arr.com/index.html#ddddd<u>sfdg).
- \* [relative](foo.h) [relative](../src/Cdoc.c.re).
+ \* [relative](foo.h) [relative](../src/cdoc.re.c).
  \* png: ![Ellen Ripley](../diagrams/Ellen_Ripley_badass.png).
  \* jpeg: ![Inigo Montoya](../diagrams/Inigo_Montoya.jpeg).
 

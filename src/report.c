@@ -1,8 +1,8 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- Organizes tokens into sections, each section can have some documentation,
- code, and maybe attributes. */
+ After one has done the parsing, this organizes the report for output to the
+ user. */
 
 #include "division.h"
 #include "format.h"
@@ -13,8 +13,8 @@
 #include "cdoc.h"
 #include "report.h"
 #include <string.h> /* size_t strncpy strncmp */
-#include <limits.h> /* INT_MAX */
-#include <stdio.h>  /* .printf */
+#include <limits.h> /* INT_MAX for printf */
+#include <stdio.h>  /* printf */
 
 #include <stdlib.h>
 #include <assert.h>

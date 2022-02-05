@@ -234,12 +234,13 @@ static PA_(type) *A_(array_peek)(const struct A_(array) *const a)
 static PA_(type) *A_(array_pop)(struct A_(array) *const a)
 	{ return assert(a), a->size ? a->data + --a->size : 0; }
 
-/** `a` indices [`i0`, `i1`) will be replaced with a copy of `b`.
- @param[b] Can be null, which acts as empty.
- @return Success. @throws[realloc, ERANGE] */
-static int A_(array_splice)(struct A_(array) *const a, const size_t i0,
-	const size_t i1, const struct A_(array) *const b) {
+/** Indices [`i0`, `i1`) of `a` will be replaced with a copy of `b`.
+ @param[b] Can be null, which acts as empty, but cannot be `a`.
+ @return Success. @throws[realloc, ERANGE] @allow */
+static int A_(array_splice)(struct A_(array) *const a,
+	const struct A_(array) *const b, const size_t i0, const size_t i1) {
 	const size_t a_range = i1 - i0, b_range = b ? b->size : 0;
+	/* Is the compiler smart enough? */
 	assert(a && a != b && i0 <= i1 && i1 <= a->size);
 	if(a_range < b_range) { /* The output is bigger. */
 		const size_t diff = b_range - a_range;
@@ -261,7 +262,7 @@ static int A_(array_splice)(struct A_(array) *const a, const size_t i0,
  @fixme Untested. */
 static int A_(array_affix)(struct A_(array) *const a,
 	const struct A_(array) *const b)
-	{ return A_(array_splice)(a, a->size, a->size, b); }
+	{ return A_(array_splice)(a, b, a->size, a->size); }
 
 /** Appends `n` items on the back of `a`.
  @fixme It should be the other way around. */
