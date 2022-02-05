@@ -9,7 +9,7 @@
 
 Static documentation generator for one `C` translation unit\. This does not do any parsing, only lexical analysis, thus can be confused by remapping and complex values\. It's fairly simple, and does not support K&R style function definitions nor trigraphs\. It assumes that capital latin letters underscores are concatenation commands for the pre\-processor, such that `A_BC_(foo,bar)` is transformed into `<A>foo<BC>bar`\.
 
-In keeping with `Javadoc` and `Doxygen`, documentation commands are `/` `**…` \(together\) and are ended with `*…/`, but not `/` `*…*` `/`\. Accounts for asterisks at the start of a line, \(Kernel comments,\) or asterisks on both sides, \(ASCII art?\) Documentation appearing at most two lines above `typedef`, `tag` \(`struct`, `enum`, `union`,\) data \(will not be output, fixme\), and functions, is associated therewith; everything else is automatically inserted into the description\. Multiple documentation on the same command is appended\. Two hard returns is a paragraph\. The big difference is we've fixed the `@param` notation; now it has to be followed by a braced list, `@param[a, b] Concatenates both.`\.
+In keeping with `Javadoc` and `Doxygen`, documentation commands are `/` `**…` \(together\) and are ended with `*…/`, but not `/` `*…*` `/`\. Accounts for asterisks at the start of a line, \(Kernel comments,\) or asterisks on both sides, \(ASCII art?\) Documentation appearing at most two lines above `typedef`, `tag` \(`struct`, `enum`, `union`,\) data, and functions, is associated therewith; everything else is automatically inserted into the description\. Multiple documentation on the same command is appended\. Two hard returns is a paragraph\. The big difference is the fixed `@param` notation; now it has to be followed by a braced list, `@param[a, b] Concatenates both.`\.
 
 Supports some `Markdown` commands included in the documentation,
 
@@ -53,7 +53,7 @@ If one sets `md` as output, it goes to `GitHub` Markdown that is specifically vi
  * Dependancies:  
    [re2c](http://re2c.org/)
  * Caveat:  
-   Hide `const` on params when it can not affect function calls\. Documentation on functions should be added to documentation on prototypes with the same \(similar\) prototype\. Links to non\-documented code which sometimes doesn't show up, work without error, and create broken links\. 80\-characters _per_ line limit, [https://xxyxyz\.org/line\-breaking/](https://xxyxyz.org/line-breaking/), \(needs buffering\.\) fixme with no args disappears; we should NOT check if the string is empty for these values\.
+   Prototype function parameters ignore `const`\. Documentation on prototypes\. Links to non\-documented code which sometimes doesn't show up, work without error, and create broken links\. A fixme with no args disappears; we should NOT check if the string is empty for these values\. Documentation on global variables is not output\.
 
 
 ## <a id = "user-content-summary" name = "user-content-summary">Function Summary</a> ##

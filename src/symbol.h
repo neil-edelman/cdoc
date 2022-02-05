@@ -47,6 +47,7 @@
 	X(ATT_ALLOW,      '@', 0, 0, 0, 0), \
 	X(ATT_LICENSE,    '@', 0, 0, 0, "License"), \
 	X(ATT_CF,         '@', 0, 0, 0, "See also"), \
+	X(ATT_ABSTRACT,   '@', 0, 0, 0, "Abstract"), \
 	/* Documentation syntax; 2nd is '~' because it's documentation, it's just
 	 comments as far as `C` is concerned. */ \
 	X(DOC_BEGIN, '~', 0, 0, 0, 0), \

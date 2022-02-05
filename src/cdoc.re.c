@@ -12,12 +12,11 @@
  (together) and are ended with `*…/`, but not `/` `*…*` `/`. Accounts for
  asterisks at the start of a line, (Kernel comments,) or asterisks on both
  sides, (ASCII art?) Documentation appearing at most two lines above `typedef`,
- `tag` (`struct`, `enum`, `union`,) data (will not be output, fixme), and
- functions, is associated therewith; everything else is automatically inserted
- into the description. Multiple documentation on the same command is appended.
- Two hard returns is a paragraph. The big difference is we've fixed the
- `\@param` notation; now it has to be followed by a braced list,
- `\@param\[a, b\] Concatenates both.`.
+ `tag` (`struct`, `enum`, `union`,) data, and functions, is associated
+ therewith; everything else is automatically inserted into the description.
+ Multiple documentation on the same command is appended. Two hard returns is a
+ paragraph. The big difference is the fixed `\@param` notation; now it has to
+ be followed by a braced list, `\@param\[a, b\] Concatenates both.`.
 
  Supports some `Markdown` commands included in the documentation,
 
@@ -78,15 +77,13 @@
 
  @std C89
  @depend [re2c](http://re2c.org/)
- @fixme Hide `const` on params when it can not affect function calls.
- @fixme Documentation on functions should be added to documentation on
- prototypes with the same (similar) prototype.
+ @fixme Prototype function parameters ignore `const`.
+ @fixme Documentation on prototypes.
  @fixme Links to non-documented code which sometimes doesn't show up, work
  without error, and create broken links.
- @fixme 80-characters _per_ line limit, <https://xxyxyz.org/line-breaking/>,
- (needs buffering.)
- @fixme fixme with no args disappears; we should NOT check if the string is
- empty for these values. */
+ @fixme A fixme with no args disappears; we should NOT check if the string is
+ empty for these values.
+ @fixme Documentation on global variables is not output. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */

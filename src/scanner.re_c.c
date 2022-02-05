@@ -367,6 +367,7 @@ scan:
 	<doc> "@allow"      { return ATT_ALLOW; }
 	<doc> "@license"    { return ATT_LICENSE; }
 	<doc> "@cf"         { return ATT_CF; }
+	<doc> "@abstract"   { return ATT_ABSTRACT; }
 	// fixme: have date_begin @since[], @updated[], maybe updated is bad.
 	// Why not just have it updated now?
 	// Check if now is in the future.
