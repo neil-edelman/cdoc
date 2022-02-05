@@ -1,20 +1,25 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- Static documentation generator for one independent `C` translation unit. This
- does not do any parsing, only lexical analysis, (thus can be confused by
- remapping and complex values.) Does not support K&R style function
- definitions nor trigraphs.
+ Static documentation generator for one `C` translation unit. This does not do
+ any parsing, only lexical analysis, thus can be confused by remapping and
+ complex values. It's fairly simple, and does not support K&R style function
+ definitions nor trigraphs. It assumes that capital latin letters underscores
+ are concatenation commands for the pre-processor, such that `A_BC_(foo,bar)`
+ is transformed into `<A>foo<BC>bar`.
 
- Documentation commands are `/` `**…` (together) and are ended with `*…/`, but
- not `/` `*…*` `/`. Asterisks at the start of a line, like Kernel comments, or
- asterisks all over like some crazy ASCII art, are supported. Documentation
- appearing at most two lines above `typedef`, `tag` (`struct`, `enum`,
- `union`,) data, and functions, is associated therewith; everything else is
- automatically inserted into the description. Multiple documentation on the
- same command is appended. Two hard returns is a paragraph. It assumes the
- macro `A_B_(Foo,Bar)` is transformed into `<A>Foo<B>Bar`. Supports some
- `Markdown` commands included in the documentation,
+ In keeping with `Javadoc` and `Doxygen`, documentation commands are `/` `**…`
+ (together) and are ended with `*…/`, but not `/` `*…*` `/`. Accounts for
+ asterisks at the start of a line, (Kernel comments,) or asterisks on both
+ sides, (ASCII art?) Documentation appearing at most two lines above `typedef`,
+ `tag` (`struct`, `enum`, `union`,) data (will not be output, fixme), and
+ functions, is associated therewith; everything else is automatically inserted
+ into the description. Multiple documentation on the same command is appended.
+ Two hard returns is a paragraph. The big difference is we've fixed the
+ `\@param` notation; now it has to be followed by a braced list,
+ `\@param\[a, b\] Concatenates both.`.
+
+ Supports some `Markdown` commands included in the documentation,
 
  \* `\\` escapes `_\~!\@<>[]` and "\`"; "\`" can not be represented in
     math/code, (multiple escapes aren't supported); in paragraph mode, except
@@ -32,7 +37,7 @@
  \* `\~` "~" non-breaking space;
  \* `\<url\>`: relative URIs must have a slash or a dot to distinguish it from
     text;
- \* `\<Source, 1999, pp. 1-2\>`: citation;
+ \* `\<Source, 1999, pp. 1-2\>`: citation, searches on Google scholar;
  \* `\<fn:\<function\>\>`: function reference;
  \* `\<tag:\<tag\>\>`: struct, union, or enum (tag) reference;
  \* `\<typedef:\<typedef\>\>`: typedef reference;
@@ -59,24 +64,17 @@
  \* `\@return`: normal function return, (spaces);
  \* `\@throws[<exception1>[, ...]]`: exceptional function return; `C` doesn't
     have native exceptions, so `@throws` means whatever one desires; perhaps a
-    null pointer or false is returned and `errno` is set to `exception1`,
-    (spaces);
+    null pointer or false is returned and `errno` is set to `exception1`;
  \* `\@implements`: `C` doesn't have the concept of implements, but we
     would say that a function having a prototype of
-    `(int (*)(const void *, const void *))` implements `bsearch` and `qsort`,
-    (commas);
- \* `\@order`: comments about the run-time or space, (spaces);
+    `(int (*)(const void *, const void *))` implements `bsearch` and `qsort`;
+ \* `\@order`: comments about the run-time or space;
  \* and `\@allow`, the latter being to allow `static` functions or data in the
-    documentation, which are usually culled; one will be warned if this has any
-    text.
-
- Perhaps the most striking difference from `Javadoc` and `Doxygen` is the
- `\@param` has to be followed by a braced list, (it's confusing to have the
- variable be indistinguishable from the text, so we fixed it.)
+    documentation, which are usually culled.
 
  If one sets `md` as output, it goes to `GitHub` Markdown that is specifically
  visible on the `GitHub` page, (including working anchor links on browsers
- > 2000.) It bears little to Markdown supported in the documentation.
+ > 2000.) This is not the Markdown supported in the documentation.
 
  @std C89
  @depend [re2c](http://re2c.org/)
@@ -87,8 +85,8 @@
  without error, and create broken links.
  @fixme 80-characters _per_ line limit, <https://xxyxyz.org/line-breaking/>,
  (needs buffering.)
- @fixme Eg, fixme with no args disappears; we should NOT check if the string is
- empty for these values. Better yet, have a flag. */
+ @fixme fixme with no args disappears; we should NOT check if the string is
+ empty for these values. */
 
 #include <stdlib.h> /* EXIT */
 #include <stdio.h>  /* fprintf */
