@@ -76,11 +76,10 @@ size_t tokens_mark_size(const struct token_array *const tokens) {
 /** @param[tokens] The `token_array` that converts to a string.
  @param[marks] Must be an at-least the size of `tokens`, or null.
  @return The size of the string, including null. */
-void tokens_mark(const struct token_array *const tokens, char *const marks) {
-	size_t i = 0;
-	char *mark = marks;
-	if(!marks) return;
-	while(i < tokens->size)
+void tokens_mark(const struct token_array *const tokens, char *mark) {
+	size_t i;
+	assert(mark);
+	for(i = 0; i < tokens->size; i++)
 		*mark++ = symbol_marks[tokens->data[i].symbol];
 	*mark = '\0';
 }
