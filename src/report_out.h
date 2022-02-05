@@ -31,7 +31,7 @@ static const char *const md_fragment_extra = "user-content-";
 static const char *symbol_attribute_titles[] = { SYMBOL };
 #undef X
 
-/* Some `OutFn` need this. */
+/* Some output functions need this. */
 static const struct token *print_token(const struct token_array *const tokens,
 	const struct token *token);
 
@@ -1004,7 +1004,8 @@ int report_out(void) {
 		is_tag = division_exists(DIV_TAG),
 		is_typedef = division_exists(DIV_TYPEDEF),
 		is_data = division_exists(DIV_DATA),
-		is_license = attribute_exists(ATT_LICENSE);
+		is_license = attribute_exists(ATT_LICENSE),
+		is_abstract = attribute_exists(ATT_ABSTRACT);
 	const struct segment *segment = 0;
 	const int is_html = style_format() == OUT_HTML;
 	const char *const in_fn = cdoc_get_input(),
@@ -1050,6 +1051,15 @@ int report_out(void) {
 		printf("</head>\n\n"
 			"<body>\n\n");
 	}
+
+	/* Abstract. Traditionally, this goes below the title, but this is more of
+	 a tl;dr thing. */
+	if(is_abstract) {
+		style_push(ST_P);
+		div_att_print(&is_div_preamble, ATT_ABSTRACT, SHOW_TEXT);
+		style_pop_strong();
+	}
+
 	/* Title. */
 	style_push(ST_H1), style_push(ST_SSV), style_push(ST_PLAIN);
 	style_flush(), style_encode(title), style_pop_strong();

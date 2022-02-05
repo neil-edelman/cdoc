@@ -54,6 +54,7 @@
 
  \* `\@subtitle`: only makes sense for preamble, (it doesn't matter what case
     one writes it, but multiple are concatenated using semicolons);
+ \* `\@abstract`: tl;dr appearing first;
  \* `\@param[<param1>[, ...]]`: parameters, (multiple are concatenated using
      spaces, so this really should be sentence case);
  \* `\@author` (commas);

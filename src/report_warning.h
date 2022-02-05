@@ -27,6 +27,7 @@ static int attribute_okay(const struct attribute *const attribute) {
 	case ATT_IMPLEMENTS:
 	case ATT_ORDER:
 	case ATT_LICENSE:
+	case ATT_ABSTRACT:
 	case ATT_CF: return attribute_use(attribute, 0, 1, 1);
 	case ATT_FIXME: return attribute_use(attribute, 0, 0, 1);
 	case ATT_ALLOW: return attribute_use(attribute, 0, 1, 0); /* Or full. */
