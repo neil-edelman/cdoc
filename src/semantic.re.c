@@ -67,8 +67,8 @@ static void effectively_typedef_fn_ptr(char *const buffer) {
 			operator < middle && *operator != '*' && strchr("x_", *operator);
 			operator++);
 		if(*operator != '*') continue;
-		memset(ret_type, '_', prefix - ret_type + 1u);
-		memset(middle, '_', suffix - middle + 1u);
+		memset(ret_type, '_', (size_t)(prefix - ret_type) + 1u);
+		memset(middle, '_', (size_t)(suffix - middle) + 1u);
 	}
 }
 
