@@ -548,8 +548,7 @@ include_finally:
 	return 1;
 }
 
-/** Used for temporary things in doc mode.
- @fixme Memory leak. See <fn:new_token>. */
+/** Used for temporary things in doc mode. */
 static int notify_brief(const struct scanner *const scan) {
 	struct token *tok;
 	assert(scan);

@@ -494,7 +494,6 @@ OUT(list) {
 OUT(pre) {
 	const struct token *const t = *ptoken;
 	assert(tokens && t && t->symbol == PREFORMATTED && !is_buffer);
-	/* fixme: fixed??? */
 	if(style_Is_top(ST_PRELINE)) style_pop_strong();
 	style_push(ST_PRE), style_push(ST_PRELINE);
 	style_flush_symbol(t->symbol);
@@ -829,7 +828,6 @@ static void segment_att_print_all(const struct segment *const segment,
 	struct attribute *attribute = 0;
 	assert(segment);
 	if(!show) return;
-	/* fixme */
 	if(cdoc_get_debug() & DBG_ERASE)
 		fprintf(stderr, "segment_att_print_all segment %s and symbol %s.\n", divisions[segment->division], symbols[symbol]);
 	while((attribute = attribute_array_next(&segment->attributes, attribute))) {
@@ -882,7 +880,6 @@ static void dl_segment_att(const struct segment *const segment,
 	style_pop(), style_pop();
 	style_push(ST_DD), style_push(p), style_push(ST_PLAIN);
 	segment_att_print_all(segment, attribute, match, SHOW_TEXT);
-	/* fixme */
 	if(cdoc_get_debug() & DBG_ERASE)
 		fprintf(stderr, "dl_segment_att for %s.\n", symbols[attribute]);
 	style_pop(), style_pop(), style_pop();
@@ -893,7 +890,6 @@ static void dl_segment_att(const struct segment *const segment,
 static void dl_preamble_att(const enum symbol attribute,
 	const enum AttShow show, const enum style_punctuate p) {
 	assert(!style_is_empty());
-	/* fixme */
 	if(cdoc_get_debug() & DBG_ERASE)
 		fprintf(stderr, "dl_preamble_att for %s.\n", symbols[attribute]);
 	if(!attribute_exists(attribute)) return;

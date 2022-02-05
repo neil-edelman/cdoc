@@ -214,7 +214,7 @@ static void push(const struct punctuate *const p) {
 		style_array_to_string(&style.styles));
 }
 
-/** Push the style `e`. @fixme Failing inexplicably? */
+/** Push the style `e`. */
 void style_push(const enum style_punctuate p) {
 	push(&punctuates[p][effective_format()]);
 }

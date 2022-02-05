@@ -205,7 +205,7 @@ static enum symbol scan_next(struct scanner *const scan) {
 
 	/* fixme: warning: variable 'yyt1' may be uninitialized when used
 	 here [-Wconditional-uninitialized] */
-	yyt1 = 0;
+	yyt1 = buffer;
 
 	assert(scan);
 	scan->sub0 = scan->sub1 = 0;
@@ -368,9 +368,6 @@ scan:
 	<doc> "@license"    { return ATT_LICENSE; }
 	<doc> "@cf"         { return ATT_CF; }
 	<doc> "@abstract"   { return ATT_ABSTRACT; }
-	// fixme: have date_begin @since[], @updated[], maybe updated is bad.
-	// Why not just have it updated now?
-	// Check if now is in the future.
 
 	// Parameter lists.
 	<param_begin> "[" { return scan->state = yycparam_item, DOC_LEFT; }
