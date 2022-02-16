@@ -1,12 +1,13 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- Static documentation generator for one `C` translation unit. This does not do
- any parsing, only lexical analysis, thus can be confused by remapping and
- complex values. It's fairly simple, and does not support K&R style function
- definitions nor trigraphs. It assumes that capital latin letters underscores
- are concatenation commands for the pre-processor, such that `A_BC_(foo,bar)`
- is transformed into `<A>foo<BC>bar`.
+ Static documentation generator for one `C` translation unit. This is not a
+ full `C` context-free grammar decoder; it is limited to regular grammar.
+ Remapping with the pre-processor, complex types, K&R style function
+ definitions, trigraphs, are confusing to it. It just guesses based on
+ reasonable modern coding-standards. However, it assumes that capital latin
+ letters underscores are concatenation commands for the pre-processor, such
+ that `A_BC_(foo,bar)` is transformed into `<A>foo<BC>bar`.
 
  In keeping with `Javadoc` and `Doxygen`, documentation commands are `/` `**…`
  (together) and are ended with `*…/`, but not `/` `*…*` `/`. Accounts for

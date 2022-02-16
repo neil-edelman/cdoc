@@ -7,7 +7,7 @@
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-Static documentation generator for one `C` translation unit\. This does not do any parsing, only lexical analysis, thus can be confused by remapping and complex values\. It's fairly simple, and does not support K&R style function definitions nor trigraphs\. It assumes that capital latin letters underscores are concatenation commands for the pre\-processor, such that `A_BC_(foo,bar)` is transformed into `<A>foo<BC>bar`\.
+Static documentation generator for one `C` translation unit\. This is not a full `C` context\-free grammar decoder; it is limited to regular grammar\. Remapping with the pre\-processor, complex types, K&R style function definitions, trigraphs, are confusing to it\. It just guesses based on reasonable modern coding\-standards\. However, it assumes that capital latin letters underscores are concatenation commands for the pre\-processor, such that `A_BC_(foo,bar)` is transformed into `<A>foo<BC>bar`\.
 
 In keeping with `Javadoc` and `Doxygen`, documentation commands are `/` `**…` \(together\) and are ended with `*…/`, but not `/` `*…*` `/`\. Accounts for asterisks at the start of a line, \(Kernel comments,\) or asterisks on both sides, \(ASCII art?\) Documentation appearing at most two lines above `typedef`, `tag` \(`struct`, `enum`, `union`,\) data, and functions, is associated therewith; everything else is automatically inserted into the description\. Multiple documentation on the same command is appended\. Two hard returns is a paragraph\. The big difference is the fixed `@param` notation; now it has to be followed by a braced list, `@param[a, b] Concatenates both.`\.
 

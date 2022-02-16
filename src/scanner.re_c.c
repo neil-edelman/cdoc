@@ -10,8 +10,7 @@
 #include <errno.h>  /* errno EILSEQ */
 
 
-/* This defines `scanner_state`; the trailing comma on an `enum` is not in
- proper compliance with `C90`, hopefully they will fix it. */
+/* This defines `scanner_state`. */
 /*!types:re2c*/
 
 
