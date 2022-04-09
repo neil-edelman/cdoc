@@ -229,7 +229,7 @@ static void warn_segment(const struct segment *const segment) {
 		unused_attribute(segment, ATT_SUBTITLE);
 		unused_attribute(segment, ATT_RETURN);
 		unused_attribute(segment, ATT_THROWS);
-		unused_attribute(segment, ATT_IMPLEMENTS);
+		/*unused_attribute(segment, ATT_IMPLEMENTS);*/
 		unused_attribute(segment, ATT_ORDER);
 		if(!is_static(&segment->code))
 			unused_attribute(segment, ATT_ALLOW);

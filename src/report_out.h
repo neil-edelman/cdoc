@@ -962,7 +962,6 @@ static void segment_print_all(const struct segment *const segment) {
 		for(no = 1; (param = param_no(segment, no)); no++)
 			dl_segment_att(segment, ATT_PARAM, param, ST_PLAIN);
 		dl_segment_att(segment, ATT_RETURN, 0, ST_PLAIN);
-		dl_segment_att(segment, ATT_IMPLEMENTS, 0, ST_CSV);
 		while((att = attribute_array_next(&segment->attributes, att))) {
 			if(att->token.symbol != ATT_THROWS) continue;
 			dl_segment_specific_att(att);
@@ -975,6 +974,7 @@ static void segment_print_all(const struct segment *const segment) {
 			dl_segment_specific_att(att);
 		}
 	}
+	dl_segment_att(segment, ATT_IMPLEMENTS, 0, ST_CSV);
 	dl_segment_att(segment, ATT_AUTHOR, 0, ST_CSV);
 	dl_segment_att(segment, ATT_STD, 0, ST_SSV);
 	dl_segment_att(segment, ATT_DEPEND, 0, ST_SSV);
