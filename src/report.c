@@ -492,6 +492,10 @@ include_finally:
 		&& sorter.last_doc_line + 2 < scanner_line(scan))
 		cut_segment_here(&sorter.segment);
 
+	/*if(sorter.segment && symbol_mark == 'm') {
+		fprintf(stderr, "OHNO!!!\n");
+	} wtf? */
+
 	/* Make a new segment if needed. */
 	if(!sorter.segment) {
 		if(!(sorter.segment = new_segment(&report))) return 0;
@@ -577,11 +581,31 @@ static const char *pos(const struct token *const token) {
 
 /** @return If the `code` is static. */
 static int is_static(const struct token_array *const code) {
-	const size_t code_size = code->size;
-	const struct token *const tokens = code->data;
+	size_t code_size = code->size;
+	const struct token *tokens = code->data;
 	assert(code);
+	/* This is a real hack. Macros have no semicolons, so on X-macros, the
+	 function below thinks that this is part of the function declaration.
+	 I can't figure out how to insert a segment any more, so this will have to
+	 do. Probably better with multi-trees. Also it assumes that the function
+	 will be static and not shown, because arg! */
+	do {
+		unsigned level = 0;
+		if(code_size && tokens[0].symbol == MACRO)
+			tokens++, code_size--; else break;
+		if(code_size && tokens[0].symbol == LPAREN)
+			tokens++, code_size--, level = 1; else break;
+		while(level && code_size) {
+			switch (tokens[0].symbol) {
+			case LPAREN: level++; break;
+			case RPAREN: level--; break;
+			default: break;
+			}
+			tokens++, code_size--;
+		}
+	} while(1);
 	/* `main` is static, so hack it; we can't really do this because it's
-	 general, but it works 99%. */
+	 general, but it works 99%. 80%? */
 	return (code_size >= 1 && tokens[0].symbol == STATIC)
 		|| (code_size >= 3
 		&& tokens[0].symbol == ID && tokens[0].length == 3

@@ -118,8 +118,8 @@ re2c:flags:tags      = 1;
 
 // The entire C language has been reduced to these tokens.
 end = "\x00";
-symbol
- = "*" | "," | "#" | "x" | "1" | "2" | "3" | "s" | "t" | "z" | "v" | "." | "=";
+symbol = "*" | "," | "#" | "x" | "m" | "1" | "2" | "3" | "s" | "t" | "z"
+	| "v" | "." | "=";
 separator = ";";
 recursion = "{" | "}" | "(" | ")" | "[" | "]";
 redact = "_";
@@ -132,6 +132,7 @@ typedef = "t";
 void = "v";
 tag = "s";
 identifier = "x";
+macro = "m";
 static = "z";
 ellipses = ".";
 const = "#" | "x"; // Eg, 42, SEMANTIC_NO.
@@ -166,7 +167,7 @@ static int parse(void) {
 		return 1;
 	}
 	// "typedef anything" is considered a typedef.
-	typedef redact* skip_complex+ @label redact* end {
+	redact* typedef redact* skip_complex+ @label redact* end {
 		semantics.division = DIV_TYPEDEF;
 		label = type_from_right(buffer, label - 1, 1);
 		if(!add_param(label)) return 0;
@@ -184,7 +185,8 @@ static int parse(void) {
 		return 1;
 	}
 	// Fixme: this is one of the . . . four? ways to define a function?
-	static? redact* (@label (generic | type_or_void | qualifier) redact*){2,}
+	redact* static? redact*
+		(@label (generic | type_or_void | qualifier) redact*){2,}
 		@args "(" ( (argument ("," argument)* ",."?) | void ) ")" redact* end {
 		semantics.division = DIV_FUNCTION;
 		if(!add_param(label)) return 0;
@@ -329,6 +331,25 @@ int semantic(const struct token_array *const code) {
 	remove_recursive(buffer, '{', '}', '_');
 	/* "Returning an array of this" and "returning this" are isomorphic. */
 	remove_recursive(buffer, '[', ']', '_');
+	/* Macros are not good. */
+	{
+		char *b = buffer;
+		int level = 0, is_last_macro = 0;
+		while(*b != '\0') {
+			if(level) {
+				if(*b == ')') level--;
+				else if(*b == '(') level++;
+				*b = '_';
+			} else if(*b == 'm') {
+				is_last_macro = 1;
+				*b = '_';
+			} else if(is_last_macro) {
+				is_last_macro = 0;
+				if(*b == '(') *b = '_', level = 1;
+			}
+			b++;
+		}
+	}
 	/* Now with the {}[] removed. */
 	effectively_typedef_fn_ptr(buffer);
 	if(!parse()) return 0;
