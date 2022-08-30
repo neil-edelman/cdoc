@@ -321,6 +321,7 @@ scan:
 	<doc, math, em, anchor> comega   { return COMEGA; }
 	<doc, math, em, anchor> times    { return TIMES; }
 	<doc, math, em, anchor> cdot     { return CDOT; }
+	<doc, math, em, anchor> log      { return LOG; }
 	<doc> "_" { return scan->state = yycem, EM_BEGIN; }
 	<em> "_" { return scan->state = yycdoc, EM_END; }
 	<doc> "`" { return scan->state = yycmath, MATH_BEGIN; }

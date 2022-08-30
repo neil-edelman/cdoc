@@ -33,7 +33,7 @@
  \* Escapes included for convenience: `\\,` "\," non-breaking thin space,
     `\\O` "\O" Bachmann–Landau notation, (but really capital omicron because
     not many fonts have a shape for code-point 120030,) `\\Theta` "\Theta",
-    `\\Omega` "\Omega", `\\times` "\times", `\\cdot` "\cdot".
+    `\\Omega` "\Omega", `\\times` "\times", `\\cdot` "\cdot", `\\log` "\log".
  \* `\~` "~" non-breaking space;
  \* `\<url\>`: relative URIs must have a slash or a dot to distinguish it from
     text;

@@ -63,6 +63,7 @@
 	X(COMEGA,    '~', &out_comega, 0, 0, 0), \
 	X(TIMES,     '~', &out_times, 0, 0, 0), \
 	X(CDOT,      '~', &out_cdot, 0, 0, 0), \
+	X(LOG,       '~', &out_log, 0, 0, 0), \
 	X(ESCAPE,    '~', &out_escape, 0, 0, 0), \
 	/* Like <http://foo.com/>, <Cite1999>, [Foo](http://foo.com),
 	 ![Foo](foo.png), <fn:foo>, _etc_. */ \

@@ -479,6 +479,14 @@ OUT(cdot) {
 	*ptoken = token_array_next(tokens, t);
 	return 1;
 }
+OUT(log) {
+	const struct token *const t = *ptoken;
+	assert(tokens && t && t->symbol == LOG && !is_buffer);
+	style_flush_symbol(t->symbol);
+	printf("log");
+	*ptoken = token_array_next(tokens, t);
+	return 1;
+}
 OUT(list) {
 	const struct token *const t = *ptoken;
 	assert(tokens && t && t->symbol == LIST_ITEM && !is_buffer);
