@@ -19,7 +19,8 @@
 	X(LBRACK,     '[', &out_lit, 0, 0, 0), \
 	X(RBRACK,     ']', &out_lit, 0, 0, 0), \
 	X(CONSTANT,   '#', &out_lit, 1, 1, 0), \
-	X(ID,         'x', &out_lit, 1, 1, 0 ), \
+	X(ID,         'x', &out_lit, 1, 1, 0), \
+	X(MACRO,      'm', &out_lit, 1, 1, 0), \
 	X(ID_ONE_GENERIC, '1', &out_gen1, 1, 1, 0), \
 	X(ID_TWO_GENERICS, '2', &out_gen2, 1, 1, 0), \
 	X(ID_THREE_GENERICS, '3', &out_gen3, 1, 1, 0), \

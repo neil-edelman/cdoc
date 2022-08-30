@@ -85,7 +85,8 @@ ctheta = "\\Theta";
 comega = "\\Omega";
 times = "\\times";
 cdot = "\\cdot";
-escapes = nbthinsp | mathcalo | ctheta | comega | times | cdot;
+log = "\\log";
+escapes = nbthinsp | mathcalo | ctheta | comega | times | cdot | log;
 
 // Words can be composed of anything except:
 // " \t\n\v\f\r" whitespace and newline;
@@ -147,6 +148,7 @@ generic = [A-Z]+ "_";
 // Supports only C90 ids. That would be complicated. I suppose you could hack
 // it to accept a super-set?
 id = [a-zA-Z_][a-zA-Z_0-9]*;
+macro_id = [A-Z_]+;
 generic_id = (("<" [A-Z]+ ">")? id)+;
 // <https://tools.ietf.org/html/rfc3986#appendix-B> and also
 // " \t\n\v\f\r*<>()&\x00" disallowed because then it crashes / escapes comment
@@ -275,6 +277,7 @@ scan:
 	<code> generic      { return ID_ONE_GENERIC; }
 	<code> generic generic { return ID_TWO_GENERICS; }
 	<code> generic generic generic { return ID_THREE_GENERICS; }
+	<code> macro_id     { return MACRO; }
 	<code> "struct"     { return STRUCT; }
 	<code> "union"      { return UNION; }
 	<code> "enum"       { return ENUM; }
@@ -333,7 +336,7 @@ scan:
 	<pre> [^*\n\r\x00]+ / "*" { goto scan; }
 	<pre> "*"+ / [^/\n\r\x00] { goto scan; }
 
-	// These are recognised in the documentation as stuff; parse them further
+	// These are recognized in the documentation as stuff; parse them further
 	// using `sub`.
 	<doc> "<" @sub0 uri @sub1 ">"
 		{ scan->sub0 = sub0, scan->sub1 = sub1; return URL; }
