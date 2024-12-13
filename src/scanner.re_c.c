@@ -144,17 +144,17 @@ assignment = "=";
 // be documented nicely; the down side is, these are legal names for
 // identifiers; will be confused if you name anything this way that IS an
 // identifier. Don't do that.
-generic = [A-Z]+ "_";
+generic = [A-Za-z]+ "_";
 // Supports only C90 ids. That would be complicated. I suppose you could hack
 // it to accept a super-set?
 id = [a-zA-Z_][a-zA-Z_0-9]*;
 macro_id = [A-Z_]+;
-generic_id = (("<" [A-Z]+ ">")? id)+;
+generic_id = (("<" [A-Za-z]+ ">")? id)+;
 // <https://tools.ietf.org/html/rfc3986#appendix-B> and also
 // " \t\n\v\f\r*<>()&\x00" disallowed because then it crashes / escapes comment
 // / links [](). ("The special characters "$-_.+!*'()," and
 // reserved characters used for their reserved purposes may be used unencoded
-// within a URL," RFC 1738, so () is completly braindead.)
+// within a URL," RFC 1738, so () is completely braindead.)
 // '<' 3C, '>' 3E, '#' 23, '(' %28, ')' %29, '*' %2A, ' ' %20
 uri_scheme = [^:/?# \t\n\v\f\r*<>()&\x00]+ ":";
 uri_authority = "//" [^/?# \t\n\v\f\r*<>()&\x00]*;
@@ -264,7 +264,8 @@ scan:
 	<macro> begin_comment :=> macro_comment
 	<code> comment_break { goto reset; } // Like this: / ***** /.
 	<code> begin_comment :=> comment
-	<code> macro_start "include" whitespace+ "\"" @sub0 qfile @sub1 "\""
+	<code> whitespace* macro_start whitespace* "include" whitespace+
+		"\"" @sub0 qfile @sub1 "\""
 		whitespace* begin_doc whitespace* "\\include" whitespace* end_doc
 		{ scan->sub0 = sub0, scan->sub1 = sub1;
 		return scan->state = yycmacro, LOCAL_INCLUDE; }

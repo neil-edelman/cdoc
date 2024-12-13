@@ -44,7 +44,7 @@ static void token_to_string(const struct token *t, char (*const a)[12]) {
 	case SPACE: { (*a)[0] = '~', (*a)[1] = '\0'; break; }
 	default:
 		strncpy(*a, symbols[t->symbol], sizeof *a - 1);
-		(*a)[sizeof *a - 1] = '\0';
+		(*a)[sizeof *a - 1] = '\0'; break;
 	}
 }
 /** Compares the _contents_ of the tokens. */
