@@ -275,9 +275,9 @@ scan:
 	<code> number       { return CONSTANT; }
 	<code> operator     { return OPERATOR; }
 	<code> assignment   { return ASSIGNMENT; }
-	<code> generic      { return ID_ONE_GENERIC; }
-	<code> generic generic { return ID_TWO_GENERICS; }
-	<code> generic generic generic { return ID_THREE_GENERICS; }
+	<code> generic/"("  { return ID_ONE_GENERIC; }
+	<code> generic generic/"(" { return ID_TWO_GENERICS; }
+	<code> generic generic generic/"(" { return ID_THREE_GENERICS; }
 	<code> macro_id     { return MACRO; }
 	<code> "struct"     { return STRUCT; }
 	<code> "union"      { return UNION; }
