@@ -819,7 +819,7 @@ static void print_toc_extra(const enum division d) {
 	while((segment = segment_array_next(&report, segment))) {
 		if(segment->division != d) continue;
 		if(!segment->code_params.size) { fprintf(stderr,
-			"%s: segment has no title.\n", divisions[segment->division]);
+			"%s: segment has no title.\n", division[segment->division].symbol);
 			continue; }
 		idxs = segment->code_params.data;
 		params = segment->code.data;
@@ -843,7 +843,7 @@ static void segment_att_print_all(const struct segment *const segment,
 	assert(segment);
 	if(!show) return;
 	if(cdoc_get_debug() & DBG_ERASE)
-		fprintf(stderr, "segment_att_print_all segment %s and symbol %s.\n", divisions[segment->division], symbols[symbol]);
+		fprintf(stderr, "segment_att_print_all segment %s and symbol %s.\n", division[segment->division].symbol, symbols[symbol]);
 	while((attribute = attribute_array_next(&segment->attributes, attribute))) {
 		size_t *pindex;
 		if(attribute->token.symbol != symbol

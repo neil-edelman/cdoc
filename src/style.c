@@ -166,6 +166,11 @@ static struct {
 	struct { const struct punctuate *punctuate; int on; } highlight;
 } style;
 
+#if defined __GNUC__ || defined __MINGW32__ || defined __clang__
+__attribute__((noreturn))
+#elif _MSC_VER
+__declspec(noreturn)
+#endif
 /** This takes a bounded and small amount of memory, so unless one has an
  infinite style-push loop or one's memory is very small, this is not going to
  happen. (We think.) */
@@ -206,7 +211,7 @@ static void push(const struct punctuate *const p) {
 	/* There's so many void functions that rely on this function and it's such
 	 a small amount of memory, that it's useless to recover. The OS will have
 	 to clean up our mess. Hack. */
-	if(!s) { unrecoverable(); return; }
+	if(!s) unrecoverable();
 	/*printf("<!-- push %s -->", text->name);*/
 	s->punctuate = p;
 	s->lazy = BEGIN;
@@ -350,7 +355,7 @@ static void encode_len_choose(size_t length, const char *from,
 	}
 	
 raw_encode_buffer:
-	if(!(b = buffer_prepare(length))) { unrecoverable(); return; }
+	if(!(b = buffer_prepare(length))) unrecoverable();
 	memcpy(b, from, length);
 	return;
 	
@@ -364,19 +369,19 @@ html_encode_buffer:
 			default: ahead++; continue;
 		}
 		if(ahead) {
-			if(!(b = buffer_prepare(ahead))) { unrecoverable(); return; }
+			if(!(b = buffer_prepare(ahead))) unrecoverable();
 			memcpy(b, from, ahead);
 			length -= ahead;
 			from += ahead;
 			ahead = 0;
 		}
-		if(!(b = buffer_prepare(str_len))) { unrecoverable(); return; }
+		if(!(b = buffer_prepare(str_len))) unrecoverable();
 		memcpy(b, str, str_len);
 		from++, length--;
 	}
 terminate_html:
 	if(ahead) {
-		if(!(b = buffer_prepare(ahead))) { unrecoverable(); return; }
+		if(!(b = buffer_prepare(ahead))) unrecoverable();
 		memcpy(b, from, ahead);
 	}
 	return;
@@ -392,7 +397,7 @@ md_encode_buffer:
 		default: ahead++; continue;
 		}
 		if(ahead) {
-			if(!(b = buffer_prepare(ahead))) { unrecoverable(); return; }
+			if(!(b = buffer_prepare(ahead))) unrecoverable();
 			memcpy(b, from, ahead);
 			length -= ahead;
 			from += ahead;
@@ -400,17 +405,17 @@ md_encode_buffer:
 		}
 		if(escape) {
 			const size_t e_len = strlen(escape);
-			if(!(b = buffer_prepare(e_len))) { unrecoverable(); return; }
+			if(!(b = buffer_prepare(e_len))) unrecoverable();
 			memcpy(b, escape, e_len);
 		} else {
-			if(!(b = buffer_prepare(2))) { unrecoverable(); return; }
+			if(!(b = buffer_prepare(2))) unrecoverable();
 			b[0] = '\\', b[1] = *from;
 		}
 		from++, length--;
 	}
 terminate_md:
 	if(ahead) {
-		if(!(b = buffer_prepare(ahead))) { unrecoverable(); return; }
+		if(!(b = buffer_prepare(ahead))) unrecoverable();
 		memcpy(b, from, ahead);
 	}
 	return;

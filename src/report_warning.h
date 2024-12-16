@@ -98,7 +98,7 @@ static void unused_attribute(const struct segment *const segment,
 	while((attribute = attribute_array_next(attributes, attribute))) {
 		if(attribute->token.symbol != symbol) continue;
 		fprintf(stderr, "%s: attribute not used in %s.\n",
-			pos(&attribute->token), divisions[segment->division]);
+			pos(&attribute->token), division[segment->division].symbol);
 	}
 }
 
@@ -112,7 +112,7 @@ static void preamble_used_attribute(const enum symbol symbol) {
 			if(attribute->token.symbol == symbol) return;
 	}
 	fprintf(stderr, "No attribute %s in %s.\n", symbols[symbol],
-		divisions[DIV_PREAMBLE]);
+		division[DIV_PREAMBLE].symbol);
 }
 
 static void warn_internal_link(const struct token *const token) {

@@ -18,6 +18,12 @@
 
 #include <stdlib.h>
 #include <assert.h>
+
+#if defined __GNUC__ || defined __MINGW32__ || defined __clang__
+__attribute__((noreturn))
+#elif _MSC_VER
+__declspec(noreturn)
+#endif
 /** Ludicrous. fixme: putting them in we check, this should be an assert. */
 static void unrecoverable(void) {
 	fprintf(stderr, "report: couldn't write file because it is too big.\n");
@@ -172,7 +178,7 @@ static void segment_to_string(const struct segment *segment,
 	char (*const a)[12]) {
 	const struct token_array *ta;
 	const struct token *const fallback = segment_fallback(segment, &ta);
-	const char *temp = divisions[segment->division];
+	const char *temp = division[segment->division].symbol;
 	size_t temp_len, i = 0;
 	if(fallback) {
 		style_push(ST_TO_RAW);
@@ -343,7 +349,7 @@ static void print_segment_debug(const struct segment *const segment) {
 		"%s:%lu code: %s;\n"
 		"of which params: %s;\n"
 		"%s:%lu doc: %s.\n",
-		divisions[segment->division],
+		division[segment->division].symbol,
 		code ? code->label : "N/A", code ? code->line : 0,
 		token_array_to_string(&segment->code),
 		index_array_to_string(&segment->code_params),

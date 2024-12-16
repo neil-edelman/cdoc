@@ -287,7 +287,7 @@ check:
 
 /************/
 
-/** Analyse a new string. Updates <fn:semantic_division> and
+/** Analyze a new string. Updates <fn:semantic_division> and
  <fn:semantic_params>.
  @param[code] If null, frees the global semantic data. Otherwise, a string that
  consists of characters from `symbol_marks` defined in `Symbol.h`.
@@ -356,7 +356,7 @@ int semantic(const struct token_array *const code) {
 	if(cdoc_get_debug() & DBG_SEMANTIC)
 		fprintf(stderr, "%.32s:%lu: \"%s\" -> %s with params %s.\n",
 		semantics.label, (unsigned long)semantics.line, buffer,
-		divisions[semantics.division],
+		division[semantics.division].symbol,
 		index_array_to_string(&semantics.params));
 	assert(!semantics.params.size
 		|| *index_array_peek(&semantics.params) < buffer_size - 1);
