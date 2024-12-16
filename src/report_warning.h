@@ -116,16 +116,16 @@ static void preamble_used_attribute(const enum symbol symbol) {
 }
 
 static void warn_internal_link(const struct token *const token) {
-	enum division division;
+	enum division divn;
 	const char *a, *b;
 	size_t *fun_index;
 	struct segment *segment = 0;
 	assert(token);
 	switch(token->symbol) {
-		case SEE_FN:      division = DIV_FUNCTION; break;
-		case SEE_TAG:     division = DIV_TAG;      break;
-		case SEE_TYPEDEF: division = DIV_TYPEDEF;  break;
-		case SEE_DATA:    division = DIV_DATA;     break;
+		case SEE_FN:      divn = DIV_FUNCTION; break;
+		case SEE_TAG:     divn = DIV_TAG;      break;
+		case SEE_TYPEDEF: divn = DIV_TYPEDEF;  break;
+		case SEE_DATA:    divn = DIV_DATA;     break;
 		default: return;
 	}
 	buffer_swap();
@@ -137,7 +137,7 @@ static void warn_internal_link(const struct token *const token) {
 	while((segment = segment_array_next(&report, segment))) {
 		const struct token *compare;
 		/* The "title" is `code[code_params[0]]`. */
-		if(segment->division != division
+		if(segment->division != divn
 			|| !(fun_index = index_array_next(&segment->code_params, 0))
 			|| *fun_index >= segment->code.size) continue;
 		compare = segment->code.data + *fun_index;

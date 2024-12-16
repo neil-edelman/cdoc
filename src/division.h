@@ -13,8 +13,12 @@
 #define X(a, b, c) a
 enum division { DIVISION };
 #undef X
+#define X(a, b, c) { #a, b, c }
+static const struct { const char *const symbol, *const keyword, *const desc; }
+	division[] = { DIVISION };
+#undef X
 #define X(a, b, c) b
-static const char *const division_strings[] = { DIVISION };
+//static const char *const division_strings[] = { DIVISION };
 #undef X
 #define X(a, b, c) c
 static const char *const division_desc[] = { DIVISION };

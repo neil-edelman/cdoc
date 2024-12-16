@@ -230,7 +230,8 @@ int main(int argc, char **argv) {
 	exit_code = EXIT_SUCCESS; goto finally;
 
 catch:
-	if(errno) perror(args.in_fn ? args.in_fn : "(no file)");
+	if(errno) fprintf(stderr, "In main. "),
+		perror(args.in_fn ? args.in_fn : "(no file)");
 	else usage();
 
 finally:

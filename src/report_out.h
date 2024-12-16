@@ -271,7 +271,7 @@ static int see(const struct token_array *const tokens,
 		|| (tok->symbol == SEE_DATA && divn == DIV_DATA)));
 	style_flush_symbol(tok->symbol);
 	if(style_format() == OUT_HTML) {
-		printf("<a href = \"#%s:", division_strings[divn]);
+		printf("<a href = \"#%s:", division[divn].keyword);
 		style_encode_length(tok->length, tok->from);
 		printf("\">");
 		style_encode_length(tok->length, tok->from);
@@ -281,7 +281,7 @@ static int see(const struct token_array *const tokens,
 		style_push(ST_TO_HTML); /* <-- html: this is not escaped by Markdown. */
 		style_encode_length(tok->length, tok->from);
 		style_pop(); /* html --> */
-		printf("](#%s%s-%x)", md_fragment_extra, division_strings[divn],
+		printf("](#%s%s-%x)", md_fragment_extra, division[divn].keyword,
 			fnv_32a_str(style_encode_length_raw_to_buffer(tok->length, tok->from)));
 	}
 	*ptoken = token_array_next(tokens, tok);
@@ -331,14 +331,17 @@ OUT(link) {
 	assert(tokens && t && t->symbol == LINK_START && !is_buffer);
 	style_flush_symbol(t->symbol);
 	/* The expected format is LINK_START [^URL]* URL. */
-	for(turl = token_array_next(tokens, t);;turl = token_array_next(tokens, turl)) {
+	for(turl = token_array_next(tokens, t); ;
+		turl = token_array_next(tokens, turl)) {
 		if(!turl) goto catch;
 		if(turl->symbol == URL) break;
 	}
 	/* We want to open this file to check if it's on the up-and-up. */
 	if(!(errno = 0, fn = url_from_here(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
-	if(!(fp = fopen(fn, "r"))) { perror(fn); errno = 0; goto raw; } fclose(fp);
+	if(!(fp = fopen(fn, "r")))
+		{ fprintf(stderr, "In link. "); perror(fn); errno = 0; goto raw; }
+	fclose(fp);
 	/* Actually use the entire url. */
 	if(!(errno = 0, fn = url_from_output(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
@@ -626,20 +629,20 @@ static int segment_attribute_exists(const struct segment *const segment,
 }
 
 /** @return Is `division` in the report? */
-static int division_exists(const enum division division) {
+static int division_exists(const enum division divkey) {
 	struct segment *segment = 0;
 	while((segment = segment_array_next(&report, segment)))
-		if(segment->division == division) return 1;
+		if(segment->division == divkey) return 1;
 	return 0;
 }
 
 /** `act` on all `division`. */
-static void division_act(const enum division division,
+static void division_act(const enum division divkey,
 	void (*act)(const struct segment *const segment)) {
 	const struct segment *segment = 0;
 	assert(act);
 	while((segment = segment_array_next(&report, segment)))
-		if(segment->division == division) act(segment);
+		if(segment->division == divkey) act(segment);
 }
 
 /** @return Is `attribute_symbol` in the report? (needed for `@licence`.) */
@@ -688,7 +691,8 @@ static void scan_doc_string(const char *const str) {
 	assert(str);
 	/* Generally this will be a bug in the programme, not in the input. */
 	if(!(scan = scanner("string", str, &notify_brief, START_DOC)))
-		{ perror(str); assert(0); exit(EXIT_FAILURE); return; }
+		{ fprintf(stderr, "In scan_doc_string. "); perror(str); assert(0);
+		exit(EXIT_FAILURE); return; }
 	style_flush(), print_brief();
 	scanner_(&scan);
 }
@@ -715,12 +719,12 @@ static void print_fragment_for(const enum division d, const char *const label) {
 	/* GCC is too smart but not smart enough. */
 	const char *const fmt_html = "[%s](#%s:%s)",
 		*const fmt_md = "[%s](#%s%s-%x)",
-		*const division = division_strings[d];
-	const size_t label_len = strlen(label), division_len = strlen(division),
+		*const divkey = division[d].keyword;
+	const size_t label_len = strlen(label), divkey_len = strlen(divkey),
 		md_fragment_extra_len = strlen(md_fragment_extra),
 		fmt_len = (f == OUT_HTML) ? strlen("[](#:)") + 2 * label_len
-		+ division_len : strlen("[](#-)") + label_len + md_fragment_extra_len
-		+ division_len + compute_digits_x(hash);
+		+ divkey_len : strlen("[](#-)") + label_len + md_fragment_extra_len
+		+ divkey_len + compute_digits_x(hash);
 	size_t len;
 	char *b;
 	assert(label);
@@ -728,53 +732,55 @@ static void print_fragment_for(const enum division d, const char *const label) {
 	buffer_swap();
 	buffer_clear();
 	if(!(b = buffer_prepare(fmt_len)))
-		{ perror(label); assert(0); exit(EXIT_FAILURE); return; }
-	len = (size_t)(f == OUT_HTML ? sprintf(b, fmt_html, label, division, label)
-		: sprintf(b, fmt_md, label, md_fragment_extra, division, hash));
+		{ fprintf(stderr, "In print_fragment_for. "); perror(label);
+		assert(0); exit(EXIT_FAILURE); return; }
+	len = (size_t)(f == OUT_HTML ? sprintf(b, fmt_html, label, divkey, label)
+		: sprintf(b, fmt_md, label, md_fragment_extra, divkey, hash));
 	assert(len == fmt_len);
 	scan_doc_string(b);
 	buffer_swap();
 }
 
-static void print_custom_heading_fragment_for(const char *const division,
+static void print_custom_heading_fragment_for(const char *const div_key,
 	const char *const desc) {
 	const enum format f = style_format();
 	/* "*.0s" does not work on all libraries? */
 	const char *const fmt_html = "[%s](#%s:)", *const fmt_md = "[%s](#%s%s)";
 	const size_t fmt_len = (f == OUT_HTML)
-		? strlen("[](#:)") + strlen(desc) + strlen(division)
+		? strlen("[](#:)") + strlen(desc) + strlen(div_key)
 		: strlen("[](#)") + strlen(desc) + strlen(md_fragment_extra)
-		+ strlen(division);
+		+ strlen(div_key);
 	size_t len;
 	char *b;
-	assert(division && desc);
+	assert(div_key && desc);
 	buffer_clear();
 	if(!(b = buffer_prepare(fmt_len)))
-		{ perror(division); assert(0); exit(EXIT_FAILURE); return; }
-	len = (size_t)(f == OUT_HTML ? sprintf(b, fmt_html, desc, division) :
-		sprintf(b, fmt_md, desc, md_fragment_extra, division));
+		{ fprintf(stderr, "In print_custom_heading_fragment_for. ");
+		perror(div_key); assert(0); exit(EXIT_FAILURE); return; }
+	len = (size_t)(f == OUT_HTML ? sprintf(b, fmt_html, desc, div_key) :
+		sprintf(b, fmt_md, desc, md_fragment_extra, div_key));
 	assert(len == fmt_len);
 	scan_doc_string(b);
 }
 
 static void print_heading_fragment_for(const enum division d) {
-	print_custom_heading_fragment_for(division_strings[d], division_desc[d]);
+	print_custom_heading_fragment_for(division[d].keyword, division[d].desc);
 }
 
 /** @param[label] In HTML. */
 static void print_anchor_for(const enum division d, const char *const label) {
 	const enum format f = style_format();
-	const char *const division = division_strings[d];
+	const char *const divkey = division[d].keyword;
 	assert(label);
 	style_push(ST_H3), style_flush();
 	printf("<a ");
 	if(f == OUT_HTML) {
 		printf("id = \"%s:%s\" name = \"%s:%s\"",
-			division, label, division, label);
+			divkey, label, divkey, label);
 	} else {
 		const unsigned hash = fnv_32a_str(label);
 		printf("id = \"%s%s-%x\" name = \"%s%s-%x\"", md_fragment_extra,
-			division, hash, md_fragment_extra, division, hash);
+			divkey, hash, md_fragment_extra, divkey, hash);
 	}
 	fputc('>', stdout);
 	style_push(ST_TO_HTML); /* The format is HTML because it's in an HTML tag. */
@@ -784,22 +790,22 @@ static void print_anchor_for(const enum division d, const char *const label) {
 	style_pop(); /* h2 */
 }
 
-static void print_custom_heading_anchor_for(const char *const division,
+static void print_custom_heading_anchor_for(const char *const divkey,
 	const char *const desc) {
-	assert(division && desc);
+	assert(divkey && desc);
 	style_push(ST_H2);
 	style_flush();
 	printf("<a ");
 	(style_format() == OUT_HTML)
-		? printf("id = \"%s:\" name = \"%s:\"", division, division)
-		: printf("id = \"%s%s\" name = \"%s%s\"", md_fragment_extra, division,
-		md_fragment_extra, division);
+		? printf("id = \"%s:\" name = \"%s:\"", divkey, divkey)
+		: printf("id = \"%s%s\" name = \"%s%s\"", md_fragment_extra, divkey,
+		md_fragment_extra, divkey);
 	printf(">%s</a>", desc);
 	style_pop(); /* h2 */
 }
 
 static void print_heading_anchor_for(enum division d) {
-	print_custom_heading_anchor_for(division_strings[d], division_desc[d]);
+	print_custom_heading_anchor_for(division[d].keyword, division[d].desc);
 }
 
 /** Toc subcategories. */
@@ -851,7 +857,7 @@ static void segment_att_print_all(const struct segment *const segment,
 					print_token_s(&segment->code, token));
 			} else {
 				/* Not going to happen -- cull takes care of it. */
-				printf("%s", division_strings[segment->division]);
+				printf("%s", division[segment->division].keyword);
 			}
 		}
 		if(show == SHOW_ALL) fputs(": ", stdout);

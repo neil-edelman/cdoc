@@ -108,7 +108,7 @@ end:
 	success = 1;
 	goto finally;
 catch:
-	perror(fn), errno = 0;
+	fprintf(stderr, "In image_disension. "); perror(fn), errno = 0;
 finally:
 	if(fp) fclose(fp);
 	return success;
