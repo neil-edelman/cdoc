@@ -1,5 +1,5 @@
 #ifndef SYMBOL_H
-#define SYMBOL_H
+#	define SYMBOL_H
 
 /* Define `Symbols` -- these are the numerical values given to a section of
  text. The format is
@@ -90,14 +90,30 @@
 	/* Preformatted. */ \
 	X(PREFORMATTED, '~', &out_pre, 0, 0, 0)
 
-#define X(a, b, c, d, e, f) a
+struct token;
+struct token_array;
+/** Selects `token` out of `tokens` and prints it and returns the next token. */
+typedef int (*out_fn)(const struct token_array *const tokens,
+	const struct token **const ptoken, const int is_buffer);
+/*out_fn out_lit, out_gen1, out_gen2, out_gen3, out_ws, out_par, out_nbsp,
+	out_nbthinsp, out_mathcalo, out_mathcalo, out_ctheta;*/
+#	define X(a, b, c, d, e, f) a
 enum symbol { SYMBOL };
-#undef X
-#define X(a, b, c, d, e, f) #a
+#	undef X
+/* #define X(a, b, c, d, e, f) { #a, b, d, e, f }
+static const struct {
+	const char *const symbol;
+	const char mark;
+	const out_fn md_out, html_out;
+	unsigned lspaces, rspaces;
+	const char *const attribute_title;
+} symbol = { SYMBOL };
+#undef X*/
+#	define X(a, b, c, d, e, f) #a
 static const char *const symbols[] = { SYMBOL };
-#undef X
-#define X(a, b, c, d, e, f) b
+#	undef X
+#	define X(a, b, c, d, e, f) b
 static const char symbol_marks[] = { SYMBOL };
-#undef X
+#	undef X
 
 #endif
