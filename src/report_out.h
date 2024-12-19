@@ -32,92 +32,82 @@ static const char *symbol_attribute_titles[] = { SYMBOL };
 #undef X
 
 /* Some output functions need this. */
-static const struct token *print_token(const struct token_array *const tokens,
-	const struct token *token);
+/*static const struct token *print_token(const struct token_array *const tokens,
+	const struct token *token);*/
+static void print_token(struct token_array_cursor *);
 
 /** Selects `token` out of `tokens` and prints it and returns the next token. */
-typedef int (*out_fn)(const struct token_array *const tokens,
-	const struct token **const ptoken, const int is_buffer);
+typedef int (*out_fn)(const struct token_array_cursor *);
+/*typedef int (*out_fn)(const struct token_array *const tokens,
+	const struct token **const ptoken, const int is_buffer);*/
 /* @param[ptoken] Is an [in/out] variable, it should get updated unless the
  return value is false.
  @return Success.
  @implements <Attribute>Predicate
  @fixme `is_buffer` should always be true for text-wrapping. */
-#define OUT(name) static int out_##name(const struct token_array *const tokens,\
-	const struct token **ptoken, const int is_buffer)
+/*#define OUT(name) static int out_##name(const struct token_array *const tokens,\
+	const struct token **ptoken, const int is_buffer)*/
 
-OUT(ws) {
-	const struct token *const space = *ptoken;
-	assert(tokens && space && space->symbol == SPACE && !is_buffer);
+static int out_ws(struct token_array_cursor *tok) {
+	(void)tok;
 	style_separate();
-	*ptoken = token_array_next(tokens, space);
 	return 1;
 }
-OUT(par) {
-	const struct token *const t = *ptoken;
-	assert(tokens && t && t->symbol == NEWLINE && !is_buffer);
+static int out_par(struct token_array_cursor *tok) {
+	(void)tok;
 	style_pop_strong();
 	style_push(ST_P);
-	*ptoken = token_array_next(tokens, t);
 	return 1;
 }
-OUT(lit) {
-	const struct token *const t = *ptoken;
-	assert(tokens && t && t->length > 0 && t->from);
-	if(is_buffer) {
+static int out_lit(struct token_array_cursor *tok) {
+	const struct token *const t = token_array_look(tok);
+	assert(t && t->length > 0 && t->from);
+	if(report_is_buffer) {
 		style_encode_length_cat_to_buffer(t->length, t->from);
 	} else {
 		style_flush_symbol(t->symbol);
 		style_encode_length(t->length, t->from);
 	}
-	*ptoken = token_array_next(tokens, t);
 	return 1;
 }
-OUT(gen1) {
-	const struct token *const t = *ptoken,
-		*const lparen = token_array_next(tokens, t),
-		*const param1 = token_array_next(tokens, lparen),
-		*const rparen = token_array_next(tokens, param1);
-	const char *b, *type1;
-	size_t type1_size;
-	const enum format f = style_format();
-	const char *const format =
-		f == OUT_HTML ? HTML_LT "%.*s" HTML_GT "%.*s" : "<%.*s>%.*s";
-	assert(tokens && t && t->symbol == ID_ONE_GENERIC);
-	if(!lparen || lparen->symbol != LPAREN || !param1 || !rparen
-		|| rparen->symbol != RPAREN) goto catch;
-	type1 = t->from;
-	if(!(b = strchr(type1, '_'))) goto catch;
-	type1_size = (size_t)(b - type1);
-	assert(t->length == (size_t)(b + 1 - t->from));
-	assert(type1_size <= INT_MAX && param1->length <= INT_MAX);
-	if(is_buffer) {
-		const char *const ltgt = f == OUT_HTML ? HTML_LT HTML_GT : "<>";
+static int out_gen1(struct token_array_cursor *tok) {
+	/* Expected: { type1, lparen, param1, rparen }. */
+	const struct token *const t = tok->a->data + tok->i;
+	const char *const format = style_format() == OUT_HTML
+		? HTML_LT "%.*s" HTML_GT "%.*s" : "<%.*s>%.*s";
+	if(tok->a->size < tok->i + 4
+	   || t[0].symbol != ID_ONE_GENERIC
+	   || t[1].symbol != LPAREN
+	   || t[2].symbol != ID
+	   || t[3].symbol != RPAREN) goto catch;
+	/* fixme: Check to make sure by ensuring the entire file is <= INT_MAX. */
+	assert(t[0].length > 1 && t[0].length <= INT_MAX && t[2].length <= INT_MAX);
+	if(report_is_buffer) {
+		const char *const ltgt = style_format() == OUT_HTML
+			? HTML_LT HTML_GT : "<>";
 		char *a;
-		if(!(a = buffer_prepare(strlen(ltgt) + type1_size + param1->length)))
+		if(!(a = buffer_prepare(strlen(ltgt) + t[0].length - 1 + t[2].length)))
 			return 0;
-		sprintf(a, format,
-			(int)type1_size, type1, (int)param1->length, param1->from);
+		sprintf(a, format, (int)t[0].length - 1, t[0].from,
+			(int)t[2].length, t[2].from);
 	} else {
 		style_flush_symbol(t->symbol);
-		assert(type1_size <= INT_MAX && param1->length <= INT_MAX);
-		printf(format,
-			(int)type1_size, type1, (int)param1->length, param1->from);
+		printf(format, (int)t[0].length, t[0].from,
+			(int)t[2].length, t[2].from);
 	}
-	*ptoken = token_array_next(tokens, rparen);
 	return 1;
 catch:
 	fprintf(stderr, "%s: expected generic(id) %s.\n", pos(t),
 		token_array_to_string(tokens));
 	return 0;
 }
-OUT(gen2) {
+static int out_gen2(struct token_array_cursor *cur) {
 	const struct token *const t = *ptoken,
-		*const lparen = token_array_next(tokens, t),
-		*const param1 = token_array_next(tokens, lparen),
-		*const comma = token_array_next(tokens, param1),
-		*const param2 = token_array_next(tokens, comma),
-		*const rparen = token_array_next(tokens, param2);
+		*const lparen = /*token_array_next(tokens, t)*/0,
+		*const param1 = /*token_array_next(tokens, lparen)*/0,
+		*const comma = /*token_array_next(tokens, param1)*/0,
+		*const param2 = /*token_array_next(tokens, comma)*/0,
+		*const rparen = /*token_array_next(tokens, param2)*/0;
 	const char *b, *type1, *type2;
 	size_t type1_size, type2_size;
 	const enum format f = style_format();
@@ -150,21 +140,21 @@ OUT(gen2) {
 			(int)type1_size, type1, (int)param1->length, param1->from,
 			(int)type2_size, type2, (int)param2->length, param2->from);
 	}
-	*ptoken = token_array_next(tokens, rparen);
+	/* *ptoken = token_array_next(tokens, rparen);*/
 	return 1;
 catch:
 	fprintf(stderr, "%s: expected generic2(id,id).\n", pos(t));
 	return 0;
 }
-OUT(gen3) {
+static int out_gen3(struct token_array_cursor *cur) {
 	const struct token *const t = *ptoken,
-		*const lparen = token_array_next(tokens, t),
-		*const param1 = token_array_next(tokens, lparen),
-		*const comma1 = token_array_next(tokens, param1),
-		*const param2 = token_array_next(tokens, comma1),
-		*const comma2 = token_array_next(tokens, param2),
-		*const param3 = token_array_next(tokens, comma2),
-		*const rparen = token_array_next(tokens, param3);
+		*const lparen = /*token_array_next(tokens, t)*/0,
+		*const param1 = /*token_array_next(tokens, lparen)*/0,
+		*const comma1 = /*token_array_next(tokens, param1)*/0,
+		*const param2 = /*token_array_next(tokens, comma1)*/0,
+		*const comma2 = /*token_array_next(tokens, param2)*/0,
+		*const param3 = /*token_array_next(tokens, comma2)*/0,
+		*const rparen = /*token_array_next(tokens, param3)*/0;
 	const char *b, *type1, *type2, *type3;
 	size_t type1_size, type2_size, type3_size;
 	const enum format f = style_format();
@@ -206,21 +196,21 @@ OUT(gen3) {
 			(int)type2_size, type2, (int)param2->length, param2->from,
 			(int)type3_size, type3, (int)param3->length, param3->from);
 	}
-	*ptoken = token_array_next(tokens, rparen);
+	/* *ptoken = token_array_next(tokens, rparen);*/
 	return 1;
 catch:
 	fprintf(stderr, "%s: expected A_B_C_(id,id,id).\n", pos(t));
 	return 0;
 }
-OUT(escape) {
+static int out_escape(struct token_array_cursor *cur) {
 	const struct token *const t = *ptoken;
 	assert(tokens && t && t->symbol == ESCAPE && t->length == 2 && !is_buffer);
 	style_flush_symbol(t->symbol);
 	style_encode_length(1, t->from + 1);
-	*ptoken = token_array_next(tokens, t);
+	/* *ptoken = token_array_next(tokens, t);*/
 	return 1;
 }
-OUT(url) {
+static int out_url(struct token_array_cursor *cur) {
 	const struct token *const t = *ptoken;
 	assert(tokens && t && t->symbol == URL && !is_buffer);
 	style_flush_symbol(t->symbol);
@@ -235,10 +225,10 @@ OUT(url) {
 		style_encode_length(t->length, t->from);
 		printf("](%.*s)", (int)t->length, t->from);
 	}
-	*ptoken = token_array_next(tokens, t);
+	/* *ptoken = token_array_next(tokens, t);*/
 	return 1;
 }
-OUT(cite) {
+static int out_cite(struct token_array_cursor *cur) {
 	const struct token *const t = *ptoken;
 	const char *const url_encoded = url_encode(t->from, t->length);
 	assert(tokens && t && t->symbol == CITE && !is_buffer);
@@ -254,7 +244,7 @@ OUT(cite) {
 		style_encode_length(t->length, t->from);
 		printf("](https://scholar.google.ca/scholar?q=%s)", url_encoded);
 	}
-	*ptoken = token_array_next(tokens, t);
+	/* *ptoken = token_array_next(tokens, t);*/
 	return 1;
 catch:
 	fprintf(stderr, "%s: expected <source>.\n", pos(t));
@@ -284,7 +274,7 @@ static int see(const struct token_array *const tokens,
 		printf("](#%s%s-%x)", md_fragment_extra, division[divn].keyword,
 			fnv_32a_str(style_encode_length_raw_to_buffer(tok->length, tok->from)));
 	}
-	*ptoken = token_array_next(tokens, tok);
+	/* *ptoken = token_array_next(tokens, tok); */
 	return 1;
 }
 OUT(see_fn) { return see(tokens, ptoken, is_buffer, DIV_FUNCTION); }
@@ -295,7 +285,7 @@ OUT(math_begin) { /* Math and code. */
 	const struct token *const t = *ptoken;
 	assert(tokens && t && t->symbol == MATH_BEGIN && !is_buffer);
 	style_push(ST_CODE);
-	*ptoken = token_array_next(tokens, t);
+	/* *ptoken = token_array_next(tokens, t); */
 	return 1;
 }
 OUT(math_end) {
@@ -303,14 +293,14 @@ OUT(math_end) {
 	assert(tokens && t && t->symbol == MATH_END && !is_buffer);
 	style_expect(ST_CODE);
 	style_pop();
-	*ptoken = token_array_next(tokens, t);
+	/* *ptoken = token_array_next(tokens, t); */
 	return 1;
 }
 OUT(em_begin) {
 	const struct token *const t = *ptoken;
 	assert(tokens && t && t->symbol == EM_BEGIN && !is_buffer);
 	style_push(ST_EM);
-	*ptoken = token_array_next(tokens, t);
+	/* *ptoken = token_array_next(tokens, t); */
 	return 1;
 }
 OUT(em_end) {
@@ -318,7 +308,7 @@ OUT(em_end) {
 	assert(tokens && t && t->symbol == EM_END && !is_buffer);
 	style_expect(ST_EM);
 	style_pop();
-	*ptoken = token_array_next(tokens, t);
+	/* *ptoken = token_array_next(tokens, t); */
 	return 1;
 }
 OUT(link) {
@@ -331,11 +321,11 @@ OUT(link) {
 	assert(tokens && t && t->symbol == LINK_START && !is_buffer);
 	style_flush_symbol(t->symbol);
 	/* The expected format is LINK_START [^URL]* URL. */
-	for(turl = token_array_next(tokens, t); ;
+/*	for(turl = token_array_next(tokens, t); ;
 		turl = token_array_next(tokens, turl)) {
 		if(!turl) goto catch;
 		if(turl->symbol == URL) break;
-	}
+	}*/
 	/* We want to open this file to check if it's on the up-and-up. */
 	if(!(errno = 0, fn = url_from_here(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
@@ -362,8 +352,8 @@ output:
 	else printf("[");
 	/* This is html even in Md because it's surrounded by `a`. */
 	style_push(ST_TO_HTML), style_push(ST_PLAIN);
-	for(text = token_array_next(tokens, t); text->symbol != URL; )
-		if(!(text = print_token(tokens, text))) goto catch;
+/*	for(text = token_array_next(tokens, t); text->symbol != URL; )
+		if(!(text = print_token(tokens, text))) goto catch;*/
 	style_pop(), style_pop();
 	if(f == OUT_HTML) printf("</a>");
 	else printf("](%.*s)", (int)fn_len, fn);
@@ -372,7 +362,7 @@ output:
 catch:
 	fprintf(stderr, "%s: expected `[description](url)`.\n", pos(t));
 finally:
-	*ptoken = token_array_next(tokens, turl);
+	/* *ptoken = token_array_next(tokens, turl);*/
 	return success;
 }
 OUT(image) {
@@ -384,13 +374,13 @@ OUT(image) {
 	assert(tokens && t && t->symbol == IMAGE_START && !is_buffer);
 	style_flush_symbol(t->symbol);
 	/* The expected format is IMAGE_START [^URL]* URL. */
-	for(turl = token_array_next(tokens, t); turl->symbol != URL;
-		turl = token_array_next(tokens, turl)) if(!turl) goto catch;
+/*	for(turl = token_array_next(tokens, t); turl->symbol != URL;
+		turl = token_array_next(tokens, turl)) if(!turl) goto catch;*/
 	printf("%s", f == OUT_HTML ? "<img alt = \"" : "![");
 	/* This is html even in Md. */
 	style_push(ST_TO_HTML), style_push(ST_PLAIN);
-	for(text = token_array_next(tokens, t); text->symbol != URL; )
-		if(!(text = print_token(tokens, text))) goto catch;
+/*	for(text = token_array_next(tokens, t); text->symbol != URL; )
+		if(!(text = print_token(tokens, text))) goto catch;*/
 	style_pop(), style_pop();
 	/* We want to open this file to check if it's on the up-and-up. */
 	if(!(errno = 0, fn = url_from_here(turl->length, turl->from)))
@@ -420,7 +410,7 @@ raw:
 catch:
 	fprintf(stderr, "%s: expected `[description](url)`.\n", pos(t));
 finally:
-	*ptoken = token_array_next(tokens, turl);
+	/* *ptoken = token_array_next(tokens, turl);*/
 	return success;
 }
 OUT(nbsp) {
@@ -428,7 +418,7 @@ OUT(nbsp) {
 	assert(tokens && t && t->symbol == NBSP && !is_buffer);
 	style_flush_symbol(t->symbol);
 	printf("&nbsp;");
-	*ptoken = token_array_next(tokens, t);
+	/* *ptoken = token_array_next(tokens, t); */
 	return 1;
 }
 OUT(nbthinsp) {
@@ -436,7 +426,7 @@ OUT(nbthinsp) {
 	assert(tokens && t && t->symbol == NBTHINSP && !is_buffer);
 	style_flush_symbol(t->symbol);
 	printf("&#8239;" /* "&thinsp;" <- breaking? */);
-	*ptoken = token_array_next(tokens, t);
+	/* *ptoken = token_array_next(tokens, t); */
 	return 1;
 }
 OUT(mathcalo) {
@@ -447,7 +437,7 @@ OUT(mathcalo) {
 	 good luck finding a font that supports that. If one was using JavaScript
 	 and had a constant connection, we could use MathJax. */
 	printf("&#927;" /* "O" */);
-	*ptoken = token_array_next(tokens, t);
+	/* *ptoken = token_array_next(tokens, t); */
 	return 1;
 }
 OUT(ctheta) {
@@ -455,7 +445,7 @@ OUT(ctheta) {
 	assert(tokens && t && t->symbol == CTHETA && !is_buffer);
 	style_flush_symbol(t->symbol);
 	printf("&#920;" /* "&Theta;" This is supported on more browsers. */);
-	*ptoken = token_array_next(tokens, t);
+	/* *ptoken = token_array_next(tokens, t); */
 	return 1;
 }
 OUT(comega) {
@@ -463,7 +453,7 @@ OUT(comega) {
 	assert(tokens && t && t->symbol == COMEGA && !is_buffer);
 	style_flush_symbol(t->symbol);
 	printf("&#937;" /* "&Omega;" */);
-	*ptoken = token_array_next(tokens, t);
+	/* *ptoken = token_array_next(tokens, t); */
 	return 1;
 }
 OUT(times) {
@@ -471,7 +461,7 @@ OUT(times) {
 	assert(tokens && t && t->symbol == TIMES && !is_buffer);
 	style_flush_symbol(t->symbol);
 	printf("&#215;");
-	*ptoken = token_array_next(tokens, t);
+	/* *ptoken = token_array_next(tokens, t); */
 	return 1;
 }
 OUT(cdot) {
@@ -479,7 +469,7 @@ OUT(cdot) {
 	assert(tokens && t && t->symbol == CDOT && !is_buffer);
 	style_flush_symbol(t->symbol);
 	printf("&#183;" /* &middot; */);
-	*ptoken = token_array_next(tokens, t);
+	/* *ptoken = token_array_next(tokens, t); */
 	return 1;
 }
 OUT(log) {
@@ -487,7 +477,7 @@ OUT(log) {
 	assert(tokens && t && t->symbol == LOG && !is_buffer);
 	style_flush_symbol(t->symbol);
 	printf("log");
-	*ptoken = token_array_next(tokens, t);
+	/* *ptoken = token_array_next(tokens, t); */
 	return 1;
 }
 OUT(list) {
@@ -499,7 +489,7 @@ OUT(list) {
 		style_pop_strong();
 		style_push(ST_UL), style_push(ST_LI);
 	}
-	*ptoken = token_array_next(tokens, t);
+	/* *ptoken = token_array_next(tokens, t); */
 	return 1;
 }
 OUT(pre) {
@@ -509,7 +499,7 @@ OUT(pre) {
 	style_push(ST_PRE), style_push(ST_PRELINE);
 	style_flush_symbol(t->symbol);
 	style_encode_length(t->length, t->from);
-	*ptoken = token_array_next(tokens, t);
+	/* *ptoken = token_array_next(tokens, t); */
 	return 1;
 }
 
@@ -529,17 +519,15 @@ static const out_fn symbol_outs[] = { SYMBOL };
  name tokens support this.
  @throws[EILSEQ] Sequence error. Must detect with `errno`.
  @return The next token. */
-static const struct token *print_token_choose(
-	const struct token_array *const tokens,
-	const struct token *token, const int is_buffer) {
-	const out_fn sym_out = symbol_outs[token->symbol];
-	assert(tokens && token);
-	if(!sym_out) return fprintf(stderr, "%s: symbol output undefined.\n",
-		pos(token)), token_array_next(tokens, token);
-	if(!sym_out(tokens, &token, is_buffer)) { errno = EILSEQ; return 0; }
+static void print_token_choose(const struct token_array_cursor *const tok,
+	const int is_buffer) {
+	const out_fn sym_out = symbol_outs[token_array_look(tok)->symbol];
+	assert(tok && token_array_exists(tok));
+/*	if(!sym_out) return fprintf(stderr, "%s: symbol output undefined.\n",
+		pos(token)), token_array_next(tokens, token);*/
+	if(!sym_out(tok, is_buffer)) { errno = EILSEQ; return 0; }
 	return token;
 }
-
 /** This is only for individual tokens.
  @return The temporary buffer that stores the token. */
 static const char *print_token_s(const struct token_array *const tokens,
@@ -548,12 +536,9 @@ static const char *print_token_s(const struct token_array *const tokens,
 	print_token_choose(tokens, token, 1); /* Ignore return. */
 	return buffer_get();
 }
-
-/**
- @return The next token to be printed. */
-static const struct token *print_token(const struct token_array *const tokens,
-	const struct token *token) {
-	return print_token_choose(tokens, token, 0);
+/** Print the next `tok` without `is_buffer`. */
+static const void print_token(struct token_array_cursor *const tok) {
+	return print_token_choose(tok, 0);
 }
 
 /** @param[highlights] Must be sorted if not null, creates an emphasis on those
@@ -561,13 +546,37 @@ static const struct token *print_token(const struct token_array *const tokens,
  @throws[EILSEQ] Sequence error. Must detect with `errno`. */
 static void highlight_tokens(const struct token_array *const tokens,
 	const struct index_array *const highlights) {
-	const struct token *const first = token_array_next(tokens, 0), *token = first;
-	size_t *highlight = index_array_next(highlights, 0);
-	int is_highlight, is_first_highlight = 1;
+	struct token_array_cursor tok;
+	struct index_array_cursor high;
+	//const struct token *const first = token_array_next(tokens, 0), *token = first;
+	//size_t *highlight = index_array_next(highlights, 0);
+	size_t *highlight = 0;
+	int has_next_highlight = 0, is_highlight, is_first_highlight = 1;
 	assert(tokens);
-	if(!token) return;
+	tok = token_array_begin(tokens);
+	if(!token_array_exists(&tok)) return;
+	/*if(!token) return;*/
 	style_push(ST_PLAIN);
-	while(token) {
+	high = index_array_begin(highlights);
+	do {
+		if(!has_next_highlight) {
+			if(token_array_exists(&high)) highlight = index_array_look(&high);
+			else highlight = 0;
+			has_next_highlight = 1;
+		}
+		if(highlight && *highlight <= tok.i) {
+			is_highlight = 1;
+			index_array_next(&high);
+			has_next_highlight = 0;
+		} else {
+			is_highlight = 0;
+		}
+		if(is_highlight) style_highlight_on(is_first_highlight
+			? ST_STRONG_HTML : ST_EM_HTML);
+		print_token(&tok);
+		if(is_highlight) style_highlight_off(), is_first_highlight = 0;
+	} while(token_array_exists(&tok));
+	/*while(token) {
 		if(highlight && *highlight == (size_t)(token - first)) {
 			is_highlight = 1;
 			highlight = index_array_next(highlights, highlight);
@@ -578,7 +587,7 @@ static void highlight_tokens(const struct token_array *const tokens,
 			? ST_STRONG_HTML : ST_EM_HTML);
 		token = print_token(tokens, token);
 		if(is_highlight) style_highlight_off(), is_first_highlight = 0;
-	}
+	}*/
 	style_pop();
 }
 

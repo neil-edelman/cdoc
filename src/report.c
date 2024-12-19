@@ -30,6 +30,9 @@ static void unrecoverable(void) {
 	assert(0), exit(EXIT_FAILURE);
 }
 
+/* So many parameters `is_buffer`. It's easier to just have a static. */
+static int report_is_buffer;
+
 /** `token` has a `symbol` and is associated with an area of the text. */
 struct token {
 	enum symbol symbol;
@@ -63,11 +66,8 @@ static int token_compare(const struct token *const a,
 }
 #define ARRAY_NAME token
 #define ARRAY_TYPE struct token
-#define ARRAY_CONTIGUOUS
-#define ARRAY_EXPECT_TRAIT
-#include "array.h"
-#define ARRAY_TO_STRING &token_to_string
-#include "array.h"
+#define ARRAY_TO_STRING
+#include "boxes/array.h"
 /** This is used in `semantic.c.re` to get the first file:line for error. */
 const char *tokens_first_label(const struct token_array *const tokens)
 	{ return tokens->size ? tokens->data[0].label : "unlabelled"; }
@@ -94,12 +94,11 @@ void tokens_mark(const struct token_array *const tokens, char *mark) {
 static void index_to_string(const size_t *const n, char (*const a)[12]) {
 	sprintf(*a, "%lu", (unsigned long)*n % 1000000000lu);
 }
-#define ARRAY_NAME index
+/*#define ARRAY_NAME index
 #define ARRAY_TYPE size_t
-#define ARRAY_EXPECT_TRAIT
-#include "array.h"
-#define ARRAY_TO_STRING &index_to_string
-#include "array.h"
+#define ARRAY_TO_STRING
+#include "boxes/array.h"*/
+#include "index_array.h"
 
 /** `Attribute` is a specific structure of array of `Token` representing
  each-attributes, "\@param ...". */
@@ -115,10 +114,8 @@ static void attribute_to_string(const struct attribute *t, char (*const a)[12])
 }
 #define ARRAY_NAME attribute
 #define ARRAY_TYPE struct attribute
-#define ARRAY_EXPECT_TRAIT
-#include "../src/array.h"
-#define ARRAY_TO_STRING &attribute_to_string
-#include "../src/array.h"
+#define ARRAY_TO_STRING
+#include "boxes/array.h"
 static void attributes_(struct attribute_array *const atts) {
 	struct attribute *a;
 	if(!atts) return;
@@ -209,11 +206,8 @@ static void erase_segment(struct segment *const segment) {
 }
 #define ARRAY_NAME segment
 #define ARRAY_TYPE struct segment
-#define ARRAY_CONTIGUOUS
-#define ARRAY_EXPECT_TRAIT
-#include "../src/array.h"
-#define ARRAY_TO_STRING &segment_to_string
-#include "../src/array.h"
+#define ARRAY_TO_STRING
+#include "boxes/array.h"
 /*static void segment_array_clear(struct segment_array *const sa) {
 	struct segment *segment;
 	if(!sa) return;
@@ -265,10 +259,10 @@ static struct segment *new_segment(struct segment_array *const segments) {
 	assert(segments);
 	if(!(segment = segment_array_new(segments))) return 0;
 	segment->division = DIV_PREAMBLE; /* Default. */
-	token_array(&segment->doc);
-	token_array(&segment->code);
-	index_array(&segment->code_params);
-	attribute_array(&segment->attributes);
+	segment->doc = token_array();
+	segment->code = token_array();
+	segment->code_params = index_array();
+	segment->attributes = attribute_array();
 	return segment;
 }
 
@@ -295,8 +289,8 @@ static struct attribute *new_attribute(struct segment *const segment,
 	assert(scan && segment);
 	if(!(att = attribute_array_new(&segment->attributes))) return 0;
 	init_token(&att->token, scan);
-	token_array(&att->header);
-	token_array(&att->contents);
+	att->header = token_array();
+	att->contents = token_array();
 	return att;
 }
 

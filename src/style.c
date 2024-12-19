@@ -13,11 +13,12 @@
 #include <limits.h> /* INT_MAX */
 
 /* `SYMBOL` is declared in `symbol.h`. */
-#define X(a, b, c, d, e, f) d
-static const int symbol_before_sep[] = { SYMBOL };
+#define X(a, b, c, d, e, f) { d, e }
+static const struct { const int before, after; } symbol_sep[] = { SYMBOL };
+//static const int symbol_before_sep[] = { SYMBOL };
 #undef X
 #define X(a, b, c, d, e, f) e
-static const int symbol_after_sep[]  = { SYMBOL };
+//static const int symbol_after_sep[]  = { SYMBOL };
 #undef X
 
 /* Can have a beginning, a separator, and an end, which will be printed around
@@ -154,10 +155,8 @@ static void style_to_string(const struct style *s, char (*const a)[12]) {
 }
 #define ARRAY_NAME style
 #define ARRAY_TYPE struct style
-#define ARRAY_EXPECT_TRAIT
-#include "array.h"
-#define ARRAY_TO_STRING &style_to_string
-#include "array.h"
+#define ARRAY_TO_STRING
+#include "boxes/array.h"
 
 /** Singleton style stack (array) with temporary values. */
 static struct {
@@ -308,9 +307,9 @@ void style_flush_symbol(const enum symbol symbol) {
 	}
 	assert(top->lazy == ITEM);
 	/* If there was no separation, is there an implied separation? */
-	if(style.is_before_sep && symbol_before_sep[symbol])
+	if(style.is_before_sep && symbol_sep[symbol].before)
 		fputs(top->punctuate->sep, stdout);
-	style.is_before_sep = symbol_after_sep[symbol];
+	style.is_before_sep = symbol_sep[symbol].after;
 	/* Now do the highlight. */
 	if(style.highlight.punctuate && !style.highlight.on)
 		fputs(style.highlight.punctuate->begin, stdout), style.highlight.on = 1;

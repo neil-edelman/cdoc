@@ -90,17 +90,11 @@
 	/* Preformatted. */ \
 	X(PREFORMATTED, '~', &out_pre, 0, 0, 0)
 
-struct token;
-struct token_array;
-/** Selects `token` out of `tokens` and prints it and returns the next token. */
-typedef int (*out_fn)(const struct token_array *const tokens,
-	const struct token **const ptoken, const int is_buffer);
-/*out_fn out_lit, out_gen1, out_gen2, out_gen3, out_ws, out_par, out_nbsp,
-	out_nbthinsp, out_mathcalo, out_mathcalo, out_ctheta;*/
 #	define X(a, b, c, d, e, f) a
 enum symbol { SYMBOL };
 #	undef X
-/* #define X(a, b, c, d, e, f) { #a, b, d, e, f }
+/* 2025-12-16: Tried to place it into a big structure. Didn't work so good.
+#define X(a, b, c, d, e, f) { #a, b, d, e, f }
 static const struct {
 	const char *const symbol;
 	const char mark;

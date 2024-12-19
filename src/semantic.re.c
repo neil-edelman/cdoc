@@ -75,17 +75,18 @@ static void index_to_string(const size_t *i, char (*const a)[12]) {
 	sprintf(*a, "%lu", *(const unsigned long *)i % 100000000000u);
 }
 
-#define ARRAY_NAME index
+/*#define ARRAY_NAME index
 #define ARRAY_TYPE size_t
 #define ARRAY_EXPECT_TRAIT
 #include "../src/array.h"
 #define ARRAY_TO_STRING &index_to_string
-#include "../src/array.h"
+#include "../src/array.h"*/
+#include "../src/index_array.h"
 
 /* A vector of characters -- (again!) */
 #define ARRAY_NAME char
 #define ARRAY_TYPE char
-#include "../src/array.h"
+#include "../src/boxes/array.h"
 
 static struct {
 	struct char_array buffer, work;

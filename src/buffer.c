@@ -8,15 +8,13 @@
 
 #define ARRAY_NAME char
 #define ARRAY_TYPE char
-#include "array.h"
+#include "boxes/array.h"
 
 #define ARRAY_NAME string
 #define ARRAY_TYPE char *
-#include "array.h"
-
+#include "boxes/array.h"
 
 /* This is a temporary double-buffer. */
-
 static struct char_array buffers[2], *buffer = buffers;
 
 /** Destructor for both buffers. */
@@ -54,7 +52,6 @@ char *buffer_prepare(const size_t length) {
 /** Switch the buffers so one can compare the two. */
 void buffer_swap(void) { buffer = buffers + !(int)(buffer - buffers); }
 
-
 /* Handles reading entire text files and keeping them in memory. */
 
 #include <stdio.h>  /* FILE fopen fclose fread */
@@ -86,7 +83,7 @@ static struct text *text(const char *const fn) {
 	if(!fn || !(fp = fopen(fn, "r"))) goto catch;
 	fn_size = strlen(fn) + 1;
 	if(!(t = malloc(sizeof *t + fn_size))) goto catch;
-	char_array(&t->buffer);
+	t->buffer = char_array();
 	t->filename = (char *)(t + 1), memcpy(t->filename, fn, fn_size);
 	t->basename = (base = strrchr(t->filename, *url_dirsep))
 		? base + 1 : t->filename;
@@ -129,7 +126,7 @@ const char *text_get(const struct text *const t)
 
 #define ARRAY_NAME text
 #define ARRAY_TYPE struct text *
-#include "array.h"
+#include "boxes/array.h"
 
 static struct text_array files;
 
