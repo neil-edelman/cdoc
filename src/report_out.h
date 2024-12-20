@@ -71,63 +71,76 @@ static int out_lit(struct token_array_cursor *tok) {
 	return 1;
 }
 static int out_gen1(struct token_array_cursor *tok) {
-	/* Expected: { type1, lparen, param1, rparen }. */
-	const struct token *const t = tok->a->data + tok->i;
 	const char *const format = style_format() == OUT_HTML
 		? HTML_LT "%.*s" HTML_GT "%.*s" : "<%.*s>%.*s";
-	if(tok->a->size < tok->i + 4
-	   || t[0].symbol != ID_ONE_GENERIC
-	   || t[1].symbol != LPAREN
-	   || t[2].symbol != ID
-	   || t[3].symbol != RPAREN) goto catch;
+	struct token *gen1, *lparen, *param1, *rparen;
+	const char *cursor, *type1;
+	size_t type1_size;
+	gen1 = token_array_look(tok), assert(gen1->symbol == ID_ONE_GENERIC);
+	if(!(token_array_next(tok), token_array_exists(tok))
+		|| !(lparen = token_array_look(tok), lparen->symbol == LPAREN)
+		|| !(token_array_next(tok), token_array_exists(tok))
+		|| !(param1 = token_array_look(tok), param1->symbol == ID)
+		|| !(token_array_next(tok), token_array_exists(tok))
+		|| !(rparen = token_array_look(tok), rparen->symbol == RPAREN)
+		) goto catch;
 	/* fixme: Check to make sure by ensuring the entire file is <= INT_MAX. */
-	assert(t[0].length > 1 && t[0].length <= INT_MAX && t[2].length <= INT_MAX);
+	type1 = gen1->from;
+	cursor = strchr(type1, '_');
+	type1_size = (size_t)(cursor - type1);
+	assert(gen1->length == (size_t)(cursor + 1 - gen1->from)
+		&& gen1->length > 1 && gen1->length <= INT_MAX
+		&& type1_size <= INT_MAX && param1->length <= INT_MAX);
 	if(report_is_buffer) {
 		const char *const ltgt = style_format() == OUT_HTML
-			? HTML_LT HTML_GT : "<>";
+			? HTML_LT HTML_GT : "<>"; /* Only need the length. */
 		char *a;
-		if(!(a = buffer_prepare(strlen(ltgt) + t[0].length - 1 + t[2].length)))
+		if(!(a = buffer_prepare(strlen(ltgt) + type1_size + param1->length)))
 			return 0;
-		sprintf(a, format, (int)t[0].length - 1, t[0].from,
-			(int)t[2].length, t[2].from);
+		sprintf(a, format,
+			(int)type1_size, type1, (int)param1->length, param1->from);
 	} else {
-		style_flush_symbol(t->symbol);
-		printf(format, (int)t[0].length, t[0].from,
-			(int)t[2].length, t[2].from);
+		style_flush_symbol(gen1->symbol);
+		printf(format,
+			(int)type1_size, type1, (int)param1->length, param1->from);
 	}
 	return 1;
 catch:
-	fprintf(stderr, "%s: expected generic(id) %s.\n", pos(t),
-		token_array_to_string(tokens));
+	fprintf(stderr, "%s: expected generic(id) %s.\n", pos(gen1),
+		token_array_to_string(tok->a));
 	return 0;
 }
-static int out_gen2(struct token_array_cursor *cur) {
-	const struct token *const t = *ptoken,
-		*const lparen = /*token_array_next(tokens, t)*/0,
-		*const param1 = /*token_array_next(tokens, lparen)*/0,
-		*const comma = /*token_array_next(tokens, param1)*/0,
-		*const param2 = /*token_array_next(tokens, comma)*/0,
-		*const rparen = /*token_array_next(tokens, param2)*/0;
-	const char *b, *type1, *type2;
+static int out_gen2(struct token_array_cursor *tok) {
+	const char *const format = style_format() == OUT_HTML ? HTML_LT "%.*s"
+		HTML_GT "%.*s" HTML_LT "%.*s" HTML_GT "%.*s" : "<%.*s>%.*s<%.*s>%.*s";
+	struct token *gen2, *lparen, *param1, *comma, *param2, *rparen;
+	const char *cursor, *type1, *type2;
 	size_t type1_size, type2_size;
-	const enum format f = style_format();
-	const char *const format = f == OUT_HTML ? HTML_LT "%.*s" HTML_GT "%.*s"
-		HTML_LT "%.*s" HTML_GT "%.*s" : "<%.*s>%.*s<%.*s>%.*s";
-	assert(tokens && t && t->symbol == ID_TWO_GENERICS);
-	if(!lparen || lparen->symbol != LPAREN || !param1 || !comma
-		|| comma->symbol != COMMA || !param2 || !rparen
-		|| rparen->symbol != RPAREN) goto catch;
-	type1 = t->from;
-	if(!(b = strchr(type1, '_'))) goto catch;
-	type1_size = (size_t)(b - type1);
-	type2 = b + 1;
-	if(!(b = strchr(type2, '_'))) goto catch;
-	type2_size = (size_t)(b - type2);
-	assert(t->length == (size_t)(b + 1 - t->from));
-	assert(type1_size < INT_MAX && param1->length < INT_MAX
-		&& type2_size < INT_MAX && param2->length < INT_MAX);
-	if(is_buffer) {
-		const char *const ltgt = f == OUT_HTML ? HTML_LT HTML_GT : "<>";
+	gen2 = token_array_look(tok), assert(gen2->symbol == ID_TWO_GENERICS);
+	if(!(token_array_next(tok), token_array_exists(tok))
+		|| !(lparen = token_array_look(tok), lparen->symbol == LPAREN)
+		|| !(token_array_next(tok), token_array_exists(tok))
+		|| !(param1 = token_array_look(tok), param1->symbol == ID)
+		|| !(token_array_next(tok), token_array_exists(tok))
+		|| !(comma = token_array_look(tok), param1->symbol == COMMA)
+		|| !(token_array_next(tok), token_array_exists(tok))
+		|| !(param2 = token_array_look(tok), param1->symbol == ID)
+		|| !(token_array_next(tok), token_array_exists(tok))
+		|| !(rparen = token_array_look(tok), rparen->symbol == RPAREN)
+		) goto catch;
+	type1 = gen2->from;
+	cursor = strchr(type1, '_');
+	type1_size = (size_t)(cursor - type1);
+	type2 = cursor + 1;
+	cursor = strchr(type2, '_');
+	type2_size = (size_t)(cursor - type2);
+	assert(gen2->length == (size_t)(cursor + 1 - gen2->from)
+		&& gen2->length > 2 && gen2->length <= INT_MAX
+		&& type1_size <= INT_MAX && type2_size <= INT_MAX
+		&& param1->length <= INT_MAX && param2->length <= INT_MAX);
+	if(report_is_buffer) {
+		const char *const ltgt = style_format() == OUT_HTML
+			? HTML_LT HTML_GT : "<>";
 		char *a;
 		if(!(a = buffer_prepare(2 * strlen(ltgt) + type1_size + param1->length
 			+ type2_size + param2->length))) return 0;
@@ -135,15 +148,14 @@ static int out_gen2(struct token_array_cursor *cur) {
 			(int)type1_size, type1, (int)param1->length, param1->from,
 			(int)type2_size, type2, (int)param2->length, param2->from);
 	} else {
-		style_flush_symbol(t->symbol);
+		style_flush_symbol(gen2->symbol);
 		printf(format,
 			(int)type1_size, type1, (int)param1->length, param1->from,
 			(int)type2_size, type2, (int)param2->length, param2->from);
 	}
-	/* *ptoken = token_array_next(tokens, rparen);*/
 	return 1;
 catch:
-	fprintf(stderr, "%s: expected generic2(id,id).\n", pos(t));
+	fprintf(stderr, "%s: expected generic2(id,id).\n", pos(gen2));
 	return 0;
 }
 static int out_gen3(struct token_array_cursor *cur) {

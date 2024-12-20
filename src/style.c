@@ -17,9 +17,9 @@
 static const struct { const int before, after; } symbol_sep[] = { SYMBOL };
 //static const int symbol_before_sep[] = { SYMBOL };
 #undef X
-#define X(a, b, c, d, e, f) e
-//static const int symbol_after_sep[]  = { SYMBOL };
-#undef X
+/*#define X(a, b, c, d, e, f) e
+static const int symbol_after_sep[]  = { SYMBOL };
+#undef X*/
 
 /* Can have a beginning, a separator, and an end, which will be printed around
  literals. Must match the <tag:style_punctuate>. */
