@@ -106,7 +106,7 @@ static int out_gen1(struct token_array_cursor *tok) {
 	}
 	return 1;
 catch:
-	fprintf(stderr, "%s: expected generic(id) %s.\n", pos(gen1),
+	fprintf(stderr, "%s: expected A_(id) %s.\n", pos(gen1),
 		token_array_to_string(tok->a));
 	return 0;
 }
@@ -122,9 +122,9 @@ static int out_gen2(struct token_array_cursor *tok) {
 		|| !(token_array_next(tok), token_array_exists(tok))
 		|| !(param1 = token_array_look(tok), param1->symbol == ID)
 		|| !(token_array_next(tok), token_array_exists(tok))
-		|| !(comma = token_array_look(tok), param1->symbol == COMMA)
+		|| !(comma = token_array_look(tok), comma->symbol == COMMA)
 		|| !(token_array_next(tok), token_array_exists(tok))
-		|| !(param2 = token_array_look(tok), param1->symbol == ID)
+		|| !(param2 = token_array_look(tok), param2->symbol == ID)
 		|| !(token_array_next(tok), token_array_exists(tok))
 		|| !(rparen = token_array_look(tok), rparen->symbol == RPAREN)
 		) goto catch;
@@ -155,38 +155,45 @@ static int out_gen2(struct token_array_cursor *tok) {
 	}
 	return 1;
 catch:
-	fprintf(stderr, "%s: expected generic2(id,id).\n", pos(gen2));
+	fprintf(stderr, "%s: expected A_B_(id,id).\n", pos(gen2));
 	return 0;
 }
-static int out_gen3(struct token_array_cursor *cur) {
-	const struct token *const t = *ptoken,
-		*const lparen = /*token_array_next(tokens, t)*/0,
-		*const param1 = /*token_array_next(tokens, lparen)*/0,
-		*const comma1 = /*token_array_next(tokens, param1)*/0,
-		*const param2 = /*token_array_next(tokens, comma1)*/0,
-		*const comma2 = /*token_array_next(tokens, param2)*/0,
-		*const param3 = /*token_array_next(tokens, comma2)*/0,
-		*const rparen = /*token_array_next(tokens, param3)*/0;
-	const char *b, *type1, *type2, *type3;
+static int out_gen3(struct token_array_cursor *tok) {
+	const char *const format = style_format() == OUT_HTML ? HTML_LT "%.*s"
+		HTML_GT "%.*s" HTML_LT "%.*s" HTML_GT "%.*s" HTML_LT "%.*s" HTML_GT
+		"%.*s" : "<%.*s>%.*s<%.*s>%.*s<%.*s>%.*s";
+	struct token *gen3, *lparen, *param1, *comma1, *param2, *comma2, *param3,
+		*rparen;
+	const char *cursor, *type1, *type2, *type3;
 	size_t type1_size, type2_size, type3_size;
-	const enum format f = style_format();
-	const char *const format = f == OUT_HTML ? HTML_LT "%.*s" HTML_GT "%.*s"
-		HTML_LT "%.*s" HTML_GT "%.*s" HTML_LT "%.*s" HTML_GT "%.*s"
-		: "<%.*s>%.*s<%.*s>%.*s<%.*s>%.*s";
-	assert(tokens && t && t->symbol == ID_THREE_GENERICS);
-	if(!lparen || lparen->symbol != LPAREN || !param1 || !comma1
-		|| comma1->symbol != COMMA || !param2 || !comma2 ||
-		comma2->symbol != COMMA || !param3 || !rparen
-		|| rparen->symbol != RPAREN) goto catch;
+	gen3 = token_array_look(tok), assert(gen3->symbol == ID_THREE_GENERICS);
+	if(!(token_array_next(tok), token_array_exists(tok))
+		|| !(lparen = token_array_look(tok), lparen->symbol == LPAREN)
+		|| !(token_array_next(tok), token_array_exists(tok))
+		|| !(param1 = token_array_look(tok), param1->symbol == ID)
+		|| !(token_array_next(tok), token_array_exists(tok))
+		|| !(comma1 = token_array_look(tok), comma1->symbol == COMMA)
+		|| !(token_array_next(tok), token_array_exists(tok))
+		|| !(param2 = token_array_look(tok), param2->symbol == ID)
+		|| !(token_array_next(tok), token_array_exists(tok))
+		|| !(comma2 = token_array_look(tok), comma1->symbol == COMMA)
+		|| !(token_array_next(tok), token_array_exists(tok))
+		|| !(param3 = token_array_look(tok), param3->symbol == ID)
+		|| !(token_array_next(tok), token_array_exists(tok))
+		|| !(rparen = token_array_look(tok), rparen->symbol == RPAREN)
+		) goto catch;
+
+
+	...
 	type1 = t->from;
-	if(!(b = strchr(type1, '_'))) goto catch;
-	type1_size = (size_t)(b - type1);
-	type2 = b + 1;
-	if(!(b = strchr(type2, '_'))) goto catch;
-	type2_size = (size_t)(b - type2);
-	type3 = b + 1;
-	if(!(b = strchr(type3, '_'))) goto catch;
-	type3_size = (size_t)(b - type3);
+	if(!(cursor = strchr(type1, '_'))) goto catch;
+	type1_size = (size_t)(cursor - type1);
+	type2 = cursor + 1;
+	if(!(cursor = strchr(type2, '_'))) goto catch;
+	type2_size = (size_t)(cursor - type2);
+	type3 = cursor + 1;
+	if(!(cursor = strchr(type3, '_'))) goto catch;
+	type3_size = (size_t)(cursor - type3);
 	assert(t->length == (size_t)(b + 1 - t->from));
 	assert(type1_size < INT_MAX && param1->length < INT_MAX
 		&& type2_size < INT_MAX && param2->length < INT_MAX
