@@ -91,7 +91,7 @@ static int out_gen1(struct token_array_cursor *tok) {
 	assert(gen1->length == (size_t)(cursor + 1 - gen1->from)
 		&& gen1->length > 1 && gen1->length <= INT_MAX
 		&& type1_size <= INT_MAX && param1->length <= INT_MAX);
-	if(report_is_buffer) {
+	if(report_is_buffer /* static */) {
 		const char *const ltgt = style_format() == OUT_HTML
 			? HTML_LT HTML_GT : "<>"; /* Only need the length. */
 		char *a;
@@ -138,11 +138,12 @@ static int out_gen2(struct token_array_cursor *tok) {
 		&& gen2->length > 2 && gen2->length <= INT_MAX
 		&& type1_size <= INT_MAX && type2_size <= INT_MAX
 		&& param1->length <= INT_MAX && param2->length <= INT_MAX);
-	if(report_is_buffer) {
+	if(report_is_buffer /* static */) {
 		const char *const ltgt = style_format() == OUT_HTML
 			? HTML_LT HTML_GT : "<>";
 		char *a;
-		if(!(a = buffer_prepare(2 * strlen(ltgt) + type1_size + param1->length
+		if(!(a = buffer_prepare(2 * strlen(ltgt)
+			+ type1_size + param1->length
 			+ type2_size + param2->length))) return 0;
 		sprintf(a, format,
 			(int)type1_size, type1, (int)param1->length, param1->from,
@@ -182,26 +183,26 @@ static int out_gen3(struct token_array_cursor *tok) {
 		|| !(token_array_next(tok), token_array_exists(tok))
 		|| !(rparen = token_array_look(tok), rparen->symbol == RPAREN)
 		) goto catch;
-
-
-	...
-	type1 = t->from;
-	if(!(cursor = strchr(type1, '_'))) goto catch;
+	type1 = gen3->from;
+	cursor = strchr(type1, '_');
 	type1_size = (size_t)(cursor - type1);
 	type2 = cursor + 1;
-	if(!(cursor = strchr(type2, '_'))) goto catch;
+	cursor = strchr(type2, '_');
 	type2_size = (size_t)(cursor - type2);
 	type3 = cursor + 1;
-	if(!(cursor = strchr(type3, '_'))) goto catch;
+	cursor = strchr(type3, '_');
 	type3_size = (size_t)(cursor - type3);
-	assert(t->length == (size_t)(b + 1 - t->from));
-	assert(type1_size < INT_MAX && param1->length < INT_MAX
-		&& type2_size < INT_MAX && param2->length < INT_MAX
-		&& type3_size < INT_MAX && param3->length < INT_MAX);
-	if(is_buffer) {
-		const char *const ltgt = f == OUT_HTML ? HTML_LT HTML_GT : "<>";
+	assert(gen3->length == (size_t)(cursor + 1 - gen3->from)
+		&& gen3->length > 2 && gen3->length <= INT_MAX
+		&& type1_size <= INT_MAX && type2_size <= INT_MAX
+		&& type3_size <= INT_MAX && param1->length <= INT_MAX
+		&& param2->length <= INT_MAX && param3->length <= INT_MAX);
+	if(report_is_buffer /* static */) {
+		const char *const ltgt = style_format() == OUT_HTML
+			? HTML_LT HTML_GT : "<>";
 		char *a;
-		if(!(a = buffer_prepare(3 * strlen(ltgt) + type1_size + param1->length
+		if(!(a = buffer_prepare(3 * strlen(ltgt)
+			+ type1_size + param1->length
 			+ type2_size + param2->length
 			+ type3_size + param3->length))) return 0;
 		sprintf(a, format,
@@ -209,29 +210,27 @@ static int out_gen3(struct token_array_cursor *tok) {
 			(int)type2_size, type2, (int)param2->length, param2->from,
 			(int)type3_size, type3, (int)param3->length, param3->from);
 	} else {
-		style_flush_symbol(t->symbol);
+		style_flush_symbol(gen3->symbol);
 		printf(format,
 			(int)type1_size, type1, (int)param1->length, param1->from,
 			(int)type2_size, type2, (int)param2->length, param2->from,
 			(int)type3_size, type3, (int)param3->length, param3->from);
 	}
-	/* *ptoken = token_array_next(tokens, rparen);*/
 	return 1;
 catch:
-	fprintf(stderr, "%s: expected A_B_C_(id,id,id).\n", pos(t));
+	fprintf(stderr, "%s: expected A_B_C_(id,id,id).\n", pos(gen3));
 	return 0;
 }
-static int out_escape(struct token_array_cursor *cur) {
-	const struct token *const t = *ptoken;
-	assert(tokens && t && t->symbol == ESCAPE && t->length == 2 && !is_buffer);
+static int out_escape(struct token_array_cursor *tok) {
+	const struct token *const t = token_array_look(tok);
+	assert(t && t->symbol == ESCAPE && t->length == 2 && !report_is_buffer);
 	style_flush_symbol(t->symbol);
 	style_encode_length(1, t->from + 1);
-	/* *ptoken = token_array_next(tokens, t);*/
 	return 1;
 }
-static int out_url(struct token_array_cursor *cur) {
-	const struct token *const t = *ptoken;
-	assert(tokens && t && t->symbol == URL && !is_buffer);
+static int out_url(struct token_array_cursor *tok) {
+	const struct token *const t = token_array_look(tok);
+	assert(t && t->symbol == URL && !report_is_buffer);
 	style_flush_symbol(t->symbol);
 	assert(t->length <= INT_MAX);
 	/* I think it can't contain '<>()\"' by the parser. */
@@ -244,13 +243,12 @@ static int out_url(struct token_array_cursor *cur) {
 		style_encode_length(t->length, t->from);
 		printf("](%.*s)", (int)t->length, t->from);
 	}
-	/* *ptoken = token_array_next(tokens, t);*/
 	return 1;
 }
-static int out_cite(struct token_array_cursor *cur) {
-	const struct token *const t = *ptoken;
+static int out_cite(struct token_array_cursor *tok) {
+	const struct token *const t = token_array_look(tok);
 	const char *const url_encoded = url_encode(t->from, t->length);
-	assert(tokens && t && t->symbol == CITE && !is_buffer);
+	assert(t && t->symbol == CITE && !report_is_buffer);
 	if(!url_encoded) goto catch;
 	style_flush_symbol(t->symbol);
 	if(style_format() == OUT_HTML) {
@@ -263,88 +261,75 @@ static int out_cite(struct token_array_cursor *cur) {
 		style_encode_length(t->length, t->from);
 		printf("](https://scholar.google.ca/scholar?q=%s)", url_encoded);
 	}
-	/* *ptoken = token_array_next(tokens, t);*/
 	return 1;
 catch:
 	fprintf(stderr, "%s: expected <source>.\n", pos(t));
 	return 0;
 }
-static int see(const struct token_array *const tokens,
-	const struct token **ptoken, const int is_buffer,
+/** All the `see_*` are the same. */
+static int see(struct token_array_cursor *const tok,
 	const enum division divn) {
-	const struct token *const tok = *ptoken;
-	assert(tokens && tok && !is_buffer
-		&& ((tok->symbol == SEE_FN && divn == DIV_FUNCTION)
-		|| (tok->symbol == SEE_TAG && divn == DIV_TAG)
-		|| (tok->symbol == SEE_TYPEDEF && divn == DIV_TYPEDEF)
-		|| (tok->symbol == SEE_DATA && divn == DIV_DATA)));
-	style_flush_symbol(tok->symbol);
+	const struct token *const t = token_array_look(tok);
+	assert(!report_is_buffer
+		&& ((t->symbol == SEE_FN && divn == DIV_FUNCTION)
+		|| (t->symbol == SEE_TAG && divn == DIV_TAG)
+		|| (t->symbol == SEE_TYPEDEF && divn == DIV_TYPEDEF)
+		|| (t->symbol == SEE_DATA && divn == DIV_DATA)));
+	style_flush_symbol(t->symbol);
 	if(style_format() == OUT_HTML) {
 		printf("<a href = \"#%s:", division[divn].keyword);
-		style_encode_length(tok->length, tok->from);
+		style_encode_length(t->length, t->from);
 		printf("\">");
-		style_encode_length(tok->length, tok->from);
+		style_encode_length(t->length, t->from);
 		printf("</a>");
 	} else {
 		printf("[");
 		style_push(ST_TO_HTML); /* <-- html: this is not escaped by Markdown. */
-		style_encode_length(tok->length, tok->from);
+		style_encode_length(t->length, t->from);
 		style_pop(); /* html --> */
 		printf("](#%s%s-%x)", md_fragment_extra, division[divn].keyword,
-			fnv_32a_str(style_encode_length_raw_to_buffer(tok->length, tok->from)));
+			fnv_32a_str(style_encode_length_raw_to_buffer(t->length, t->from)));
 	}
-	/* *ptoken = token_array_next(tokens, tok); */
 	return 1;
 }
-OUT(see_fn) { return see(tokens, ptoken, is_buffer, DIV_FUNCTION); }
-OUT(see_tag) { return see(tokens, ptoken, is_buffer, DIV_TAG); }
-OUT(see_typedef) { return see(tokens, ptoken, is_buffer, DIV_TYPEDEF); }
-OUT(see_data) { return see(tokens, ptoken, is_buffer, DIV_DATA); }
-OUT(math_begin) { /* Math and code. */
-	const struct token *const t = *ptoken;
-	assert(tokens && t && t->symbol == MATH_BEGIN && !is_buffer);
-	style_push(ST_CODE);
-	/* *ptoken = token_array_next(tokens, t); */
-	return 1;
-}
-OUT(math_end) {
-	const struct token *const t = *ptoken;
-	assert(tokens && t && t->symbol == MATH_END && !is_buffer);
-	style_expect(ST_CODE);
-	style_pop();
-	/* *ptoken = token_array_next(tokens, t); */
-	return 1;
-}
-OUT(em_begin) {
-	const struct token *const t = *ptoken;
-	assert(tokens && t && t->symbol == EM_BEGIN && !is_buffer);
-	style_push(ST_EM);
-	/* *ptoken = token_array_next(tokens, t); */
-	return 1;
-}
-OUT(em_end) {
-	const struct token *const t = *ptoken;
-	assert(tokens && t && t->symbol == EM_END && !is_buffer);
-	style_expect(ST_EM);
-	style_pop();
-	/* *ptoken = token_array_next(tokens, t); */
-	return 1;
-}
-OUT(link) {
-	const struct token *const t = *ptoken, *text, *turl;
+static int out_see_fn(struct token_array_cursor *tok)
+	{ return see(tok, DIV_FUNCTION); }
+static int out_tag(struct token_array_cursor *tok)
+	{ return see(tok, DIV_TAG); }
+static int out_typedef(struct token_array_cursor *tok)
+	{ return see(tok, DIV_TYPEDEF); }
+static int out_data(struct token_array_cursor *tok)
+	{ return see(tok, DIV_DATA); }
+/** Math and code. */
+static int out_math_begin(struct token_array_cursor *tok)
+	{ return (void)tok, style_push(ST_CODE), 1; }
+static int out_math_end(struct token_array_cursor *tok)
+	{ return (void)tok, style_expect(ST_CODE), style_pop(), 1; }
+static int out_em_begin(struct token_array_cursor *tok)
+	{ return (void)tok, style_push(ST_EM), 1; }
+static int out_em_end(struct token_array_cursor *tok)
+	{ return (void)tok, style_expect(ST_EM), style_pop(), 1; }
+static int out_link(struct token_array_cursor *tok) {
+	const struct token *const t = token_array_look(tok), *text, *turl;
 	const enum format f = style_format();
 	const char *fn;
 	size_t fn_len;
 	FILE *fp;
 	int success = 0;
-	assert(tokens && t && t->symbol == LINK_START && !is_buffer);
+	assert(t && t->symbol == LINK_START && !report_is_buffer);
 	style_flush_symbol(t->symbol);
 	/* The expected format is LINK_START [^URL]* URL. */
-/*	for(turl = token_array_next(tokens, t); ;
-		turl = token_array_next(tokens, turl)) {
+	/* for(turl = token_array_next(tok); token_array_exists(turl);
+		token_array_next(turl)) {
 		if(!turl) goto catch;
 		if(turl->symbol == URL) break;
-	}*/
+	} */
+	/* 2024-12-19: What? why would they have random garbage inside the url?
+	 lines are too long? What even is this? */
+	if(!(token_array_next(tok), token_array_exists(tok))
+		|| !(turl = token_array_look(tok), lparen->symbol == URL)
+		) goto catch;
+
 	/* We want to open this file to check if it's on the up-and-up. */
 	if(!(errno = 0, fn = url_from_here(turl->length, turl->from)))
 		{ if(errno) goto catch; else goto raw; }
@@ -376,13 +361,10 @@ output:
 	style_pop(), style_pop();
 	if(f == OUT_HTML) printf("</a>");
 	else printf("](%.*s)", (int)fn_len, fn);
-	success = 1;
-	goto finally;
+	return 1;
 catch:
 	fprintf(stderr, "%s: expected `[description](url)`.\n", pos(t));
-finally:
-	/* *ptoken = token_array_next(tokens, turl);*/
-	return success;
+	return 0;
 }
 OUT(image) {
 	const struct token *const t = *ptoken, *text, *turl;
