@@ -611,6 +611,4 @@ void report_cull(void) {
 	segment_array_keep_if(&report, &keep_segment, &erase_segment);
 }
 
-/* fixme: More. */
-#include "report_out.h"
 #include "report_warning.h"

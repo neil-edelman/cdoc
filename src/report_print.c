@@ -1,3 +1,6 @@
+
+#include <stdio.h>
+
 /** Perform a 32 bit
  [Fowler/Noll/Vo FNV-1a hash](http://www.isthe.com/chongo/tech/comp/fnv/) on a
  string. This assumes that size of `int` is at least 32 bits; if this is not
