@@ -168,8 +168,8 @@ static const struct token *segment_fallback(const struct segment *const segment,
 }
 
 /* For <fn:segment_to_string>. */
-static const char *print_token_s(const struct token_array *const tokens,
-	const struct token *token);
+static int print_token_s(struct token_array_cursor *const tok,
+	const char **fill_buffer);
 
 static void segment_to_string(const struct segment *segment,
 	char (*const a)[12]) {

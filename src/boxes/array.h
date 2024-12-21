@@ -43,8 +43,9 @@
 #	error Only one can be defined at a time.
 #endif
 #if defined(ARRAY_TEST) && (!defined(ARRAY_TRAIT) && !defined(ARRAY_TO_STRING) \
-	|| defined(ARRAY_TRAIT) && !defined(ARRAY_HAS_TO_STRING))
-#	error Test requires to string.
+	|| defined(ARRAY_TRAIT) && !defined(ARRAY_HAS_TO_STRING) \
+	|| !defined HAS_GRAPH_H)
+#	error Test requires to string and graph.
 #endif
 #if defined(BOX_TRAIT) && !defined(ARRAY_TRAIT)
 #	error Unexpected.
@@ -95,11 +96,12 @@ struct T_(cursor) { struct t_(array) *a; size_t i; };
 #	ifdef ARRAY_NON_STATIC
 #		define static
 struct T_(cursor) T_(begin)(struct t_(array) *);
+struct T_(cursor) T_(at)(struct t_(array) *, size_t);
 int T_(exists)(const struct T_(cursor) *);
 pT_(type) *T_(look)(struct T_(cursor) *);
 void T_(next)(struct T_(cursor) *);
 size_t T_(size)(const struct t_(array) *);
-pT_(type) *T_(at)(const struct t_(array) *, size_t);
+pT_(type) *T_(data_at)(const struct t_(array) *, size_t);
 void T_(tell_size)(struct t_(array) *, size_t);
 struct t_(array) t_(array)(void);
 void t_(array_)(struct t_(array) *const);
@@ -122,6 +124,9 @@ int T_(splice)(struct t_(array) *restrict, const struct t_(array) *restrict,
 /** @return A cursor at the beginning of a valid `a`. */
 static struct T_(cursor) T_(begin)(struct t_(array) *const a)
 	{ struct T_(cursor) cur; assert(a), cur.a = a, cur.i = 0; return cur; }
+/** @return A cursor in `a` at index `i`. */
+static struct T_(cursor) T_(at)(struct t_(array) *const a, const size_t i)
+	{ struct T_(cursor) cur; assert(a), cur.a = a, cur.i = i; return cur; }
 /** @return Whether the `cur` points to an element. */
 static int T_(exists)(const struct T_(cursor) *const cur)
 	{ return cur && cur->a && cur->a->data && cur->i < cur->a->size; }
@@ -137,7 +142,7 @@ static void T_(next)(struct T_(cursor) *const cur)
 /** Size of `a`. @implements `size`. */
 static size_t T_(size)(const struct t_(array) *const a) { return a->size; }
 /** @return Element `idx` of `a`. @implements `at` */
-static pT_(type) *T_(at)(const struct t_(array) *const a, const size_t idx)
+static pT_(type) *T_(data_at)(const struct t_(array) *const a, const size_t idx)
 	{ return a->data + idx; }
 /** Writes `size` to `a`. @implements `tell_size` */
 static void T_(tell_size)(struct t_(array) *a, const size_t size)
@@ -302,13 +307,13 @@ static int T_(splice)(struct t_(array) *restrict const a,
 	return 1;
 }
 
-#	ifdef static
-#		undef static
-#	endif
+#		ifdef static
+#			undef static
+#		endif
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
-	T_(begin)(0); T_(exists)(0); T_(look)(0); T_(next)(0);
-	T_(size)(0); T_(at)(0, 0); T_(tell_size)(0, 0);
+	T_(begin)(0); T_(at)(0, 0); T_(exists)(0); T_(look)(0); T_(next)(0);
+	T_(size)(0); T_(data_at)(0, 0); T_(tell_size)(0, 0);
 	t_(array)(); t_(array_)(0); T_(insert)(0, 0, 0); T_(new)(0); T_(shrink)(0);
 	T_(remove)(0, 0); T_(lazy_remove)(0, 0); T_(clear)(0); T_(peek)(0);
 	T_(pop)(0); T_(append)(0, 0); T_(splice)(0, 0, 0, 0);
@@ -316,10 +321,14 @@ static void pT_(unused_base)(void) {
 }
 static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #	endif /* Produce code. */
-#	ifdef HAVE_ITERATE_H
-#		include "iterate.h" /** \include */
+#	ifdef static
+#		undef static
 #	endif
 #endif /* Base code. */
+
+#if defined HAS_ITERATE_H && !defined ARRAY_TRAIT
+#	include "iterate.h" /** \include */
+#endif
 
 #ifdef ARRAY_TO_STRING
 #	undef ARRAY_TO_STRING
@@ -327,9 +336,6 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 /** The type of the required `<tr>to_string`. Responsible for turning the
  read-only argument into a 12-max-`char` output string. */
 typedef void (*pT_(to_string_fn))(const pT_(type) *, char (*)[12]);
-#	endif
-#	ifdef static /*?*/
-#		undef static
 #	endif
 /** Thunk(`cur`, `a`). One must implement `<tr>to_string`. */
 static void pTR_(to_string)(const struct T_(cursor) *const cur,
@@ -341,39 +347,31 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 #	endif
 #endif
 
-#ifndef ARRAY_DECLARE_ONLY /* Produce code. */
+#if defined HAS_GRAPH_H && defined ARRAY_HAS_TO_STRING && !defined ARRAY_TRAIT
+#	include "graph.h" /** \include */
+#endif
 
-/* fixme: Same for test, compare, etc. */
+#if defined(ARRAY_TEST) && !defined(ARRAY_TRAIT)
+#	include "../test/test_array.h"
+#endif
 
-#	if defined(ARRAY_TEST) && !defined(ARRAY_TRAIT)
-#		include "../test/test_array.h"
+#if (defined(ARRAY_COMPARE) || defined(ARRAY_IS_EQUAL))
+#	ifdef ARRAY_COMPARE
+#		define COMPARE ARRAY_COMPARE
+#	else
+#		define COMPARE_IS_EQUAL ARRAY_IS_EQUAL
 #	endif
-
-#	if (defined(ARRAY_COMPARE) || defined(ARRAY_IS_EQUAL))
-#		ifdef ARRAY_COMPARE
-#			define COMPARE ARRAY_COMPARE
-#		else
-#			define COMPARE_IS_EQUAL ARRAY_IS_EQUAL
-#		endif
-#		include "compare.h" /** \include */
-#		ifdef ARRAY_TEST
-#			include "../test/test_array_compare.h"
-#		endif
-#		ifdef ARRAY_COMPARE
-#			undef ARRAY_COMPARE
-#		else
-#			undef ARRAY_IS_EQUAL
-#		endif
+#	include "compare.h" /** \include */
+#	ifdef ARRAY_TEST
+#		include "../test/test_array_compare.h"
 #	endif
-
-#else /* Produce prototypes. */
-#	ifdef ARRAY_TO_STRING
-#		undef ARRAY_TO_STRING
-/* fixme: The ARRAY_NON_STATIC -> BOX_NON_STATIC then each of the interfaces
- would be responsible for their own. */
-const char *TR_(to_string)(const pT_(box) *const box);
+#	ifdef ARRAY_COMPARE
+#		undef ARRAY_COMPARE
+#	else
+#		undef ARRAY_IS_EQUAL
 #	endif
-#endif /* Produce prototypes. */
+#endif
+
 #ifdef ARRAY_TRAIT
 #	undef ARRAY_TRAIT
 #	undef BOX_TRAIT
@@ -405,10 +403,7 @@ const char *TR_(to_string)(const pT_(box) *const box);
 #		undef ARRAY_NON_STATIC
 #	endif
 #	ifdef COMPARE_H
-#		undef COMPARE_H
-#	endif
-#	ifdef static /*?*/
-#		undef static
+#		undef COMPARE_H /* More comparisons for later boxes. */
 #	endif
 #endif
 #define BOX_END

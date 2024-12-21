@@ -34,10 +34,10 @@ static const char *symbol_attribute_titles[] = { SYMBOL };
 /* Some output functions need this. */
 /*static const struct token *print_token(const struct token_array *const tokens,
 	const struct token *token);*/
-static void print_token(struct token_array_cursor *);
+static int print_token(struct token_array_cursor *);
 
 /** Selects `token` out of `tokens` and prints it and returns the next token. */
-typedef int (*out_fn)(const struct token_array_cursor *);
+typedef int (*out_fn)(struct token_array_cursor *);
 /*typedef int (*out_fn)(const struct token_array *const tokens,
 	const struct token **const ptoken, const int is_buffer);*/
 /* @param[ptoken] Is an [in/out] variable, it should get updated unless the
@@ -294,11 +294,11 @@ static int see(struct token_array_cursor *const tok,
 }
 static int out_see_fn(struct token_array_cursor *tok)
 	{ return see(tok, DIV_FUNCTION); }
-static int out_tag(struct token_array_cursor *tok)
+static int out_see_tag(struct token_array_cursor *tok)
 	{ return see(tok, DIV_TAG); }
-static int out_typedef(struct token_array_cursor *tok)
+static int out_see_typedef(struct token_array_cursor *tok)
 	{ return see(tok, DIV_TYPEDEF); }
-static int out_data(struct token_array_cursor *tok)
+static int out_see_data(struct token_array_cursor *tok)
 	{ return see(tok, DIV_DATA); }
 /** Math and code. */
 static int out_math_begin(struct token_array_cursor *tok)
@@ -315,7 +315,6 @@ static int out_link(struct token_array_cursor *tok) {
 	const char *fn;
 	size_t fn_len;
 	FILE *fp;
-	int success = 0;
 	assert(t && t->symbol == LINK_START && !report_is_buffer);
 	style_flush_symbol(t->symbol);
 	/* The expected format is LINK_START [^URL]* URL. */
@@ -327,7 +326,7 @@ static int out_link(struct token_array_cursor *tok) {
 	/* 2024-12-19: What? why would they have random garbage inside the url?
 	 lines are too long? What even is this? */
 	if(!(token_array_next(tok), token_array_exists(tok))
-		|| !(turl = token_array_look(tok), lparen->symbol == URL)
+		|| !(turl = token_array_look(tok), turl->symbol == URL)
 		) goto catch;
 
 	/* We want to open this file to check if it's on the up-and-up. */
@@ -356,8 +355,10 @@ output:
 	else printf("[");
 	/* This is html even in Md because it's surrounded by `a`. */
 	style_push(ST_TO_HTML), style_push(ST_PLAIN);
-/*	for(text = token_array_next(tokens, t); text->symbol != URL; )
+	/*for(text = token_array_next(tokens, t); text->symbol != URL; )
 		if(!(text = print_token(tokens, text))) goto catch;*/
+	(void)text;
+	assert(0);
 	style_pop(), style_pop();
 	if(f == OUT_HTML) printf("</a>");
 	else printf("](%.*s)", (int)fn_len, fn);
@@ -366,13 +367,14 @@ catch:
 	fprintf(stderr, "%s: expected `[description](url)`.\n", pos(t));
 	return 0;
 }
-OUT(image) {
-	const struct token *const t = *ptoken, *text, *turl;
+static int out_image(struct token_array_cursor *tok) {
+	const struct token *const t = token_array_look(tok), *text, *turl;
 	const enum format f = style_format();
 	const char *fn;
 	unsigned width = 1, height = 1;
 	int success = 0;
-	assert(tokens && t && t->symbol == IMAGE_START && !is_buffer);
+	assert(0);
+	assert(t && t->symbol == IMAGE_START && !report_is_buffer);
 	style_flush_symbol(t->symbol);
 	/* The expected format is IMAGE_START [^URL]* URL. */
 /*	for(turl = token_array_next(tokens, t); turl->symbol != URL;
@@ -414,93 +416,81 @@ finally:
 	/* *ptoken = token_array_next(tokens, turl);*/
 	return success;
 }
-OUT(nbsp) {
-	const struct token *const t = *ptoken;
-	assert(tokens && t && t->symbol == NBSP && !is_buffer);
+static int out_nbsp(struct token_array_cursor *tok) {
+	const struct token *const t = token_array_look(tok);
+	assert(t && t->symbol == NBSP && !report_is_buffer);
 	style_flush_symbol(t->symbol);
 	printf("&nbsp;");
-	/* *ptoken = token_array_next(tokens, t); */
 	return 1;
 }
-OUT(nbthinsp) {
-	const struct token *const t = *ptoken;
-	assert(tokens && t && t->symbol == NBTHINSP && !is_buffer);
+static int out_nbthinsp(struct token_array_cursor *tok) {
+	const struct token *const t = token_array_look(tok);
+	assert(t && t->symbol == NBTHINSP && !report_is_buffer);
 	style_flush_symbol(t->symbol);
 	printf("&#8239;" /* "&thinsp;" <- breaking? */);
-	/* *ptoken = token_array_next(tokens, t); */
 	return 1;
 }
-OUT(mathcalo) {
-	const struct token *const t = *ptoken;
-	assert(tokens && t && t->symbol == MATHCALO && !is_buffer);
+static int out_mathcalo(struct token_array_cursor *tok) {
+	const struct token *const t = token_array_look(tok);
+	assert(t && t->symbol == MATHCALO && !report_is_buffer);
 	style_flush_symbol(t->symbol);
 	/* Omicron. It looks like a stylised "O"? The actual is "&#120030;" but
 	 good luck finding a font that supports that. If one was using JavaScript
 	 and had a constant connection, we could use MathJax. */
 	printf("&#927;" /* "O" */);
-	/* *ptoken = token_array_next(tokens, t); */
 	return 1;
 }
-OUT(ctheta) {
-	const struct token *const t = *ptoken;
-	assert(tokens && t && t->symbol == CTHETA && !is_buffer);
+static int out_ctheta(struct token_array_cursor *tok) {
+	const struct token *const t = token_array_look(tok);
+	assert(t && t->symbol == CTHETA && !report_is_buffer);
 	style_flush_symbol(t->symbol);
 	printf("&#920;" /* "&Theta;" This is supported on more browsers. */);
-	/* *ptoken = token_array_next(tokens, t); */
 	return 1;
 }
-OUT(comega) {
-	const struct token *const t = *ptoken;
-	assert(tokens && t && t->symbol == COMEGA && !is_buffer);
+static int out_comega(struct token_array_cursor *tok) {
+	const struct token *const t = token_array_look(tok);
+	assert(t && t->symbol == COMEGA && !report_is_buffer);
 	style_flush_symbol(t->symbol);
 	printf("&#937;" /* "&Omega;" */);
-	/* *ptoken = token_array_next(tokens, t); */
 	return 1;
 }
-OUT(times) {
-	const struct token *const t = *ptoken;
-	assert(tokens && t && t->symbol == TIMES && !is_buffer);
+static int out_times(struct token_array_cursor *tok) {
+	const struct token *const t = token_array_look(tok);
+	assert(t && t->symbol == TIMES && !report_is_buffer);
 	style_flush_symbol(t->symbol);
 	printf("&#215;");
-	/* *ptoken = token_array_next(tokens, t); */
 	return 1;
 }
-OUT(cdot) {
-	const struct token *const t = *ptoken;
-	assert(tokens && t && t->symbol == CDOT && !is_buffer);
+static int out_cdot(struct token_array_cursor *tok) {
+	const struct token *const t = token_array_look(tok);
+	assert(t && t->symbol == CDOT && !report_is_buffer);
 	style_flush_symbol(t->symbol);
 	printf("&#183;" /* &middot; */);
-	/* *ptoken = token_array_next(tokens, t); */
 	return 1;
 }
-OUT(log) {
-	const struct token *const t = *ptoken;
-	assert(tokens && t && t->symbol == LOG && !is_buffer);
+static int out_log(struct token_array_cursor *tok) {
+	const struct token *const t = token_array_look(tok);
+	assert(t && t->symbol == LOG && !report_is_buffer);
 	style_flush_symbol(t->symbol);
 	printf("log");
-	/* *ptoken = token_array_next(tokens, t); */
 	return 1;
 }
-OUT(list) {
-	const struct token *const t = *ptoken;
-	assert(tokens && t && t->symbol == LIST_ITEM && !is_buffer);
+static int out_list(struct token_array_cursor *tok) {
 	if(style_Is_top(ST_LI)) {
 		style_pop_push();
 	} else {
 		style_pop_strong();
 		style_push(ST_UL), style_push(ST_LI);
 	}
-	/* *ptoken = token_array_next(tokens, t); */
-	return 1;
+	return (void)tok, 1;
 }
-OUT(pre) {
-	const struct token *const t = *ptoken;
-	assert(tokens && t && t->symbol == PREFORMATTED && !is_buffer);
+static int out_pre(struct token_array_cursor *tok) {
+	const struct token *const t = token_array_look(tok);
+	assert(t && t->symbol == PREFORMATTED && !report_is_buffer);
 	if(style_Is_top(ST_PRELINE)) style_pop_strong();
 	style_push(ST_PRE), style_push(ST_PRELINE);
 	style_flush_symbol(t->symbol);
 	style_encode_length(t->length, t->from);
-	/* *ptoken = token_array_next(tokens, t); */
 	return 1;
 }
 
@@ -513,40 +503,35 @@ static const out_fn symbol_outs[] = { SYMBOL };
 
 
 
-/** Prints one [multi-]token sequence.
- @param[tokens] The token array that `token` is a part of.
- @param[token] The start token.
- @param[a] If non-null, prints to a string instead of `stdout`. Only variable
- name tokens support this.
+/** Given `cur`, prints and consumes one [multi-]token sequence.
+ @param[fill_buffer] This is only for individual tokens, otherwise null. The
+ address of pointer that receives a temporary string that represents the token
+ instead of printing.
  @throws[EILSEQ] Sequence error. Must detect with `errno`.
- @return The next token. */
-static void print_token_choose(const struct token_array_cursor *const tok,
-	const int is_buffer) {
-	const out_fn sym_out = symbol_outs[token_array_look(tok)->symbol];
-	assert(tok && token_array_exists(tok));
-/*	if(!sym_out) return fprintf(stderr, "%s: symbol output undefined.\n",
-		pos(token)), token_array_next(tokens, token);*/
-	if(!sym_out(tok, is_buffer)) { errno = EILSEQ; return 0; }
-	return token;
+ @return Success. */
+static int print_token_s(struct token_array_cursor *const tok,
+	const char **fill_buffer) {
+	const struct token *const t = token_array_look(tok);
+	const out_fn sym_out = symbol_outs[t->symbol];
+	assert(tok && token_array_exists(tok) && sym_out);
+	if(fill_buffer) report_is_buffer = 1;
+	if(!sym_out(tok)) return errno = EILSEQ, 0;
+	if(fill_buffer) {
+		report_is_buffer = 0;
+		*fill_buffer = buffer_get();
+	}
+	token_array_next(tok);
+	return 1;
 }
-/** This is only for individual tokens.
- @return The temporary buffer that stores the token. */
-static const char *print_token_s(const struct token_array *const tokens,
-	const struct token *token) {
-	buffer_clear();
-	print_token_choose(tokens, token, 1); /* Ignore return. */
-	return buffer_get();
-}
-/** Print the next `tok` without `is_buffer`. */
-static const void print_token(struct token_array_cursor *const tok) {
-	return print_token_choose(tok, 0);
-}
+/** Print the next `tok`. */
+static int print_token(struct token_array_cursor *const tok)
+	{ return print_token_s(tok, 0); }
 
 /** @param[highlights] Must be sorted if not null, creates an emphasis on those
  words.
  @throws[EILSEQ] Sequence error. Must detect with `errno`. */
-static void highlight_tokens(const struct token_array *const tokens,
-	const struct index_array *const highlights) {
+static void highlight_tokens(/*const*/ struct token_array *const tokens,
+	/*const*/ struct index_array *const highlights) {
 	struct token_array_cursor tok;
 	struct index_array_cursor high;
 	//const struct token *const first = token_array_next(tokens, 0), *token = first;
@@ -561,7 +546,7 @@ static void highlight_tokens(const struct token_array *const tokens,
 	high = index_array_begin(highlights);
 	do {
 		if(!has_next_highlight) {
-			if(token_array_exists(&high)) highlight = index_array_look(&high);
+			if(token_array_exists((const struct token_array_cursor */*???*/)&high)) highlight = index_array_look(&high);
 			else highlight = 0;
 			has_next_highlight = 1;
 		}
@@ -592,7 +577,7 @@ static void highlight_tokens(const struct token_array *const tokens,
 	style_pop();
 }
 
-static void print_tokens(const struct token_array *const tokens)
+static void print_tokens(/*const*/ struct token_array *const tokens)
 	{ highlight_tokens(tokens, 0); }
 
 
@@ -617,49 +602,57 @@ static int is_not_div_preamble(const enum division d) {
 	return d != DIV_PREAMBLE;
 }
 
-/** @return The first token in `tokens` that matches `token`. */
-static const struct token *any_token(const struct token_array *const tokens,
+/** @return Searches though a valid `tok` for a match to `token`. */
+static int any_token(struct token_array_cursor *tok,
 	const struct token *const token) {
-	const struct token *t = 0;
-	while((t = token_array_next(tokens, t)))
-		if(!token_compare(token, t)) return t;
+	for( ; token_array_exists(tok); token_array_next(tok))
+		if(!token_compare(token, token_array_look(tok))) return 1;
 	return 0;
 }
 
 /** @return If there exist an `attribute_symbol` with content within
  `segment`. */
-static int segment_attribute_exists(const struct segment *const segment,
+static int segment_attribute_exists(/*const*/ struct segment *const segment,
 	const enum symbol attribute_symbol) {
-	struct attribute *attribute = 0;
+	struct attribute_array_cursor att;
 	assert(segment);
-	while((attribute = attribute_array_next(&segment->attributes, attribute)))
-		if(attribute->token.symbol == attribute_symbol
-		&& attribute->contents.size) return 1;
+	for(att = attribute_array_begin(&segment->attributes);
+		attribute_array_exists(&att); attribute_array_next(&att)) {
+		const struct attribute *const a = attribute_array_look(&att);
+		if(a->token.symbol == attribute_symbol
+		   && a->contents.size) return 1;
+	}
 	return 0;
 }
 
 /** @return Is `division` in the report? */
 static int division_exists(const enum division divkey) {
-	struct segment *segment = 0;
-	while((segment = segment_array_next(&report, segment)))
-		if(segment->division == divkey) return 1;
+	struct segment_array_cursor seg;
+	for(seg = segment_array_begin(&report); segment_array_exists(&seg);
+		segment_array_next(&seg))
+		if(segment_array_look(&seg)->division == divkey) return 1;
 	return 0;
 }
 
 /** `act` on all `division`. */
 static void division_act(const enum division divkey,
 	void (*act)(const struct segment *const segment)) {
-	const struct segment *segment = 0;
+	struct segment_array_cursor seg;
 	assert(act);
-	while((segment = segment_array_next(&report, segment)))
-		if(segment->division == divkey) act(segment);
+	for(seg = segment_array_begin(&report); segment_array_exists(&seg);
+		segment_array_next(&seg)) {
+		const struct segment *const s = segment_array_look(&seg);
+		if(s->division == divkey) act(s);
+	}
 }
 
 /** @return Is `attribute_symbol` in the report? (needed for `@licence`.) */
 static int attribute_exists(const enum symbol attribute_symbol) {
-	struct segment *segment = 0;
-	while((segment = segment_array_next(&report, segment)))
-		if(segment_attribute_exists(segment, attribute_symbol)) return 1;
+	struct segment_array_cursor seg;
+	for(seg = segment_array_begin(&report); segment_array_exists(&seg);
+		segment_array_next(&seg))
+		if(segment_attribute_exists(segment_array_look(&seg), attribute_symbol))
+		return 1;
 	return 0;
 }
 
@@ -668,11 +661,13 @@ static int attribute_exists(const enum symbol attribute_symbol) {
  @order O(`attributes`) */
 static int segment_attribute_match_exists(const struct segment *const segment,
 	const enum symbol symbol, const struct token *const match) {
-	struct attribute *attribute = 0;
+	struct attribute_array_cursor att;
 	assert(segment);
-	while((attribute = attribute_array_next(&segment->attributes, attribute))) {
-		if(attribute->token.symbol != symbol) continue;
-		if(any_token(&attribute->header, match)) return 1;
+	for(att = attribute_array_begin(&segment->attributes);
+		attribute_array_exists(&att); attribute_array_next(&att)) {
+		const struct attribute *const a = attribute_array_look(&att);
+		if(a->token.symbol != symbol) continue;
+		if(any_token(&a->header, match)) return 1;
 	}
 	return 0;
 }
@@ -684,14 +679,20 @@ static void print_best_guess_at_modifiers(const struct segment *const segment) {
 		&& segment->code_params.size >= 1
 		&& segment->code.size > *segment->code_params.data);
 	while(code < stop) {
-		if(code->symbol == LPAREN) {
+		if(code->symbol == LPAREN) { /* I guess! */
 			style_separate();
 			style_push(ST_EM), style_flush();
 			printf("function");
 			style_pop();
 			return;
 		}
-		code = print_token(&segment->code, code);
+		/* fixme: No, the thing will not update, need `code` to be an iterator. */
+		{
+			const struct token_array_cursor tok
+				= token_array_at(&segment->code, code - segment->code.data);
+			print_token(&tok);
+		}
+		/*code = print_token(&segment->code, code);*/
 	}
 }
 
@@ -820,22 +821,24 @@ static void print_heading_anchor_for(enum division d) {
 
 /** Toc subcategories. */
 static void print_toc_extra(const enum division d) {
-	struct segment *segment = 0;
+	struct segment_array_cursor seg;
 	size_t *idxs;
 	struct token *params;
 	const char *b;
 	printf(": ");
 	style_push(ST_CSV), style_push(ST_NO_STYLE);
-	while((segment = segment_array_next(&report, segment))) {
-		if(segment->division != d) continue;
-		if(!segment->code_params.size) { fprintf(stderr,
-			"%s: segment has no title.\n", division[segment->division].symbol);
+	for(seg = segment_array_begin(&report); segment_array_exists(&seg);
+		segment_array_next(&seg)) {
+		const struct segment *const s = segment_array_look(&seg);
+		if(s->division != d) continue;
+		if(!s->code_params.size) { fprintf(stderr,
+			"%s: segment has no title.\n", division[s->division].symbol);
 			continue; }
-		idxs = segment->code_params.data;
-		params = segment->code.data;
-		assert(idxs[0] < segment->code.size);
+		idxs = s->code_params.data;
+		params = s->code.data;
+		assert(idxs[0] < s->code.size);
 		style_push(ST_TO_RAW);
-		b = print_token_s(&segment->code, params + idxs[0]);
+		b = print_token_s(&s->code, params + idxs[0]);
 		style_pop();
 		print_fragment_for(d, b);
 		style_pop_push();
@@ -849,29 +852,41 @@ enum AttShow { SHOW_NONE, SHOW_WHERE, SHOW_TEXT, SHOW_ALL };
 static void segment_att_print_all(const struct segment *const segment,
 	const enum symbol symbol, const struct token *const match,
 	const enum AttShow show) {
-	struct attribute *attribute = 0;
+	struct attribute_array_cursor att;
 	assert(segment);
 	if(!show) return;
 	if(cdoc_get_debug() & DBG_ERASE)
 		fprintf(stderr, "segment_att_print_all segment %s and symbol %s.\n", division[segment->division].symbol, symbols[symbol]);
-	while((attribute = attribute_array_next(&segment->attributes, attribute))) {
-		size_t *pindex;
-		if(attribute->token.symbol != symbol
-		   || (match && !any_token(&attribute->header, match))) continue;
+	for(att = attribute_array_begin(&segment->attributes);
+		attribute_array_exists(&att); attribute_array_next(&att)) {
+		const struct attribute *const a = attribute_array_look(&att);
+		if(a->token.symbol != symbol
+		   || (match && !any_token(&a->header, match))) continue;
 		style_flush();
 		if(show & SHOW_WHERE) {
-			if((pindex = index_array_next(&segment->code_params, 0))
+			/*struct index_array_cursor idx;
+			for(idx = index_array_begin(&segment->code_params);
+				index_array_exists(&idx); index_array_next(&idx)) {
+				const struct token_array_cursor tok
+					= token_array_at(&segment->code,
+					*index_array_look(&idx));
+				print_fragment_for(segment->division, 0/*print_token_s(&tok));*/
+			/* fixme */
+
+			/*if((pindex = index_array_next(&segment->code_params, 0))
 			   && *pindex < segment->code.size) {
 				const struct token *token = segment->code.data + *pindex;
 				print_fragment_for(segment->division,
-					print_token_s(&segment->code, token));
+					print_token_s(&segment->code, token));*/
+			if(1) {
+				assert(0);
 			} else {
 				/* Not going to happen -- cull takes care of it. */
 				printf("%s", division[segment->division].keyword);
 			}
 		}
 		if(show == SHOW_ALL) fputs(": ", stdout);
-		if(show & SHOW_TEXT) print_tokens(&attribute->contents);
+		if(show & SHOW_TEXT) print_tokens(&a->contents);
 		style_pop_push();
 		/* Only do one if `SHOW_TEXT` is not set; in practice, this affects
 		 license, only showing one _per_ function. */
@@ -884,11 +899,14 @@ static void segment_att_print_all(const struct segment *const segment,
  @param[symbol, show] Passed to <fn:segment_att_print_all>. */
 static void div_att_print(const divisionPredicate div_pred,
 	const enum symbol symbol, const enum AttShow show) {
-	struct segment *segment = 0;
+	struct segment_array_cursor seg;
 	if(!show) return;
-	while((segment = segment_array_next(&report, segment)))
-		if(!div_pred || div_pred(segment->division))
-			segment_att_print_all(segment, symbol, 0, show);
+	for(seg = segment_array_begin(&report); segment_array_exists(&seg);
+		segment_array_next(&seg)) {
+		const struct segment *const s = segment_array_look(&seg);
+		if(!div_pred || div_pred(s->division))
+			segment_att_print_all(s, symbol, 0, show);
+	}
 }
 
 static void dl_segment_att(const struct segment *const segment,
@@ -899,8 +917,8 @@ static void dl_segment_att(const struct segment *const segment,
 	   || (!match && !segment_attribute_exists(segment, attribute))) return;
 	style_push(ST_DT), style_push(ST_PLAIN), style_flush();
 	printf("%s:", symbol_attribute_titles[attribute]);
-	if(match) style_separate(), style_push(ST_EM),
-		print_token(&segment->code, match), style_pop();
+/*	if(match) style_separate(), style_push(ST_EM),
+		print_token(&segment->code, match), style_pop(); fixme */
 	style_pop(), style_pop();
 	style_push(ST_DD), style_push(p), style_push(ST_PLAIN);
 	segment_att_print_all(segment, attribute, match, SHOW_TEXT);
@@ -935,8 +953,8 @@ static void dl_segment_specific_att(const struct attribute *const attribute) {
 		const struct token *token = 0;
 		style_separate();
 		style_push(ST_CSV);
-		while((token = token_array_next(&attribute->header, token)))
-			print_token(&attribute->header, token), style_separate();
+/*		while((token = token_array_next(&attribute->header, token)))
+			print_token(&attribute->header, token), style_separate(); fixme*/
 		style_pop();
 	}
 	style_pop(), style_pop();
@@ -981,21 +999,25 @@ static void segment_print_all(const struct segment *const segment) {
 	/* Attrubutes. */
 	style_push(ST_DL);
 	if(segment->division == DIV_FUNCTION) {
-		const struct attribute *att = 0;
+		struct attribute_array_cursor att;
 		size_t no;
 		for(no = 1; (param = param_no(segment, no)); no++)
 			dl_segment_att(segment, ATT_PARAM, param, ST_PLAIN);
 		dl_segment_att(segment, ATT_RETURN, 0, ST_PLAIN);
-		while((att = attribute_array_next(&segment->attributes, att))) {
-			if(att->token.symbol != ATT_THROWS) continue;
-			dl_segment_specific_att(att);
+		for(att = attribute_array_begin(&segment->attributes);
+			attribute_array_exists(&att); attribute_array_next(&att)) {
+			const struct attribute *const a = attribute_array_look(&att);
+			if(a->token.symbol != ATT_THROWS) continue;
+			dl_segment_specific_att(a);
 		}
 		dl_segment_att(segment, ATT_ORDER, 0, ST_PLAIN);
 	} else if(segment->division == DIV_TAG) {
-		const struct attribute *att = 0;
-		while((att = attribute_array_next(&segment->attributes, att))) {
-			if(att->token.symbol != ATT_PARAM) continue;
-			dl_segment_specific_att(att);
+		struct attribute_array_cursor att;
+		for(att = attribute_array_begin(&segment->attributes);
+			attribute_array_exists(&att); attribute_array_next(&att)) {
+			const struct attribute *const a = attribute_array_look(&att);
+			if(a->token.symbol != ATT_PARAM) continue;
+			dl_segment_specific_att(a);
 		}
 	}
 	dl_segment_att(segment, ATT_IMPLEMENTS, 0, ST_CSV);
@@ -1026,7 +1048,7 @@ int report_out(void) {
 		is_data = division_exists(DIV_DATA),
 		is_license = attribute_exists(ATT_LICENSE),
 		is_abstract = attribute_exists(ATT_ABSTRACT);
-	const struct segment *segment = 0;
+	struct segment_array_cursor seg = segment_array_begin(&report);
 	const int is_html = style_format() == OUT_HTML;
 	const char *const in_fn = cdoc_get_input(),
 		*const base_fn = strrchr(in_fn, *url_dirsep),
@@ -1113,7 +1135,9 @@ int report_out(void) {
 		style_push(ST_DIV), style_push(ST_NO_STYLE);
 		print_heading_anchor_for(DIV_PREAMBLE);
 		style_push(ST_P);
-		while((segment = segment_array_next(&report, segment))) {
+		for( ; segment_array_exists(&seg); segment_array_next(&seg))
+		/*while((segment = segment_array_next(&report, segment)))*/ {
+			/*const*/ struct segment *const segment = segment_array_look(&seg);
 			if(segment->division != DIV_PREAMBLE) continue;
 			print_tokens(&segment->doc);
 			style_pop_push();
@@ -1121,12 +1145,16 @@ int report_out(void) {
 		style_pop_strong(); /* P */
 		style_push(ST_DL);
 		/* `ATT_TITLE` is above. */
-		while((segment = segment_array_next(&report, segment))) {
-			const struct attribute *att = 0;
+		for( ; segment_array_exists(&seg); segment_array_next(&seg))
+		/*while((segment = segment_array_next(&report, segment)))*/ {
+			/*const*/ struct segment *const segment = segment_array_look(&seg);
+			struct attribute_array_cursor att;
 			if(segment->division != DIV_PREAMBLE) continue;
-			while((att = attribute_array_next(&segment->attributes, att))) {
-				if(att->token.symbol != ATT_PARAM) continue;
-				dl_segment_specific_att(att);
+			for(att = attribute_array_begin(&segment->attributes);
+				attribute_array_exists(&att); attribute_array_next(&att)) {
+				const struct attribute *const a = attribute_array_look(&att);
+				if(a->token.symbol != ATT_PARAM) continue;
+				dl_segment_specific_att(a);
 			}
 		}
 		dl_preamble_att(ATT_AUTHOR, SHOW_ALL, ST_CSV);
@@ -1166,28 +1194,40 @@ int report_out(void) {
 		printf("<table>\n\n"
 			"<tr><th>Modifiers</th><th>Function Name</th>"
 			"<th>Argument List</th></tr>\n\n");
-		while((segment = segment_array_next(&report, segment))) {
+		for( ; segment_array_exists(&seg); segment_array_next(&seg))
+		/*while((segment = segment_array_next(&report, segment)))*/ {
+			/*const*/ struct segment *const segment = segment_array_look(&seg);
+			struct index_array_cursor codepar
+				= index_array_begin(&segment->code_params);
+			struct token_array_cursor code;
+			size_t codeparam;
 			struct token *params;
-			size_t *idxs, idxn, idx, paramn;
-			const char *b;
+			/*size_t *idxs, idxn, idx, paramn;*/
+			const char *buffer;
 			if(segment->division != DIV_FUNCTION
-				|| !(idxn = segment->code_params.size)) continue;
-			idxs = segment->code_params.data;
+				|| /*!(idxn = segment->code_params.size)*/
+				!index_array_exists(&codepar)) continue;
+			/*idxs = segment->code_params.data;
 			params = segment->code.data;
 			paramn = segment->code.size;
-			assert(idxs[0] < paramn);
+			assert(idxs[0] < paramn);*/
+			codeparam = *index_array_look(&codepar);
+			assert(codeparam < segment->code.size);
 			printf("<tr><td align = right>");
 			style_push(ST_PLAIN);
 			print_best_guess_at_modifiers(segment);
 			style_pop();
 			printf("</td><td>");
 			style_push(ST_TO_RAW); /* Always get raw; translate after. */
-			b = print_token_s(&segment->code, params + idxs[0]);
+			code = token_array_at(&segment->code, codeparam);
+			if(!print_token_s(&segment->code,
+				segment->code.data + codeparam, &buffer))
+				goto catch;
 			style_pop();
-			print_fragment_for(DIV_FUNCTION, b);
+			print_fragment_for(DIV_FUNCTION, buffer);
 			printf("</td><td>");
 			for(idx = 1; idx < idxn; idx++) {
-				assert(idxs[idx] < paramn);
+				assert(idxs[idx] < segment->code.size);
 				if(idx > 1) printf(", ");
 				print_token(&segment->code, params + idxs[idx]);
 			}
@@ -1220,4 +1260,7 @@ int report_out(void) {
 		"</html>\n");
 	style_();
 	return errno ? 0 : 1;
+catch:
+	fprintf(stderr, "Parsing failed.\n");
+	return 0;
 }

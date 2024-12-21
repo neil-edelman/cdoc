@@ -21,6 +21,9 @@
 		|| defined(BOX_RESTRICT) || defined(BOX_ENTRY1) || defined(BOX_ENTRY2)
 #		error Unexpected preprocessor symbols.
 #	endif
+#	ifdef static
+#		error I don't think static should be hidden.
+#	endif
 #endif
 
 #ifdef BOX_ALL
@@ -50,9 +53,12 @@
 #ifdef BOX_START
 #	undef BOX_START
 /* This is C++17. One may need to define this manually. */
-#	if defined(__has_include) && !defined(HAS_ITERATE_H)
-#		if __has_include("iterate.h")
-#			define HAVE_ITERATE_H
+#	ifdef __has_include
+#		if !defined(HAS_ITERATE_H) && __has_include("iterate.h")
+#			define HAS_ITERATE_H
+#		endif
+#		if !defined(HAS_GRAPH_H) && __has_include("graph.h")
+#			define HAS_GRAPH_H
 #		endif
 #	endif
 #	ifdef BOX_ENTRY1

@@ -120,13 +120,16 @@ terminate:
 #	ifdef static
 #		undef static
 #	endif
-
 static void pTR_(unused_to_string_coda)(void);
 static void pTR_(unused_to_string)(void)
 	{ TR_(to_string)(0); pTR_(unused_to_string_coda)(); }
 static void pTR_(unused_to_string_coda)(void) { pTR_(unused_to_string)(); }
 
 #endif
+#ifdef static
+#	undef static
+#endif
+
 
 #ifdef TO_STRING_EXTERN
 #	undef TO_STRING_EXTERN
