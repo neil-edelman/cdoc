@@ -95,8 +95,8 @@ struct T_(cursor) { struct t_(array) *a; size_t i; };
 
 #	ifdef ARRAY_NON_STATIC
 #		define static
-struct T_(cursor) T_(begin)(struct t_(array) *);
-struct T_(cursor) T_(at)(struct t_(array) *, size_t);
+struct T_(cursor) T_(begin)(const struct t_(array) *);
+struct T_(cursor) T_(at)(const struct t_(array) *, size_t);
 int T_(exists)(const struct T_(cursor) *);
 pT_(type) *T_(look)(struct T_(cursor) *);
 void T_(next)(struct T_(cursor) *);
@@ -122,11 +122,24 @@ int T_(splice)(struct t_(array) *restrict, const struct t_(array) *restrict,
 #	ifndef ARRAY_DELARE_ONLY /* Produce code. */
 
 /** @return A cursor at the beginning of a valid `a`. */
-static struct T_(cursor) T_(begin)(struct t_(array) *const a)
-	{ struct T_(cursor) cur; assert(a), cur.a = a, cur.i = 0; return cur; }
+static struct T_(cursor) T_(begin)(const struct t_(array) *const a) {
+	/* Instead of accepting only non-const `a`—discourages the use of `const`
+	 even if we should—we will accept `const`, but store it in the same
+	 structure. The user will be responsible for `const` at lookup.
+	 This is the way. */
+	union { const struct t_(array) *readonly; struct t_(array) *promise; } sly;
+	struct T_(cursor) cur;
+	cur.a = (sly.readonly = a, sly.promise), cur.i = 0;
+	return cur;
+}
 /** @return A cursor in `a` at index `i`. */
-static struct T_(cursor) T_(at)(struct t_(array) *const a, const size_t i)
-	{ struct T_(cursor) cur; assert(a), cur.a = a, cur.i = i; return cur; }
+static struct T_(cursor) T_(at)(const struct t_(array) *const a,
+	const size_t i) {
+	union { const struct t_(array) *readonly; struct t_(array) *promise; } sly;
+	struct T_(cursor) cur;
+	cur.a = (sly.readonly = a, sly.promise), cur.i = i;
+	return cur;
+}
 /** @return Whether the `cur` points to an element. */
 static int T_(exists)(const struct T_(cursor) *const cur)
 	{ return cur && cur->a && cur->a->data && cur->i < cur->a->size; }
