@@ -93,9 +93,9 @@
 #include <errno.h>  /* errno */
 #include <assert.h> /* assert */
 #include "../src/buffer.h"
-#include "../src/report.h"
+#include "../src/report_print.h"
 #include "../src/semantic.h"
-#include "../src/cdoc.h"
+#include "../src/boxdoc.h"
 
 /*!re2c
 re2c:define:YYCTYPE = char;

@@ -345,15 +345,17 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 
 #ifdef ARRAY_TO_STRING
 #	undef ARRAY_TO_STRING
-#	ifndef ARRAY_TRAIT
+#	ifndef ARRAY_DECLARE_ONLY
+#		ifndef ARRAY_TRAIT
 /** The type of the required `<tr>to_string`. Responsible for turning the
  read-only argument into a 12-max-`char` output string. */
 typedef void (*pT_(to_string_fn))(const pT_(type) *, char (*)[12]);
-#	endif
+#		endif
 /** Thunk(`cur`, `a`). One must implement `<tr>to_string`. */
 static void pTR_(to_string)(const struct T_(cursor) *const cur,
 	char (*const a)[12])
 	{ tr_(to_string)((const void *)&cur->a->data[cur->i], a); }
+#	endif
 #	include "to_string.h" /** \include */
 #	ifndef ARRAY_TRAIT
 #		define ARRAY_HAS_TO_STRING /* Warning about tests. */

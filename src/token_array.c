@@ -1,7 +1,13 @@
-#include "token_array.h"
 #include "scanner.h"
 #include <stdio.h>
 #include <limits.h>
+
+struct token;
+static int token_to_string(const struct token *, char (*)[12]);
+static int token_compare(const struct token *, const struct token *);
+
+#define DEFINE
+#include "token_array.h"
 
 static int token_to_string(const struct token *t, char (*const a)[12]) {
 	switch(t->symbol) {
@@ -27,5 +33,3 @@ static int token_compare(const struct token *const a,
 		len_cmp >= 0 ? b->length : a->length);
 	return str_cmp ? str_cmp : len_cmp;
 }
-#define DEFINE
-#include "token_array.h"

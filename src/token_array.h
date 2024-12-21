@@ -15,8 +15,9 @@ struct token {
 #else
 #	define ARRAY_DECLARE_ONLY
 #endif
-#define ARRAY_NAME index
-#define ARRAY_TYPE size_t
+#define ARRAY_NAME token
+#define ARRAY_TYPE struct token
+/*#define ARRAY_COMPARE*/
 #define ARRAY_TO_STRING
 #define ARRAY_NON_STATIC
 #include "boxes/array.h"

@@ -2,7 +2,7 @@
  [MIT License](https://opensource.org/licenses/MIT). */
 
 #include "../src/symbol.h"
-#include "../src/cdoc.h"
+#include "../src/boxdoc.h"
 #include "../src/scanner.h"
 #include <stdio.h>  /* .printf */
 #include <stdlib.h> /* malloc free */

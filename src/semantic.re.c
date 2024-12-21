@@ -6,8 +6,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include "../src/cdoc.h"
-#include "../src/report.h"
+#include "../src/boxdoc.h"
+#include "../src/report_print.h"
 #include "../src/semantic.h"
 
 /** `right` is in the string `buffer`. Has assumed <fn:remove_recursive> has

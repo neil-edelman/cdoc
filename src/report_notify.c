@@ -10,8 +10,9 @@
 #include "buffer.h"
 #include "style.h"
 #include "image_dimension.h"
-#include "cdoc.h"
-#include "report.h"
+#include "boxdoc.h"
+#include "report_print.h"
+#include "token_array.h"
 #include <string.h> /* size_t strncpy strncmp */
 #include <limits.h> /* INT_MAX for printf */
 #include <stdio.h>  /* printf */

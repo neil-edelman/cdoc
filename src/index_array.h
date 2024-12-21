@@ -1,7 +1,7 @@
 #include <stddef.h>
 
-#ifdef ARRAY_DEFINE
-#	undef ARRAY_DEFINE
+#ifdef DEFINE
+#	undef DEFINE
 #else
 #	define ARRAY_DECLARE_ONLY
 #endif
