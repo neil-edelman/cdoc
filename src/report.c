@@ -5,20 +5,24 @@
  user. */
 
 #include "division.h"
+#include "report.h"
 #include "format.h"
 #include "semantic.h"
 #include "buffer.h"
 #include "style.h"
 #include "image_dimension.h"
-#include "boxdoc.h"
+#include "cdoc.h"
 #include "report_print.h"
 #include "token_array.h"
 #include <string.h> /* size_t strncpy strncmp */
 #include <limits.h> /* INT_MAX for printf */
 #include <stdio.h>  /* printf */
-
 #include <stdlib.h>
 #include <assert.h>
+
+/* Have a static variable that defines whether the output is redirected into a
+ buffer. (Not all output can do this.) */
+static int report_is_buffer;
 
 #if defined __GNUC__ || defined __MINGW32__ || defined __clang__
 __attribute__((noreturn))
@@ -30,9 +34,6 @@ static void unrecoverable(void) {
 	fprintf(stderr, "report: couldn't write file because it is too big.\n");
 	assert(0), exit(EXIT_FAILURE);
 }
-
-/* So many parameters `is_buffer`. It's easier to just have a static. */
-static int report_is_buffer;
 
 /** This is used in `semantic.c.re` to get the first file:line for error. */
 const char *tokens_first_label(const struct token_array *const tokens)
@@ -66,22 +67,6 @@ static void index_to_string(const size_t *const n, char (*const a)[12]) {
 #include "boxes/array.h"*/
 #include "index_array.h"
 
-/** `Attribute` is a specific structure of array of `Token` representing
- each-attributes, "\@param ...". */
-struct attribute {
-	struct token token;
-	struct token_array header;
-	struct token_array contents;
-};
-static void attribute_to_string(const struct attribute *t, char (*const a)[12])
-{
-	strncpy(*a, symbols[t->token.symbol], sizeof *a - 1);
-	(*a)[sizeof *a - 1] = '\0';
-}
-#define ARRAY_NAME attribute
-#define ARRAY_TYPE struct attribute
-#define ARRAY_TO_STRING
-#include "boxes/array.h"
 static void attributes_(struct attribute_array *const atts) {
 	struct attribute *a;
 	if(!atts) return;
@@ -91,14 +76,6 @@ static void attributes_(struct attribute_array *const atts) {
 }
 
 
-/** Classified to a section of the document and can have documentation
- including attributes and code. */
-struct segment {
-	enum division division;
-	struct token_array doc, code;
-	struct index_array code_params;
-	struct attribute_array attributes;
-};
 /** Provides a default token for `segment` to print. */
 static const struct token *segment_fallback(const struct segment *const segment,
 	const struct token_array **const ta_ptr) {
@@ -114,7 +91,7 @@ static const struct token *segment_fallback(const struct segment *const segment,
 		ta = &segment->code;
 		t = ta->data;
 	} else if(!ta_ptr && segment->doc.size) {
-		/* /\ Raw pointers in the text are problematic since maybe we will
+		/* Raw pointers in the text are problematic since maybe we will
 		 convert it to a string and most text does not support that. */
 		ta = &segment->doc;
 		t = ta->data;
@@ -137,26 +114,6 @@ static const struct token *segment_fallback(const struct segment *const segment,
 static int print_token_s(struct token_array_cursor *const tok,
 	const char **fill_buffer);
 
-static void segment_to_string(const struct segment *segment,
-	char (*const a)[12]) {
-	const struct token_array *ta;
-	const struct token *const fallback = segment_fallback(segment, &ta);
-	const char *temp = division[segment->division].symbol;
-	size_t temp_len, i = 0;
-	if(fallback) {
-		style_push(ST_TO_RAW);
-		temp = print_token_s(ta, fallback);
-		style_pop();
-	}
-	temp_len = strlen(temp);
-	if(temp_len > sizeof *a - 3) temp_len = sizeof *a - 3;
-	(*a)[i++] = 'S';
-	(*a)[i++] = '_';
-	memcpy(*a + i, temp, temp_len);
-	i += temp_len;
-	(*a)[i++] = '\0';
-	assert(i <= sizeof *a);
-}
 static void erase_segment(struct segment *const segment) {
 	char a[12];
 	assert(segment);
@@ -170,10 +127,8 @@ static void erase_segment(struct segment *const segment) {
 	index_array_(&segment->code_params);
 	attributes_(&segment->attributes);
 }
-#define ARRAY_NAME segment
-#define ARRAY_TYPE struct segment
-#define ARRAY_TO_STRING
-#include "boxes/array.h"
+
+
 /*static void segment_array_clear(struct segment_array *const sa) {
 	struct segment *segment;
 	if(!sa) return;
@@ -200,10 +155,6 @@ static const struct token *param_no(const struct segment *const segment,
 }
 
 
-
-/** Top-level static document. */
-static struct segment_array report;
-static struct token_array brief;
 
 
 

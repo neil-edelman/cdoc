@@ -1,5 +1,8 @@
 #include <stddef.h>
 
+/* Indices are how we get indirection and are used in several places. Not
+ _great_ for readability, but it was 2019. I suppose I should have stared a
+ `deque`. Maybe later. */
 #ifdef DEFINE
 #	undef DEFINE
 #else

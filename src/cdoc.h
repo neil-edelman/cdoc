@@ -1,5 +1,6 @@
 #include "format.h"
 
+/* fixme: Wtf is this? */
 /* `DEBUG` will not work on my compiler. */
 #define DBG \
 	X(DBG_0), \

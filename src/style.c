@@ -5,7 +5,7 @@
  this before every token group thing. It also encodes things. Is is really
  strict. */
 
-#include "boxdoc.h"
+#include "cdoc.h"
 #include "buffer.h"
 #include "style.h" /** \include */
 #include <string.h> /* strlen memcpy */

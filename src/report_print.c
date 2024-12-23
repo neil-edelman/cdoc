@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 
 /** Perform a 32 bit

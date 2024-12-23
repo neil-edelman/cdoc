@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include "../src/boxdoc.h"
+#include "../src/cdoc.h"
 #include "../src/report_print.h"
 #include "../src/semantic.h"
 

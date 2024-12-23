@@ -1,4 +1,4 @@
-#ifndef DIVISION_H
+#ifndef DIVISION_H /* fixme? */
 #	define DIVISION_H
 
 /** Define the divisions of output; these go in separate sections, and

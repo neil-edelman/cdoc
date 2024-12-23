@@ -103,6 +103,7 @@ int image_dimension(const char *const fn, unsigned *const width,
 		{ if(!jpeg_dim(fp, width, height, 0)) goto catch; goto end; }
 	[^\x00]* ".png" "\x00"
 		{ if(!png_dim(fp, width, height)) goto catch; goto end; }
+	// fixme: png, now! about time.
 */
 end:
 	success = 1;

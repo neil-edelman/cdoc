@@ -1,15 +1,4 @@
-#include "symbol.h"
-#include <stddef.h>
-
-/** `token` has a `symbol` and is associated with an area of the text. */
-struct token {
-	enum symbol symbol;
-	const char *from;
-	size_t length;
-	const char *label;
-	size_t line;
-};
-
+#include "token.h"
 #ifdef DEFINE
 #	undef DEFINE
 #else

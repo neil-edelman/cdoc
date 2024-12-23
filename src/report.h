@@ -1,8 +1,15 @@
+#include "segment_array.h"
 #include "division.h"
 #include "symbol.h"
 #include "scanner.h"
 
+struct segment_array;
 struct token_array;
+
+struct report {
+	struct segment_array report;
+	struct token_array brief;
+};
 
 const char *tokens_first_label(const struct token_array *const tokens);
 size_t tokens_first_line(const struct token_array *const tokens);

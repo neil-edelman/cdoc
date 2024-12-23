@@ -1,13 +1,16 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- Static documentation generator for one `C` translation unit. This is not a
- full `C` context-free grammar decoder; it is limited to regular grammar.
+ Documentation generator for one `C` translation unit, and nothing more. This
+ is not a full grammar decoder; it is limited to regular grammar. It guesses
+ what the meaning of the code is based on reasonable modern coding idioms.
  Remapping with the pre-processor, complex types, K&R style function
- definitions, trigraphs, are confusing to it. It just guesses based on
- reasonable modern coding-standards. However, it assumes that capital latin
- letters underscores are concatenation commands for the pre-processor, such
- that `A_BC_(foo,bar)` is transformed into `<A>foo<BC>bar`.
+ definitions, trigraphs, non-standard, C17, GNU, may be confusing to it.
+
+ The motivation for this project is it assumes latin letters underscores are
+ concatenation commands for the pre-processor, such that `A_BC_(foo,bar)` is
+ transformed into `<A>foo<BC>bar`. I just made this up, so I doubt this would
+ be supported anywhere else.
 
  In keeping with `Javadoc` and `Doxygen`, documentation commands are `/` `**…`
  (together) and are ended with `*…/`, but not `/` `*…*` `/`. Accounts for
@@ -79,7 +82,8 @@
 
  @std C89
  @depend [re2c](http://re2c.org/)
- @fixme Prototype function parameters ignore `const`.
+ @fixme Prototype function parameters ignore `const` but it is included in the
+ documentation.
  @fixme Documentation on prototypes.
  @fixme Links to non-documented code which sometimes doesn't show up, work
  without error, and create broken links.
@@ -95,7 +99,8 @@
 #include "../src/buffer.h"
 #include "../src/report_print.h"
 #include "../src/semantic.h"
-#include "../src/boxdoc.h"
+#include "../src/cdoc.h"
+
 
 /*!re2c
 re2c:define:YYCTYPE = char;
