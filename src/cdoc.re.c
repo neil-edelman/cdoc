@@ -1,16 +1,17 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- Documentation generator for one `C` translation unit, and nothing more. This
- is not a full grammar decoder; it is limited to regular grammar. It guesses
- what the meaning of the code is based on reasonable modern coding idioms.
- Remapping with the pre-processor, complex types, K&R style function
- definitions, trigraphs, non-standard, C17, GNU, may be confusing to it.
+ Documentation generator for one `C` translation unit with a minimal
+ understanding of a language like `C`'s structure. It guesses what the meaning
+ of the code is based on reasonable modern coding idioms. Unknown remapping
+ with the pre-processor, complex types, K&R style function definitions,
+ trigraphs, non-standard, C17, GNU, may confuse it.
 
- The motivation for this project is it assumes latin letters underscores are
- concatenation commands for the pre-processor, such that `A_BC_(foo,bar)` is
- transformed into `<A>foo<BC>bar`. I just made this up, so I doubt this would
- be supported anywhere else.
+ The motivation for this project is it assumes latin letters with underscores
+ are concatenation commands for the pre-processor, such that `A_BC_(foo,bar)`
+ is transformed into `<A>foo<BC>bar`. (I just made this up, so I doubt this
+ would be supported anywhere else. This specific feature is probably of limited
+ use to someone else.)
 
  In keeping with `Javadoc` and `Doxygen`, documentation commands are `/` `**…`
  (together) and are ended with `*…/`, but not `/` `*…*` `/`. Accounts for

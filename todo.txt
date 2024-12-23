@@ -1,0 +1,1 @@
+Stop '\.', '\-', '\_', etc; only necessary escapes.
