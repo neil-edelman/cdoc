@@ -3,11 +3,8 @@
 #include "symbol.h"
 #include "scanner.h"
 
-struct segment_array;
-struct token_array;
-
 struct report {
-	struct segment_array report;
+	struct segment_array segments;
 	struct token_array brief;
 };
 
@@ -22,10 +19,11 @@ int report_current_division(const enum division division);
 int report_current_param(const struct token *const token);
 void report_current_reset(void);
 
-void report_(void);
+void report_(struct report *const report);
 void report_division(const enum division division);
-void report_last_segment_debug(void);
-int report_notify(const struct scanner *const scan);
+void report_last_segment_debug(const struct report *const report);
+int report_notify(struct report *const report,
+	const struct scanner *const scan);
 void report_cull(void);
 void report_warn(void);
 int report_out(void);

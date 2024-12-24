@@ -76,83 +76,6 @@ static void attributes_(struct attribute_array *const atts) {
 }
 
 
-/** Provides a default token for `segment` to print. */
-static const struct token *segment_fallback(const struct segment *const segment,
-	const struct token_array **const ta_ptr) {
-	const struct token_array *ta = 0;
-	const struct token *t = 0;
-	assert(segment);
-	if(segment->code_params.size) {
-		const size_t i = segment->code_params.data[0];
-		ta = &segment->code;
-		assert(i < ta->size);
-		t = ta->data + i;
-	} else if(segment->code.size) {
-		ta = &segment->code;
-		t = ta->data;
-	} else if(!ta_ptr && segment->doc.size) {
-		/* Raw pointers in the text are problematic since maybe we will
-		 convert it to a string and most text does not support that. */
-		ta = &segment->doc;
-		t = ta->data;
-	} else if(!ta_ptr && segment->attributes.size) {
-		ta = &segment->doc;
-		t = &segment->attributes.data->token;
-	}
-	if(ta_ptr) *ta_ptr = ta;
-	return t;
-	/*return index_array_size(&segment->code_params)
-		? segment->code.data
-		+ segment->code_params.data[0]
-		: token_array_size(&segment->code) ? segment->code.data
-		: token_array_size(&segment->doc) ? segment->doc.data
-		: attribute_array_size(&segment->attributes)
-		? &attribute_array_get(&segment->attributes)->token : 0;*/
-}
-
-/* For <fn:segment_to_string>. */
-static int print_token_s(struct token_array_cursor *const tok,
-	const char **fill_buffer);
-
-static void erase_segment(struct segment *const segment) {
-	char a[12];
-	assert(segment);
-	segment_to_string(segment, &a);
-	segment->division = DIV_PREAMBLE;
-	token_array_(&segment->doc);
-	token_array_(&segment->code);
-	if(cdoc_get_debug() & DBG_ERASE && segment->code_params.size)
-		fprintf(stderr, "*** Erasing %s: %s.\n",
-		a, index_array_to_string(&segment->code_params));
-	index_array_(&segment->code_params);
-	attributes_(&segment->attributes);
-}
-
-
-/*static void segment_array_clear(struct segment_array *const sa) {
-	struct segment *segment;
-	if(!sa) return;
-	while((segment = segment_arrayPop(sa)))
-		token_array_Clear(&segment->doc), token_array_Clear(&segment->code),
-		Indexarray_clear(&segment->code_params),
-		attributes_(&segment->attributes);
-}*/
-static const struct token *param_no(const struct segment *const segment,
-	const size_t param) {
-	size_t *pidx;
-	assert(segment);
-	if(param >= segment->code_params.size) return 0;
-	pidx = segment->code_params.data + param;
-	/* This is really careful. */
-	if(*pidx >= segment->code.size) {
-		char a[12];
-		segment_to_string(segment, &a);
-		fprintf(stderr, "%s: param index %lu is greater then code size.\n",
-			a, (unsigned long)segment->code.size);
-		return 0;
-	}
-	return segment->code.data + *pidx;
-}
 
 
 
@@ -160,11 +83,10 @@ static const struct token *param_no(const struct segment *const segment,
 
 /** Destructor for the static document. Also destucts the string used for
  tokens. */
-void report_(void) {
-	struct segment *segment;
-	token_array_(&brief);
-	while(segment = segment_array_pop(&report)) erase_segment(segment);
-	segment_array_(&report);
+void report_(struct report *const report) {
+	if(!report) return;
+	token_array_(&report->brief);
+	erase_segments(&report->segments);
 	semantic(0);
 	style_();
 }
@@ -293,14 +215,16 @@ static const char *oops(const struct scanner *const scan) {
 	return p;
 }
 
-void report_last_segment_debug(void) {
-	if(!report.size) return;
-	print_segment_debug(report.data + report.size - 1);
+void report_last_segment_debug(const struct report *const report) {
+	assert(report);
+	if(!report->segments.size) return;
+	print_segment_debug(report->segments.data + report->segments.size - 1);
 }
 
 /** This appends the current token based on the state it was last in.
  @return Success. */
-int report_notify(const struct scanner *const scan) {
+int report_notify(struct report *const report,
+	const struct scanner *const scan) {
 	const enum symbol symbol = scanner_symbol(scan);
 	const char symbol_mark = symbol_marks[symbol];
 	int is_differed_cut = 0;
@@ -415,7 +339,7 @@ include_finally:
 
 	/* Make a new segment if needed. */
 	if(!sorter.segment) {
-		if(!(sorter.segment = new_segment(&report))) return 0;
+		if(!(sorter.segment = new_segment(&report->segments))) return 0;
 		sorter.attribute = 0;
 		sorter.space = sorter.newline = 0;
 		sorter.is_code_ignored = sorter.is_semantic_set = 0;

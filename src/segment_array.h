@@ -1,23 +1,17 @@
-#include "division.h"
-#include "token_array.h"
-#include "index_array.h"
-#include "attribute_array.h"
+#ifndef segment_array_h
+#	define segment_array_h
+#	include "segment.h"
+#	ifdef DEFINE
+#		undef DEFINE
+#	else
+#		define ARRAY_DECLARE_ONLY
+#	endif
+#	define ARRAY_NAME segment
+#	define ARRAY_TYPE struct segment
+#	define ARRAY_TO_STRING
+//#define ARRAY_NON_STATIC /* segment_to_string… */
+#	include "boxes/array.h"
 
-/** Each report has a segment array. Each subheading is a segment. */
-struct segment {
-	enum division division;
-	struct token_array doc, code;
-	struct index_array code_params;
-	struct attribute_array attributes;
-};
+void erase_segments(struct segment_array *segments);
 
-#ifdef DEFINE
-#	undef DEFINE
-#else
-#	define ARRAY_DECLARE_ONLY
 #endif
-#define ARRAY_NAME segment
-#define ARRAY_TYPE struct segment
-#define ARRAY_TO_STRING
-//#define ARRAY_NON_STATIC
-#include "boxes/array.h"
