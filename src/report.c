@@ -223,7 +223,8 @@ void report_last_segment_debug(const struct report *const report) {
 
 /** This appends the current token based on the state it was last in.
  @return Success. */
-int report_notify(struct report *const report,
+int report_notify(struct report *const report/* <-this goes in scan? or change
+	the notify? */,
 	const struct scanner *const scan) {
 	const enum symbol symbol = scanner_symbol(scan);
 	const char symbol_mark = symbol_marks[symbol];

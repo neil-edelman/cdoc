@@ -83,6 +83,7 @@
 
  @std C89
  @depend [re2c](http://re2c.org/)
+ @fixme Stop '\.', '\-', '\_', etc; only necessary escapes.
  @fixme Prototype function parameters ignore `const` but it is included in the
  documentation.
  @fixme Documentation on prototypes.
