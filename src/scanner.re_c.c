@@ -433,7 +433,7 @@ void scanner_(struct scanner **const pscanner) {
  @throws[malloc, fopen, fread]
  @throws[EILSEQ] File has embedded nulls. */
 struct scanner *scanner(const char *const label, const char *const buffer,
-	const scanner_predicate notify, const enum scanner_start start) {
+	const report_scanner_predicate notify, const enum scanner_start start) {
 	struct scanner *scan = 0;
 	const enum scanner_state state = scanner_start_to_state(start);
 	if(!label || !buffer || !notify) goto catch;

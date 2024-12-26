@@ -5,11 +5,14 @@ enum scanner_start { START_CODE, START_DOC };
 
 struct scanner;
 
-typedef int (*scanner_predicate)(const struct scanner *);
+/*typedef int (*scanner_predicate)(const struct scanner *);*/
+struct report;
+typedef int (*report_scanner_predicate)(struct report *, const struct scanner *);
+/* {report, scanner}inout;? */
 
 void scanner_(struct scanner **const scanner);
 struct scanner *scanner(const char *const label, const char *const buffer,
-	const scanner_predicate notify, const enum scanner_start start);
+	const report_scanner_predicate notify, const enum scanner_start start);
 enum symbol scanner_symbol(const struct scanner *const scan);
 const char *scanner_from(const struct scanner *const scan);
 const char *scanner_to(const struct scanner *const scan);

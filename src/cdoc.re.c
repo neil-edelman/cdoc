@@ -204,12 +204,18 @@ const char *cdoc_get_input(void) { return args.in_fn; }
 /** @return The output filename. */
 const char *cdoc_get_output(void) { return args.out_fn; }
 
+struct cdoc {
+	struct text *text; /* Text holds the translation-unit in memory. */
+	struct scanner *scan; /* Scanner reads the text and lexes it. */
+	struct report *report; /* Report writes to the documentation file. */
+} cdoc;
+
 /** @param[argc, argv] Argument vectors. */
 int main(int argc, char **argv) {
 	FILE *fp = 0;
-	struct scanner *scan = 0;
+	//struct scanner *scan = 0;
 	int exit_code = EXIT_FAILURE, i;
-	struct text *text = 0;
+	//struct text *text = 0;
 
 	errno = 0;
 	for(i = 1; i < argc; i++) if(!parse_arg(argv[i])) goto catch;
