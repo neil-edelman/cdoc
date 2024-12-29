@@ -22,8 +22,8 @@ void report_current_reset(void);
 void report_(struct report *const report);
 void report_division(const enum division division);
 void report_last_segment_debug(const struct report *const report);
-int report_notify(struct report *const report,
-	const struct scanner *const scan);
+/*I don't think this should be here, static in scanner?*/
+int report_notify(/*struct report *const report*/const struct scanner *const scan);
 void report_cull(void);
 void report_warn(void);
 int report_out(void);

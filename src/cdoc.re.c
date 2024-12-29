@@ -89,7 +89,7 @@
  @fixme Documentation on prototypes.
  @fixme Links to non-documented code which sometimes doesn't show up, work
  without error, and create broken links.
- @fixme A fixme with no args disappears; we should NOT check if the string is
+ @fixme A fixme with no cdoc disappears; we should NOT check if the string is
  empty for these values.
  @fixme Documentation on global variables is not output. */
 
@@ -126,51 +126,49 @@ static void usage(void) {
 		"  -o | --output <filename>  Output file.\n");
 }
 
-static struct {
-	enum { EXPECT_NOTHING, EXPECT_DEBUG, EXPECT_OUT, EXPECT_FORMAT } expect;
-	const char *in_fn, *out_fn;
-	enum format format;
-	enum debug debug;
-} args;
+/* Home of the global variable. */
+struct cdoc cdoc;
 
-/** Parses the one `argument` to `args`. @return Success. */
+enum { EXPECT_NOTHING, EXPECT_DEBUG, EXPECT_OUT, EXPECT_FORMAT };
+
+/** Parses the one `argument` to `cdoc`. @return Success. */
 static int parse_arg(const char *const argument) {
 	const char *a = argument, *m = a;
-	switch(args.expect) {
+	switch(expect) {
 	case EXPECT_NOTHING: break;
-	case EXPECT_OUT: assert(!args.out_fn); args.expect = EXPECT_NOTHING;
-		args.out_fn = argument; return 1;
-	case EXPECT_DEBUG: args.expect = EXPECT_NOTHING;
+	case EXPECT_OUT: assert(!cdoc.out_fn); cdoc.expect = EXPECT_NOTHING;
+		cdoc.out_fn = argument; return 1;
+	case EXPECT_DEBUG: cdoc.expect = EXPECT_NOTHING;
 /*!re2c
 	*              { return 0; }
-	"read" end     { args.debug |= DBG_READ; return 1; }
-	"output" end   { args.debug |= DBG_OUTPUT; return 1; }
-	"semantic" end { args.debug |= DBG_SEMANTIC; return 1; }
-	"hash" end     { args.debug |= DBG_HASH; return 1; }
-	"erase" end    { args.debug |= DBG_ERASE; return 1; }
-	"style" end    { args.debug |= DBG_STYLE; return 1; }
+	"read" end     { cdoc.debug |= DBG_READ; return 1; }
+	"output" end   { cdoc.debug |= DBG_OUTPUT; return 1; }
+	"semantic" end { cdoc.debug |= DBG_SEMANTIC; return 1; }
+	"hash" end     { cdoc.debug |= DBG_HASH; return 1; }
+	"erase" end    { cdoc.debug |= DBG_ERASE; return 1; }
+	"style" end    { cdoc.debug |= DBG_STYLE; return 1; }
 */
-	case EXPECT_FORMAT: assert(!args.format); args.expect = EXPECT_NOTHING;
+	case EXPECT_FORMAT: assert(!cdoc.format); cdoc.expect = EXPECT_NOTHING;
 /*!re2c
 	*      { return 0; }
-	"md"   end { args.format = OUT_MD; return 1; }
-	"html" end { args.format = OUT_HTML; return 1; }
+	"md"   end { cdoc.format = OUT_MD; return 1; }
+	"html" end { cdoc.format = OUT_HTML; return 1; }
 */
 	}
 /*!re2c
 	// If it's not any other, it's probably an input filename?
-	* { if(args.in_fn) return 0; args.in_fn = argument; return 1; }
+	* { if(cdoc.in_fn) return 0; cdoc.in_fn = argument; return 1; }
 	("-h" | "--help") end { usage(); exit(EXIT_SUCCESS); }
-	("-d" | "--debug") end { args.expect = EXPECT_DEBUG; return 1; }
+	("-d" | "--debug") end { cdoc.expect = EXPECT_DEBUG; return 1; }
 	("-f" | "--format") end
-		{ if(args.format) return 0; args.expect = EXPECT_FORMAT; return 1; }
+		{ if(cdoc.format) return 0; cdoc.expect = EXPECT_FORMAT; return 1; }
 	("-o" | "--output") end
-		{ if(args.out_fn) return 0; args.expect = EXPECT_OUT; return 1; }
+		{ if(cdoc.out_fn) return 0; cdoc.expect = EXPECT_OUT; return 1; }
 */
 }
 
 /** @return Whether the command-line was set. */
-enum debug cdoc_get_debug(void) { return args.debug; }
+enum debug cdoc_get_debug(void) { return cdoc.debug; }
 
 /** @return True if `suffix` is a suffix of `string`. */
 static int is_suffix(const char *const string, const char *const suffix) {
@@ -181,12 +179,12 @@ static int is_suffix(const char *const string, const char *const suffix) {
 }
 
 static void guess(void) {
-	if(args.format == OUT_RAW) {
-		if(args.out_fn && (is_suffix(args.out_fn, ".html")
-			|| is_suffix(args.out_fn, ".htm"))) args.format = OUT_HTML;
-		else args.format = OUT_MD;
-		if(args.debug & DBG_OUTPUT) fprintf(stderr, "Guess format is %s.\n",
-			format_strings[args.format]);
+	if(cdoc.format == OUT_RAW) {
+		if(cdoc.out_fn && (is_suffix(cdoc.out_fn, ".html")
+			|| is_suffix(cdoc.out_fn, ".htm"))) cdoc.format = OUT_HTML;
+		else cdoc.format = OUT_MD;
+		if(cdoc.debug & DBG_OUTPUT) fprintf(stderr, "Guess format is %s.\n",
+			format_strings[cdoc.format]);
 	}
 }
 
@@ -194,45 +192,43 @@ static void guess(void) {
  there was no output format specified, guess. */
 enum format cdoc_get_format(void) {
 	guess();
-	assert(args.format > 0 && args.format <= 2);
-	return args.format;
+	assert(cdoc.format > 0 && cdoc.format <= 2);
+	return cdoc.format;
 }
 
 /** @return The input filename. */
-const char *cdoc_get_input(void) { return args.in_fn; }
+const char *cdoc_get_input(void) { return cdoc.in_fn; }
 
-/** @return The output filename. */
-const char *cdoc_get_output(void) { return args.out_fn; }
-
-struct cdoc {
-	struct text *text; /* Text holds the translation-unit in memory. */
-	struct scanner *scan; /* Scanner reads the text and lexes it. */
-	struct report *report; /* Report writes to the documentation file. */
-} cdoc;
+/* @return The output filename. */
+/*const char *cdoc_get_output(void) { return cdoc.out_fn; } We don't use this?*/
 
 /** @param[argc, argv] Argument vectors. */
 int main(int argc, char **argv) {
 	FILE *fp = 0;
 	//struct scanner *scan = 0;
-	int exit_code = EXIT_FAILURE, i;
+	int exit_code = EXIT_FAILURE;
 	//struct text *text = 0;
 
 	errno = 0;
-	for(i = 1; i < argc; i++) if(!parse_arg(argv[i])) goto catch;
-	if(!args.in_fn || args.expect) goto catch;
+	{
+		enum expect expect = EXPECT_NOTHING;
+		size_t i;
+		for(i = 1; i < argc; i++) if(!parse_arg(argv[i])) goto catch;
+		if(!cdoc.in_fn || cdoc.expect) goto catch;
+	}
 
-	/* If the args have specified that it goes into a file, then redirect. */
-	if(args.out_fn && !freopen(args.out_fn, "w", stdout)) goto catch;
+	/* If the cdoc have specified that it goes into a file, then redirect. */
+	if(cdoc.out_fn && !freopen(cdoc.out_fn, "w", stdout)) goto catch;
 
 	/* Set up the urls. */
-	if(!url(args.in_fn, args.out_fn)) goto catch;
+	if(!url(cdoc.in_fn, cdoc.out_fn)) goto catch;
 
 	/* buffer the file. */
-	if(!(text = text_open(args.in_fn))) goto catch;
+	if(!(text = text_open(cdoc.in_fn))) goto catch;
 
 	/* Open the input file and parse. The last segment is on-going. */
-	if(!(scan = scanner(text_base_name(text), text_get(text), &report_notify,
-		START_CODE))) goto catch;
+	if(!(cdoc.scan = scanner(text_base_name(text), text_get(text),
+		&report_notify, START_CODE))) goto catch;
 	report_last_segment_debug();
 
 	/* Output the results. */
@@ -244,11 +240,11 @@ int main(int argc, char **argv) {
 
 catch:
 	if(errno) fprintf(stderr, "In main. "),
-		perror(args.in_fn ? args.in_fn : "(no file)");
+		perror(cdoc.in_fn ? cdoc.in_fn : "(no file)");
 	else usage();
 
 finally:
-	scanner_(&scan);
+	scanner_(&cdoc.scan);
 	report_();
 	text_close_all();
 	url_();

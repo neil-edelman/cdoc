@@ -207,11 +207,12 @@ static void cut_segment_here(struct segment **const psegment) {
 }
 
 /** Prints line info into a static buffer. */
-static const char *oops(const struct scanner *const scan) {
+static const char *oops(void) {
 	static char p[128];
-	assert(scan);
-	sprintf(p, "%.32s:%lu, %s", scanner_label(scan),
-		(unsigned long)scanner_line(scan), symbols[scanner_symbol(scan)]);
+	assert(cdoc.scan);
+	sprintf(p, "%.32s:%lu, %s", scanner_label(cdoc.scan),
+		(unsigned long)scanner_line(cdoc.scan),
+		symbols[scanner_symbol(cdoc.scan)]);
 	return p;
 }
 
@@ -223,8 +224,9 @@ void report_last_segment_debug(const struct report *const report) {
 
 /** This appends the current token based on the state it was last in.
  @return Success. */
-int report_notify(/*struct report *const report,*/
-	const struct scanner *const scan) {
+int report_notify(/*struct report *const report*/const struct scanner *const scan) {
+	/*struct scanner *const scan = cdoc.scan;*/
+	struct report *const report = cdoc.report;
 	const enum symbol symbol = scanner_symbol(scan);
 	const char symbol_mark = symbol_marks[symbol];
 	int is_differed_cut = 0;
@@ -240,8 +242,7 @@ int report_notify(/*struct report *const report,*/
 	switch(symbol) {
 	case DOC_BEGIN:
 		if(sorter.state != SORT_CODE) return fprintf(stderr,
-			"%s: sneak url; was expecting code.\n",
-			oops(scan)), errno = EDOM, 0;
+			"%s: sneak url; was expecting code.\n", oops()), errno = EDOM, 0;
 		sorter.state = SORT_DOC;
 		/* Reset attribute. */
 		sorter.attribute = 0;
@@ -252,29 +253,28 @@ int report_notify(/*struct report *const report,*/
 		return 1;
 	case DOC_END:
 		if(sorter.state != SORT_DOC) return fprintf(stderr,
-			"%s: sneak url; was expecting doc.\n",
-			oops(scan)), errno = EDOM, 0;
+			"%s: sneak url; was expecting doc.\n", oops()), errno = EDOM, 0;
 		sorter.state = SORT_CODE;
-		sorter.last_doc_line = scanner_line(scan);
+		sorter.last_doc_line = scanner_line(cdoc.scan);
 		return 1;
 	case DOC_LEFT:
 		if(sorter.state != SORT_DOC || !sorter.segment || !sorter.attribute)
 			return fprintf(stderr,
-			"%s: sneak url; was expecting doc with attribute.\n", oops(scan)),
+			"%s: sneak url; was expecting doc with attribute.\n", oops()),
 			errno = EDOM, 0;
 		sorter.state = SORT_ARGS;
 		return 1;
 	case DOC_RIGHT:
 		if(sorter.state != SORT_ARGS || !sorter.segment || !sorter.attribute)
 			return fprintf(stderr,
-			"%s: sneak url; was expecting args with attribute.\n", oops(scan)),
+			"%s: sneak url; was expecting cdoc with attribute.\n", oops()),
 			errno = EDOM, 0;
 		sorter.state = SORT_DOC;
 		return 1;
 	case DOC_COMMA: /* @arg[,,] */
 		if(sorter.state != SORT_ARGS || !sorter.segment || !sorter.attribute)
 			return fprintf(stderr,
-			"%s: sneak url; was expecting args with attribute.\n", oops(scan)),
+			"%s: sneak url; was expecting cdoc with attribute.\n", oops()),
 			errno = EDOM, 0;
 		return 1;
 	case SPACE:   sorter.space++; return 1;
@@ -317,8 +317,7 @@ int report_notify(/*struct report *const report,*/
 			success = 1;
 			goto include_finally;
 include_catch:
-			fprintf(stderr, "%s: \"%s\" couldn't resolve name.\n",
-				oops(scan), fn);
+			fprintf(stderr, "%s: \"%s\" couldn't resolve name.\n", oops(), fn);
 			/* if(errno) perror("including"); <- Handled farther up. */
 include_finally:
 			scanner_(&subscan);
@@ -399,7 +398,7 @@ static int notify_brief(const struct scanner *const scan) {
 	assert(scan);
 	/* `brief` is just documentation; no code. */
 	if(!(tok = new_token(&brief, scan))) fprintf(stderr,
-		"%s: something went wrong with this operation.\n", oops(scan)), 0;
+		"%s: something went wrong with this operation.\n", oops()), 0;
 	return 1;
 }
 

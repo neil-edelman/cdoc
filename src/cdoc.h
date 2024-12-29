@@ -1,7 +1,7 @@
 #include "format.h"
 
-/* fixme: Wtf is this? */
-/* `DEBUG` will not work on my compiler. */
+/* `DEBUG` will not work on my compiler. It's used as a bit-field, so to make
+ it closed, we choose to have all the values. */
 #define DBG \
 	X(DBG_0), \
 	X(DBG_READ), \
@@ -26,7 +26,18 @@ enum debug { DBG };
 static const char *const debug[] = { DBG };
 #undef X
 
+/** This is a singleton global variable that stores the text read, lexes it,
+ and outputs the report. */
+extern struct cdoc {
+	const char *in_fn, *out_fn;
+	enum format format;
+	enum debug debug;
+	struct text *text; /* Text holds the translation-unit in memory. */
+	struct scanner *scan; /* Scanner reads the text and lexes it. */
+	struct report *report; /* Report writes to the documentation file. */
+} cdoc;
+
 enum debug cdoc_get_debug(void);
 enum format cdoc_get_format(void);
 const char *cdoc_get_input(void);
-const char *cdoc_get_output(void);
+/* const char *cdoc_get_output(void); (?) */

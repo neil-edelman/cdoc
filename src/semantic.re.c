@@ -151,7 +151,7 @@ argument = ("v" | "_" | "*" | "s" | "x" | "(" | ")" | generic)*
 
 static int parse(void) {
 	char *const buffer = semantics.buffer.data, *cursor = buffer,
-		*marker = cursor, *args = 0, *begin, *label = 0;
+		*marker = cursor, *cdoc = 0, *begin, *label = 0;
 	int parens = 0;
 	int is_not_likely = 0;
 	/*!stags:re2c format = 'char *@@;'; */
@@ -188,11 +188,11 @@ static int parse(void) {
 	// Fixme: this is one of the . . . four? ways to define a function?
 	redact* static? redact*
 		(@label (generic | type_or_void | qualifier) redact*){2,}
-		@args "(" ( (argument ("," argument)* ",."?) | void ) ")" redact* end {
+		@cdoc "(" ( (argument ("," argument)* ",."?) | void ) ")" redact* end {
 		semantics.division = DIV_FUNCTION;
 		if(!add_param(label)) return 0;
-		label = 0; /* For the args. */
-		cursor = marker = args;
+		label = 0; /* For the cdoc. */
+		cursor = marker = cdoc;
 		goto params;
 	}
 	// All others are general declaration. See if we can extract a label.

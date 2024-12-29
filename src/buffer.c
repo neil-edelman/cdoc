@@ -197,7 +197,7 @@ static int looks_like_relative_url(const char *const string) {
 		|| (string[0] != *url_dirsep && looks_like_url(string));
 }
 
-/** Appends `url` split on `dirsep` to `args`.
+/** Appends `url` split on `dirsep` to `cdoc`.
  @param[string] Modified and referenced; if it goes out-of-scope or changes,
  undefined behaviour will result.
  @return Success. */
@@ -219,9 +219,9 @@ static int sep_url(struct string_array *const url, char *string) {
 
 /** "<url>/[<file>]" -> "<url>"; really, it pops the file, so just use it
  once. */
-static void strip_url(struct string_array *const args) {
-	assert(args);
-	string_array_pop(args);
+static void strip_url(struct string_array *const cdoc) {
+	assert(cdoc);
+	string_array_pop(cdoc);
 }
 
 /** Concatenates a copy of `before` in `url`. */
