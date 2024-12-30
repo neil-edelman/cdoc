@@ -1,4 +1,3 @@
-
 #include "division.h"
 #include "token_array.h"
 #include "index_array.h"
@@ -14,3 +13,5 @@ struct segment {
 
 void segment_to_string(const struct segment *const segment,
 	char (*const a)[12]);
+int segment_keep(const struct segment *const s);
+void segment_erase(struct segment *const segment);

@@ -58,22 +58,12 @@ void tokens_mark(const struct token_array *const tokens, char *mark) {
 }
 
 
-static void index_to_string(const size_t *const n, char (*const a)[12]) {
-	sprintf(*a, "%lu", (unsigned long)*n % 1000000000lu);
-}
 /*#define ARRAY_NAME index
 #define ARRAY_TYPE size_t
 #define ARRAY_TO_STRING
 #include "boxes/array.h"*/
 #include "index_array.h"
 
-static void attributes_(struct attribute_array *const atts) {
-	struct attribute *a;
-	if(!atts) return;
-	while((a = attribute_array_pop(atts)))
-		token_array_(&a->header), token_array_(&a->contents);
-	attribute_array_(atts);
-}
 
 
 
@@ -89,20 +79,6 @@ void report_(struct report *const report) {
 	erase_segments(&report->segments);
 	semantic(0);
 	style_();
-}
-
-/** @return A new empty segment from `segments`, defaults to the preamble, or
- null on error. */
-static struct segment *new_segment(struct segment_array *const segments) {
-	struct segment *segment;
-	assert(segments);
-	if(!(segment = segment_array_new(segments))) return 0;
-	segment->division = DIV_PREAMBLE; /* Default. */
-	segment->doc = token_array();
-	segment->code = token_array();
-	segment->code_params = index_array();
-	segment->attributes = attribute_array();
-	return segment;
 }
 
 /** Initializes `token` with `scan`. @return Success.
@@ -338,7 +314,7 @@ include_finally:
 
 	/* Make a new segment if needed. */
 	if(!sorter.segment) {
-		if(!(sorter.segment = new_segment(&report->segments))) return 0;
+		if(!(sorter.segment = segments_new(&report->segments))) return 0;
 		sorter.attribute = 0;
 		sorter.space = sorter.newline = 0;
 		sorter.is_code_ignored = sorter.is_semantic_set = 0;
@@ -455,35 +431,38 @@ static int is_static(const struct token_array *const code) {
 		&& !strncmp(tokens[1].from, "main", 4));
 }
 
-/** @implements{Predicate<segment_>} */
-static int keep_segment(const struct segment *const s) {
-	int keep = 0;
-	assert(s);
-	if(s->doc.size || s->attributes.size
-		|| s->division == DIV_FUNCTION) {
-		/* `static` and containing `@allow`. */
-		if(is_static(&s->code)) {
-			size_t i = 0;
-			while(i < s->attributes.size
-				&& s->attributes.data[i].token.symbol != ATT_ALLOW) i++;
-			if(i != s->attributes.size) keep = 1;
-		} else keep = 1;
-	}
-	/* But wait, everything except the preamble has to have a title! */
-	if(s->division != DIV_PREAMBLE && !s->code_params.size)
-		keep = 0;
-	if(!keep && cdoc_get_debug() & DBG_ERASE) {
-		char a[12];
-		segment_to_string(s, &a);
-		fprintf(stderr, "keep_segment: erasing %s.\n", a);
-	}
-	return keep;
-}
-
 /** Keeps only the stuff we care about; discards no docs except fn and `static`
  if not `@allow`. */
-void report_cull(void) {
-	segment_array_keep_if(&report, &keep_segment, &erase_segment);
+void report_cull(struct report *const report) {
+	segment_array_keep_if(&report->segments, &segment_keep, &segment_erase);
+}
+
+/** Toc subcategories. */
+static void print_toc_extra(const struct report *const report,
+	const enum division d) {
+	struct segment_array_cursor seg;
+	size_t *idxs;
+	struct token *params;
+	const char *b;
+	printf(": ");
+	style_push(ST_CSV), style_push(ST_NO_STYLE);
+	for(seg = segment_array_begin(&report); segment_array_exists(&seg);
+		segment_array_next(&seg)) {
+		const struct segment *const s = segment_array_look(&seg);
+		if(s->division != d) continue;
+		if(!s->code_params.size) { fprintf(stderr,
+			"%s: segment has no title.\n", division[s->division].symbol);
+			continue; }
+		idxs = s->code_params.data;
+		params = s->code.data;
+		assert(idxs[0] < s->code.size);
+		style_push(ST_TO_RAW);
+		b = print_token_s(&s->code, params + idxs[0]);
+		style_pop();
+		print_fragment_for(d, b);
+		style_pop_push();
+	}
+	style_pop(), style_pop();
 }
 
 #include "report_warning.h"

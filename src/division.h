@@ -18,4 +18,6 @@ static const struct { const char *const symbol, *const keyword, *const desc; }
 	division[] = { DIVISION };
 #	undef X
 
+const char *division_get_md_fragment_extra(void);
+
 #endif

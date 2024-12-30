@@ -44,7 +44,7 @@ static pT_(type) *TR_(any)(const pT_(box) *const box,
 	assert(box && predicate);
 	for(slybox.readonly = box, it = T_(begin)(slybox.promise);
 		T_(exists)(&it); T_(next)(&it)) {
-		pT_(type) *i = T_(look)(&it);
+		pT_(type) *i = T_(entry)(&it);
 		if(predicate(i)) return i;
 	}
 	return 0;
@@ -58,7 +58,7 @@ static void TR_(each)(pT_(box) *const box, const pTR_(action_fn) action) {
 	struct T_(cursor) it;
 	assert(box && action);
 	for(it = T_(begin)(box); T_(exists)(&it); T_(next)(&it))
-		action(T_(look)(&it));
+		action(T_(entry)(&it));
 }
 
 /** <../../src/iterate.h>: Iterates through `box` and calls `action` on all the
@@ -71,7 +71,7 @@ static void TR_(if_each)(pT_(box) *const box,
 	/* fixme: Could I to remove `i` from the list? */
 	/* 2024-11-25: it depends what container… but yes, inefficiently. */
 	for(it = T_(begin)(box); T_(exists)(&it); T_(next)(&it)) {
-		pT_(type) *v = T_(look)(&it);
+		pT_(type) *v = T_(entry)(&it);
 		if(predicate(v)) action(v);
 	}
 }

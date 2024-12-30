@@ -255,8 +255,9 @@ static int see(struct token_array_cursor *const tok,
 		style_push(ST_TO_HTML); /* <-- html: this is not escaped by Markdown. */
 		style_encode_length(t->length, t->from);
 		style_pop(); /* html --> */
-		printf("](#%s%s-%x)", md_fragment_extra, division[divn].keyword,
-			fnv_32a_str(style_encode_length_raw_to_buffer(t->length, t->from)));
+		printf("](#%s%s-%x)", division_get_md_fragment_extra(),
+			division[divn].keyword,
+			hash_str(style_encode_length_raw_to_buffer(t->length, t->from)));
 	}
 	return 1;
 }

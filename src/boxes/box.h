@@ -5,20 +5,20 @@
  repeated code and difficult in development of boxes to keep updated. Changing
  it back for convenience is also valid. */
 
-#if defined(BOX_NONE) + defined(BOX_ALL) \
-	+ defined(BOX_START) + defined(BOX_END) \
-	+ defined(BOX_NAME_MISSING) + defined(BOX_NAME_PRESENT) != 1
+#if defined BOX_NONE + defined BOX_ALL \
+	+ defined BOX_START + defined BOX_END \
+	+ defined BOX_NAME_MISSING + defined BOX_NAME_PRESENT != 1
 #	error Request one.
 #endif
 
 #ifdef BOX_NONE
 #	undef BOX_NONE
-#	if defined(BOX_CAT_) || defined(BOX_CAT) \
-		|| defined(t_) || defined(T_) || defined(pT_) \
-		|| defined(tr_) || defined(TR_) || defined(pTR_) \
+#	if defined BOX_CAT_ || defined BOX_CAT \
+		|| defined t_ || defined T_ || defined pT_ \
+		|| defined tr_ || defined TR_ || defined pTR_ \
 		/* We know that these are not defined outside, though they can be
 		 undefined inside. */ \
-		|| defined(BOX_RESTRICT) || defined(BOX_ENTRY1) || defined(BOX_ENTRY2)
+		|| defined BOX_RESTRICT || defined BOX_ENTRY1 || defined BOX_ENTRY2
 #		error Unexpected preprocessor symbols.
 #	endif
 #	ifdef static
@@ -28,36 +28,40 @@
 
 #ifdef BOX_ALL
 #	undef BOX_ALL
-#	if !defined(BOX_CAT_) || !defined(BOX_CAT) \
-		|| !defined(t_) || !defined(T_) || !defined(pT_) \
-		|| !defined(tr_) || !defined(TR_) || !defined(pTR_) \
-		|| !defined(BOX_ENTRY1)
+#	if !defined BOX_CAT_ || !defined BOX_CAT \
+		|| !defined t_ || !defined T_ || !defined pT_ \
+		|| !defined tr_ || !defined TR_ || !defined pTR_ \
+		|| !defined BOX_ENTRY1
 #		error Missing preprocessor symbols.
 #	endif
 #endif
 
 #ifdef BOX_NAME_MISSING
 #	undef BOX_NAME_MISSING
-#	if defined(BOX_MINOR) || defined(BOX_MAJOR)
+#	if defined BOX_MINOR || defined BOX_MAJOR
 #		error Unexpected box name.
 #	endif
 #endif
 
 #ifdef BOX_NAME_PRESENT
 #	undef BOX_NAME_PRESENT
-#	if !defined(BOX_MINOR) || !defined(BOX_MAJOR)
+#	if !defined BOX_MINOR || !defined BOX_MAJOR
 #		error Missing box name.
 #	endif
 #endif
 
 #ifdef BOX_START
 #	undef BOX_START
-/* This is C++17. One may need to define this manually. */
-#	ifdef __has_include
-#		if !defined(HAS_ITERATE_H) && __has_include("iterate.h")
+#	ifndef __has_include
+/* One may need to define this manually. In this case, we can not do this for
+ you because we don't know which files you've picked. */
+/*#		define HAS_ITERATE_H*/
+/*#		define HAS_GRAPH_H*/
+#	else /* It's automatic with (compilers that support?) C++17. */
+#		if !defined HAS_ITERATE_H && __has_include("iterate.h")
 #			define HAS_ITERATE_H
 #		endif
-#		if !defined(HAS_GRAPH_H) && __has_include("graph.h")
+#		if !defined HAS_GRAPH_H && __has_include("graph.h")
 #			define HAS_GRAPH_H
 #		endif
 #	endif
@@ -91,8 +95,8 @@
 #			define pTR_(n) pT_(n)
 #		endif
 /* Attribute in C99+; ignore otherwise. */
-#		if !defined(restrict) && (!defined(__STDC__) \
-			|| !defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901L)
+#		if !defined restrict && (!defined __STDC__ \
+			|| !defined __STDC_VERSION__ || __STDC_VERSION__ < 199901L)
 #			define BOX_RESTRICT
 #			define restrict
 #		endif

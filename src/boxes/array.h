@@ -33,22 +33,22 @@
  @depend [box](../../src/box.h)
  @std C89 */
 
-#if !defined(ARRAY_NAME) || !defined(ARRAY_TYPE)
+#if !defined ARRAY_NAME || !defined ARRAY_TYPE
 #	error Name or tag type undefined.
 #endif
-#if !defined(BOX_ENTRY1) && (defined(ARRAY_TRAIT) ^ defined(BOX_MAJOR))
-#	error ARRAY_TRAIT name must come after ARRAY_EXPECT_TRAIT.
+#if !defined BOX_ENTRY1 && (defined ARRAY_TRAIT ^ defined BOX_MAJOR)
+#	error Trait name must come after expect trait.
 #endif
-#if defined(ARRAY_COMPARE) && defined(ARRAY_IS_EQUAL)
+#if defined ARRAY_COMPARE && defined ARRAY_IS_EQUAL
 #	error Only one can be defined at a time.
 #endif
-#if defined(ARRAY_TEST) && (!defined(ARRAY_TRAIT) && !defined(ARRAY_TO_STRING) \
-	|| defined(ARRAY_TRAIT) && !defined(ARRAY_HAS_TO_STRING) \
+#if defined ARRAY_TEST && (!defined ARRAY_TRAIT && !defined ARRAY_TO_STRING \
+	|| defined ARRAY_TRAIT && !defined ARRAY_HAS_TO_STRING \
 	|| !defined HAS_GRAPH_H)
 #	error Test requires to string and graph.
 #endif
-#if defined(BOX_TRAIT) && !defined(ARRAY_TRAIT)
-#	error Unexpected.
+#if defined BOX_TRAIT && !defined ARRAY_TRAIT
+#	error Unexpected flow.
 #endif
 
 #ifdef ARRAY_TRAIT
@@ -93,12 +93,12 @@ typedef struct t_(array) pT_(box);
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 struct T_(cursor) { struct t_(array) *a; size_t i; };
 
-#	ifdef ARRAY_NON_STATIC
+#	ifdef ARRAY_NON_STATIC /* Public functions. */
 #		define static
 struct T_(cursor) T_(begin)(const struct t_(array) *);
 struct T_(cursor) T_(at)(const struct t_(array) *, size_t);
 int T_(exists)(const struct T_(cursor) *);
-pT_(type) *T_(look)(struct T_(cursor) *);
+pT_(type) *T_(entry)(struct T_(cursor) *);
 void T_(next)(struct T_(cursor) *);
 size_t T_(size)(const struct t_(array) *);
 pT_(type) *T_(data_at)(const struct t_(array) *, size_t);
@@ -123,10 +123,9 @@ int T_(splice)(struct t_(array) *restrict, const struct t_(array) *restrict,
 
 /** @return A cursor at the beginning of a valid `a`. */
 static struct T_(cursor) T_(begin)(const struct t_(array) *const a) {
-	/* Instead of accepting only non-const `a`—discourages the use of `const`
-	 even if we should—we will accept `const`, but store it in the same
-	 structure. The user will be responsible for `const` at lookup.
-	 This is the way. */
+	/* Instead of discouraging the use of non-`const` data, we accept `const`
+	 but store it in the same structure. The user will be responsible for
+	 `const` at lookup. */
 	union { const struct t_(array) *readonly; struct t_(array) *promise; } sly;
 	struct T_(cursor) cur;
 	cur.a = (sly.readonly = a, sly.promise), cur.i = 0;
@@ -140,13 +139,13 @@ static struct T_(cursor) T_(at)(const struct t_(array) *const a,
 	cur.a = (sly.readonly = a, sly.promise), cur.i = i;
 	return cur;
 }
-/** @return Whether the `cur` points to an element. */
+/** @return Whether `cur` points to a valid entry. */
 static int T_(exists)(const struct T_(cursor) *const cur)
 	{ return cur && cur->a && cur->a->data && cur->i < cur->a->size; }
-/** @return Dereference the element pointed to by `cur` that exists. */
-static pT_(type) *T_(look)(struct T_(cursor) *const cur)
+/** @return Pointer to a valid entry at `cur`. */
+static pT_(type) *T_(entry)(struct T_(cursor) *const cur)
 	{ return cur->a->data + cur->i; }
-/** Move next on `cur` that exists. */
+/** Move to the next of a valid `cur`. */
 static void T_(next)(struct T_(cursor) *const cur)
 	{ if(cur->i == (size_t)~0) cur->a = 0; else cur->i++; }
 
@@ -166,7 +165,8 @@ static void T_(tell_size)(struct t_(array) *a, const size_t size)
 static struct t_(array) t_(array)(void)
 	{ struct t_(array) a; a.data = 0, a.capacity = a.size = 0; return a; }
 
-/** If `a` is not null, destroys and returns it to idle. @allow */
+/** If `a` is not null, returns the idle zeroed state where it takes no dynamic
+ memory. @order \Theta(1) @allow */
 static void t_(array_)(struct t_(array) *const a)
 	{ if(a) free(a->data), *a = t_(array)(); }
 
@@ -210,6 +210,12 @@ static pT_(type) *T_(buffer)(struct t_(array) *const a, const size_t n) {
 	if(a->size > (size_t)~0 - n) { errno = ERANGE; return 0; }
 	return T_(reserve)(a, a->size + n) && a->data ? a->data + a->size : 0;
 }
+
+/** Sets `a` to be empty. That is, the size of `a` will be zero, but if it was
+ previously in an active non-idle state, it continues to be.
+ @order \Theta(1) @allow */
+static void T_(clear)(struct t_(array) *const a)
+	{ assert(a), a->size = 0; }
 
 /** Adds `n` elements to the back of `a`. It will invalidate pointers in `a` if
  `n` is greater than the buffer space.
@@ -282,12 +288,6 @@ static void T_(lazy_remove)(struct t_(array) *const a,
 	if(--a->size != n) memcpy(datum, a->data + a->size, sizeof *datum);
 }
 
-/** Sets `a` to be empty. That is, the size of `a` will be zero, but if it was
- previously in an active non-idle state, it continues to be.
- @order \Theta(1) @allow */
-static void T_(clear)(struct t_(array) *const a)
-	{ assert(a), a->size = 0; }
-
 /** @return The last element or null if `a` is empty. @order \Theta(1) @allow */
 static pT_(type) *T_(peek)(const struct t_(array) *const a)
 	{ return assert(a), a->size ? a->data + a->size - 1 : 0; }
@@ -320,12 +320,12 @@ static int T_(splice)(struct t_(array) *restrict const a,
 	return 1;
 }
 
-#		ifdef static
+#		ifdef static /* Private functions. */
 #			undef static
 #		endif
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
-	T_(begin)(0); T_(at)(0, 0); T_(exists)(0); T_(look)(0); T_(next)(0);
+	T_(begin)(0); T_(at)(0, 0); T_(exists)(0); T_(entry)(0); T_(next)(0);
 	T_(size)(0); T_(data_at)(0, 0); T_(tell_size)(0, 0);
 	t_(array)(); t_(array_)(0); T_(insert)(0, 0, 0); T_(new)(0); T_(shrink)(0);
 	T_(remove)(0, 0); T_(lazy_remove)(0, 0); T_(clear)(0); T_(peek)(0);
@@ -334,7 +334,7 @@ static void pT_(unused_base)(void) {
 }
 static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #	endif /* Produce code. */
-#	ifdef static
+#	ifdef static /* Private functions. */
 #		undef static
 #	endif
 #endif /* Base code. */
@@ -366,11 +366,11 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 #	include "graph.h" /** \include */
 #endif
 
-#if defined(ARRAY_TEST) && !defined(ARRAY_TRAIT)
+#if defined ARRAY_TEST && !defined ARRAY_TRAIT
 #	include "../test/test_array.h"
 #endif
 
-#if (defined(ARRAY_COMPARE) || defined(ARRAY_IS_EQUAL))
+#if defined ARRAY_COMPARE || defined ARRAY_IS_EQUAL
 #	ifdef ARRAY_COMPARE
 #		define COMPARE ARRAY_COMPARE
 #	else
@@ -385,11 +385,6 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 #	else
 #		undef ARRAY_IS_EQUAL
 #	endif
-#endif
-
-#ifdef ARRAY_TRAIT
-#	undef ARRAY_TRAIT
-#	undef BOX_TRAIT
 #endif
 
 
@@ -420,6 +415,10 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 #	ifdef COMPARE_H
 #		undef COMPARE_H /* More comparisons for later boxes. */
 #	endif
+#endif
+#ifdef ARRAY_TRAIT
+#	undef ARRAY_TRAIT
+#	undef BOX_TRAIT
 #endif
 #define BOX_END
 #include "box.h"

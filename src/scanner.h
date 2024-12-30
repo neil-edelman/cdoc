@@ -1,5 +1,5 @@
-#include <stddef.h>
 #include "symbol.h"
+#include <stddef.h>
 
 enum scanner_start { START_CODE, START_DOC };
 
@@ -18,3 +18,5 @@ const char *scanner_to(const struct scanner *const scan);
 const char *scanner_label(const struct scanner *const scan);
 size_t scanner_line(const struct scanner *const scan);
 int scanner_indent_level(const struct scanner *const scan);
+
+int scanner_notify_brief(const struct scanner *const scan);

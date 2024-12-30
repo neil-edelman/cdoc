@@ -129,16 +129,16 @@ static void usage(void) {
 /* Home of the global variable. */
 struct cdoc cdoc;
 
-enum { EXPECT_NOTHING, EXPECT_DEBUG, EXPECT_OUT, EXPECT_FORMAT };
+enum expect { EXPECT_NOTHING, EXPECT_DEBUG, EXPECT_OUT, EXPECT_FORMAT };
 
 /** Parses the one `argument` to `cdoc`. @return Success. */
-static int parse_arg(const char *const argument) {
+static int parse_arg(enum expect *const expect, const char *const argument) {
 	const char *a = argument, *m = a;
 	switch(expect) {
 	case EXPECT_NOTHING: break;
-	case EXPECT_OUT: assert(!cdoc.out_fn); cdoc.expect = EXPECT_NOTHING;
+	case EXPECT_OUT: assert(!cdoc.out_fn); expect = EXPECT_NOTHING;
 		cdoc.out_fn = argument; return 1;
-	case EXPECT_DEBUG: cdoc.expect = EXPECT_NOTHING;
+	case EXPECT_DEBUG: expect = EXPECT_NOTHING;
 /*!re2c
 	*              { return 0; }
 	"read" end     { cdoc.debug |= DBG_READ; return 1; }
@@ -204,7 +204,7 @@ const char *cdoc_get_input(void) { return cdoc.in_fn; }
 
 /** @param[argc, argv] Argument vectors. */
 int main(int argc, char **argv) {
-	FILE *fp = 0;
+	//FILE *fp = 0;
 	//struct scanner *scan = 0;
 	int exit_code = EXIT_FAILURE;
 	//struct text *text = 0;
@@ -213,8 +213,8 @@ int main(int argc, char **argv) {
 	{
 		enum expect expect = EXPECT_NOTHING;
 		size_t i;
-		for(i = 1; i < argc; i++) if(!parse_arg(argv[i])) goto catch;
-		if(!cdoc.in_fn || cdoc.expect) goto catch;
+		for(i = 1; i < argc; i++) if(!parse_arg(&expect, argv[i])) goto catch;
+		if(!cdoc.in_fn || expect != EXPECT_NOTHING) goto catch;
 	}
 
 	/* If the cdoc have specified that it goes into a file, then redirect. */
@@ -224,10 +224,10 @@ int main(int argc, char **argv) {
 	if(!url(cdoc.in_fn, cdoc.out_fn)) goto catch;
 
 	/* buffer the file. */
-	if(!(text = text_open(cdoc.in_fn))) goto catch;
+	if(!(cdoc.text = text_open(cdoc.in_fn))) goto catch;
 
 	/* Open the input file and parse. The last segment is on-going. */
-	if(!(cdoc.scan = scanner(text_base_name(text), text_get(text),
+	if(!(cdoc.scan = scanner(text_base_name(cdoc.text), text_get(cdoc.text),
 		&report_notify, START_CODE))) goto catch;
 	report_last_segment_debug();
 
@@ -249,7 +249,7 @@ finally:
 	text_close_all();
 	url_();
 	buffer_(); /* Should be after ~report because might do debug print. */
-	if(fp) fclose(fp);
+	//if(fp) fclose(fp);
 
 	return exit_code;
 }

@@ -1,5 +1,3 @@
-static void segment_to_string(const struct segment *, char (*)[12]);
-
 void segment_to_string(const struct segment *const segment,
 	char (*const a)[12]) {
 	const struct token_array *t;
@@ -22,7 +20,32 @@ void segment_to_string(const struct segment *const segment,
 	assert(i <= sizeof *a);
 }
 
-static void erase_segment(struct segment *const segment) {
+/** @implements{Predicate<segment_>} */
+int segment_keep(const struct segment *const s) {
+	int keep = 0;
+	assert(s);
+	if(s->doc.size || s->attributes.size
+		|| s->division == DIV_FUNCTION) {
+		/* `static` and containing `@allow`. */
+		if(is_static(&s->code)) {
+			size_t i = 0;
+			while(i < s->attributes.size
+				&& s->attributes.data[i].token.symbol != ATT_ALLOW) i++;
+			if(i != s->attributes.size) keep = 1;
+		} else keep = 1;
+	}
+	/* But wait, everything except the preamble has to have a title! */
+	if(s->division != DIV_PREAMBLE && !s->code_params.size)
+		keep = 0;
+	if(!keep && cdoc_get_debug() & DBG_ERASE) {
+		char a[12];
+		segment_to_string(s, &a);
+		fprintf(stderr, "keep_segment: erasing %s.\n", a);
+	}
+	return keep;
+}
+
+void segment_erase(struct segment *const segment) {
 	char a[12];
 	assert(segment);
 	segment_to_string(segment, &a);
@@ -102,6 +125,19 @@ static const struct token *param_no(const struct segment *const segment,
 		Indexarray_clear(&segment->code_params),
 		attributes_(&segment->attributes);
 }*/
+/** @return A new empty segment from `segments`, defaults to the preamble, or
+ null on error. */
+struct segment *segments_new(struct segment_array *const segments) {
+	struct segment *segment;
+	assert(segments);
+	if(!(segment = segment_array_new(segments))) return 0;
+	segment->division = DIV_PREAMBLE; /* Default. */
+	segment->doc = token_array();
+	segment->code = token_array();
+	segment->code_params = index_array();
+	segment->attributes = attribute_array();
+	return segment;
+}
 void erase_segments(struct segment_array *segments) {
 	struct segment *segment;
 	while(segment = segment_array_pop(&segments)) erase_segment(segment);
