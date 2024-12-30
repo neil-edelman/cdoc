@@ -6,9 +6,7 @@
 #include "buffer.h"
 #include <assert.h>
 
-#define ARRAY_NAME char
-#define ARRAY_TYPE char
-#include "boxes/array.h"
+#include "char_array.h"
 
 #define ARRAY_NAME string
 #define ARRAY_TYPE char *

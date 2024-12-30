@@ -98,6 +98,7 @@
 #include <string.h> /* strcmp */
 #include <errno.h>  /* errno */
 #include <assert.h> /* assert */
+#include "../src/instance.h"
 #include "../src/buffer.h"
 #include "../src/report_print.h"
 #include "../src/semantic.h"
@@ -126,12 +127,17 @@ static void usage(void) {
 		"  -o | --output <filename>  Output file.\n");
 }
 
-/* Home of the global variable. */
-struct cdoc cdoc;
+/** Interpreted settings from command-line. */
+static struct {
+	static enum debug debug;
+	const char *in_fn, *out_fn;
+	enum format format;
+} cdoc;
 
+/** Interpreting from command-line. */
 enum expect { EXPECT_NOTHING, EXPECT_DEBUG, EXPECT_OUT, EXPECT_FORMAT };
 
-/** Parses the one `argument` to `cdoc`. @return Success. */
+/** Parses the `argument` in the context of `expect`. @return Success. */
 static int parse_arg(enum expect *const expect, const char *const argument) {
 	const char *a = argument, *m = a;
 	switch(expect) {
@@ -168,7 +174,7 @@ static int parse_arg(enum expect *const expect, const char *const argument) {
 }
 
 /** @return Whether the command-line was set. */
-enum debug cdoc_get_debug(void) { return cdoc.debug; }
+enum debug cdoc_get_debug(void) { return debug; }
 
 /** @return True if `suffix` is a suffix of `string`. */
 static int is_suffix(const char *const string, const char *const suffix) {
@@ -210,15 +216,17 @@ int main(int argc, char **argv) {
 	//struct text *text = 0;
 
 	errno = 0;
-	{
+
+	{ /* Parse command-line arguments. */
 		enum expect expect = EXPECT_NOTHING;
 		size_t i;
 		for(i = 1; i < argc; i++) if(!parse_arg(&expect, argv[i])) goto catch;
-		if(!cdoc.in_fn || expect != EXPECT_NOTHING) goto catch;
+		if(expect != EXPECT_NOTHING) goto catch;
 	}
 
-	/* If the cdoc have specified that it goes into a file, then redirect. */
-	if(cdoc.out_fn && !freopen(cdoc.out_fn, "w", stdout)) goto catch;
+	/* Redirect if needed. */
+	if(cdoc.in_fn && !freopen(cdoc.in_fn, "r", stdin) ||
+	   cdoc.out_fn && !freopen(cdoc.out_fn, "w", stdout)) goto catch;
 
 	/* Set up the urls. */
 	if(!url(cdoc.in_fn, cdoc.out_fn)) goto catch;

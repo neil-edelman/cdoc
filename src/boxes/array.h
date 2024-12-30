@@ -119,7 +119,7 @@ pT_(type) *T_(pop)(struct t_(array) *const a);
 int T_(splice)(struct t_(array) *restrict, const struct t_(array) *restrict,
 	size_t, size_t);
 #	endif
-#	ifndef ARRAY_DELARE_ONLY /* Produce code. */
+#	ifndef ARRAY_DECLARE_ONLY /* Produce code. */
 
 /** @return A cursor at the beginning of a valid `a`. */
 static struct T_(cursor) T_(begin)(const struct t_(array) *const a) {

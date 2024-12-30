@@ -4,6 +4,7 @@
 #include <limits.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <string.h>
 
 static int token_to_string(const struct token *t, char (*const a)[12]) {
 	switch(t->symbol) {

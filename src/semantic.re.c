@@ -81,12 +81,9 @@ static void index_to_string(const size_t *i, char (*const a)[12]) {
 #include "../src/array.h"
 #define ARRAY_TO_STRING &index_to_string
 #include "../src/array.h"*/
-#include "../src/index_array.h"
 
-/* A vector of characters -- (again!) */
-#define ARRAY_NAME char
-#define ARRAY_TYPE char
-#include "../src/boxes/array.h"
+#include "../src/char_array.h"
+#include "../src/index_array.h"
 
 static struct {
 	struct char_array buffer, work;
