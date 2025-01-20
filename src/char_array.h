@@ -11,3 +11,5 @@
 #	define ARRAY_NON_STATIC
 #	include "boxes/array.h"
 #endif
+
+int char_array_copy(struct char_array *, const char *);

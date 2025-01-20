@@ -15,19 +15,50 @@
 #include <errno.h>
 
 int main(void) {
-	struct char_array arr = char_array();
-	char *a;
+	int success = 0;
+	struct char_array s = char_array();
+	const char *string;
 	unsigned i;
-	printf("Foo!!!\n");
-	for(i = 0; i < 10; i++) {
-		a = char_array_new(&arr);
-		if(!a) assert(0);
-		*a = (char)(rand() / (RAND_MAX / 254 + 1) + 1);
+	const char *const tests[] = {
+		"",
+		"?",
+		"Foo.",
+		"aaaab—",
+		"aaaabbbb",
+		"aaaabb—",
+		"a b c"
+	}, *const requires[] = {
+		"(00)",
+		"(?, 00)",
+		"(F, o, o, ., 00)",
+		"(a, a, a, a, b, E2, 80, 94, 00)",
+		"(a, a, a, a, b, b, b, b, 00)",
+		"(a, a, a, a, b, b, E2, 80, 94, 00)",
+		"(a, ·, b, ·, c, 00)"
+	}, *test, *require;
+
+	printf("Start:\n");
+
+	require = "(?, 00)";
+	if(!char_array_reserve(&s, 2)) goto catch;
+	s.data[0] = '?', s.data[1] = '\0', s.size = 2;
+	string = char_array_to_string(&s);
+	printf("Should be %s: %s.\n", require, string);
+	assert(!strcmp(require, string));
+
+	for(i = 0; i < sizeof tests / sizeof *tests; i++) {
+		test = tests[i], require = requires[i];
+		if(!char_array_copy(&s, test)) goto catch;
+		string = char_array_to_string(&s);
+		printf("Should be %s: %s.\n", require, string);
+		assert(!strcmp(require, string));
 	}
-	a = char_array_new(&arr);
-	if(!a) assert(0);
-	*a = '\0';
-	printf("Array of chars: %s.\n", char_array_to_string(&arr));
-	char_array_(&arr);
-	return EXIT_SUCCESS;
+
+	success = 1;
+	goto finally;
+catch:
+	perror("char_array");
+finally:
+	char_array_(&s);
+	return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }
