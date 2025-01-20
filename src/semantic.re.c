@@ -3,12 +3,13 @@
 
  Simplifies the code into divisions based on `symbol_marks` in `symbol.h`. */
 
+#include "../src/cdoc.h"
+#include "../src/token.h"
+#include "../src/report_print.h"
+#include "../src/semantic.h"
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include "../src/cdoc.h"
-#include "../src/report_print.h"
-#include "../src/semantic.h"
 
 /** `right` is in the string `buffer`. Has assumed <fn:remove_recursive> has
  been called to eliminate `[]`. Very ad-hoc.
@@ -74,13 +75,6 @@ static void effectively_typedef_fn_ptr(char *const buffer) {
 static void index_to_string(const size_t *i, char (*const a)[12]) {
 	sprintf(*a, "%lu", *(const unsigned long *)i % 100000000000u);
 }
-
-/*#define ARRAY_NAME index
-#define ARRAY_TYPE size_t
-#define ARRAY_EXPECT_TRAIT
-#include "../src/array.h"
-#define ARRAY_TO_STRING &index_to_string
-#include "../src/array.h"*/
 
 #include "../src/char_array.h"
 #include "../src/index_array.h"

@@ -1,12 +1,11 @@
 /** @license 2017 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- Handles strings. */
-
-#include "buffer.h"
-#include <assert.h>
+ A global double-buffer that handles temporary strings with filename. */
 
 #include "char_array.h"
+#include "file_buffer.h"
+#include <assert.h>
 
 #define ARRAY_NAME string
 #define ARRAY_TYPE char *

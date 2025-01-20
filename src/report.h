@@ -8,11 +8,6 @@ struct report {
 	struct token_array brief;
 };
 
-const char *tokens_first_label(const struct token_array *const tokens);
-size_t tokens_first_line(const struct token_array *const tokens);
-size_t tokens_mark_size(const struct token_array *const tokens);
-void tokens_mark(const struct token_array *const tokens, char *const marks);
-
 struct token;
 
 int report_current_division(const enum division division);

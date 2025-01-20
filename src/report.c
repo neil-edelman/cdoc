@@ -8,7 +8,7 @@
 #include "report.h"
 #include "format.h"
 #include "semantic.h"
-#include "buffer.h"
+#include "file_buffer.h"
 #include "style.h"
 #include "image_dimension.h"
 #include "cdoc.h"
@@ -35,33 +35,6 @@ static void unrecoverable(void) {
 	assert(0), exit(EXIT_FAILURE);
 }
 
-/** This is used in `semantic.c.re` to get the first file:line for error. */
-const char *tokens_first_label(const struct token_array *const tokens)
-	{ return tokens->size ? tokens->data[0].label : "unlabelled"; }
-size_t tokens_first_line(const struct token_array *const tokens)
-	{ return tokens->size ? tokens->data[0].line : 0; }
-/** This is used in `semantic.c.re` to get the size of the string for
- `tokens`. */
-size_t tokens_mark_size(const struct token_array *const tokens) {
-	if(!tokens) return 0;
-	return tokens->size + 1;
-}
-/** @param[tokens] The `token_array` that converts to a string.
- @param[marks] Must be an at-least the size of `tokens`, or null.
- @return The size of the string, including null. */
-void tokens_mark(const struct token_array *const tokens, char *mark) {
-	size_t i;
-	assert(mark);
-	for(i = 0; i < tokens->size; i++)
-		*mark++ = symbol_marks[tokens->data[i].symbol];
-	*mark = '\0';
-}
-
-
-/*#define ARRAY_NAME index
-#define ARRAY_TYPE size_t
-#define ARRAY_TO_STRING
-#include "boxes/array.h"*/
 #include "index_array.h"
 
 
@@ -373,7 +346,7 @@ static int notify_brief(const struct scanner *const scan) {
 	struct token *tok;
 	assert(scan);
 	/* `brief` is just documentation; no code. */
-	if(!(tok = new_token(&brief, scan))) fprintf(stderr,
+	if(!(tok = new_token(&cdoc_get_brief(), scan))) fprintf(stderr,
 		"%s: something went wrong with this operation.\n", oops()), 0;
 	return 1;
 }

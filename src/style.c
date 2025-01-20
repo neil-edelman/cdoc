@@ -6,7 +6,7 @@
  strict. */
 
 #include "cdoc.h"
-#include "buffer.h"
+#include "file_buffer.h"
 #include "style.h" /** \include */
 #include <string.h> /* strlen memcpy */
 #include <stdio.h>  /* fprintf */

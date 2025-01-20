@@ -3,7 +3,7 @@
 #include "hash.h"
 #include "division.h"
 #include "cdoc.h" /* cdoc_get_format */
-#include "buffer.h"
+#include "file_buffer.h"
 #include "scanner.h"
 #include <assert.h>
 #include <stdio.h>

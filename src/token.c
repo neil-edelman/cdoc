@@ -33,3 +33,25 @@ static int token_compare(const struct token *const a,
 
 #define DEFINE
 #include "token_array.h"
+
+/** This is used in `semantic.c.re` to get the first file:line for error. */
+const char *tokens_first_label(const struct token_array *const tokens)
+	{ return tokens->size ? tokens->data[0].label : "unlabelled"; }
+size_t tokens_first_line(const struct token_array *const tokens)
+	{ return tokens->size ? tokens->data[0].line : 0; }
+/** This is used in `semantic.c.re` to get the size of the string for
+ `tokens`. */
+size_t tokens_mark_size(const struct token_array *const tokens) {
+	if(!tokens) return 0;
+	return tokens->size + 1;
+}
+/** @param[tokens] The `token_array` that converts to a string.
+ @param[marks] Must be an at-least the size of `tokens`, or null.
+ @return The size of the string, including null. */
+void tokens_mark(const struct token_array *const tokens, char *mark) {
+	size_t i;
+	assert(mark);
+	for(i = 0; i < tokens->size; i++)
+		*mark++ = symbol_marks[tokens->data[i].symbol];
+	*mark = '\0';
+}
