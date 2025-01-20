@@ -1,10 +1,5 @@
-/** @license 20xx Neil Edelman, distributed under the terms of the
- [GNU General Public License 3](https://opensource.org/licenses/GPL-3.0).
- @license 20xx Neil Edelman, distributed under the terms of the
+/** @license 2024 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
-
- This is a standard C file.
-
  @std C89 */
 
 #include "../src/char_array.h"

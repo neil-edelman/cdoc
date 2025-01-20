@@ -94,7 +94,7 @@ int image_dimension(const char *const fn, unsigned *const width,
 	const char *cursor = fn, *marker = cursor;
 	FILE *fp = 0;
 	int success = 0;
-	if(!fn || !width || !height) return 0;
+	assert(fn && width && height);
 	if(!(fp = fopen(fn, "rb"))) goto catch;
 /*!re2c
 	* { fprintf(stderr, "%s: image format not reconised.\n", fn); goto catch; }
@@ -109,7 +109,7 @@ end:
 	success = 1;
 	goto finally;
 catch:
-	fprintf(stderr, "In image_disension. "); perror(fn), errno = 0;
+	/* fprintf(stderr, "In image_disension. "); perror(fn), errno = 0; */
 finally:
 	if(fp) fclose(fp);
 	return success;
